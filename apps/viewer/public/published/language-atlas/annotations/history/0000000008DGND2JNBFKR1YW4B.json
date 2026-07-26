@@ -8,7 +8,7 @@
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
-        "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o3",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o3",
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",

@@ -148,7 +148,7 @@
       "height": 900
     },
     {
-      "objectId": "o9",
+      "objectId": "ex-voynich.o9",
       "exhibitSlug": "voynich-rosettes",
       "title": "f85v–86r — Cosmological (the Rosettes foldout)",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006231/full/240,/0/default.jpg",
@@ -156,7 +156,7 @@
       "height": 7268
     },
     {
-      "objectId": "o1",
+      "objectId": "ex-voynich.o1",
       "exhibitSlug": "voynich",
       "title": "f1r — Herbal (opening page)",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006076/full/240,/0/default.jpg",
@@ -164,7 +164,7 @@
       "height": 3766
     },
     {
-      "objectId": "o2",
+      "objectId": "ex-voynich.o2",
       "exhibitSlug": "voynich",
       "title": "f18v — Herbal (the sonified folio)",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006109/full/240,/0/default.jpg",
@@ -172,7 +172,7 @@
       "height": 3781
     },
     {
-      "objectId": "o3",
+      "objectId": "ex-voynich.o3",
       "exhibitSlug": "voynich",
       "title": "f25v — Herbal",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006123/full/240,/0/default.jpg",
@@ -180,7 +180,7 @@
       "height": 3769
     },
     {
-      "objectId": "o4",
+      "objectId": "ex-voynich.o4",
       "exhibitSlug": "voynich",
       "title": "f33v — Herbal",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006139/full/240,/0/default.jpg",
@@ -188,7 +188,7 @@
       "height": 3769
     },
     {
-      "objectId": "o5",
+      "objectId": "ex-voynich.o5",
       "exhibitSlug": "voynich",
       "title": "f67r — Astronomical (foldout)",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006194/full/240,/0/default.jpg",
@@ -196,7 +196,7 @@
       "height": 3738
     },
     {
-      "objectId": "o6",
+      "objectId": "ex-voynich.o6",
       "exhibitSlug": "voynich",
       "title": "f68r — Astronomical (foldout star-chart)",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006196/full/240,/0/default.jpg",
@@ -204,7 +204,7 @@
       "height": 3828
     },
     {
-      "objectId": "o7",
+      "objectId": "ex-voynich.o7",
       "exhibitSlug": "voynich",
       "title": "f75r — Balneological",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006208/full/240,/0/default.jpg",
@@ -212,7 +212,7 @@
       "height": 3759
     },
     {
-      "objectId": "o8",
+      "objectId": "ex-voynich.o8",
       "exhibitSlug": "voynich",
       "title": "f78r — Balneological",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006214/full/240,/0/default.jpg",
@@ -220,7 +220,7 @@
       "height": 3761
     },
     {
-      "objectId": "o9",
+      "objectId": "ex-voynich.o9",
       "exhibitSlug": "voynich",
       "title": "f85v–86r — Cosmological (the Rosettes foldout)",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006231/full/240,/0/default.jpg",
@@ -228,7 +228,7 @@
       "height": 7268
     },
     {
-      "objectId": "o10",
+      "objectId": "ex-voynich.o10",
       "exhibitSlug": "voynich",
       "title": "f99r — Pharmaceutical",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006246/full/240,/0/default.jpg",
@@ -236,7 +236,7 @@
       "height": 3765
     },
     {
-      "objectId": "o11",
+      "objectId": "ex-voynich.o11",
       "exhibitSlug": "voynich",
       "title": "f116v — Recipes (the final page)",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006277/full/240,/0/default.jpg",
@@ -244,12 +244,12 @@
       "height": 3697
     },
     {
-      "objectId": "o12",
+      "objectId": "ex-voynich.o12",
       "exhibitSlug": "voynich",
       "title": "Kryptogramm — “04-f18v” (sonified folio 18v)"
     },
     {
-      "objectId": "o1",
+      "objectId": "ex-voynich.o1",
       "exhibitSlug": "voynich-reading",
       "title": "f1r — Herbal (opening page)",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006076/full/240,/0/default.jpg",
@@ -257,7 +257,7 @@
       "height": 3766
     },
     {
-      "objectId": "o2",
+      "objectId": "ex-voynich.o2",
       "exhibitSlug": "voynich-reading",
       "title": "f18v — Herbal (the sonified folio)",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006109/full/240,/0/default.jpg",
@@ -265,7 +265,7 @@
       "height": 3781
     },
     {
-      "objectId": "o3",
+      "objectId": "ex-voynich.o3",
       "exhibitSlug": "voynich-reading",
       "title": "f25v — Herbal",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006123/full/240,/0/default.jpg",
@@ -273,7 +273,7 @@
       "height": 3769
     },
     {
-      "objectId": "o4",
+      "objectId": "ex-voynich.o4",
       "exhibitSlug": "voynich-reading",
       "title": "f33v — Herbal",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006139/full/240,/0/default.jpg",
@@ -281,7 +281,7 @@
       "height": 3769
     },
     {
-      "objectId": "o5",
+      "objectId": "ex-voynich.o5",
       "exhibitSlug": "voynich-reading",
       "title": "f67r — Astronomical (foldout)",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006194/full/240,/0/default.jpg",
@@ -289,7 +289,7 @@
       "height": 3738
     },
     {
-      "objectId": "o6",
+      "objectId": "ex-voynich.o6",
       "exhibitSlug": "voynich-reading",
       "title": "f68r — Astronomical (foldout star-chart)",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006196/full/240,/0/default.jpg",
@@ -297,7 +297,7 @@
       "height": 3828
     },
     {
-      "objectId": "o7",
+      "objectId": "ex-voynich.o7",
       "exhibitSlug": "voynich-reading",
       "title": "f75r — Balneological",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006208/full/240,/0/default.jpg",
@@ -305,7 +305,7 @@
       "height": 3759
     },
     {
-      "objectId": "o8",
+      "objectId": "ex-voynich.o8",
       "exhibitSlug": "voynich-reading",
       "title": "f78r — Balneological",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006214/full/240,/0/default.jpg",
@@ -313,7 +313,7 @@
       "height": 3761
     },
     {
-      "objectId": "o9",
+      "objectId": "ex-voynich.o9",
       "exhibitSlug": "voynich-reading",
       "title": "f85v–86r — Cosmological (the Rosettes foldout)",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006231/full/240,/0/default.jpg",
@@ -321,7 +321,7 @@
       "height": 7268
     },
     {
-      "objectId": "o10",
+      "objectId": "ex-voynich.o10",
       "exhibitSlug": "voynich-reading",
       "title": "f99r — Pharmaceutical",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006246/full/240,/0/default.jpg",
@@ -329,7 +329,7 @@
       "height": 3765
     },
     {
-      "objectId": "o11",
+      "objectId": "ex-voynich.o11",
       "exhibitSlug": "voynich-reading",
       "title": "f116v — Recipes (the final page)",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006277/full/240,/0/default.jpg",
@@ -337,12 +337,12 @@
       "height": 3697
     },
     {
-      "objectId": "o12",
+      "objectId": "ex-voynich.o12",
       "exhibitSlug": "voynich-reading",
       "title": "Kryptogramm — “04-f18v” (sonified folio 18v)"
     },
     {
-      "objectId": "o1",
+      "objectId": "ex-atlas.o1",
       "exhibitSlug": "language-atlas",
       "title": "North America",
       "thumbnail": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0166.jp2/full/240,/0/default.jpg",
@@ -350,7 +350,7 @@
       "height": 3301
     },
     {
-      "objectId": "o2",
+      "objectId": "ex-atlas.o2",
       "exhibitSlug": "language-atlas",
       "title": "Western South America",
       "thumbnail": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0176.jp2/full/240,/0/default.jpg",
@@ -358,7 +358,7 @@
       "height": 3301
     },
     {
-      "objectId": "o3",
+      "objectId": "ex-atlas.o3",
       "exhibitSlug": "language-atlas",
       "title": "The Caucasus",
       "thumbnail": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0184.jp2/full/240,/0/default.jpg",
@@ -366,7 +366,7 @@
       "height": 3301
     },
     {
-      "objectId": "o4",
+      "objectId": "ex-atlas.o4",
       "exhibitSlug": "language-atlas",
       "title": "Western Africa",
       "thumbnail": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0190.jp2/full/240,/0/default.jpg",
@@ -374,7 +374,7 @@
       "height": 3301
     },
     {
-      "objectId": "o5",
+      "objectId": "ex-atlas.o5",
       "exhibitSlug": "language-atlas",
       "title": "Siberia",
       "thumbnail": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0196.jp2/full/240,/0/default.jpg",
@@ -382,7 +382,7 @@
       "height": 3301
     },
     {
-      "objectId": "o6",
+      "objectId": "ex-atlas.o6",
       "exhibitSlug": "language-atlas",
       "title": "The Himalaya",
       "thumbnail": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0202.jp2/full/240,/0/default.jpg",
@@ -390,7 +390,7 @@
       "height": 3301
     },
     {
-      "objectId": "o7",
+      "objectId": "ex-atlas.o7",
       "exhibitSlug": "language-atlas",
       "title": "South-East Asia",
       "thumbnail": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0208.jp2/full/240,/0/default.jpg",
@@ -398,7 +398,7 @@
       "height": 3301
     },
     {
-      "objectId": "o8",
+      "objectId": "ex-atlas.o8",
       "exhibitSlug": "language-atlas",
       "title": "Australia",
       "thumbnail": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0214.jp2/full/240,/0/default.jpg",
@@ -406,24 +406,24 @@
       "height": 3301
     },
     {
-      "objectId": "m1",
+      "objectId": "ex-geo.m1",
       "exhibitSlug": "geo-map",
       "title": "World basemap"
     },
     {
-      "objectId": "sv1",
+      "objectId": "ex-sampler.sv1",
       "exhibitSlug": "sampler",
       "title": "Big Buck Bunny (10s clip) — annotate a frame",
       "width": 640,
       "height": 360
     },
     {
-      "objectId": "sa1",
+      "objectId": "ex-sampler.sa1",
       "exhibitSlug": "sampler",
       "title": "Kryptogramm recording — listen with a transcript"
     },
     {
-      "objectId": "si1",
+      "objectId": "ex-sampler.si1",
       "exhibitSlug": "sampler",
       "title": "A page with a note that carries a picture",
       "thumbnail": "https://collections.library.yale.edu/iiif/2/1006076/full/240,/0/default.jpg",

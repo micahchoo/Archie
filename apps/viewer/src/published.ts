@@ -12,6 +12,8 @@ import {
   // ADR-0020-marker-validate + capped-fetch logic used to be copy-pasted here and in
   // packages/archie-viewer/src/load.ts — both now compose these instead of redefining them.
   openArchieLibrary, openArchieLibraryFromUrl, SRC_MAX_BYTES, fsJsonSource, FailedReadError, assertArchieTreeMarker,
+  // V7/V11: ONE rule for resolving a tree-relative asset ref against its library base.
+  assetUrlAgainst,
   type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit, type ImageIndex, type NoteTransform,
 } from "@render/core";
 import { BASE } from "./published-base.js";
@@ -438,12 +440,13 @@ async function fetchJsonOptional<T>(path: string): Promise<T | null> {
  *
  * NOT applied in portable mode, where assets are blob URLs minted by `loadPortableExhibit` (ADR-0010).
  * Whether covers are inside that rewrite set is the open half of audit V11 — see Archie-a897.
+ *
+ * The RULE now lives in `@render/core` (`assetUrlAgainst`) and this is a thin binding of it to this
+ * app's base. V11 turned out to be the same bug in the embed, against a different base — and a
+ * second copy of the rule is precisely how the two drifted apart. One definition, two bases.
  */
 export function publishedAssetUrl(ref: string | undefined | null): string | undefined {
-  const r = (ref ?? "").trim();
-  if (!r) return undefined;
-  if (/^[a-z][a-z0-9+.-]*:/i.test(r) || r.startsWith("//") || r.startsWith("/")) return r;
-  return `${PUBLISHED}/${r}`;
+  return assetUrlAgainst(PUBLISHED, ref);
 }
 
 /** HTTP byte source for the shared reader — GETs tree-relative paths under `${PUBLISHED}`. */

@@ -3,9 +3,11 @@
 // REAL disk publish: publishLibrary → MemoryFilesystem → collectFiles → write each file to disk.
 // The Viewer then FETCHes /published/... (see published.ts) — the deployed-consumer path.
 //
-// Source (priority): an explicit `--from <path>`; else the MOST RECENT `*.archie.zip` in the drop
-// folder apps/viewer/libraries/ (newest mtime, filename-DESC tiebreak); else the bundled sample-data.
-// So a plain `gen` bakes whatever zip you last dropped in libraries/ (see libraries/README.md):
+// Source: the bundled sample-data seed, ALWAYS, PLUS an explicit `--from <path>` or else the MOST
+// RECENT `*.archie.zip` in the drop folder apps/viewer/libraries/ (newest mtime, filename-DESC
+// tiebreak). A zip ADDS to the seed and overrides it per slug; it never displaces it (see the
+// "THE SEED IS ALWAYS OWNED" note below for the stale-page class that cost).
+// So a plain `gen` bakes the seed plus whatever zip you last dropped in libraries/ (see libraries/README.md):
 //   `pnpm --filter @archie/viewer gen`                        (most-recent libraries/ zip, else sample-data)
 //   `pnpm --filter @archie/viewer gen --from x.archie.zip`    (explicit override)
 //
@@ -88,7 +90,32 @@ if (zipPath) {
       return null; // not a locally-sourced asset (external URL) — publishLibrary leaves it as-is
     }
   };
-  console.log(`Source: ${zipPath} (${library.exhibits.length} exhibit(s))`);
+  // THE SEED IS ALWAYS OWNED (2026-07-25). A dropped zip used to REPLACE the sample-data source
+  // outright, and the merge below then carried the seed exhibits through untouched — forever. That
+  // is not preservation, it is fossilisation: from the moment `libraries/archie-library.archie.zip`
+  // was committed, `pnpm gen` stopped regenerating six of the seven seed exhibits, and their
+  // archival pages froze at whatever `exhibitPageHtml` emitted that day.
+  //
+  // It shipped: `voynich-reading`'s manifest carried 6 Ranges and its index.html carried ZERO
+  // sections — the one seed exhibit whose entire subject is the narrative, publishing a durable
+  // artifact without it. `screenshots` (the zip's own exhibit) had them, because the zip owns it.
+  // Every unit test passed throughout; the generator was correct and simply never run over them.
+  //
+  // So the zip now ADDS TO the seed rather than displacing it: union the exhibit lists, zip wins on
+  // a slug collision (an author re-publishing `voynich` means to override the sample). Both logs are
+  // consulted, zip first, for the same reason. `pnpm gen` regenerates the whole seed again, and the
+  // carry mechanism goes back to doing only its actual job — preserving exhibits NO source owns.
+  const zipSlugs = new Set(library.exhibits.map((e) => e.slug));
+  const zipGetLog = getLog;
+  const carriedSeed = sampleLibrary.exhibits.filter((e) => !zipSlugs.has(e.slug));
+  library = { ...sampleLibrary, ...library, exhibits: [...library.exhibits, ...carriedSeed] };
+  getLog = (id) => {
+    const fromZip = zipGetLog(id);
+    return fromZip.length > 0 ? fromZip : sampleGetLog(id);
+  };
+  console.log(
+    `Source: ${zipPath} (${zipSlugs.size} exhibit(s)) + bundled sample-data (${carriedSeed.length} more) = ${library.exhibits.length} owned`,
+  );
 } else {
   library = sampleLibrary;
   getLog = sampleGetLog;

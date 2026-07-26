@@ -122,7 +122,7 @@ export function createFrameOverlay(viewer: FrameViewerLike): FrameOverlayControl
     // thin colour line is clickable (→ select the note), so the affordance is light, not clunky.
     const inset = 0.7;
     const side = 100 - inset * 2;
-    const rect = (stroke: string, width: string, clickable: boolean): SVGRectElement => {
+    const rect = (stroke: string, width: string, opts: { dashed?: boolean; clickable?: boolean } = {}): SVGRectElement => {
       const r = document.createElementNS(NS, "rect");
       r.setAttribute("x", String(inset));
       r.setAttribute("y", String(inset));
@@ -131,16 +131,35 @@ export function createFrameOverlay(viewer: FrameViewerLike): FrameOverlayControl
       r.setAttribute("fill", "none");
       r.setAttribute("stroke", stroke);
       r.setAttribute("stroke-width", width);
+      // V41 (Archie-52a0) — DASHED, where a region mark is solid. Before this, a whole-object note
+      // and a region note covering most of the image drew two nested rectangles in the same colour
+      // at the same weight, and nothing told the reader they meant different things. A dash is a
+      // SHAPE cue, so it survives colour-blindness and any author-picked hue (WCAG 1.4.1 / G182,
+      // docs/research/a11y-interactions.md:110-133) — and unlike the corner brackets this file's
+      // header rejected, it adds no visual weight.
+      if (opts.dashed === true) r.setAttribute("stroke-dasharray", "6 4");
       r.setAttribute("vector-effect", "non-scaling-stroke");
-      if (clickable) {
+      if (opts.clickable === true) {
         r.style.pointerEvents = "stroke";
         r.style.cursor = "pointer";
         r.addEventListener("click", () => frame.onActivate());
+        // V68's half two, which the region overlay already does (read-overlay.ts styleGeometry) and
+        // this file did not: OSD takes POINTER CAPTURE on pointerdown, after which the browser never
+        // dispatches `click` here. The listener above is correct and simply never runs without this.
+        for (const type of ["pointerdown", "mousedown"]) {
+          r.addEventListener(type, (e) => e.stopPropagation());
+        }
       }
       return r;
     };
-    svg.append(rect("rgba(0,0,0,0.28)", "3", false)); // soft legibility halo
-    svg.append(rect(frame.colour, "1.5", true)); // the quiet colour border — the click target
+    svg.append(rect("rgba(0,0,0,0.28)", "3", { dashed: true })); // soft legibility halo
+    svg.append(rect(frame.colour, "1.5", { dashed: true })); // the quiet colour border
+    // The HIT target: solid and wider than the visible line, drawn last (on top) and invisible.
+    // It is separate for two reasons — a dashed stroke's GAPS are not hit-testable, so making the
+    // visible line the target would leave the border clickable only 60% of its length; and a 1.5px
+    // line is a punishing target for a real pointer regardless. Transparent stroke, so it is a hit
+    // surface only, and `pointer-events: stroke` keeps the frame's whole interior free for pan/zoom.
+    svg.append(rect("rgba(0,0,0,0)", "10", { clickable: true }));
     // Anchor to the OBJECT: OSD positions + sizes the SVG to the image's viewport Rect every render frame,
     // so the border tracks the object through pan/zoom instead of sticking to the viewport edges.
     viewer.addOverlay({ element: svg as unknown as HTMLElement, location: item.getBounds() });

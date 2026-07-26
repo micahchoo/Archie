@@ -26,7 +26,7 @@
   },
   "items": [
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.sv1",
       "type": "Canvas",
       "label": {
         "none": [
@@ -51,11 +51,11 @@
       "duration": 10,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1/page/1",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.sv1/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1/painting/1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.sv1/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -66,14 +66,14 @@
                 "height": 360,
                 "duration": 10
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1"
+              "target": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.sv1"
             }
           ]
         }
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1/annotations.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.sv1/annotations.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -81,7 +81,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.sv1",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -97,6 +97,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.001Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000001XA727G2ZKPRBQWGQ",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000001XA727G2ZKPRBQWGQ.json"
             },
             {
@@ -104,7 +110,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.sv1",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -120,6 +126,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.002Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000002R3SCAH1K8H4YVXB5",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000002R3SCAH1K8H4YVXB5.json"
             }
           ]
@@ -127,7 +139,7 @@
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.sa1",
       "type": "Canvas",
       "label": {
         "none": [
@@ -150,11 +162,11 @@
       "duration": 296,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1/page/1",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.sa1/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1/painting/1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.sa1/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -163,14 +175,14 @@
                 "format": "audio/mpeg",
                 "duration": 296
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1"
+              "target": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.sa1"
             }
           ]
         }
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1/annotations.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.sa1/annotations.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -178,7 +190,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.sa1",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -194,6 +206,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.003Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000307GSV2EMZK8PR9YR",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/000000000307GSV2EMZK8PR9YR.json"
             },
             {
@@ -201,7 +219,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.sa1",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -217,6 +235,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.004Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000004CNX7MQKVXP3NV49Q",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000004CNX7MQKVXP3NV49Q.json"
             },
             {
@@ -224,7 +248,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.sa1",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -240,6 +264,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.005Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000005C9YZA2R2TAEK4VDW",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000005C9YZA2R2TAEK4VDW.json"
             }
           ]
@@ -247,7 +277,7 @@
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/si1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.si1",
       "type": "Canvas",
       "label": {
         "none": [
@@ -271,11 +301,11 @@
       "height": 3766,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/si1/page/1",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.si1/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/si1/painting/1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.si1/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -291,7 +321,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/si1"
+              "target": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.si1"
             }
           ]
         }
@@ -304,13 +334,13 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/si1/annotations.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.si1/annotations.json",
           "type": "AnnotationPage",
           "items": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/0000000006J6BPCAHWFMCT6BW1/v1",
               "type": "Annotation",
-              "target": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/si1",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.si1",
               "modified": "1970-01-01T00:00:00.006Z",
               "body": [
                 {
@@ -320,6 +350,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.006Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000006J6BPCAHWFMCT6BW1",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000006J6BPCAHWFMCT6BW1.json"
             }
           ]

@@ -24,9 +24,61 @@
       ]
     }
   },
+  "metadata": [
+    {
+      "label": {
+        "none": [
+          "Subject"
+        ]
+      },
+      "value": {
+        "none": [
+          "Beinecke MS 408 — the Voynich manuscript"
+        ]
+      }
+    },
+    {
+      "label": {
+        "none": [
+          "Date"
+        ]
+      },
+      "value": {
+        "none": [
+          "ca. 1404–1438"
+        ]
+      }
+    },
+    {
+      "label": {
+        "none": [
+          "Language"
+        ]
+      },
+      "value": {
+        "none": [
+          "Undeciphered script (“Voynichese”); curatorial text in English"
+        ]
+      }
+    }
+  ],
+  "archieMetadata": [
+    {
+      "property": "dcterms:subject",
+      "value": "Beinecke MS 408 — the Voynich manuscript"
+    },
+    {
+      "property": "dcterms:date",
+      "value": "ca. 1404–1438"
+    },
+    {
+      "property": "dcterms:language",
+      "value": "Undeciphered script (“Voynichese”); curatorial text in English"
+    }
+  ],
   "items": [
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/ex-voynich.o9",
       "type": "Canvas",
       "label": {
         "none": [
@@ -46,15 +98,169 @@
           ]
         }
       },
+      "metadata": [
+        {
+          "label": {
+            "none": [
+              "Creator"
+            ]
+          },
+          "value": {
+            "none": [
+              "Unknown scribe",
+              "Unknown illustrator"
+            ]
+          }
+        },
+        {
+          "label": {
+            "none": [
+              "Date"
+            ]
+          },
+          "value": {
+            "none": [
+              "ca. 1404–1438 (vellum, radiocarbon dated, 95% confidence)"
+            ]
+          }
+        },
+        {
+          "label": {
+            "none": [
+              "Subject"
+            ]
+          },
+          "value": {
+            "none": [
+              "Cosmological section"
+            ]
+          }
+        },
+        {
+          "label": {
+            "none": [
+              "Type"
+            ]
+          },
+          "value": {
+            "none": [
+              "Manuscript folio (vellum)"
+            ]
+          }
+        },
+        {
+          "label": {
+            "none": [
+              "Language"
+            ]
+          },
+          "value": {
+            "none": [
+              "Undeciphered script (“Voynichese”)"
+            ]
+          }
+        },
+        {
+          "label": {
+            "none": [
+              "Identifier"
+            ]
+          },
+          "value": {
+            "none": [
+              "Beinecke MS 408, f85v–86r"
+            ]
+          }
+        },
+        {
+          "label": {
+            "none": [
+              "Archive"
+            ]
+          },
+          "value": {
+            "none": [
+              "https://collections.library.yale.edu/catalog/2002046"
+            ]
+          }
+        },
+        {
+          "label": {
+            "none": [
+              "Shelfmark"
+            ]
+          },
+          "value": {
+            "none": [
+              "MS 408"
+            ]
+          }
+        },
+        {
+          "label": {
+            "none": [
+              "Provenance"
+            ]
+          },
+          "value": {
+            "none": [
+              "Possibly acquired by Rudolf II of Bohemia, who is said to have paid 600 ducats for it; then the botanist Jacobus Horčický de Tepenecz, whose erased signature survives on f1r; then Georg Baresch of Prague, who sent it to Athanasius Kircher in Rome by 1666; bought by Wilfrid Voynich from the Jesuit library at Villa Mondragone, Frascati, in 1912, and given to Yale in 1969."
+            ]
+          }
+        }
+      ],
+      "archieMetadata": [
+        {
+          "property": "dcterms:creator",
+          "value": "Unknown scribe"
+        },
+        {
+          "property": "dcterms:creator",
+          "value": "Unknown illustrator"
+        },
+        {
+          "property": "dcterms:date",
+          "value": "ca. 1404–1438 (vellum, radiocarbon dated, 95% confidence)"
+        },
+        {
+          "property": "dcterms:subject",
+          "value": "Cosmological section"
+        },
+        {
+          "property": "dcterms:type",
+          "value": "Manuscript folio (vellum)"
+        },
+        {
+          "property": "dcterms:language",
+          "value": "Undeciphered script (“Voynichese”)"
+        },
+        {
+          "property": "dcterms:identifier",
+          "value": "Beinecke MS 408, f85v–86r"
+        },
+        {
+          "property": "dcterms:source",
+          "label": "Archive",
+          "value": "https://collections.library.yale.edu/catalog/2002046"
+        },
+        {
+          "label": "Shelfmark",
+          "value": "MS 408"
+        },
+        {
+          "property": "dcterms:provenance",
+          "value": "Possibly acquired by Rudolf II of Bohemia, who is said to have paid 600 ducats for it; then the botanist Jacobus Horčický de Tepenecz, whose erased signature survives on f1r; then Georg Baresch of Prague, who sent it to Athanasius Kircher in Rome by 1666; bought by Wilfrid Voynich from the Jesuit library at Villa Mondragone, Frascati, in 1912, and given to Yale in 1969."
+        }
+      ],
       "width": 7925,
       "height": 7268,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/page/1",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/ex-voynich.o9/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/painting/1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/ex-voynich.o9/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -70,7 +276,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9"
+              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/ex-voynich.o9"
             }
           ]
         }
@@ -83,7 +289,7 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/annotations.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/ex-voynich.o9/annotations.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -91,7 +297,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/ex-voynich.o9",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -107,12 +313,18 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.001Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000001A8JB79T0HVH2MZG8",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/history/0000000001A8JB79T0HVH2MZG8.json"
             },
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/00000000053205EP39G5FKC5BC/v1",
               "type": "Annotation",
-              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/ex-voynich.o9",
               "modified": "1970-01-01T00:00:00.005Z",
               "body": [
                 {
@@ -122,6 +334,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.005Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "00000000053205EP39G5FKC5BC",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/history/00000000053205EP39G5FKC5BC.json"
             }
           ],
@@ -132,7 +350,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/annotations-cipher.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/ex-voynich.o9/annotations-cipher.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -140,7 +358,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/ex-voynich.o9",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -171,6 +389,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.002Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000002NSJFHKCVBDB9PX0X",
               "archie:reading": "cipher",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/history/0000000002NSJFHKCVBDB9PX0X.json"
             }
@@ -193,7 +417,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/annotations-hoax.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/ex-voynich.o9/annotations-hoax.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -201,7 +425,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/ex-voynich.o9",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -217,6 +441,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.003Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000003MKZ4541MWQXH9NZ5",
               "archie:reading": "hoax",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/history/0000000003MKZ4541MWQXH9NZ5.json"
             }
@@ -239,7 +469,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/annotations-abjad.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/ex-voynich.o9/annotations-abjad.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -247,7 +477,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/ex-voynich.o9",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -263,6 +493,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.004Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000004AMEGF7C0V216BQE9",
               "archie:reading": "abjad",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/history/0000000004AMEGF7C0V216BQE9.json"
             }

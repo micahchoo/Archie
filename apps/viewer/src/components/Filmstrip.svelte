@@ -24,6 +24,26 @@
   //
   // The rove cursor follows the CURRENT object when there is one, so tabbing in lands on where the reader
   // actually is rather than always at the first frame.
+  // V22/V71 (Archie-40fe) — publish the band's LIVE height as `--strip-h`, the bottom-edge mirror of
+  // `--topbar-h`. That token exists precisely so every surface escaping the top band clears it by the
+  // same number and they "can't drift apart" (ExhibitView.svelte:633); the bottom band had no
+  // equivalent, so the finder pill and the note card were both positioned `bottom: --space-5` — i.e.
+  // INSIDE the strip. Measured: the pill's rect (1102,748)–(1260,780) sat over frames running
+  // y 706–800, covering two of twelve including the exhibit's only audio object; an open note card
+  // overlapped the band by 74px and covered six of twelve.
+  //
+  // Measured rather than tokenised because the strip's height is CONTENT-driven and changes at
+  // runtime: collapsing it leaves only the handle. A hard-coded token would be right in one state and
+  // wrong in the other, which is how the pill ended up where it is.
+  let bandH = $state(0);
+  $effect(() => {
+    const px = `${bandH}px`;
+    document.documentElement.style.setProperty("--strip-h", px);
+    // Unset on unmount: the gallery and overview have no strip, and a stale value there would push
+    // the pill up against nothing.
+    return () => document.documentElement.style.removeProperty("--strip-h");
+  });
+
   let roveId = $state<string | null>(null);
   const roveIndex = $derived.by(() => {
     const byRove = roveId ? objects.findIndex((o) => o.id === roveId) : -1;
@@ -48,7 +68,7 @@
   }
 </script>
 
-<div class="filmstrip" class:collapsed>
+<div class="filmstrip" class:collapsed bind:clientHeight={bandH}>
   <!-- Bottom-edge handle: the one affordance that opens/closes the strip (collapsed by default in the
        narrative, so the authored read stays primary — spike-0005 §1). -->
   <button class="handle" onclick={ontoggle} aria-expanded={!collapsed}

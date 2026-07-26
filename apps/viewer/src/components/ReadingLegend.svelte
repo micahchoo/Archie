@@ -4,6 +4,7 @@
   // reading overlays its (colour-coded) notes on the always-visible base. Styled as a canvas overlay
   // to match the Reader's `.popup` (curator's-study system); the active reading's description is the
   // one intent line shown (principle #1), kept compact. Rendered inside Reader's relative container.
+  import { readingMarkerStyle } from "@render/core";
   import type { Reading } from "@render/core";
 
   let { readings, active, onselect, hidden = false, onhiddenchange, count }: {
@@ -25,6 +26,25 @@
   const activeDesc = $derived(active ? readings.find((r) => r.id === active)?.description : undefined);
 </script>
 
+<!-- V47 (Archie-52a0) — the swatch IS the mark, drawn from the same `readingMarkerStyle` call the
+     canvas paints with. It used to be a solid disc of the reading's colour, which the canvas never
+     draws: a mark is an outline at 0.95 with an 18% fill, so the legend was promising a saturated
+     block and the reader was hunting for a faint outline. Rendering it as SVG rather than
+     translating the numbers into CSS is the point — fill/fill-opacity/stroke/stroke-opacity/
+     stroke-width are handed over verbatim, so there is no second copy of the constants to drift.
+     A square, not a circle, for the same reason: the mark vocabulary is rect and polygon. -->
+{#snippet swatch(colour: string)}
+  <!-- `{@const}` must be the immediate child of a BLOCK — inside the <svg> it is a parse error. -->
+  {@const ms = readingMarkerStyle(colour, "normal")}
+  <svg class="sw" viewBox="0 0 14 14" aria-hidden="true">
+    <rect
+      x="1.5" y="1.5" width="11" height="11"
+      fill={ms.fill} fill-opacity={ms.fillOpacity}
+      stroke={ms.stroke} stroke-opacity={ms.strokeOpacity} stroke-width={ms.strokeWidth}
+    />
+  </svg>
+{/snippet}
+
 {#if readings.length > 0}
   <!-- aside = complementary landmark (axe region rule: overlay content must live in a landmark) -->
   <aside class="legend" aria-label="Readings">
@@ -32,11 +52,11 @@
     <span class="gloss">Compare interpretations</span>
     <div class="opts" class:dimmed={hidden} role="radiogroup" aria-label="Readings of this source">
       <button type="button" role="radio" aria-checked={active === null} class="opt" class:on={active === null && !hidden} style="--rd: var(--ink-canvas-muted)" onclick={() => pick(null)}>
-        <span class="sw base"></span><span class="nm">General notes</span>{#if count}<span class="ct" title="{count(null)} notes on this image">{count(null)}</span>{/if}
+        {@render swatch("var(--ink-canvas-muted)")}<span class="nm">General notes</span>{#if count}<span class="ct" title="{count(null)} notes on this image">{count(null)}</span>{/if}
       </button>
       {#each readings as r (r.id)}
         <button type="button" role="radio" aria-checked={active === r.id} class="opt" class:on={active === r.id && !hidden} style="--rd:{r.colour ?? 'var(--accent)'}" onclick={() => pick(r.id)}>
-          <span class="sw" style="background:{r.colour ?? 'var(--accent)'}"></span><span class="nm">{r.name}</span>{#if count}<span class="ct" title="{count(r.id)} notes on this image">{count(r.id)}</span>{/if}
+          {@render swatch(r.colour ?? "var(--accent)")}<span class="nm">{r.name}</span>{#if count}<span class="ct" title="{count(r.id)} notes on this image">{count(r.id)}</span>{/if}
         </button>
       {/each}
     </div>
@@ -83,10 +103,13 @@
   /* Selected = the reading's OWN colour (ADR-0007), a left stripe over a neutral fill — never the
      global accent, and border-only so any user-picked hue stays AA-legible behind ink text. */
   .opt.on { color: var(--ink-canvas-primary); font-weight: 600; background: var(--surface-canvas-overlay); box-shadow: inset 2px 0 0 var(--rd); }
-  /* Hairline ring so ANY author-picked hue (incl. a pale one that vanishes on the cream pill) still reads
-     as a discrete chip — the swatch is identity, so it must always be visible (#6 / system.md contrast rule). */
-  .sw { flex: none; width: 11px; height: 11px; border-radius: 50%; box-shadow: var(--shadow-inset-fog), 0 0 0 1px var(--border-canvas-emphasis); }
-  .sw.base { background: var(--ink-canvas-muted); }
+  /* The swatch is a miniature of the MARK (V47) — its fill/stroke come from readingMarkerStyle, so
+     nothing here may restate them. What CSS still owns is the box: a fixed square that never shrinks,
+     and a hairline ring so ANY author-picked hue (incl. a pale one that vanishes on the cream pill)
+     still reads as a discrete chip — the swatch is identity, so it must always be visible (#6 /
+     system.md contrast rule). `overflow: visible` because the mark's stroke is centred on the rect
+     edge, exactly as it is on the canvas. */
+  .sw { flex: none; width: 14px; height: 14px; overflow: visible; border-radius: 2px; box-shadow: 0 0 0 1px var(--border-canvas-emphasis); }
   /* Name takes the row and may wrap — a long reading name (e.g. "Natural-language reading") must NOT
      shove the count off the legend's capped width; min-width:0 lets it shrink/wrap instead of overflowing. */
   .nm { flex: 1; min-width: 0; }

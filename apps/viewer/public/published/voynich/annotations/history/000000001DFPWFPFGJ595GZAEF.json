@@ -8,7 +8,7 @@
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
-        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o12",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/ex-voynich.o12",
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",

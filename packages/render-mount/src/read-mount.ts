@@ -16,6 +16,8 @@ import type { TileSourceDescriptor, W3CAnnotation, AnnotationLike, W3CSelector }
 import { dispatchFitBounds, applyFitBounds, type FitOptions, type ViewportLike } from "./fitbounds.js";
 import { createReadOnlyOverlay, type LabelFor } from "./read-overlay.js";
 import { createFrameOverlay } from "./frame-overlay.js";
+import { createSelectionHalo } from "./selection-halo.js";
+import { applyCanvasA11y, type A11yViewerLike } from "./canvas-a11y.js";
 import { xyzTileSource } from "./xyz.js";
 import { dziOsdSource } from "./dzi.js";
 import type { SelectionId } from "./surface.js";
@@ -80,6 +82,15 @@ export interface ReadOnlyFrameLike {
  clear(): void;
 }
 
+/** The selection-halo subset this surface drives (Archie-52a0). Minimal for the same reason as the
+ *  two above — the wiring seam is unit-tested with fakes, never a live OSD. Optional at the wiring
+ *  seam so every existing 4-arg caller (and its tests) keeps compiling; the live mount always
+ *  passes one. */
+export interface SelectionHaloLike {
+ showFor(annotations: readonly AnnotationLike[], id: string, colour?: string): boolean;
+ hide(): void;
+}
+
 /**
  * PURE partition of a published note list into the REGION shapes the SVG overlay draws and the
  * WHOLE-OBJECT notes the frame draws. A note is whole-object when it has NO renderable region
@@ -113,8 +124,21 @@ export function wireReadOnlySurface(
  overlay: ReadOnlyOverlayLike,
  getAnnotations: () => W3CAnnotation[],
  getFitOptions?: () => FitOptions,
+ halo?: SelectionHaloLike,
 ): ReadOnlyMountSurface & { emitSelect(id: SelectionId | null): void } {
  const selectSubs = new Set<(id: SelectionId | null) => void>();
+ let selectedId: SelectionId | null = null;
+
+ // Archie-52a0 — the ring that answers "which mark is open". `data-selected` was already set on
+ // the geometry (read-overlay.ts) and NOTHING in the repo styled it; this is what fills that hook,
+ // and it is the SAME overlay the editor mount draws, so the two renderers agree by construction.
+ // No colour is passed: the embed's regions stroke with `currentColor` and there is no per-mark
+ // colour in JS to read, so the halo takes its neutral white-on-dark-shadow default.
+ const paintHalo = (id: SelectionId | null): void => {
+  if (!halo) return;
+  if (id === null) halo.hide();
+  else halo.showFor(getAnnotations() as unknown as AnnotationLike[], id);
+ };
 
  const fitBounds = (id: SelectionId): void => {
   dispatchFitBounds(viewport, getAnnotations(), id, getFitOptions?.() ?? PLAIN_FIT);
@@ -134,6 +158,8 @@ export function wireReadOnlySurface(
  // identically. A whole-object note has no region → fitBounds is a no-op (dispatchFitBounds finds the
  // record but its null selector yields no rect), which is correct: nothing to frame.
  const emitSelect = (id: SelectionId | null): void => {
+  selectedId = id;
+  paintHalo(id);
   for (const cb of selectSubs) cb(id);
   if (id !== null) fitBounds(id);
  };
@@ -145,9 +171,14 @@ export function wireReadOnlySurface(
  return {
   setAnnotations(annotations: W3CAnnotation[]): void {
    overlay.setAnnotations(annotations);
+   // The shapes were just rebuilt from scratch (read-overlay clears then redraws), so a ring drawn
+   // against the OLD set is anchored to nothing. Repaint against the new one.
+   paintHalo(selectedId);
   },
   setSelected(id: SelectionId | null): void {
+   selectedId = id;
    overlay.setSelected(id);
+   paintHalo(id);
   },
   fitBounds,
   fitRegion,
@@ -158,6 +189,7 @@ export function wireReadOnlySurface(
   },
   destroy(): void {
    overlay.clear();
+   halo?.hide();
   },
  };
 }
@@ -213,6 +245,10 @@ export async function createReadOnlyMount(
   ...(opts.locator ? { showNavigator: true, navigatorPosition: "BOTTOM_RIGHT", navigatorSizeRatio: 0.15, navigatorAutoFade: true } : {}),
  });
 
+ // V90 (Archie-3d55) — name the canvas immediately, before the open await (same reasoning as
+ // mount.ts: OSD builds it in the constructor, and a failed open must not leave an unnamed stop).
+ applyCanvasA11y(viewer as unknown as A11yViewerLike);
+
  // A non-tiled `{ type:"image" }` source decodes its WHOLE bitmap into webview memory; tiled
  // sources (dzi/xyz/iiif) are pyramids and are never capped (image-cap.ts).
  const tiled = ts.kind !== "image";
@@ -259,6 +295,11 @@ export async function createReadOnlyMount(
  const frame: ReadOnlyFrameLike = createFrameOverlay(
   viewer as unknown as Parameters<typeof createFrameOverlay>[0],
  );
+ // The selection ring (Archie-52a0) — a third DOM addOverlay layer, drawer-independent like the
+ // other two, and the SAME module the editor mount draws so both renderers agree.
+ const halo: SelectionHaloLike = createSelectionHalo(
+  viewer as unknown as Parameters<typeof createSelectionHalo>[0],
+ );
 
  // The surface's one source of truth for the annotation list (fitBounds resolves ids against it).
  let current: W3CAnnotation[] = [];
@@ -268,6 +309,7 @@ export async function createReadOnlyMount(
   overlay,
   () => current,
   opts.getFitOptions,
+  halo,
  );
 
  if (opts.onSelect) surface.onSelect(opts.onSelect);

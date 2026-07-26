@@ -26,7 +26,7 @@
   },
   "items": [
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o1",
       "type": "Canvas",
       "label": {
         "none": [
@@ -50,11 +50,11 @@
       "height": 3301,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o1/page/1",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o1/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o1/painting/1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o1/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -70,7 +70,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o1"
+              "target": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o1"
             }
           ]
         }
@@ -83,7 +83,7 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o1/annotations.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o1/annotations.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -91,7 +91,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o1",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o1",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -107,6 +107,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.024Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000R8Y311HDC71SWDHVT",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000R8Y311HDC71SWDHVT.json"
             }
           ],
@@ -117,7 +123,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o1/annotations-linguist.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o1/annotations-linguist.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -125,7 +131,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o1",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o1",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -141,6 +147,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.001Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000001QA9HWMFBS3S6DTJ4",
               "archie:reading": "linguist",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/0000000001QA9HWMFBS3S6DTJ4.json"
             }
@@ -163,7 +175,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o1/annotations-community.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o1/annotations-community.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -171,7 +183,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o1",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o1",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -187,6 +199,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.002Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "00000000021G31YS0Z2ZG6N1RX",
               "archie:reading": "community",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/00000000021G31YS0Z2ZG6N1RX.json"
             }
@@ -211,7 +229,7 @@
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o2",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o2",
       "type": "Canvas",
       "label": {
         "none": [
@@ -235,11 +253,11 @@
       "height": 3301,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o2/page/1",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o2/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o2/painting/1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o2/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -255,7 +273,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o2"
+              "target": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o2"
             }
           ]
         }
@@ -268,7 +286,7 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o2/annotations.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o2/annotations.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -276,7 +294,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o2",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o2",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -292,6 +310,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.003Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000003EB0YAESVXD6MKPY6",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/0000000003EB0YAESVXD6MKPY6.json"
             }
           ],
@@ -302,7 +326,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o2/annotations-linguist.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o2/annotations-linguist.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -310,7 +334,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o2",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o2",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -326,6 +350,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.004Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000004P0QSM9AM36QZM3JY",
               "archie:reading": "linguist",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/0000000004P0QSM9AM36QZM3JY.json"
             }
@@ -348,7 +378,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o2/annotations-community.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o2/annotations-community.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -356,7 +386,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o2",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o2",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -372,6 +402,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.005Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "00000000056XKG648T6Z7TAAQX",
               "archie:reading": "community",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/00000000056XKG648T6Z7TAAQX.json"
             }
@@ -396,7 +432,7 @@
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o3",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o3",
       "type": "Canvas",
       "label": {
         "none": [
@@ -420,11 +456,11 @@
       "height": 3301,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o3/page/1",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o3/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o3/painting/1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o3/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -440,7 +476,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o3"
+              "target": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o3"
             }
           ]
         }
@@ -453,7 +489,7 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o3/annotations.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o3/annotations.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -461,7 +497,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o3",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o3",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -477,6 +513,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.006Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000689W361NNJSBV1NNV",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000689W361NNJSBV1NNV.json"
             }
           ],
@@ -487,7 +529,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o3/annotations-linguist.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o3/annotations-linguist.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -495,7 +537,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o3",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o3",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -511,6 +553,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.007Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "00000000073MHG0BGX4NK51FTH",
               "archie:reading": "linguist",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/00000000073MHG0BGX4NK51FTH.json"
             }
@@ -533,7 +581,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o3/annotations-community.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o3/annotations-community.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -541,7 +589,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o3",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o3",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -557,6 +605,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.008Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000008DGND2JNBFKR1YW4B",
               "archie:reading": "community",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/0000000008DGND2JNBFKR1YW4B.json"
             }
@@ -581,7 +635,7 @@
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o4",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o4",
       "type": "Canvas",
       "label": {
         "none": [
@@ -605,11 +659,11 @@
       "height": 3301,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o4/page/1",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o4/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o4/painting/1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o4/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -625,7 +679,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o4"
+              "target": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o4"
             }
           ]
         }
@@ -638,7 +692,7 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o4/annotations.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o4/annotations.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -646,7 +700,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o4",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o4",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -662,6 +716,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.009Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "00000000093KM2FAXA5WQDQ82Q",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/00000000093KM2FAXA5WQDQ82Q.json"
             }
           ],
@@ -672,7 +732,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o4/annotations-linguist.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o4/annotations-linguist.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -680,7 +740,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o4",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o4",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -696,6 +756,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.010Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000AN029WSZ324T8AK3J",
               "archie:reading": "linguist",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000AN029WSZ324T8AK3J.json"
             }
@@ -718,7 +784,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o4/annotations-community.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o4/annotations-community.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -726,7 +792,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o4",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o4",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -742,6 +808,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.011Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000BTCT9T76FKBHTEJK4",
               "archie:reading": "community",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000BTCT9T76FKBHTEJK4.json"
             }
@@ -766,7 +838,7 @@
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o5",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o5",
       "type": "Canvas",
       "label": {
         "none": [
@@ -790,11 +862,11 @@
       "height": 3301,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o5/page/1",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o5/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o5/painting/1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o5/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -810,7 +882,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o5"
+              "target": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o5"
             }
           ]
         }
@@ -823,7 +895,7 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o5/annotations.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o5/annotations.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -831,7 +903,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o5",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o5",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -847,6 +919,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.012Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000C36QGH1EA6FN8ZNXN",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000C36QGH1EA6FN8ZNXN.json"
             }
           ],
@@ -857,7 +935,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o5/annotations-linguist.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o5/annotations-linguist.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -865,7 +943,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o5",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o5",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -881,6 +959,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.013Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000D9Z2PS1FE0YRQNX28",
               "archie:reading": "linguist",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000D9Z2PS1FE0YRQNX28.json"
             }
@@ -903,7 +987,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o5/annotations-community.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o5/annotations-community.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -911,7 +995,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o5",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o5",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -927,6 +1011,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.014Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000EHP928C5GZ7MJ1KGS",
               "archie:reading": "community",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000EHP928C5GZ7MJ1KGS.json"
             }
@@ -951,7 +1041,7 @@
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o6",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o6",
       "type": "Canvas",
       "label": {
         "none": [
@@ -975,11 +1065,11 @@
       "height": 3301,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o6/page/1",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o6/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o6/painting/1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o6/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -995,7 +1085,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o6"
+              "target": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o6"
             }
           ]
         }
@@ -1008,7 +1098,7 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o6/annotations.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o6/annotations.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -1016,7 +1106,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o6",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o6",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -1032,6 +1122,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.015Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000FV4ZR6350WQCQE3BN",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000FV4ZR6350WQCQE3BN.json"
             }
           ],
@@ -1042,7 +1138,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o6/annotations-linguist.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o6/annotations-linguist.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -1050,7 +1146,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o6",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o6",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -1066,6 +1162,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.016Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000GK82XFVPQDZNMX4KC",
               "archie:reading": "linguist",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000GK82XFVPQDZNMX4KC.json"
             }
@@ -1088,7 +1190,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o6/annotations-community.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o6/annotations-community.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -1096,7 +1198,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o6",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o6",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -1112,6 +1214,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.017Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000HDQ0N6DX74Q43Q9SG",
               "archie:reading": "community",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000HDQ0N6DX74Q43Q9SG.json"
             }
@@ -1136,7 +1244,7 @@
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o7",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o7",
       "type": "Canvas",
       "label": {
         "none": [
@@ -1160,11 +1268,11 @@
       "height": 3301,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o7/page/1",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o7/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o7/painting/1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o7/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -1180,7 +1288,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o7"
+              "target": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o7"
             }
           ]
         }
@@ -1193,7 +1301,7 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o7/annotations.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o7/annotations.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -1201,7 +1309,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o7",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o7",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -1217,6 +1325,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.018Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000JTC0PHRKF5DWSN6JR",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000JTC0PHRKF5DWSN6JR.json"
             }
           ],
@@ -1227,7 +1341,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o7/annotations-linguist.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o7/annotations-linguist.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -1235,7 +1349,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o7",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o7",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -1251,6 +1365,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.019Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000KRK6BRR71P6PX20V0",
               "archie:reading": "linguist",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000KRK6BRR71P6PX20V0.json"
             }
@@ -1273,7 +1393,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o7/annotations-community.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o7/annotations-community.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -1281,7 +1401,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o7",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o7",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -1297,6 +1417,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.020Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000MG36QD4YX5V1YJ8HW",
               "archie:reading": "community",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000MG36QD4YX5V1YJ8HW.json"
             }
@@ -1321,7 +1447,7 @@
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o8",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o8",
       "type": "Canvas",
       "label": {
         "none": [
@@ -1345,11 +1471,11 @@
       "height": 3301,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o8/page/1",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o8/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o8/painting/1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o8/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -1365,7 +1491,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o8"
+              "target": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o8"
             }
           ]
         }
@@ -1378,7 +1504,7 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o8/annotations.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o8/annotations.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -1386,7 +1512,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o8",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o8",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -1402,6 +1528,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.021Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000NXQ7R2V1N9674N2QK",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000NXQ7R2V1N9674N2QK.json"
             }
           ],
@@ -1412,7 +1544,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o8/annotations-linguist.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o8/annotations-linguist.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -1420,7 +1552,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o8",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o8",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -1436,6 +1568,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.022Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000PZN8JWP0A1HSVXMJM",
               "archie:reading": "linguist",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000PZN8JWP0A1HSVXMJM.json"
             }
@@ -1458,7 +1596,7 @@
           }
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o8/annotations-community.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o8/annotations-community.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -1466,7 +1604,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o8",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o8",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -1482,6 +1620,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.023Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000000QRY7P4XVEGX7X1XCA",
               "archie:reading": "community",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000QRY7P4XVEGX7X1XCA.json"
             }

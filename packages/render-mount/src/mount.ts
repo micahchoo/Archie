@@ -17,13 +17,15 @@ import { mountPlugin } from "@annotorious/plugin-tools";
 import { resolveTileSource, isDegenerateSelectorValue, selectorOf, selectorBBox, regionPixelRect } from "@render/core";
 import { dispatchFitBounds, applyFitBounds, clampedFitRect, type FitOptions, type ViewportLike } from "./fitbounds.js";
 import { createFrameOverlay, type FrameViewerLike } from "./frame-overlay.js";
+import { createSelectionHalo, type HaloViewerLike } from "./selection-halo.js";
+import { applyCanvasA11y, type A11yViewerLike } from "./canvas-a11y.js";
 import { GestureGuard } from "./gesture-guard.js";
 import { zoomBand } from "./zoom-band.js";
 import { imageToNavigatorPixel, type NavigatorDot } from "./marker-dots.js";
 import { xyzTileSource } from "./xyz.js";
 import { dziOsdSource } from "./dzi.js";
-import type { W3CSelector, TileSourceDescriptor, TileSource } from "@render/core";
-import type { MountSurface, SelectionId, FrameOverlay } from "./surface.js";
+import type { W3CSelector, TileSourceDescriptor, TileSource, AnnotationLike } from "@render/core";
+import type { MountSurface, SelectionId, FrameOverlay, MarkerStyle } from "./surface.js";
 
 /** Plain fit (no sidebar reservation) — used when the adapter supplies no fit options. */
 const PLAIN_FIT: FitOptions = { containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false };
@@ -180,6 +182,13 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     ...(opts.locator ? { showNavigator: true, navigatorPosition: "BOTTOM_RIGHT", navigatorSizeRatio: 0.15, navigatorAutoFade: true } : {}),
   });
 
+  // V90 (Archie-3d55) — name the canvas IMMEDIATELY, before the open await below. OSD builds its
+  // canvas div in the constructor, so there is nothing to wait for; and doing it here means the stop
+  // is named even when the open later FAILS, which is the state a reader is most likely to be stuck
+  // tabbing through. (The Annotorious layer is a separate call after the annotator exists — it isn't
+  // in the DOM yet.)
+  applyCanvasA11y(viewer as unknown as A11yViewerLike);
+
   try {
     await new Promise<void>((resolve, reject) => {
       viewer.addOnceHandler("open", () => resolve());
@@ -293,6 +302,8 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
 
   annotator.on("selectionChanged", (selected: W3CImageAnnotation[]) => {
     const id = (selected[0] as { id?: string } | undefined)?.id ?? null;
+    selectedHaloId = id;
+    paintHalo(id); // Archie-52a0 — the ring follows the USER's selection, not just setSelected's
     for (const l of selectL) l(id);
   });
   annotator.on("createAnnotation", (a: W3CImageAnnotation) => {
@@ -314,6 +325,9 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
       return;
     }
     if (decision === "swallow") return; // the echo of our own restore — listeners already hold this state
+    // A drag on the SELECTED mark moves the geometry the ring is anchored to; repaint or it
+    // detaches and sits over the shape's old position.
+    if (id !== undefined && id === selectedHaloId) paintHalo(id);
     for (const l of updateL) l(a);
   });
   annotator.on("deleteAnnotation", (a: W3CImageAnnotation) => {
@@ -337,7 +351,28 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
   // decoupled from OSD's concrete Point/Rect/OverlayOptions types); OSD's real Viewer satisfies it
   // at runtime (addOverlay takes {element, location}) but its own types are narrower/wider than
   // the duck type in ways TS can't verify structurally — asserted once here, at the wiring point.
+  // V90 (Archie-3d55) — name the OSD canvas, drop Annotorious's decorative layers out of the tab
+  // order. Applied after the annotator exists (its layer is only in the DOM by then), and again on
+  // `open`, because Annotorious rebuilds its layer when the image changes.
+  applyCanvasA11y(viewer as unknown as A11yViewerLike);
+  viewer.addHandler("open", () => applyCanvasA11y(viewer as unknown as A11yViewerLike));
+
   const frameOverlay = createFrameOverlay(viewer as unknown as FrameViewerLike);
+
+  // Selection halo (Archie-52a0) — the ring that says WHICH mark is open. A third overlay layer
+  // because neither renderer's style channel can express two strokes (selection-halo.ts's header).
+  // `styleFor` is retained here solely so the halo can read the selected mark's own colour and pick
+  // a contrasting ink; without it the halo still draws, just with the neutral white default.
+  const halo = createSelectionHalo(viewer as unknown as HaloViewerLike);
+  let styleForFn: ((id: SelectionId) => MarkerStyle | undefined) | undefined;
+  let selectedHaloId: SelectionId | null = null;
+  const paintHalo = (id: SelectionId | null): void => {
+    if (id === null) { halo.hide(); return; }
+    const anns = annotator.getAnnotations() as unknown as AnnotationLike[];
+    // A whole-object note has no region geometry — showFor clears and returns false, leaving the
+    // object FRAME as that note's indicator (frame-overlay.ts). Correct, not a miss.
+    halo.showFor(anns, id, styleForFn?.(id)?.stroke);
+  };
 
   // Navigator note-dots (Archie-c1d9) — tiny dots INSIDE the OSD navigator marking where each note
   // lives on the whole image. Appended as CHILDREN of the navigator element so they inherit its
@@ -427,6 +462,9 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
       // omits optional fields is still a valid partial. Narrow to that instead of erasing the type.
       annotator.setAnnotations(ok as Partial<W3CImageAnnotation>[], true);
       renderNavDots(); // note positions may have moved — reconcile the navigator dots
+      // The ring is anchored to a geometry that may have just been replaced or removed. Repaint
+      // against the NEW list rather than leaving a halo floating over a mark that no longer exists.
+      paintHalo(selectedHaloId);
     },
     setStyle(styleFor) {
       // Wire a per-annotation style to Annotorious's DrawingStyleExpression<ImageAnnotation>: it
@@ -438,6 +476,10 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
       // MarkerStyle is structurally a DrawingStyle but with plain `string` fill/stroke (vs the
       // Color template-literal); the single narrowing cast above is the only boundary type assertion.
       annotator.setStyle(expr);
+      // Retained for the halo's contrast choice (Archie-52a0): the reading colour it must not
+      // spend. Repaint so a reading recolour is reflected in the ring's inner line immediately.
+      styleForFn = styleFor;
+      paintHalo(selectedHaloId);
     },
     fitBounds(id: SelectionId) {
       const anns = annotator.getAnnotations() as W3CImageAnnotation[];
@@ -465,6 +507,11 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     setSelected(id: SelectionId | null) {
       if (id === null) annotator.cancelSelected();
       else annotator.setSelected(id);
+      // Painted HERE as well as in selectionChanged, deliberately: a programmatic selection is not
+      // guaranteed to echo back through the annotator's event, and paintHalo is idempotent (show
+      // replaces, hide is a no-op when there is nothing to remove).
+      selectedHaloId = id;
+      paintHalo(id);
     },
     setFrame(frame: FrameOverlay | null) {
       if (frame === null) frameOverlay.clear();
@@ -521,6 +568,7 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
       disposed = true;
       if (ownedBlobUrl) URL.revokeObjectURL(ownedBlobUrl); // release the native-fetched remote image
       frameOverlay.clear();
+      halo.hide();
       for (const el of navDotEls.values()) el.remove();
       navDotEls.clear();
       selectL.clear();

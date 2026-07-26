@@ -1,7 +1,8 @@
 {
   "library": {
     "id": "demo",
-    "title": "Archie Library"
+    "title": "Archie Library",
+    "summary": "A contested manuscript read more than one way — Beinecke MS 408, the same undeciphered marks read three ways across three exhibits."
   },
   "exhibits": [
     {

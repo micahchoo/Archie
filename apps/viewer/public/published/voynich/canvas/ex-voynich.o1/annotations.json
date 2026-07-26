@@ -1,0 +1,57 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/ex-voynich.o1/annotations.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000001SEBWXFTSHHP00TVY/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/ex-voynich.o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:260,240,2400,3300"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.001Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The opening page: a single herbal plant rising the height of the leaf, with the manuscript's first lines of script flowing around it. A faded, erased inscription sits in the top margin — the earliest trace of an owner's hand.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "created": "1970-01-01T00:00:00.001Z",
+      "creator": {
+        "type": "Person",
+        "name": "curator"
+      },
+      "archie:logicalId": "0000000001SEBWXFTSHHP00TVY",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000001SEBWXFTSHHP00TVY.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001HZRM9NQJ7RS6HH4PQ/v1",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/ex-voynich.o1",
+      "modified": "1970-01-01T00:00:00.049Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "**The opening leaf, as a whole object.** Quire structure, the ruling of the page, and the erased ownership inscription in the top margin all belong to *folio 1r entire* — not to any single drawn region. This note is attached to the whole object (no box), so the Viewer frames the folio rather than pinning a spot on it.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "created": "1970-01-01T00:00:00.049Z",
+      "creator": {
+        "type": "Person",
+        "name": "curator"
+      },
+      "archie:logicalId": "000000001HZRM9NQJ7RS6HH4PQ",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001HZRM9NQJ7RS6HH4PQ.json"
+    }
+  ]
+}

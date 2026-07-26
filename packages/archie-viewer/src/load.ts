@@ -37,6 +37,9 @@ import {
   type Filesystem,
   type ExhibitsJson,
   type PortableExhibit,
+  // V7/V11: the ONE rule for resolving a tree-relative asset ref against its library base.
+  assetUrlAgainst,
+  type NoteTransform,
 } from "@render/core";
 
 export { SRC_MAX_BYTES };
@@ -225,9 +228,62 @@ export async function openLibraryFromTree(base: string, fetchImpl: typeof fetch 
   }
   return {
     fs: null,
-    gallery,
+    gallery: rebaseGallery(base, gallery),
     revoke() {},
-    openExhibit: async (slug) => ({ exhibit: await readExhibitTree(src, slug), revoke() {} }),
+    // V11 (Archie-84e0): resolve tree-relative asset refs against the LIBRARY BASE, not the host
+    // page. Measured driving recipes/try.html — `HTTP 404 /recipes/screenshots/assets/o1-e1-embed.png`,
+    // where the library base is `/apps/viewer/public/published/` and `/recipes/` is merely the
+    // directory the host page happens to sit in. The embed's exposure is strictly worse than the
+    // app's (V7): `<archie-viewer src="…">` loads from an ARBITRARY page at an arbitrary path, so
+    // the host directory is NEVER the base. In the app the two coincided often enough to hide it.
+    openExhibit: async (slug) => ({ exhibit: await readExhibitTree(src, slug, treeAssetRebase(base)), revoke() {} }),
+  };
+}
+
+/**
+ * Anchor an exhibit's asset refs to the tree base as it is read. The ZIP path's analogue is
+ * `loadPortableExhibit`'s blob rewrite (ADR-0010) — same seam, same moment, different destination —
+ * which is why this belongs at the read boundary rather than at each render site: one place to be
+ * right, and no way for a new consumer of `object.source` to forget.
+ *
+ * `assetUrlAgainst` passes absolute / protocol-relative / root-anchored refs through untouched, so a
+ * remote IIIF source (how most seeded objects load) is unaffected, and the zip path's `blob:` URLs
+ * would be too if this ever ran over them.
+ */
+function treeAssetRebase(base: string): NoteTransform {
+  return {
+    object: async (o) => {
+      const source = assetUrlAgainst(base, o.source) ?? o.source;
+      const thumbnail = o.thumbnail !== undefined ? assetUrlAgainst(base, o.thumbnail) : undefined;
+      // A baked DZI pyramid is a DIRECTORY of tiles referenced the same tree-relative way; missing it
+      // would 404 every tile rather than one image, and only at deep zoom.
+      const tileSource =
+        o.tileSource?.kind === "dzi"
+          ? { ...o.tileSource, filesPath: assetUrlAgainst(base, o.tileSource.filesPath) ?? o.tileSource.filesPath }
+          : o.tileSource;
+      if (source === o.source && thumbnail === o.thumbnail && tileSource === o.tileSource) return o;
+      return {
+        ...o,
+        source,
+        ...(thumbnail !== undefined ? { thumbnail } : {}),
+        ...(tileSource !== undefined ? { tileSource } : {}),
+      };
+    },
+    // Note bodies are left alone. The app's `hostedRebase` DOES rewrite them, but for a different
+    // problem — rewriting an absolute canonical BASE onto the serving origin. Tree-relative refs
+    // inside note prose are not what V11 measured, and a blind rewrite of note markup here would be
+    // a second, unmeasured behaviour riding on a bug fix.
+    note: async (n) => n,
+  };
+}
+
+/** The gallery's covers are tree-relative by the same rule, and 404 on the same host-page mistake. */
+function rebaseGallery(base: string, gallery: ExhibitsJson): ExhibitsJson {
+  return {
+    ...gallery,
+    exhibits: gallery.exhibits.map((e) =>
+      e.cover ? { ...e, cover: assetUrlAgainst(base, e.cover) ?? e.cover } : e,
+    ),
   };
 }
 

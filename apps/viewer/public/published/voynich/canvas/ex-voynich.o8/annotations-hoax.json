@@ -1,0 +1,43 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/ex-voynich.o8/annotations-hoax.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000012GE6PD2GXHQT97QRP/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/ex-voynich.o8",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1400,1600,360,150"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.034Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the grille reading, the label is meaningless filler; the statistical difference Currier found between this section and the herbal is just a second grille table, not a second language.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "created": "1970-01-01T00:00:00.034Z",
+      "creator": {
+        "type": "Person",
+        "name": "curator"
+      },
+      "archie:logicalId": "0000000012GE6PD2GXHQT97QRP",
+      "archie:reading": "hoax",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000012GE6PD2GXHQT97QRP.json"
+    }
+  ],
+  "partOf": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/readings/hoax.json",
+      "type": "AnnotationCollection"
+    }
+  ]
+}

@@ -26,7 +26,7 @@
   },
   "items": [
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/ex-geo.m1",
       "type": "Canvas",
       "label": {
         "none": [
@@ -48,25 +48,25 @@
       },
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1/page/1",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/ex-geo.m1/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1/painting/1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/ex-geo.m1/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
                 "id": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
                 "type": "Image"
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1"
+              "target": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/ex-geo.m1"
             }
           ]
         }
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1/annotations.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/ex-geo.m1/annotations.json",
           "type": "AnnotationPage",
           "items": [
             {
@@ -74,7 +74,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/ex-geo.m1",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -90,6 +90,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.001Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000001Q1E2RFF58H62PFSW",
               "archie:geo": {
                 "type": "bbox",
                 "west": -1.669921875,
@@ -104,7 +110,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/ex-geo.m1",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -120,6 +126,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.002Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000002Q00FVKNSJJ2BGTDE",
               "archie:geo": {
                 "type": "bbox",
                 "west": -75.5419921875,
@@ -134,7 +146,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/ex-geo.m1",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -150,6 +162,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.003Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "00000000032HVBH9EHJCR5YMRR",
               "archie:geo": {
                 "type": "bbox",
                 "west": 138.1640625,
@@ -164,7 +182,7 @@
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/ex-geo.m1",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -180,6 +198,12 @@
                 }
               ],
               "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.004Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000004CK4MH8W1V2DW0N39",
               "archie:geo": {
                 "type": "bbox",
                 "west": 35.2880859375,

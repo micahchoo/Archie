@@ -146,14 +146,57 @@ describe("createReadOnlyOverlay.onSelect — hit-test (P0-3)", () => {
 });
 
 describe("createReadOnlyOverlay — keyboard activation (Archie-9413)", () => {
-  it("every drawn shape is focusable: tabindex=0 on the role=button svg", () => {
+  it("every drawn shape is focusable and named, but only ONE is in the tab sequence (V45)", () => {
+    // Amended by Archie-3d55. This used to assert tabindex=0 on EVERY region, which is what the
+    // audit measured and reported: a 60-note page was 60 tab stops to get past the image — the same
+    // wall V27 found on the filmstrip, where the repo already ratified roving tabindex as the answer.
+    // Every region is still individually focusable (-1) and still named; arrows move between them.
     const v = fakeViewer();
     createReadOnlyOverlay(v).setAnnotations([rectAnn("r"), polyAnn("p")]);
-    for (const o of v.overlays) {
-      const svg = o.element as SVGSVGElement;
-      expect(svg.getAttribute("tabindex")).toBe("0");
+    const svgs = v.overlays.map((o) => o.element as SVGSVGElement);
+    expect(svgs).toHaveLength(2);
+    for (const svg of svgs) {
       expect(svg.getAttribute("role")).toBe("button");
+      expect(svg.getAttribute("aria-label")).toBeTruthy();
+      expect(svg.hasAttribute("tabindex")).toBe(true); // focusable either way
     }
+    expect(svgs.filter((s) => s.getAttribute("tabindex") === "0")).toHaveLength(1);
+  });
+
+  it("arrow keys rove the tab stop between regions, wrapping", () => {
+    const v = fakeViewer();
+    createReadOnlyOverlay(v).setAnnotations([rectAnn("a"), rectAnn("b", "xywh=pixel:0,0,10,10"), polyAnn("c")]);
+    const svgs = v.overlays.map((o) => o.element as SVGSVGElement);
+    const stopAt = () => svgs.findIndex((s) => s.getAttribute("tabindex") === "0");
+    expect(stopAt()).toBe(0);
+
+    svgs[0]!.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    expect(stopAt()).toBe(1);
+    svgs[1]!.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+    expect(stopAt()).toBe(2);
+    // Wraps rather than dead-ending — the set is a ring, like the filmstrip's.
+    svgs[2]!.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    expect(stopAt()).toBe(0);
+    svgs[0]!.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
+    expect(stopAt()).toBe(2);
+  });
+
+  it("a single region is still the one tab stop, and arrows do nothing", () => {
+    const v = fakeViewer();
+    createReadOnlyOverlay(v).setAnnotations([rectAnn("only")]);
+    const svg = v.overlays[0]!.element as SVGSVGElement;
+    expect(svg.getAttribute("tabindex")).toBe("0");
+    svg.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    expect(svg.getAttribute("tabindex")).toBe("0"); // nowhere to rove to
+  });
+
+  it("redrawing resets the rove set — a stale stop would land on a detached element", () => {
+    const v = fakeViewer();
+    const o = createReadOnlyOverlay(v);
+    o.setAnnotations([rectAnn("a"), rectAnn("b", "xywh=pixel:0,0,10,10")]);
+    o.setAnnotations([rectAnn("c"), rectAnn("d", "xywh=pixel:5,5,10,10")]);
+    const fresh = v.overlays.slice(2).map((x) => x.element as SVGSVGElement);
+    expect(fresh.filter((s) => s.getAttribute("tabindex") === "0")).toHaveLength(1);
   });
 
   it("Enter on a shape fires onSelect with its id — same path as click", () => {

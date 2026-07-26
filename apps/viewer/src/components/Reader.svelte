@@ -6,7 +6,7 @@
   // and that object's projected annotations; `onback` returns to the exhibit's object grid.
   import Canvas from "@render/svelte/Canvas.svelte";
   import ResizeDivider from "@render/svelte/ResizeDivider.svelte";
-  import type { FrameOverlay } from "@render/svelte";
+  import type { FrameOverlay, FitOptions } from "@render/svelte";
   import NoteLightbox from "./NoteLightbox.svelte";
   import ReadingSheet from "./ReadingSheet.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
@@ -267,8 +267,12 @@
   // 7e1f: the canvas-wide frame overlay — its corners activate (select) the framed note, reusing the
   // same `selected` path a marker click uses. The framed mark's own overlay rect is suppressed below
   // (filtered out of the canvas annotations) so the whole-object border isn't double-drawn.
+  // V46 (Archie-52a0): the frame SURVIVES Hide-all, deliberately. It is the canvas's only named tab
+  // stop ("View whole object", frame-overlay.ts) — hiding it left a keyboard reader with no way onto
+  // the canvas at all. Declutter means "hide the REGION marks", not "remove the keyboard
+  // infrastructure"; the dashed border is a hairline and costs the decluttered view almost nothing.
   const canvasFrame = $derived<FrameOverlay | null>(
-    frame && !notesHidden ? { colour: frame.colour, onActivate: () => (selected = frame.markId) } : null,
+    frame ? { colour: frame.colour, onActivate: () => (selected = frame.markId) } : null,
   );
   // The notes list + detail (`current`) keep the FULL array — only the canvas drops the framed rect.
   // Hide-all: the canvas shows ONLY the selected note's mark (or nothing), decluttering the basemap
@@ -289,20 +293,80 @@
   // worked in the lightbox/reading-sheet but NOT in the note state itself. Guarded so the lightbox/sheet
   // (which bind their own Esc) own the key while open. Arrow-stepping is intentionally NOT bound here —
   // OpenSeadragon owns the arrow keys for panning the deep-zoom image, so hijacking them would regress pan.
+  // V26/V25 (Archie-3d55) — an Escape LADDER, not a single binding.
+  //
+  // Escape used to mean exactly one thing here: close the selected note. With no note open it did
+  // nothing at all — measured, still `#/voynich`, still "Object 2 of 12" — and the only way up a
+  // level was the BACK TO EXHIBIT button, which is invisible when the sidebar is collapsed. Same
+  // shape as V1's inert Escape in the empty hall: a binding per surface, no ladder.
+  //
+  // The rungs, innermost first. Each step is the smallest one that changes something, so a reader
+  // holding Escape walks out rather than teleporting:
+  //   1. a note is open           → close it
+  //   2. focus is inside the canvas → leave the canvas (V25's other half: arrows are OSD's while
+  //      focus is there, and the reader had no announced way to take them back)
+  //   3. otherwise                → up a level, to the exhibit
   function onkey(e: KeyboardEvent) {
     if (lightbox || readingSheet) return; // those surfaces own Esc while open
-    if (e.key === "Escape" && selected !== null) { selected = null; e.preventDefault(); }
+    if (e.key !== "Escape") return;
+    if (selected !== null) { selected = null; e.preventDefault(); return; }
+    const active = document.activeElement as HTMLElement | null;
+    if (active?.closest(".openseadragon-container")) {
+      // Hand focus back to the reader's own frame rather than to <body>: blurring to nothing is how
+      // a keyboard reader loses their place entirely.
+      mainEl?.focus({ preventScroll: true });
+      e.preventDefault();
+      return;
+    }
+    if (onback) { onback(); e.preventDefault(); }
+  }
+
+  // V48 (Archie-40fe) — tell the camera what is covering the canvas before it frames a region.
+  //
+  // `getFitOptions` is @render/mount's reservation seam. It has existed since the anvil delamination
+  // and the VIEWER HAS NEVER PASSED IT: every fit ran on PLAIN_FIT, so `fitBounds` centred the region
+  // in the whole container while the legend and the note card sat on top of the left flank. Measured
+  // with a reading active and a note open at 9.3x, the two stacked into a contiguous 502px column —
+  // ~22% of a 924x800 canvas, down its entire left edge, including the side the fitted region's own
+  // boundary lies on. The reader asks to look closely; the app zooms, then covers a fifth of the answer.
+  //
+  // Measured on demand rather than tracked reactively, because the seam is a CALLBACK invoked at the
+  // moment of the fit — which is exactly when the truth is knowable and cheapest to read. No
+  // ResizeObserver, no effect, nothing to keep in sync.
+  let mainEl = $state<HTMLElement | undefined>(undefined);
+  const OCCLUDING = [".legend", ".note-pop"]; // canvas-overlaying chrome anchored to the LEFT flank
+  function getFitOptions(): FitOptions {
+    const el = mainEl;
+    if (!el) return { containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false };
+    const m = el.getBoundingClientRect();
+    let inset = 0;
+    for (const sel of OCCLUDING) {
+      const r = el.parentElement?.querySelector(sel)?.getBoundingClientRect();
+      if (!r || r.width === 0) continue; // absent or display:none — not occluding anything
+      inset = Math.max(inset, r.right - m.left);
+    }
+    // The aside is a flex SIBLING, not an overlay: the canvas ends before it, so there is nothing to
+    // reserve on the right. sidebarW stays 0 here deliberately — it models a different geometry.
+    return {
+      containerW: m.width,
+      sidebarW: 0,
+      sidebarIsSheet: true,
+      detailOpen: false,
+      leftInsetW: Math.max(0, Math.min(inset, m.width)),
+    };
   }
 </script>
 
 <svelte:window onkeydown={onkey} />
 
 <div class="reader">
-  <main>
+  <!-- `tabindex="-1"` so Escape can hand focus back HERE when leaving the canvas (V25) — a landing
+       place inside the reader, never a tab stop of its own. -->
+  <main bind:this={mainEl} tabindex="-1">
     <!-- Key on the object so the OSD viewer REMOUNTS (loads the new image) when the carousel switches
          objects — Canvas creates the viewer once in onMount, so without this only annotations swap. -->
     {#key object.canvasId}
-      <Canvas source={object.source} tileSource={object.tileSource} canvasId={object.canvasId} annotations={canvasAnnotations} styleOf={pulsedStyleOf} frame={canvasFrame} focus={focusRegion} zoomOnSelect locator bind:selected onzoom={onCanvasZoom} />
+      <Canvas source={object.source} tileSource={object.tileSource} canvasId={object.canvasId} annotations={canvasAnnotations} styleOf={pulsedStyleOf} frame={canvasFrame} focus={focusRegion} zoomOnSelect locator bind:selected onzoom={onCanvasZoom} {getFitOptions} />
     {/key}
     <!-- Scale cue (Archie-93fd): the locator answers WHERE the viewport sits in the image; this answers
          HOW FAR IN. Top-right of the CANVAS — V40: it used to sit inside `.reader`, the flex row holding

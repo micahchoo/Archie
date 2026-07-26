@@ -40,24 +40,60 @@ describe("createFrameOverlay.draw", () => {
     expect(svg.style.pointerEvents).toBe("none"); // centre stays pan/zoom-free
   });
 
-  it("draws a halo rect + a clickable colour rect carrying the frame colour", () => {
+  it("draws a halo rect, a colour rect, and a separate invisible hit rect", () => {
     const v = fakeViewer();
     createFrameOverlay(v).draw(frame());
     const rects = (v.overlays[0]!.element as SVGSVGElement).querySelectorAll("rect");
-    expect(rects).toHaveLength(2);
+    expect(rects).toHaveLength(3);
     const colour = rects[1]!;
     expect(colour.getAttribute("stroke")).toBe("#c83");
-    expect((colour as SVGElement).style.pointerEvents).toBe("stroke"); // only the line is the hit target
     expect(colour.getAttribute("vector-effect")).toBe("non-scaling-stroke");
+    // The visible line is NOT the hit target any more — see the hit-rect test below for why.
+    expect((colour as SVGElement).style.pointerEvents).toBe("");
   });
 
-  it("clicking the colour border activates the note", () => {
+  it("V41: the visible border is DASHED, so it cannot be mistaken for a solid region mark", () => {
+    const v = fakeViewer();
+    createFrameOverlay(v).draw(frame());
+    const rects = (v.overlays[0]!.element as SVGSVGElement).querySelectorAll("rect");
+    expect(rects[0]!.getAttribute("stroke-dasharray")).toBe("6 4"); // halo
+    expect(rects[1]!.getAttribute("stroke-dasharray")).toBe("6 4"); // colour line
+  });
+
+  it("the hit rect is solid, wide, transparent, and the only pointer surface", () => {
+    // Solid because a dashed stroke's GAPS are not hit-testable — targeting the visible line would
+    // leave the border clickable along only ~60% of its length. Wide because 1.5px is a punishing
+    // target for a real pointer. Transparent so it is a hit surface and nothing else.
+    const v = fakeViewer();
+    createFrameOverlay(v).draw(frame());
+    const hit = (v.overlays[0]!.element as SVGSVGElement).querySelectorAll("rect")[2]!;
+    expect(hit.getAttribute("stroke-dasharray")).toBeNull();
+    expect(hit.getAttribute("stroke")).toBe("rgba(0,0,0,0)");
+    expect(Number(hit.getAttribute("stroke-width"))).toBeGreaterThan(1.5);
+    expect((hit as SVGElement).style.pointerEvents).toBe("stroke"); // interior stays free for pan/zoom
+  });
+
+  it("clicking the hit rect activates the note", () => {
     const v = fakeViewer();
     const onActivate = vi.fn();
     createFrameOverlay(v).draw(frame(onActivate));
-    const colour = (v.overlays[0]!.element as SVGSVGElement).querySelectorAll("rect")[1]!;
-    colour.dispatchEvent(new Event("click"));
+    const hit = (v.overlays[0]!.element as SVGSVGElement).querySelectorAll("rect")[2]!;
+    hit.dispatchEvent(new Event("click"));
     expect(onActivate).toHaveBeenCalledTimes(1);
+  });
+
+  it("the hit rect stops the pointer sequence so OSD's capture cannot swallow the click (V68)", () => {
+    // The region overlay has done this since V68 (read-overlay.ts styleGeometry); the frame did not,
+    // which meant a real mouse click on the border could be captured by OSD's MouseTracker and never
+    // dispatch `click` at all. A synthetic dispatch — like the test above — cannot see that.
+    const v = fakeViewer();
+    createFrameOverlay(v).draw(frame());
+    const hit = (v.overlays[0]!.element as SVGSVGElement).querySelectorAll("rect")[2]!;
+    const down = new Event("pointerdown", { bubbles: true, cancelable: true });
+    const seen = vi.fn();
+    (v.overlays[0]!.element as SVGSVGElement).addEventListener("pointerdown", seen);
+    hit.dispatchEvent(down);
+    expect(seen).not.toHaveBeenCalled(); // stopped before it could reach an ancestor
   });
 
   it("queues on the 'open' event when the image isn't painted yet, then draws", () => {
