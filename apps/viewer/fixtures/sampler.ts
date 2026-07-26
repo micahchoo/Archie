@@ -106,9 +106,16 @@ export const samplerAudioNotes: SamplerTimeNote[] = [
   // comment-only, so the tag chips and the media tiles on an AV note could not be exercised in either
   // direction, and an unexercised path recorded as covered is how Archie-0cc6 got filed.
   //
-  // The tagged one: its chips are honestly ABSENT until `ExhibitView` threads `onopenfinder` to
-  // MediaPlayer (escalated — MediaPlayer gates tags on that handler rather than shipping inert chips).
-  // Deliberately NO assertion on it yet; it would be vacuous today. The wire and its test land together.
+  // The tagged one. It shipped with its chips honestly ABSENT — MediaPlayer gates tags on
+  // `onopenfinder` being wired rather than rendering inert chips — and deliberately carried NO
+  // assertion, because one would have been vacuous until `ExhibitView` threaded the prop.
+  // BOTH have now landed: `ExhibitView.svelte` :580 and :593 pass `onopenfinder`, and
+  // `av-surface.spec.ts` "a tag chip on a time-ranged note opens the finder ALREADY SCOPED to that tag"
+  // drives it. That test is what makes these two tag strings load-bearing — it asserts the chips read
+  // exactly `#cadence` and `#transcript` and that clicking one arrives with THAT facet active and the
+  // other off, so renaming either tag here without updating the spec reddens it rather than passing
+  // silently. It also found `Archie-d37d` on its first run: the cite trigger occludes the FIRST chip,
+  // so the test drives the second one and records the geometry at the call site.
   {
     objectId: "ex-sampler.sa1",
     t: "180,220",

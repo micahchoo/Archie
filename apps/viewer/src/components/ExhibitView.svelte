@@ -577,6 +577,7 @@
           currentId={activeData.id}
           onstep={(id) => (selectedObjectId = id)}
           onoverview={() => (selectedObjectId = null)}
+          onopenfinder={(tag) => openFinder(tag)}
         />
       {/if}
     {/key}
@@ -589,7 +590,7 @@
         <!-- Keyed like the grid-AV player: stepping the carousel between AV index objects must remount. -->
         {#key indexData.id}
           {#if MediaPlayerLazy.current}
-            <MediaPlayerLazy.current object={indexData} annotations={annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} initialSeek={t} onback={() => (indexObjectId = null)} onlocus={(l) => { locusNote = l.noteId; locusTime = l.t; }} />
+            <MediaPlayerLazy.current object={indexData} annotations={annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} initialSeek={t} onback={() => (indexObjectId = null)} onlocus={(l) => { locusNote = l.noteId; locusTime = l.t; }} onopenfinder={(tag) => openFinder(tag)} />
           {/if}
         {/key}
       {:else}

@@ -316,6 +316,68 @@ test.describe("V53 · a note's picture, on a TIME-RANGED note", () => {
   });
 });
 
+test.describe("V53 · an AV note's tags are a real door into the finder", () => {
+  test("a tag chip on a time-ranged note opens the finder ALREADY SCOPED to that tag", async ({ page }) => {
+    // The last piece of the AV note surface, landed separately and deliberately. `MediaPlayer` gates its
+    // tag chips on `onopenfinder` being wired (`:365`, `:480`) rather than rendering chips that do
+    // nothing — `NotePopup.svelte:127` makes every tag a `<button>` calling `onopenfinder?.(t)`, so
+    // handing it tags with no handler ships precisely the dead door this whole file exists to close.
+    // Until `ExhibitView` threaded the prop, the fixture's tagged note rendered NO chips and an
+    // assertion here would have been vacuous, so the fixture shipped with a comment saying the wire and
+    // its test land together. This is that test.
+    //
+    // WHY THIS ASSERTS THE FACET AND NOT JUST THE OVERLAY. `onopenfinder={() => openFinder()}` — the
+    // tag dropped on the floor — would open the finder perfectly well, and a test that only checked
+    // `[role=dialog]` would pass against it. What makes the door WORTH opening is arriving pre-scoped,
+    // so the assertion is on the facet chip's `aria-pressed`, which is bound to `activeTags`
+    // (`SearchOverlay.svelte:89-90`) and is the only observable that distinguishes the two.
+    //
+    // `.claude/rules/svelte-no-typecheck-net.md` is the reason this is driven at all: a prop can be
+    // typed and not bound and NOTHING static complains — that rule was written after `oncancel` was
+    // added to a `$props()` type annotation but left out of the destructuring beside it, and
+    // svelte-check reported 1464 files 0/0 while the control silently never rendered.
+    await goOffline(page);
+    await page.goto("./#/sampler");
+    await page.reload();
+    const audio = page.locator("button.object", { hasText: "listen with a transcript" });
+    await expect(audio).toHaveCount(1);
+    await audio.click();
+
+    const rows = page.locator(".cues li button");
+    await expect(rows).toHaveCount(5);
+    // The tagged cue is `t=180,220` — 4th of five by start time (0,30 · 45,80 · 120,160 · 180,220 ·
+    // 240,270). Indexed rather than matched on prose so this does not silently retarget if a fixture
+    // comment is reworded; the count assertion above is what catches a fixture actually changing shape.
+    await rows.nth(3).click();
+    await expect(card(page)).toBeVisible();
+
+    const chips = card(page).locator("button.tag-btn");
+    await expect(chips).toHaveText(["#cadence", "#transcript"]);
+
+    // DRIVING THE SECOND CHIP, AND NOT THE FIRST — this is a routed-around DEFECT, not a style choice,
+    // so it is written down rather than quietly accommodated. `Archie-d37d`: the cite trigger sits on
+    // top of the first chip. Measured here at 1280x720 the moment this test first ran —
+    //   `.cite-trigger`  x 20-100,  y 556-588
+    //   `#cadence`       x 38-122,  y 560-572  → elementFromPoint at its centre = SPAN.lbl  ← OCCLUDED
+    //   `#transcript`    x 134-245, y 560-572  → elementFromPoint at its centre = BUTTON.tag
+    // 62px of overlap. `#transcript` clears the trigger only because it happens to start at x=134, so
+    // which tags are reachable depends on the length of the tag text before them — a layering fault,
+    // not one unlucky fixture. WHEN d37d IS FIXED: drive `chips.first()` and assert BOTH are hittable;
+    // do not simply delete this comment. The subject of THIS test is the `onopenfinder` wire, which the
+    // second chip proves exactly as well as the first.
+    await chips.nth(1).click();
+    const finder = page.locator(".finder[role='dialog']");
+    await expect(finder).toBeVisible();
+
+    // The load-bearing assertion: `transcript` arrived and is ACTIVE, and its neighbour is not.
+    // `onopenfinder={() => openFinder()}` — the tag dropped on the floor — would open the finder just
+    // as well and satisfy a `[role=dialog]` check; only the facet state can tell the two apart. The
+    // second half also proves the facet was SEEDED from the chip rather than every facet defaulting on.
+    await expect(finder.locator("button.facet", { hasText: "transcript" })).toHaveAttribute("aria-pressed", "true");
+    await expect(finder.locator("button.facet", { hasText: "cadence" })).toHaveAttribute("aria-pressed", "false");
+  });
+});
+
 test.describe("V53 · the Escape ladder this surface did not have", () => {
   test("Escape walks out one rung at a time: sheet → card → the exhibit", async ({ page }) => {
     await openAudioObject(page);
