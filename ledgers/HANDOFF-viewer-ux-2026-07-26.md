@@ -44,7 +44,9 @@ Merged: `ux/note-surface`, `ux/offline-canvas`, `ux/embed-parity`, `ux/av-surfac
 ### Tickets
 
 Closed this session on map `Archie-c97e`: `dbbc`, `01a6`, `f90d`, `c314`, `0d6c`, `c5cb` — all six
-indexed in Decisions-so-far, which now holds **27** entries. **15 remain open** on the map.
+indexed in Decisions-so-far, which now holds **27** entries. **13 remain open** on the map.
+(An earlier "15" in this file and in chat was measured *before* the `f90d`/`c314` closes. 13 is a
+filtered read of the full open list, not a `head`-truncated one.)
 
 `Archie-7b86` stays OPEN deliberately: V53 is resolved (full eleven-drop enumeration in its body),
 V49 untaken, V50 deferred because the ticket's premise that wavesurfer.js is already a dependency is
@@ -52,6 +54,67 @@ V49 untaken, V50 deferred because the ticket's premise that wavesurfer.js is alr
 
 **The map cannot fully close, and that should be stated rather than finessed:** V103/V104 depend on
 `Archie-a5b1`, which lives on `map:dc-metadata` and is open.
+
+## THE REMAINING 13, GROUPED BY FILE TERRITORY
+
+Territory, not topic — the wave boundaries below are real collisions verified the way the last five
+slices were (`comm -12` over `git diff --name-only main...<branch>`), not preference. Three of the
+thirteen are **decisions, not implementations**, and an agent cannot take them.
+
+### Do this one FIRST, alone, on `main`
+
+**Thread `onopenfinder`** (`ExhibitView.svelte` :570, :592). Small, and `ExhibitView` is the collision
+hotspot for two of the groups below — landing it before any dispatch keeps them disjoint.
+
+### Wave 1 — three disjoint territories, safe in parallel
+
+| slice | tickets | territory |
+| --- | --- | --- |
+| **fixtures** | `b135`, `f4fb`, `0cc6`, + the fixture half of `4524` | `apps/viewer/fixtures/`, `apps/studio/src/seed-data*`, `sample-data*`, `gen-published` |
+| **embed DEFER rows** | `1820` | `packages/archie-viewer/src/` |
+| **small verifications** | `9838`, `d6e9` | `Reader.svelte` (one comment), plus a record-only ticket |
+
+Every fixtures ticket is the same shape — *the guard is correct and nothing reaches it*. The
+shared-fixture rule governs: **never edit an existing fixture to make one test work; add a new one**
+and check all consumers. `4524`'s fixture half belongs here and its control half does not.
+
+`1820` is the biggest single ticket left; note the `eagerGzKB` ratchet bounds it (see
+[[archie-viewer-eager-closure]]) — four capabilities added to the embed is exactly the shape that
+moves the entry's static closure.
+
+`d6e9` is deliberately **not a fix** — it is `01a6`'s required re-measurement of V23, carried as a
+record. Decide whether it closes as-is or graduates into a fix ticket; do not "fix" it blind, which
+is the thing it exists to prevent.
+
+### Wave 2 — after wave 1
+
+| slice | tickets | note |
+| --- | --- | --- |
+| **canvas chrome** | `de08`, then `c30a` | ONE decision, in this order |
+| **finder** | `9eeb` | V106 — the substrate exists, the affordance doesn't |
+| **AV** | `7b86` V49, `4524` control half | needs wave 1's fixtures to exist first |
+
+`de08` before `c30a` is load-bearing: if the corpus argument against floating chrome wins, V48's
+vertical gap **disappears rather than being solved**, and `c30a`'s structural finding
+(`fitBoundsRect` never touches `y`/`h`) becomes moot. Fixing `c30a` first risks building a
+reservation for chrome that shouldn't float.
+
+### Wave 3 — last, because it collides with wave 2
+
+**`ecf4`** — `tokens.css` has already drifted between the two apps. Touches both apps' CSS, which
+wave 2's chrome work also touches.
+
+### The three that need YOU, not an agent
+
+1. **`5185` flip-and-read.** A reading decision, not a structural one. `stepIntoReading` was removed
+   as a side effect of `01a6`; neither ticket asked for that. Needs someone who actually reads a
+   multi-object exhibit end to end. The one test to invert is named in `/tmp/flip-and-read.md`.
+2. **`7b86` V50** — whether to add **wavesurfer.js** as a viewer dependency. The ticket's premise
+   that it is already one is **false**, so this is a new dep and trips
+   [[viewer-optimizedeps-bare-includes]] (needs BOTH a direct dep and an `optimizeDeps.include`
+   entry).
+3. **`ecf4`** — unify the token files onto one floor, or record why they must stay separate. Either
+   is a valid answer; drifting silently is not.
 
 ### The three rules the narrative review earned — none written yet
 
