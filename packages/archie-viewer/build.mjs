@@ -5,8 +5,10 @@
 // element.ts, so esbuild emits it as a SEPARATE async chunk → the gallery path doesn't ship OSD until
 // an object is opened (code-splitting requires `splitting: true` + an outdir).
 //
-// `--check` compares the bundle's gz size against the stored baseline (docs/bundle-size.json sibling),
-// failing on growth > max(10%, 10KB) — the same ratchet shape as scripts/bundle-size.mjs.
+// `--check` compares the bundle's gz size against the stored baseline (bundle-size.json, sibling),
+// failing on growth > max(10%, 10KB) — the same ratchet shape as scripts/bundle-size.mjs. `--update`
+// (and ONLY `--update`, via `pnpm bundle:baseline`) moves that baseline; a plain build refreshes
+// `dist/` and leaves the reference point alone.
 //
 // DEFERRED (named, not silently dropped): (1) the live strict-CSP browser smoke run — asserting the
 // bundle registers + renders under `script-src 'self'` (no unsafe-eval) in a real webview — is a
@@ -131,6 +133,8 @@ function measureDist(outdir, metafile) {
 }
 
 const CHECK = process.argv.includes("--check");
+// Writing the baseline is opt-IN. See the comment at the write site for the measurement that made it so.
+const UPDATE = process.argv.includes("--update");
 
 // --check measures a THROWAWAY build in a temp dir. It must not write OUTDIR: packages/archie-viewer/
 // dist/ is the committed, CDN-published artifact (scripts/sync-dist.mjs mirrors it to the repo root
@@ -174,5 +178,29 @@ console.log(`<archie-viewer> bundle:`);
 console.log(`  entry  ${m.entryRawKB}KB min  ${m.entryGzKB}KB gz  (the entry FILE alone)`);
 console.log(`  eager  ${m.eagerGzKB}KB gz  (page load — entry's STATIC closure; OSD must NOT be here)`);
 console.log(`  total  ${m.totalGzKB}KB gz  (entry + lazy reader/OSD chunk — opening an object)`);
-writeFileSync(BASELINE, JSON.stringify({ measuredAt: new Date().toISOString(), ...m }, null, 2) + "\n");
-console.log(`  baseline written → ${BASELINE}`);
+
+// MOVING THE BASELINE IS A DELIBERATE ACT (`--update`), NEVER A SIDE EFFECT OF BUILDING.
+//
+// This write used to be unconditional, which quietly defeated the whole ratchet. `dist/` here is a
+// committed, CDN-published artifact and CI enforces that it matches (`pnpm sync-dist:check`,
+// checks.yml:196) — so a plain `node build.mjs` is not an optional convenience, it is REQUIRED after
+// any source change. That same command relicensed the reference point, so a regression and its new
+// baseline got committed together and CI then compared the regressed build against the regressed
+// baseline. Proven end to end by injecting the exact leak archie-viewer-eager-closure.md describes:
+//
+//   A. leak present, committed baseline   FAIL eager 38.9 → 270.5KB (Δ +231.6, allowed +10.0)  exit 1
+//   B. node build.mjs                     baseline silently rewritten to 270.5
+//   C. same leak, same command            ok   eager 270.5 → 270.5KB (Δ +0,     allowed +27.1)  exit 0
+//
+// Exit 1 became exit 0 with 231.6KB of OpenSeadragon fully in the page-load path — and note the
+// allowance grew from +10.0 to +27.1KB, because it is 10% of a now-inflated base: the gate got LOOSER
+// the worse the regression. (`--check` was never the hole; it exits above, and builds to a temp dir.)
+//
+// The root ratchet already had this right — its baseline is refreshed by a separately named script
+// (`pnpm bundle:baseline`, checks.yml:161), not by building. This file was the odd one out.
+if (UPDATE) {
+  writeFileSync(BASELINE, JSON.stringify({ measuredAt: new Date().toISOString(), ...m }, null, 2) + "\n");
+  console.log(`  baseline UPDATED → ${BASELINE}`);
+} else {
+  console.log(`  baseline unchanged (run \`pnpm bundle:baseline\` to move it — a deliberate, reviewable act)`);
+}

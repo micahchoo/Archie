@@ -40,4 +40,39 @@ leak reintroduced makes it FAIL at +226.6KB and exit 1.
 Do NOT rely on `entryGzKB` or `totalGzKB` to catch this — **they cannot**. `entryGzKB` measures the
 entry *file* (6.2KB) and never sees its graph; `totalGzKB` counts the OSD chunk either way, eagerly or
 lazily. Both moved less than 0.2KB when 225KB left the load path. That blindness is why `eagerGzKB`
-exists; don't drop it for being redundant.
+exists; don't drop it for being redundant. (Re-measured 2026-07-25 against a freshly injected leak:
+`eagerGzKB` 36 → 270.5KB, `totalGzKB` **Δ +0KB**. The blindness is measured, not assumed.)
+
+## The gate only holds against an UNREFRESHED baseline (added 2026-07-25, Archie-c314)
+
+`eagerGzKB` is not unconditional protection, and for one session it protected nothing. `node
+build.mjs` used to write `bundle-size.json` as a side effect of building — and that build is
+**mandatory**, not optional: `packages/archie-viewer/dist/` is a committed, CDN-published artifact
+that CI enforces (`pnpm sync-dist:check`, `checks.yml:196`), so every source change requires it. The
+regression and its new baseline were therefore committed together, and CI compared the regressed
+build against the regressed baseline. Proven red-green-red with the exact leak above:
+
+| step | result |
+| --- | --- |
+| A. leak present, committed baseline | **FAIL** eager 38.9 → 270.5KB (Δ +231.6, allowed +10.0), exit 1 |
+| B. `node build.mjs` (the required `dist/` refresh) | baseline silently rewritten to 270.5 |
+| C. same leak, same command | **ok** eager 270.5 → 270.5KB (Δ +0, allowed +27.1), exit 0 |
+
+Exit 1 became exit 0 with 231.6KB of OpenSeadragon in the page-load path. Worse, the allowance grew
+from +10.0 to +27.1KB — it is `max(10%, 10KB)` of a now-inflated base, so **the gate gets looser the
+worse the regression**. `--check` was never the hole (it exits before the write and builds to a temp
+dir); the plain build was.
+
+**Now:** the write is gated behind `--update`, exposed as `pnpm bundle:baseline`. A plain build
+refreshes `dist/` and prints `baseline unchanged`. This matches the root ratchet, which already
+refreshed its baseline through a separately named script (`pnpm bundle:baseline`, `checks.yml:161`)
+rather than by building.
+
+**How to apply:**
+- A build never moves a ratchet. If you add another size gate, the baseline write is opt-in from the
+  start, with its own script name so moving it reads as an intentional line in review.
+- A diff that touches `bundle-size.json` deserves the same scrutiny as a diff that touches a test
+  assertion — both change what "passing" means. Ask what moved and why before reading anything else.
+- Still open (follow-up, not shipped): CI does not yet catch a HAND-edited baseline. A
+  `git diff --exit-code packages/archie-viewer/bundle-size.json` after `bundle:check` would close it.
+  `--update` alone was shipped first because the accidental path is the one that actually fired.
