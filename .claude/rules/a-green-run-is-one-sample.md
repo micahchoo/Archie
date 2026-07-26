@@ -28,10 +28,18 @@ Four people, four runs, four single samples of a coin flip. **Nobody ran it twic
 > The reviewer's injections and the author's green run answer different questions, and neither
 > answers the other's.
 
-| question | answered by | cost |
+| question | answered by | why that suffices |
 | --- | --- | --- |
-| *can this fail when something is wrong?* | one injection, one red run | seconds |
-| *does this pass when nothing is wrong?* | **N runs, unchanged tree** | seconds |
+| *can this fail when something is wrong?* | one injection, **one red run** | one failure proves the capability |
+| *does this pass when nothing is wrong?* | **N runs, unchanged tree** | one green is consistent with "always passes" *and* with "passes half the time" |
+
+The asymmetry is the whole point: a single sample settles the first question and settles nothing about
+the second.
+
+**The two failures also cost differently.** A false green hides a defect. A false red destroys trust in
+the suite and trains everyone who meets it to re-run until it passes — which is the habit that makes
+the *next* real failure invisible. A flake is not a milder version of the problem; it is a different
+one, and it compounds.
 
 A red-green campaign is aimed entirely at the first. It is the right campaign — it is what caught the
 blocker — and it is structurally incapable of noticing a false red, because every run it cares about

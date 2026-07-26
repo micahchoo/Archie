@@ -127,9 +127,27 @@ moment to open the file.
 `pnpm -r run typecheck | grep -c "typecheck: Done"` returns **7**. The answer is **6** — the seventh
 match is `apps/viewer pretypecheck: Done`, the astro sync step. The second instance is the instructive
 one: the first was caught, corrected, and written into the handoff *with the cause recorded so it
-could not be re-derived* — and it was re-derived anyway, hours later, from the same command. **A
-lesson written down is not a lesson installed.** Carry the grep, not the memory:
-`grep -E '[^e]typecheck: Done'`, or read the package names and count those.
+could not be re-derived* — and it was re-derived anyway, hours later, from the same command by someone
+else. **A lesson written down is not a lesson installed.**
+
+Then the sting, found by the person who made the second one: **the correct number is the FIRST LINE
+of that command's own output.**
+
+```
+$ pnpm -r run typecheck | head -1
+Scope: 6 of 7 workspace projects
+```
+
+It was on screen every time either of us ran it. Two people independently reported a number derived
+from a `grep -c` while the tool's own statement of that number scrolled past above it — habit 2
+failing on the very command being used to claim a gate green. The `41/41` vs `35/35` case was caught
+*because* two numbers disagreed; here they disagreed too, in the same output, and nobody put them
+side by side.
+
+The general shape, which covers all three of this session's counting bites: **`-c`, `head` and
+`grep -v` all SUMMARISE, and each was trusted over the raw output's own statement.** Before deriving
+a number, check whether the tool already stated it. Carry the grep, not the memory —
+`grep -E '[^e]typecheck: Done'` — but read `Scope:` and reconcile the two.
 
 **2. Reconcile every number you report against a number you actually read.** The report said
 "41/41 contracted labels". That number was never measured — it was inferred from the *hard-assertion*
