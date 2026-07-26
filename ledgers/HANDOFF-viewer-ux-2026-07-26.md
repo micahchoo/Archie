@@ -252,18 +252,101 @@ must run before smoke will find them. Their absence used to yield a silent `6/6 
    **no fixture AV note carries a `reading`**, so a legend over nothing would be unfalsifiable in the
    same way as `Archie-0cc6`.
 
-## Wave 2 — DISPATCHED, running now
+## PUSHED — `origin/main` is at `5de64d2`
 
-Both branch from `c4d14d5`, disjoint territory, impl agents in flight:
+22 commits, `85c8ba5..5de64d2`. Deploy-to-Pages green; Checks was still running at the time of
+writing (4m39s against a 2m31s baseline — expected, the suite grew).
 
-| branch | tickets | exclusive territory | port |
-| --- | --- | --- | --- |
-| `ux/narrative-coupling` | `0d6c` + `c5cb` | `NarrativeReader` `ExhibitView` `aside-persistence` `narrative-landing` + spine e2e | 4361 |
-| `ux/av-surface` | `7b86` **V53 only** | `MediaPlayer` AV player modules + AV e2e | 4362 |
+Unrelated but surfaced by the push: GitHub reports **14 Dependabot vulnerabilities** on the default
+branch (6 high, 4 moderate, 4 low). Pre-existing, untouched by this work. Remember this repo pins
+security overrides in `pnpm-workspace.yaml`, NOT `package.json` — pnpm 11 ignores the latter.
 
-`ExhibitView.svelte` is the one plausible collision and belongs to the narrative slice; the AV agent
-was told to **escalate rather than edit it**. Both were told `packages/archie-viewer/**` and
-`recipes/**` are off limits while embed-parity is unmerged.
+## Wave 2 — BOTH IMPLEMENTATIONS DONE, both under review, NEITHER merged
+
+Both branch from `c4d14d5` (which is now on `origin/main`, so neither is orphaned by the push).
+
+| branch | SHA | tickets | e2e | review port |
+| --- | --- | --- | --- | --- |
+| `ux/narrative-coupling` | `6731987` | `0d6c` + `c5cb` | **117 pass / 0 fail / 0 skip** | 4364 |
+| `ux/av-surface` | `df5038f` | `7b86` V53 only | **109 pass / 0 fail / 0 skip** | 4363 |
+
+Both report check:svelte 1520 files 0/0 (baseline 1519 + one new spec each), typecheck 7/7, vitest 176.
+
+`ExhibitView.svelte` was the one plausible collision and belonged to the narrative slice; the AV agent
+escalated rather than editing it, and the narrative agent's only edit there is one line
+(`slug={slug}`). Territory held.
+
+### What the narrative slice found
+
+**The guard is original and the corpus actively demonstrates the hazard.** `scrollToBeat` records an
+intent (index + deadline); the observer is inert while one is live; the intent ends when the column
+goes **quiet** (last `scroll` + 150 ms) rather than on a fixed timer, since smooth-scroll duration is
+UA-defined. A wheel/touch/key cancels it outright — otherwise a reader's own gesture re-arms the
+suppression it is trying to escape.
+
+Citations, with what each does and does not support:
+- **scrollama** — the API choice ONLY. Independently verified: `grep scrollIntoView src/` is empty and
+  it only ever *reads* `scrollTop`, so it has no two-directions problem and is no donor for the guard.
+  The coordinator's correction confirmed.
+- **quire `canvas-panel.js:259`** — calls `goToFigureState` *and* `scrollToHash` straight from an
+  IntersectionObserver callback **with no suppression at all**. quire demonstrates the hazard rather
+  than solving it. (Under review — this inverts the ticket's framing and is the strongest claim.)
+- **quire `intersection-observer-factory.js`** — the observer's shape, ported (root = the scrolling
+  column, `rootMargin: '-50% 0% -50% 0%'`, `threshold: 0`, act on `isIntersecting`).
+- **anvil `read/Sidebar.svelte` + `editor/Sidebar.svelte`** — persist **width only**, flat global key,
+  **no collapse at all**. The corpus says nothing about persisting a hidden panel, so the
+  sessionStorage decision is stated as ours.
+
+**Two red-green injections came back GREEN and forced better tests** — the discipline working:
+- The cite-landing test did not gate the guard at all. Deleting `if (intentActive()) return;` left it
+  passing, because the arrival scroll is instant so the observer's first delivery already sees a
+  settled column. The guard's real subject is the **journey**, not the resting place: a smooth
+  multi-beat sweep fires a full section change for every beat it passes (note closes, canvas swaps
+  object). Replaced with a MutationObserver test recording every `aria-current` transition.
+- The first unscoped-key injection only unscoped the **read**, not the write, so the global key was
+  never written and the test passed.
+
+**A measured hole, not assumed:** a pure centre-line rule is broken at *both* ends of this column —
+the spine header and the V87 foot reservation each exceed half of it, so at `scrollTop 0` no beat
+crosses the line and at max scroll the line sits on beat 4 of 6. `beatAtColumnEnd` is checked first in
+**both** the scroll handler and the observer; checking only the handler lost to the observer's
+callback one frame later.
+
+**`c5cb`:** collapsed flag keyed by slug in **sessionStorage**, width stays global in localStorage —
+reading measure is a taste, hiding *this* narrative's spine is not, and a new session always gets the
+driving surface back. Collapsed state renders a visible, named **"Show sections"**. V80 re-measured,
+not re-fixed (chrome right edge 1247 vs spine left 870).
+
+### Two new measurement traps, rule material if the review confirms them
+
+- **`test.use({ reducedMotion: "reduce" })` silently did not apply** (Playwright 1.60,
+  describe-scoped, this config). `matchMedia(...).matches` read `false`, the component took the smooth
+  branch, and the test failed for a reason unrelated to the code. Now `page.emulateMedia(...)` **and
+  the spec asserts the emulation took**.
+- **Chromium swallows a synthetic wheel outright during a programmatic smooth scroll** — the column
+  continued to its target as if the wheel never happened. That test therefore runs under reduced
+  motion; the smooth variant would have been measuring Chromium's animation-interruption policy.
+
+### What the AV slice found
+
+Ticket said **four** dropped affordances; the prior-art backbone said six; the measured answer is
+**ten** — six restored, four enumerated-and-not-built, **three missed by both** (the Escape ladder,
+the Details/metadata tab, `object.summary`). Nine red-green injections, all red.
+
+**Stated absence:** nothing in the corpus drives an AV annotation surface in a browser
+(`videojs-annotation` is jsdom unit tests, `hyperaudio-lite` ships no tests, `clover-iiif` neuters
+canvas in `setupTests.ts`). The hermetic-media approach is `offline.ts`'s own idea applied to a media
+element — claimed as original rather than stretched into a citation.
+
+**A FALSE FAILURE, which is rarer here than the false greens:** `route.fulfill` without range support
+yields `loadedmetadata`, a correct duration and playback from zero — everything looks healthy — but
+Chromium will not seek a resource not advertised as range-capable. `currentTime = 120` left the
+playhead crawling up from 0 (measured 14.87 s). The spec now serves **206**. Without it, a seek test
+reports the *app* broken when the *fixture* is.
+
+**Reported, not fixed (pre-existing):** the sticky object nav covers **77%** of the first transcript
+line at rest (1280×720: aside header 464px, nav y488–576, row 0 spans 464–570). `SidebarObjectNav` is
+`position: sticky; bottom: 0` by design.
 
 Two corrections were baked into the briefs so they are not rediscovered:
 

@@ -158,6 +158,15 @@ test.describe("the fitted region clears the chrome that floats over the canvas (
     // Measured with the reservation forced off, this goes red on the 2nd note. Measured with it ON,
     // it goes red on nothing EXCEPT the height-constrained case below — which is a real gap, not a
     // tuning artefact, and is named rather than sliced out of the sweep.
+    // This test's cost is deliberate and scales with the fixture: it opens EVERY halo note, and the
+    // sweep width is explicitly not a tuning knob (see above). So its budget has to scale with the
+    // sweep rather than the sweep being cut to fit the budget. ~29s locally; the suite default is
+    // 60_000, which CI overran on 2026-07-26 — it failed partway through with "the deep-zoom canvas
+    // never painted", which reads like a WebGL problem and was really the clock running out mid-sweep
+    // (99 other tests passed, including canvas-dependent ones in selection.spec.ts). If this ever
+    // fails again on paint, check the elapsed time BEFORE suspecting the canvas.
+    test.setTimeout(240_000);
+
     const notes = (await screenshotNotes(baseURL!)).filter((n) => n.halo);
     expect(notes.length, "not enough halo notes to sweep").toBeGreaterThan(20);
     await goOffline(page);
