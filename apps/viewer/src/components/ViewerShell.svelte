@@ -395,12 +395,22 @@
      can be `background-color: transparent` without a legibility problem: nothing is behind it.
      `min-height: 0` on `.route` is what lets the routed view actually shrink to the space left over
      instead of overflowing it (the default `min-height: auto` on a flex item). */
-  .shell { display: flex; flex-direction: column; min-height: 100dvh; }
+  /* `height`, not `min-height`. A DEFINITE height here is what makes `height: 100%` resolve all the
+     way down the chain (`.exhibit` → `.reader` → `.stage` → the canvas); with `min-height` the column
+     is content-sized, the percentages resolve to `auto`, and a tall child grows the page instead of
+     scrolling inside it. Measured while docking: the narrative's spine (1847px of section cards) took
+     `.narrative` to 2239px in an 800px viewport, which pushed the docked chrome bar off the bottom of
+     the screen and left the reader scrolling the whole app. */
+  .shell { display: flex; flex-direction: column; height: 100dvh; }
   /* The routed view gets whatever the bars leave. It is a plain block, not a flex parent: a routed
      component emits SEVERAL root elements (ExhibitView emits its strips and its reader), so a
      `flex: 1` on every child would stretch a status strip to fill the page. Each view fills the row
-     with `height: 100%` from its own stylesheet instead. */
-  .route { flex: 1 1 auto; min-height: 0; }
+     with `height: 100%` from its own stylesheet instead.
+
+     `overflow: auto` is for the views that are genuinely TALLER than the row — the gallery wall and the
+     object grid are paper columns that scroll. A view sized `height: 100%` fills the row exactly and
+     never reaches it. */
+  .route { flex: 1 1 auto; min-height: 0; overflow: auto; }
 
   /* Persistent top bar (dba2) — ONE thin three-zone bar; chrome recedes, the image is the star.
      DOCKED (2026-07-26): it used to be `position: fixed` over the canvas, which is what made the

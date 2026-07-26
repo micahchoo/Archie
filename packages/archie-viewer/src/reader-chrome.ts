@@ -159,16 +159,22 @@ const CHROME_STYLES = `
      and language, which are now the same thing on both sides of the contract. It was an absolute
      overlay at the canvas's top-left; as a row it needs no plate, no shadow and no contrast floor,
      because nothing is behind it. The radios read as a horizontal chip row, exactly as the shell's do. */
-  .rc-legend { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-3); min-width: 0; color: var(--ink-canvas-primary); font-family: var(--font-body); }
+  .rc-legend { display: flex; align-items: center; flex-wrap: nowrap; gap: var(--space-3); min-width: 0; color: var(--ink-canvas-primary); font-family: var(--font-body); }
   .rc-legend .rc-eyebrow { margin: 0; color: var(--ink-canvas-secondary); }
-  .rc-legend .rc-opts { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+  /* ONE ROW, chips SCROLL rather than wrap — the shell's legend does exactly the same, and for the
+     same reason: the bar's height is the whole cost of docking and it comes out of the image. Measured
+     on a four-reading object: wrapping 81px, one scrolling row 34px.
+     (No backticks in this comment: it lives inside the CHROME_STYLES template literal, and one would
+     terminate the string. That has cost two builds already.) */
+  .rc-legend .rc-opts { display: flex; flex: 1 1 auto; min-width: 0; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: var(--space-1); overflow-x: auto; scrollbar-width: thin; }
+  .rc-legend .rc-opt { flex: none; white-space: nowrap; }
   .rc-legend .rc-opt { display: flex; align-items: center; gap: var(--space-2); text-align: left; padding: var(--space-1) var(--space-2); border: none; border-radius: var(--radius-sm); background: transparent; color: var(--ink-canvas-secondary); cursor: pointer; font: inherit; font-size: .9rem; }
   .rc-legend .rc-opt:hover { color: var(--ink-canvas-primary); }
   .rc-legend .rc-opt[aria-checked="true"] { color: var(--ink-canvas-primary); font-weight: 600; background: var(--surface-canvas-overlay); box-shadow: inset 0 -2px 0 var(--rc-rd, var(--accent)); }
   .rc-legend .rc-sw { flex: none; width: 14px; height: 14px; overflow: visible; border-radius: 2px; box-shadow: 0 0 0 1px var(--border-canvas-emphasis); }
   .rc-legend .rc-nm { min-width: 0; }
   .rc-legend .rc-ct { flex: none; padding-left: var(--space-2); font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: .78rem; color: var(--ink-canvas-muted); }
-  .rc-legend .rc-desc { margin: 0; padding-left: var(--space-3); border-left: 1px solid var(--border-canvas); font-size: .82rem; font-style: italic; line-height: 1.5; color: var(--ink-canvas-secondary); min-width: 0; max-width: 28ch; }
+  .rc-legend .rc-desc { margin: 0; padding-left: var(--space-3); border-left: 1px solid var(--border-canvas); font-size: .82rem; font-style: italic; line-height: 1.5; color: var(--ink-canvas-secondary); min-width: 0; max-width: 28ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 `;
 
 const NS = "http://www.w3.org/2000/svg";

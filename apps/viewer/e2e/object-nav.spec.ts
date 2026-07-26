@@ -56,7 +56,11 @@ test.describe("the nav is present in BOTH sidebar states (V65's discoverability 
 
     // OPEN
     await expect(nav).toBeVisible();
-    expect(await nav.evaluate((e) => !!e.closest("main"))).toBe(true); // canvas chrome, not the aside
+    // Canvas chrome, not the aside. It used to live INSIDE `<main>` (that was V40/V80's fix for
+    // absolute-positioning against the wrong row); since ADR-0019's layout row it is a flow member of
+    // the canvas chrome BAR, which is the same claim one level out — it belongs to the canvas, and it
+    // is not the sidebar's.
+    expect(await nav.evaluate((e) => !!e.closest(".canvas-dock"))).toBe(true);
     await expect(page.locator(".canvas-nav .cn-pos")).toHaveText(/^Object \d+ of \d+$/);
 
     // COLLAPSED — the state the old stepper disappeared in
@@ -71,7 +75,7 @@ test.describe("the nav is present in BOTH sidebar states (V65's discoverability 
     const nav = page.locator(".canvas-nav");
 
     await expect(nav).toBeVisible();
-    expect(await nav.evaluate((e) => !!e.closest("main"))).toBe(true);
+    expect(await nav.evaluate((e) => !!e.closest(".canvas-dock"))).toBe(true);
     await expect(page.locator(".canvas-nav .cn-pos")).toHaveText(/^Section \d+ of \d+$/);
 
     await toggleAside(page, "narrative");

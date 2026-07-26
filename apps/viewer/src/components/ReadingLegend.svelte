@@ -79,7 +79,7 @@
      Its layout flips with its home: the radios ran as a vertical column when it was a panel, and read as
      a HORIZONTAL row of chips in a bar. Same controls, same roles, same swatches. */
   .legend {
-    display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-3);
+    display: flex; align-items: center; flex-wrap: nowrap; gap: var(--space-3);
     min-width: 0; color: var(--ink-canvas-primary);
     font-family: var(--font-body), sans-serif;
   }
@@ -94,7 +94,13 @@
   @media (min-width: 1100px) {
     .gloss { display: inline; font-family: var(--font-body), sans-serif; font-size: var(--text-ui-xs, 0.7rem); color: var(--ink-canvas-secondary); }
   }
-  .opts { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--space-1); transition: opacity 160ms ease; }
+  /* ONE ROW, and the chips SCROLL rather than wrap. The bar's height is the entire cost of docking —
+     it comes straight out of the image — so it is the number to be exact about. Measured on the
+     narrative at 860px: wrapping chips made this bar 151px of a 698px stage (22%); one scrolling row
+     is 34px (5%). The trade is that a reading past the right edge needs a scroll to reach, which is
+     the ordinary tab-bar bargain and is reversible if a future layout has the width to spare. */
+  .opts { display: flex; flex: 1 1 auto; min-width: 0; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: var(--space-1); overflow-x: auto; scrollbar-width: thin; transition: opacity 160ms ease; }
+  .opt { flex: none; white-space: nowrap; }
   /* Hidden: the layer choices recede (markers are off the canvas) but stay legible + pickable. */
   .opts.dimmed { opacity: 0.5; }
   .opt {
@@ -117,7 +123,7 @@
   .sw { flex: none; width: 14px; height: 14px; overflow: visible; border-radius: 2px; box-shadow: 0 0 0 1px var(--border-canvas-emphasis); }
   /* Name takes the row and may wrap — a long reading name (e.g. "Natural-language reading") must NOT
      shove the count off the legend's capped width; min-width:0 lets it shrink/wrap instead of overflowing. */
-  .nm { flex: 1; min-width: 0; }
+  .nm { min-width: 0; }
   /* Per-layer note count on the current image — a quiet tabular figure pinned to the trailing edge
      (flex:none so it never shrinks or gets pushed out). Tabular nums so multi-digit counts don't jitter. */
   .ct { flex: none; padding-left: var(--space-3); font-family: var(--font-mono), monospace; font-variant-numeric: tabular-nums; font-size: 0.78rem; color: var(--ink-canvas-muted); }
@@ -129,6 +135,9 @@
     font-family: var(--font-body), sans-serif;
     font-size: 0.82rem; font-style: italic; line-height: 1.5; color: var(--ink-canvas-secondary);
     min-width: 0; max-width: 28ch;
+    /* One line, clipped: this is a gloss on the active layer, not the note. Letting it wrap would put
+       the bar back to two rows and take the height straight off the image. */
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   /* Hide-all toggle — a quiet footer action under a hairline rule, distinct from the layer radios.
      Pressed (notes hidden) flips to the rationed cord-blue connector accent so the off-state reads. */

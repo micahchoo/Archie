@@ -99,7 +99,9 @@ test.describe("Escape is a ladder, not one binding (V26)", () => {
     await goOffline(page);
     await page.goto("./#/voynich");
     await page.locator("button.object").first().click();
-    const main = page.locator(".reader > main");
+    // `.reader main`, not `.reader > main`: the canvas sits inside the reader's `.stage` column since
+    // ADR-0019's layout row put the chrome bar and the note row beside it as siblings.
+    const main = page.locator(".reader main");
     await expect(main).toHaveAttribute("tabindex", "-1");
     await main.focus();
     expect(await page.evaluate(() => document.activeElement?.tagName.toLowerCase())).toBe("main");
