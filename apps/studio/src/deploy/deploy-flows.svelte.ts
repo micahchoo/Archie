@@ -23,7 +23,10 @@
 
 import { collectFiles, ensureRepo, enablePagesFor, pagesUrlFor, GitHubPublishError, type FileContent, type Filesystem } from "@render/core";
 import { isTauri } from "../tauri-fs.js";
-import { readJson, writeJson } from "../persisted.js";
+// Split out (2026-07-26) so the PUBLISH path can read the remembered URL without importing this
+// lazily-loaded module. Re-exported: existing callers are unaffected.
+import { rememberTarget, rememberedTarget } from "./remembered.js";
+export { rememberedTarget } from "./remembered.js";
 import type { DeploySession, DeployTarget, DeployProgress, DeployError, DeviceStart, DevicePollResult } from "./types.js";
 import archieConfig from "../../../../archie.config.json";
 
@@ -34,7 +37,7 @@ export interface DeploySource {
   library: { id: string; title: string };
   /** Project the authored library into the static site tree (a `MemoryFilesystem`), exactly as
    *  publish-flows' `projectSite()` does — reuses the same media tiling / thumbnail path. */
-  projectSite: () => Promise<Filesystem>;
+  projectSite: (baseUrl: string) => Promise<Filesystem>;
 }
 
 /** A landed deploy. `manualPagesNeeded` is set (never thrown) when the commit pushed but GitHub Pages
@@ -42,7 +45,7 @@ export interface DeploySource {
 export type DeployResult = { url: string; commitSha: string; manualPagesNeeded?: boolean };
 
 /** The remembered-target keys — deliberately NOT the token/session (see TOKEN SAFETY above). */
-const rememberKey = (libraryId: string) => `archie:deploy:${libraryId}`;
+
 
 const KNOWN_KINDS: ReadonlySet<string> = new Set<DeployError["kind"]>([
   "auth-pending", "slow-down", "expired", "denied", "device-flow-disabled", "network", "rate-limited", "push", "gh",
@@ -116,19 +119,7 @@ async function pushTree(dir: string, target: DeployTarget, token: string): Promi
   return invoke<{ commitSha: string }>("gh_push_tree", { dir, owner: target.owner, repo: target.repo, branch: target.branch, token });
 }
 
-/** Remember where this library last deployed, for the update-confirm return visit. Stores `{ target, url }`
- *  ONLY — never the token/session. A persist failure is not worth failing a landed deploy over (writeJson
- *  swallows it); the remembered target is a convenience. */
-function rememberTarget(libraryId: string, target: DeployTarget, url: string): void {
-  writeJson(rememberKey(libraryId), { target, url });
-}
 
-/** The remembered target for a library, or null if it has never deployed (or the store is unreadable).
- *  Task 12 (update-confirm) reads this to pre-fill the return visit. No shape validation (trust-the-parse,
- *  matching the original behavior) — only absence/corruption collapse to null. */
-export function rememberedTarget(libraryId: string): { target: DeployTarget; url: string } | null {
-  return readJson<{ target: DeployTarget; url: string }>(rememberKey(libraryId));
-}
 
 /**
  * Build the deploy half of the publish flow over a given source. Returned `deployToPages` keeps the
@@ -155,7 +146,11 @@ export function createDeployFlows(source: DeploySource) {
     try {
       // 1. staging — project the library, flatten to a path→content map, write it to a fresh temp dir.
       onProgress({ phase: "staging" });
-      const projected = await source.projectSite();
+      // The destination is knowable BEFORE we stage — `pagesUrlFor` is a pure function of owner+repo —
+      // so a first-ever deploy bakes real absolute ids too, not just a repeat one (which would find a
+      // remembered URL). This is the whole reason publish stopped baking `archie.demo`.
+      const url = pagesUrlFor(target.owner, target.repo);
+      const projected = await source.projectSite(url);
       const files = await collectFiles(await projected.root());
       tempDir = await stageToTempDir(files);
 
@@ -171,7 +166,6 @@ export function createDeployFlows(source: DeploySource) {
       onProgress({ phase: "enabling-pages" });
       const pagesEnabled = await enablePagesFor(target.owner, target.repo, session.token, target.branch);
 
-      const url = pagesUrlFor(target.owner, target.repo);
       rememberTarget(source.library.id, target, url);
       return pagesEnabled ? { url, commitSha } : { url, commitSha, manualPagesNeeded: true };
     } catch (e) {

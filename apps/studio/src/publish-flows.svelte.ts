@@ -41,7 +41,13 @@ export interface ZipExportOpts {
 }
 
 export interface PublishDeps {
-  baseUrl: string;
+  /** The base to bake into manifest / canvas / annotation ids, resolved AT PUBLISH TIME (2026-07-26).
+   *  Was a fixed `BASE` = `WORKING_IRI_BASE` (`https://archie.demo/`), so every published tree carried
+   *  ids on a domain nobody owns and ADR-0021's cite ladder resolved to nothing. Now: the library's
+   *  live URL if it has ever deployed, else `""` (relative ids) — see deploy/remembered.ts
+   *  `publishBaseFor`. A first-ever deploy overrides it explicitly, since `pagesUrlFor` knows the
+   *  destination before staging. */
+  publishBase: () => string;
   /** Flush the CURRENT exhibit's edits to OPFS (App's save()) so the published tree is current. */
   flushExhibit: () => Promise<void>;
   /** Per-exhibit annotation logs for the publish builders. */
@@ -229,7 +235,11 @@ export function createPublishFlows(deps: PublishDeps) {
   }
   // Project the Library into the static site tree (in a MemoryFilesystem). Same projection the zip
   // uses — different sink. withOriginals (opt-in) re-projects with preserved source files included.
-  async function projectSite(withOriginals: boolean): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; missingAssets: MissingAsset[]; corruptLogs: CorruptLogFinding[] }> {
+  /** One resolution point for the publish base, so the three sinks cannot disagree. `override` is the
+   *  first-deploy case (the URL is known from owner+repo before we stage). */
+  const baseFor = (override?: string) => override ?? deps.publishBase();
+
+  async function projectSite(withOriginals: boolean, baseOverride?: string): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; missingAssets: MissingAsset[]; corruptLogs: CorruptLogFinding[] }> {
     // Torn-store advisory (Archie-a690): the annotation findings come back from the loadAllLogs pass
     // (which just warned on them); the structure findings are collected as publishLibrary reads each
     // exhibit's section log via this per-run `collect` sink. Combined, they feed the dialog advisory.
@@ -237,7 +247,7 @@ export function createPublishFlows(deps: PublishDeps) {
     const logs = await deps.loadAllLogs();
     const annotationCorruption = deps.annotationCorruption?.() ?? [];
     const fs = new MemoryFilesystem();
-    const { brokenLinks, incompleteCanvases, missingAssets } = await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, getStructure: makeGetStructure((f) => structureCorruption.push(f)), ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
+    const { brokenLinks, incompleteCanvases, missingAssets } = await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: baseFor(baseOverride), getAsset, getThumbnail, tileObject, tileRemote, getStructure: makeGetStructure((f) => structureCorruption.push(f)), ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
     if (incompleteCanvases.length > 0) console.warn(`Publish: ${incompleteCanvases.length} image object(s) publishing with no width/height (IIIF Pres 3 §5.3)`, incompleteCanvases);
     if (missingAssets.length > 0) console.warn(`Publish: ${missingAssets.length} imported image(s) have no stored bytes — they publish as broken references`, missingAssets);
@@ -251,7 +261,7 @@ export function createPublishFlows(deps: PublishDeps) {
   }
   // The publish opts shared by every zip sink (streaming + eager): the SAME projection (media tiling,
   // baked thumbnails, structure/history sidecars, static pages) the folder/GH sinks use.
-  const zipPublishOpts = () => ({ baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS });
+  const zipPublishOpts = () => ({ baseUrl: baseFor(), getAsset, getThumbnail, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS });
   // The library a zip export ships: the full build, optionally narrowed to the chosen exhibits (the
   // Publish dialog's working-copy chooser). Filtering AFTER buildFullLibrary keeps the template
   // exclusion and every mapper in one place; a cite into an omitted exhibit degrades to plain text
@@ -313,7 +323,7 @@ export function createPublishFlows(deps: PublishDeps) {
   // was the cost we cut.
   async function writeTree(fs: Filesystem, plan: FolderWritePlan = {}) {
     const logs = await deps.loadAllLogs();
-    await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS, ...plan });
+    await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: baseFor(), getAsset, getThumbnail, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS, ...plan });
   }
   /** Download the library as .archie.zip. False = the user declined/cancelled. Chromium streams to
    *  disk in bounded memory; else the size-guarded eager path. `opts` = the save surfaces' custom
@@ -357,9 +367,11 @@ export function createPublishFlows(deps: PublishDeps) {
      *  pack, so it never has to duplicate the browser-only tiling closures. Flushes the current exhibit
      *  first (parity with `localPublishFolder`) so the pushed tree is current; also surfaces the
      *  broken-links / incomplete-canvas advisories the same way `openPublish` does. */
-    async projectSiteFs(): Promise<Filesystem> {
+    async projectSiteFs(baseUrl?: string): Promise<Filesystem> {
       await deps.flushExhibit();
-      const { fs, brokenLinks, incompleteCanvases, missingAssets, corruptLogs } = await projectSite(false);
+      // `baseUrl` is the deploy path's known destination (pagesUrlFor, before staging). Absent for
+      // every other caller, which then resolves through `publishBase()`.
+      const { fs, brokenLinks, incompleteCanvases, missingAssets, corruptLogs } = await projectSite(false, baseUrl);
       s.brokenLinks = brokenLinks;
       s.incompleteCanvases = incompleteCanvases;
       s.missingAssets = missingAssets;

@@ -31,7 +31,7 @@ const library: Library = {
 };
 function deps(): PublishDeps {
   return {
-    baseUrl: "https://u.gh.io/lib/",
+    publishBase: () => "https://u.gh.io/lib/",
     flushExhibit: async () => {},
     loadAllLogs: async () => ({}),
     buildFullLibrary: () => library,
