@@ -2676,6 +2676,7 @@
       onzip={p.localPublishZip}
       ondownload={p.download}
       onenterweb={p.openPublish}
+      previewtree={p.previewTree}
       exhibits={exportableExhibits}
       suggestedZipName={suggestedZipName}
       library={deployLibrary}

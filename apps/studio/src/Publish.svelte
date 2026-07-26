@@ -37,6 +37,7 @@
   import { untrack } from "svelte";
   import { createPublishMachine, isResumableState } from "./publish-machine.svelte.js";
   import Spinner from "./Spinner.svelte";
+  import ViewerPreview from "./ViewerPreview.svelte";
   import { isTauri } from "./tauri-fs.js";
   // Scrimmed surface via the shared helper (Archie-5968): scrim-click + Esc + focus trap/return, single-scrim
   // invariant. ONE `use:scrimmed` now (was two, one per dialog) — merging removes the unmount/remount that
@@ -58,6 +59,7 @@
     onzip,
     ondownload,
     onenterweb,
+    previewtree,
     exhibits = [],
     suggestedZipName = "",
     // --- desktop device-flow seams (App.svelte wires these from deploy-flows in Task 13) ---
@@ -93,6 +95,10 @@
     /** Entering the GitHub wizard step from the chooser: runs the size-guard confirm + caches the site
      *  projection (publish-flows' openPublish). Resolves false if the author declined the guard — stay put. */
     onenterweb: () => Promise<boolean>;
+    /** Build the published tree in memory for the "as a reader sees it" preview (publish-flows'
+     *  previewTree). Optional: absent ⇒ the preview affordance is not offered at all, which is how a
+     *  host that cannot project a site (no library open) degrades — not a button that errors. */
+    previewtree?: () => Promise<{ fs: import("@render/core").Filesystem }>;
     /** The exportable (non-template) exhibits, for the working-copy chooser's include list. */
     exhibits?: { slug: string; title: string }[];
     /** The name the export starts from — the bound zip's name, else derived from the library title. */
@@ -173,7 +179,11 @@
   });
 
   // === step 1: the destination chooser (former PublishDialog.svelte) ===================================
-  type MenuPhase = "choose" | "zip-options" | "local" | "working" | "done-folder" | "done-zip" | "done-download" | "error" | "wizard";
+  // "preview" is a PHASE of this surface, not a second scrim — the modality contract's nested-flow
+  // rule (see this file's header): opening one surface from inside another replaces it, with an
+  // in-surface back affordance. A preview overlay on top of the dialog would break the single-scrim
+  // invariant.
+  type MenuPhase = "choose" | "zip-options" | "local" | "working" | "done-folder" | "done-zip" | "done-download" | "error" | "wizard" | "preview";
   let menuPhase = $state<MenuPhase>("choose");
   let folderName = $state("");
   let zipName = $state("");
@@ -441,7 +451,17 @@
           </button>
         {/if}
       </div>
-      <div class="actions"><button type="button" class="ghost" onclick={close}>Cancel</button></div>
+      <div class="actions">
+        {#if previewtree}
+          <!-- Not a destination, so not a `.choice` — a secondary action beside Cancel. Reads as
+               "see it before you decide where it goes." -->
+          <button type="button" class="ghost" onclick={() => (menuPhase = "preview")}>Preview as reader</button>
+        {/if}
+        <button type="button" class="ghost" onclick={close}>Cancel</button>
+      </div>
+
+    {:else if menuPhase === "preview" && previewtree}
+      <ViewerPreview {previewtree} onback={backToChooser} />
 
     {:else if menuPhase === "zip-options"}
       <header>
