@@ -322,10 +322,10 @@
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/0000000001MQK4A3GK8ATT2SRX.json"
             },
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/000000001HTW6DFPNF6ZHQQ78B/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/000000001JSGFXP3VK4RRQXQTF/v1",
               "type": "Annotation",
               "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/ex-voynich.o1",
-              "modified": "1970-01-01T00:00:00.049Z",
+              "modified": "1970-01-01T00:00:00.050Z",
               "body": [
                 {
                   "type": "TextualBody",
@@ -334,13 +334,13 @@
                 }
               ],
               "motivation": "commenting",
-              "created": "1970-01-01T00:00:00.049Z",
+              "created": "1970-01-01T00:00:00.050Z",
               "creator": {
                 "type": "Person",
                 "name": "curator"
               },
-              "archie:logicalId": "000000001HTW6DFPNF6ZHQQ78B",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000001HTW6DFPNF6ZHQQ78B.json"
+              "archie:logicalId": "000000001JSGFXP3VK4RRQXQTF",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000001JSGFXP3VK4RRQXQTF.json"
             }
           ],
           "label": {
@@ -3715,10 +3715,10 @@
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/0000000009EHDVNXCM6KP6FMN0.json"
             },
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/000000001JSGFXP3VK4RRQXQTF/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/000000001KX2F342E3KYEVTEC0/v1",
               "type": "Annotation",
               "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/ex-voynich.o9",
-              "modified": "1970-01-01T00:00:00.050Z",
+              "modified": "1970-01-01T00:00:00.051Z",
               "body": [
                 {
                   "type": "TextualBody",
@@ -3727,13 +3727,41 @@
                 }
               ],
               "motivation": "commenting",
-              "created": "1970-01-01T00:00:00.050Z",
+              "created": "1970-01-01T00:00:00.051Z",
               "creator": {
                 "type": "Person",
                 "name": "curator"
               },
-              "archie:logicalId": "000000001JSGFXP3VK4RRQXQTF",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000001JSGFXP3VK4RRQXQTF.json"
+              "archie:logicalId": "000000001KX2F342E3KYEVTEC0",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000001KX2F342E3KYEVTEC0.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/000000001NFTB7NPB94R6011QJ/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/ex-voynich.o9",
+                "selector": {
+                  "type": "SvgSelector",
+                  "value": "<svg><polygon points=\"1980,740 2498,924 2937,1268 3030,1820 2855,2325 2525,2764 1980,2880 1470,2703 1032,2368 935,1820 1053,1285 1465,928\" /></svg>"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.053Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "**The north-west rosette.** One medallion of the nine, traced round its rim rather than boxed: the causeways that leave it at four and eight o'clock belong to the joins, not to this circle, and a rectangle drawn here would claim them. The manuscript's own geometry is round, so the annotation is too.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.053Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000001NFTB7NPB94R6011QJ",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000001NFTB7NPB94R6011QJ.json"
             }
           ],
           "label": {
@@ -4917,10 +4945,10 @@
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000001GRT9MVKB3S28A70M0.json"
             },
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/000000001KX2F342E3KYEVTEC0/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/000000001MZYC6YEVWYJHAER4R/v1",
               "type": "Annotation",
               "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/ex-voynich.o12",
-              "modified": "1970-01-01T00:00:00.051Z",
+              "modified": "1970-01-01T00:00:00.052Z",
               "body": [
                 {
                   "type": "TextualBody",
@@ -4929,13 +4957,13 @@
                 }
               ],
               "motivation": "commenting",
-              "created": "1970-01-01T00:00:00.051Z",
+              "created": "1970-01-01T00:00:00.052Z",
               "creator": {
                 "type": "Person",
                 "name": "curator"
               },
-              "archie:logicalId": "000000001KX2F342E3KYEVTEC0",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000001KX2F342E3KYEVTEC0.json"
+              "archie:logicalId": "000000001MZYC6YEVWYJHAER4R",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000001MZYC6YEVWYJHAER4R.json"
             }
           ],
           "label": {
@@ -4989,7 +5017,38 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/ex-voynich.o12/annotations-abjad.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/000000001HTW6DFPNF6ZHQQ78B/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/ex-voynich.o12",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "t=165,205"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.049Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Listen to this stretch for word length rather than sound: the runs come in the short, repeating shapes a root-and-pattern morphology produces, and they fall where a reader of an unknown but real language would expect breaks. Under the cipher and hoax readings the same seconds are an artefact of the encoding; here they are speech.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.049Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "000000001HTW6DFPNF6ZHQQ78B",
+              "archie:reading": "abjad",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000001HTW6DFPNF6ZHQQ78B.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/readings/abjad.json",

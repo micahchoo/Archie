@@ -3,7 +3,7 @@
 // publishLibrary and reads it back per-exhibit, exactly as a static consumer would. One log per exhibit;
 // each note targets its object's canvas.
 import { appendNew, asClientId, asExhibitId, asLibraryId, type AObject, type AnnotationLog, type Library, type Section } from "@render/core";
-import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichWholeObjectNotes, voynichSections, voynichCredits, voynichExhibitMetadata } from "./voynich.js";
+import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichWholeObjectNotes, voynichPolygonNotes, polygonSelectorValue, voynichSections, voynichCredits, voynichExhibitMetadata } from "./voynich.js";
 // Single source of truth lives in the viewer-owned base module (not this demo file), so the shell
 // can import canvasIdFor without pulling in demo fixtures. Re-exported for gen-published.mts.
 import { BASE, canvasIdFor } from "../src/published-base.js";
@@ -170,6 +170,18 @@ function buildVoynichLog(slug: string, opts: { objectIds?: Set<string>; includeA
     ({ log } = appendNew(log, {
       target: canvasIdFor(slug, n.objectId), // bare canvas IRI — no SpecificResource, no selector
       body: addBody(n.comment), motivation: "commenting", lastEditor: author, now: ++now, rng,
+    }));
+  }
+  // POLYGON regions (Archie-f4fb) — an `SvgSelector`, not a FragmentSelector: the only non-rectangular
+  // geometry in the seed. Appended LAST, AFTER the whole-object notes, so every note above keeps the
+  // deterministic logical id it already published (ADR-0014). The selector VALUE is minted by the shared
+  // fixture (`polygonSelectorValue`), so this bake and the Studio seed carry byte-identical markup —
+  // the same no-drift contract geoNotes' pre-computed geometry has.
+  for (const n of voynichPolygonNotes) {
+    if (!keep(n.objectId)) continue;
+    ({ log } = appendNew(log, {
+      target: { type: "SpecificResource", source: canvasIdFor(slug, n.objectId), selector: { type: "SvgSelector", value: polygonSelectorValue(n.points) } },
+      body: addBody(n.comment), motivation: "commenting", lastEditor: author, now: ++now, rng, ...(n.reading ? { reading: n.reading } : {}),
     }));
   }
   return log;

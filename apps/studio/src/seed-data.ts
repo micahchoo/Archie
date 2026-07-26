@@ -16,7 +16,7 @@ import {
 // `tileSource` lives on WorkingObjectMeta — types cleanly regardless of store.ts's re-export shape.
 type ExhibitMeta = WorkingExhibitMeta;
 import { atlasTitle, atlasSummary, atlasRights, atlasReadings, atlasObjects, atlasNotes } from "../../viewer/fixtures/atlas.js";
-import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichWholeObjectNotes, voynichSections } from "../../viewer/fixtures/voynich.js";
+import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichWholeObjectNotes, voynichPolygonNotes, polygonSelectorValue, voynichSections } from "../../viewer/fixtures/voynich.js";
 // The geo-annotation prototype's content lives in the SHARED fixture (single source of truth, §A) — the
 // SAME module the Viewer's published bake reads. Re-export GEO_TEMPLATE/geoBasemap so existing Studio
 // consumers (geo-notes.test.ts) keep importing them from here while the definitions live in one place.
@@ -42,6 +42,13 @@ export const rectSel = (canvas: string, x: number, y: number, w: number, h: numb
 export const timeSel = (canvas: string, start: number, end: number) => ({
   type: "SpecificResource" as const, source: canvas,
   selector: fragmentSelector(timeFragmentValue(start, end)),
+});
+/** Polygon selector (Archie-f4fb) — the non-rectangular analogue of rectSel. Core exports no
+ *  SvgSelector constructor to match `fragmentSelector`, so the markup is minted by the SHARED fixture
+ *  (`polygonSelectorValue`), which is what keeps this seed and the Viewer's bake byte-identical. */
+export const polySel = (canvas: string, points: string) => ({
+  type: "SpecificResource" as const, source: canvas,
+  selector: { type: "SvgSelector" as const, value: polygonSelectorValue(points) },
 });
 
 // §B object set: 11 IIIF-direct images + 1 sound (o12). Spread width/height/mediaType/duration
@@ -121,6 +128,19 @@ function seededVoynich(author: ClientId, slug: string, opts: { objectIds?: Set<s
   for (const n of voynichWholeObjectNotes) {
     if (!keep(n.objectId)) continue;
     s.createNote({ target: canvasIdFor(BASE, slug, n.objectId), body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }] });
+  }
+  // POLYGON regions (Archie-f4fb) — the SvgSelector analogue of rectSel above. Seeded LAST, matching
+  // sample-data.ts's append order, so the Studio session and the published bake carry the same notes in
+  // the same order. THE CARRY CONTRACT: `VoynichPolygonNote` is read HERE and in
+  // `apps/viewer/fixtures/sample-data.ts` — a field only one of them carries is a silent seed
+  // divergence, which is why `reading` is spread on both sides.
+  for (const n of voynichPolygonNotes) {
+    if (!keep(n.objectId)) continue;
+    s.createNote({
+      target: polySel(canvasIdFor(BASE, slug, n.objectId), n.points),
+      body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }],
+      ...(n.reading ? { reading: n.reading } : {}),
+    });
   }
   return s;
 }
