@@ -53,11 +53,17 @@ function silentWav(seconds: number): Buffer {
  * Serve the seed recording locally. Registered AFTER `goOffline` so it wins (later routes take
  * precedence in Playwright), and matched on the fixture's own URL.
  *
- * RANGE REQUESTS ARE NOT OPTIONAL HERE, and finding that out cost a wrong conclusion. A plain
- * `fulfill` with the whole body gets `loadedmetadata`, a correct `duration`, and playback from zero —
- * everything looks healthy — but Chromium will not SEEK a resource the server did not advertise as
- * range-capable: setting `currentTime = 120` silently left the playhead running up from 0 (measured
- * 14.87s). A "seek" test against that server would have reported the app broken when the fixture was.
+ * ANSWERING RANGE REQUESTS IS NOT OPTIONAL HERE, and finding that out cost a wrong conclusion. A plain
+ * `fulfill` of the whole body gets `loadedmetadata`, a correct `duration`, and playback from zero —
+ * everything looks healthy — but Chromium will not SEEK a resource whose server ignores `Range`:
+ * setting `currentTime = 120` silently left the playhead running up from 0 (measured 14.87s;
+ * independently reproduced at 14.88s). A "seek" test against that server reports the APP broken when
+ * the fixture is.
+ *
+ * The load-bearing property is answering the `Range` header AT ALL, not the `206` status specifically —
+ * measured, a `200` carrying the correct slice seeks just as well. The `206` below is kept because it
+ * is correct HTTP, not because the seek depends on it; don't "simplify" this by dropping the header
+ * parse and keeping the status.
  */
 async function withRecording(page: Page, seconds = 296): Promise<void> {
   const body = silentWav(seconds);
@@ -136,9 +142,15 @@ test.describe("V53 · the note surface the AV reader had no way to reach", () =>
     // scrolls UNDER it"), so at rest it legitimately covers whatever sits in the last ~88px of the
     // aside. Asserting from an un-scrolled aside would measure the sticky footer, not an overlay
     // swallowing the control — and `Locator.click()` scrolls into view anyway, so it would also be
-    // asserting something the click below does not depend on. (Recorded rather than swallowed: at rest
-    // and 1280x720 this aside's header runs 464px, so the sticky nav covers 77% of the FIRST cue row.
-    // Pre-existing, not V53's list, and reported up rather than fixed here.)
+    // asserting something the click below does not depend on.
+    //
+    // Measured at 1280x720 on this tree: the aside header ends at 354px, cue row 0 runs 354-460, and the
+    // sticky nav runs 488-576 — **0px overlap**, `elementFromPoint` at row 0's centre returns
+    // `SPAN.line`. An earlier draft of this comment reported 77% coverage and called it pre-existing.
+    // That figure was real but came from an INTERMEDIATE state of this branch: the `<p>` → `<button>`
+    // conversion pushed the header to 464px, and the `.wt-note` 3-line clamp added afterwards pulled it
+    // back to 354. Corrected rather than deleted — "a stale measurement reported as current" is exactly
+    // the failure mode this file exists under.
     const row = cueRow(page, 0);
     const hit = await row.evaluate((el) => {
       el.scrollIntoView({ block: "center" });
@@ -173,6 +185,21 @@ test.describe("V53 · the note surface the AV reader had no way to reach", () =>
     expect(spineText, "raw markdown is leaking into the transcript spine").not.toContain("](");
     expect(spineText).not.toContain("archie:voynich-reading");
     expect(spineText).toContain("Read the manuscript through, page by page.");
+
+    // EVERY chrome surface that renders cue text, not just the one the fix started at. The `.tl-mark`
+    // `title` and `aria-label` interpolated the raw body, so the temporal map went on ANNOUNCING
+    // `](archie:voynich-reading/)` to a screen reader while the spine beside it read cleanly — and the
+    // assertion above, scoped to `.line`, could not see it. This is why `Cue.preview` is computed once
+    // in the derived rather than at each render site: the next surface to show a cue inherits it.
+    await withRecording(page); // the map needs a real duration to render at all
+    await page.reload();
+    const mark = page.locator(".tl-mark").first();
+    await expect(mark).toBeVisible();
+    for (const attr of ["aria-label", "title"]) {
+      const v = (await mark.getAttribute(attr)) ?? "";
+      expect(v, `raw markdown is leaking into the temporal map's ${attr}`).not.toContain("](");
+      expect(v).not.toContain("archie:voynich-reading");
+    }
 
     await cueRow(page, 0).click();
     const link = card(page).locator(".note-body a", { hasText: "Read the manuscript through" });

@@ -97,7 +97,16 @@
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
-  interface Cue { id: string; text: string; range: TimeRange; box?: { x: number; y: number; w: number; h: number }; }
+  // `preview` is the markdown-stripped text, computed ONCE here rather than at each render site.
+  //
+  // It exists because "the raw cite stops leaking" was true of the spine and false everywhere else: the
+  // `.tl-mark` `title` and `aria-label` interpolated `text` directly, so the temporal map went on
+  // ANNOUNCING `](archie:voynich-reading/)` and the fixture's parenthetical dev notes to a screen reader
+  // while the spine beside it read cleanly. A per-site `stripMarkdown` call invites exactly that drift —
+  // the next surface to render a cue would have to remember. One field, and every consumer gets the same
+  // string. `text` stays on the interface because the NOTE CARD needs the markup live (that is the whole
+  // point of ProseCites); only chrome — a line, a tooltip, an accessible name — wants it flattened.
+  interface Cue { id: string; text: string; preview: string; range: TimeRange; box?: { x: number; y: number; w: number; h: number }; }
   // Notes carrying a temporal selector, sorted by start — the transcript spine. A video note may also carry
   // a spatial box (`t=…&xywh=percent:…`, ADR-0006) read via parseMediaFragment.
   const cues = $derived.by<Cue[]>(() => {
@@ -105,7 +114,10 @@
     for (const a of annotations) {
       const v = (a.target as { selector?: { value?: string } } | undefined)?.selector?.value;
       const f = v ? parseMediaFragment(v) : {};
-      if (f.time) out.push({ id: a.id, text: transcriptTextOf(a), range: f.time, ...(f.box ? { box: f.box } : {}) });
+      if (f.time) {
+        const text = transcriptTextOf(a);
+        out.push({ id: a.id, text, preview: stripMarkdown(text), range: f.time, ...(f.box ? { box: f.box } : {}) });
+      }
     }
     return out.sort((x, y) => x.range.start - y.range.start);
   });
@@ -372,8 +384,8 @@
           {#each cues as c, i (c.id)}
             <button type="button" class="tl-mark" class:active={i === activeIdx}
               style={`left:${(c.range.start / (dur || 1)) * 100}%; width:${Math.max(0.8, (((c.range.end ?? c.range.start) - c.range.start) / (dur || 1)) * 100)}%`}
-              title={`${fmt(c.range.start)} · ${c.text}`}
-              aria-label={`Note at ${fmt(c.range.start)}: ${c.text}`}
+              title={`${fmt(c.range.start)} · ${c.preview}`}
+              aria-label={`Note at ${fmt(c.range.start)}: ${c.preview}`}
               onclick={(e) => { e.stopPropagation(); seekTo(c.range.start); openNote(c.id); }}></button>
           {/each}
           {#if dur}<div class="tl-cursor" style={`left:${(currentTime / dur) * 100}%`} aria-hidden="true"></div>{/if}
@@ -394,7 +406,13 @@
            the image frame-border, always shown above the time-anchored transcript.
            V53: these open THE NOTE too. A whole-track note is the one note on this surface with no cue
            row to reach it by, so before this it was the only note in the app whose media, tags and cites
-           were structurally unreachable — it was printed, stripped of its markup, and that was all. -->
+           were structurally unreachable — it was printed, stripped of its markup, and that was all.
+
+           `role="note"` WAS REMOVED FROM THIS BAND, deliberately. It was correct while the band was a
+           `<p>` — a parenthetical aside beside the transcript. It stops being correct the moment the band
+           holds a `<button>`: `note` describes a non-interactive parenthetical, and keeping it around an
+           activatable control tells assistive tech the region is commentary when it is now an index entry
+           you operate. The `.eyebrow` above still names the band, so no orientation is lost. -->
       <div class="whole-track">
         <p class="eyebrow">About the whole recording</p>
         {#each wholeTrackNotes as n (n.id)}
@@ -434,7 +452,7 @@
               aria-current={c.id === selected ? "true" : undefined}
               onclick={() => { seekTo(c.range.start); openNote(c.id); }}>
               <span class="t">{fmt(c.range.start)}</span>
-              <span class="line">{stripMarkdown(c.text)}</span>
+              <span class="line">{c.preview}</span>
             </button>
           </li>
         {/each}
