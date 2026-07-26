@@ -439,7 +439,26 @@
   <div class="dialog" role="dialog" aria-modal="true" aria-label="Publish" tabindex="-1"
     use:scrimmed={{ onClose: close }} onkeydown={trapFocus}>
 
-    {#if menuPhase === "choose"}
+    {#if menuPhase === "choose" && exhibits.length === 0}
+      <!-- Refuse-and-explain on a library with nothing publishable in it. `exhibits` IS the publishable
+           set — App passes `exportableExhibits`, the same `!isTemplate(slug)` filter `buildFullLibrary`
+           applies via `workingToLibrary` — so this cannot drift from what a publish would actually ship;
+           one predicate, read twice, rather than a second count that could disagree.
+           Before this, every destination happily built a site with zero exhibits and said nothing: a
+           fresh install (examples only) published an empty gallery and reported success. The working-copy
+           panel was already unreachable here (its export button disables on an empty selection) but gave
+           no reason, so this screen is also that missing explanation. -->
+      <header>
+        <p class="eyebrow">Publish</p>
+        <h2>There's nothing to publish yet</h2>
+        <p class="lede">The examples Archie ships with are a playground, not your content — publishing leaves them out. Right now that would build an empty site, so Archie won't build one.</p>
+      </header>
+      <p class="empty-note">Two ways on: start an exhibit of your own, or open an example and press <strong>Keep a copy</strong>. A copy belongs to you, and it publishes.</p>
+      <div class="actions">
+        <button type="button" class="ghost" onclick={close}>Close</button>
+      </div>
+
+    {:else if menuPhase === "choose"}
       <header>
         <p class="eyebrow">Publish</p>
         <h2>Where should this go?</h2>
@@ -1026,6 +1045,15 @@
   .lede { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; }
 
   /* Step 1 — the destination chooser. */
+  /* The nothing-to-publish screen's one paragraph: the way FORWARD, held apart from the lede (which
+     says why there's nothing) so the reader's next action isn't buried in the explanation. */
+  .empty-note {
+    font-family: var(--font-body); font-size: 1rem; line-height: 1.6; margin: 0;
+    color: var(--ink-paper-primary);
+    padding: var(--space-4) var(--space-5);
+    border: 1px solid var(--border-paper); border-radius: var(--radius-lg);
+    background: var(--surface-paper-hover);
+  }
   .choices { display: flex; flex-direction: column; gap: var(--space-3); }
   .choice {
     display: flex; flex-direction: column; gap: var(--space-1); text-align: left; cursor: pointer;
