@@ -9,7 +9,7 @@
   import {
     resolveLayout, overlay, selectorOf, asExhibitId,
     isWholeObjectFor, wholeObjectFlagOf, emphasisOf, readingMarkerStyle,
-    routeToHash, logicalIdOf,
+    routeToHash, logicalIdOf, citationFor, encodeContentState,
     type Exhibit, type LayoutDescriptor, type RightsFields, type W3CAnnotation, type ViewerRoute,
   } from "@render/core";
   import { loadPublishedExhibit, type PublishedExhibit } from "../published.js";
@@ -29,6 +29,7 @@
   const NarrativeReaderLazy = lazyComponent(() => import("./NarrativeReader.svelte"));
   const MediaPlayerLazy = lazyComponent(() => import("./MediaPlayer.svelte"));
   const SearchOverlayLazy = lazyComponent(() => import("./SearchOverlay.svelte"));
+  const CitePanelLazy = lazyComponent(() => import("./CitePanel.svelte"));
   import { stepObjectId } from "../exhibit-nav.js";
   import type { MarkerStyle } from "@render/svelte";
 
@@ -231,6 +232,78 @@
     // race it and could restore the dead address the reader was just rescued from (V4).
     if (locus === null || linkMissing || objectMissing) return;
     if (location.hash !== locus) history.replaceState(null, "", locus);
+  });
+
+  // The cite panel (V102/V106, Archie-3ea1). Opens over whatever rung is current; the panel itself is
+  // a DIALOG, so it never joins the floating chrome Archie-40fe cleared off the canvas.
+  let citeOpen = $state(false);
+
+  /** What the reader is looking at, in words — the panel's heading and its citation title. */
+  const citeSubject = $derived.by(() => {
+    const note = locusNote ? findNote(locusNote) : undefined;
+    if (note) return { title: noteTitleOf(note), type: "graphic" as const, rights: undefined };
+    const objId = layout?.type === "narrative" ? indexObjectId : selectedObjectId;
+    const obj = objId ? data?.objects.find((o) => o.id === objId) : undefined;
+    if (obj) return { title: obj.label, type: "graphic" as const, rights: objectRightsOf(obj.id) };
+    const sec = layout?.type === "narrative" && locusSection
+      ? layout.sections?.find((x) => x.id === locusSection)
+      : undefined;
+    if (sec) return { title: sec.title, type: "chapter" as const, rights: undefined };
+    return { title: data?.title ?? slug, type: "webpage" as const, rights: exhibitRights };
+  });
+
+  /** Find a note by its published id across base + reading pages (the panel needs its body + canvas). */
+  function findNote(id: string): W3CAnnotation | undefined {
+    if (!data) return undefined;
+    for (const o of data.objects) {
+      const hit = (data.annotationsByObject[o.id] ?? []).find((a) => a.id === id);
+      if (hit) return hit;
+      for (const notes of Object.values(data.readingAnnotationsByObject[o.id] ?? {})) {
+        const h2 = notes.find((a) => a.id === id);
+        if (h2) return h2;
+      }
+    }
+    return undefined;
+  }
+
+  /** A note's first line of body text, trimmed — enough to name it without pasting the whole note. */
+  function noteTitleOf(a: W3CAnnotation): string {
+    const b = Array.isArray(a.body) ? a.body[0] : a.body;
+    const v = (b as { value?: string } | undefined)?.value ?? "";
+    const line = v.split(/\n/)[0]?.replace(/[#*_`>]/g, "").trim() ?? "";
+    return line.length > 80 ? `${line.slice(0, 77)}…` : line || "Note";
+  }
+
+  /** IIIF Content State (ADR-0022) for the current NOTE, or null. Uses the existing codec — there is
+   *  exactly one, and writing a second is how two encodings of the same thing start disagreeing.
+   *  Null at object/section/exhibit grain: Content State names an annotation on a canvas, so those
+   *  rungs genuinely have none, and a fabricated payload that decodes to nothing is worse. */
+  const citeContentState = $derived.by(() => {
+    if (!locusNote || !data) return null;
+    const note = findNote(locusNote);
+    if (!note) return null;
+    const owner = data.objects.find((o) =>
+      (data!.annotationsByObject[o.id] ?? []).some((a) => a.id === locusNote) ||
+      Object.values(data!.readingAnnotationsByObject[o.id] ?? {}).some((ns) => ns.some((a) => a.id === locusNote)),
+    );
+    if (!owner) return null;
+    const sel = selectorOf(note);
+    return encodeContentState(note.id, canvasIdOf(owner.id), sel ?? { type: "FragmentSelector" });
+  });
+
+  const citeData = $derived.by(() => {
+    const s = citeSubject;
+    // The link is READ from the live address, never re-derived: two derivations of "where am I"
+    // drift, and then one of them is wrong. `locus` is what was just written there.
+    const url = typeof location !== "undefined" ? location.href : (locus ?? "");
+    const { text } = citationFor({
+      title: s.title,
+      ...(s.type !== "webpage" && data?.title ? { containerTitle: data.title } : {}),
+      url,
+      ...(s.rights ? { rights: s.rights } : {}),
+      type: s.type,
+    });
+    return { label: s.title, link: url, citation: text, contentState: citeContentState };
   });
 
   function arriveAtNote(targetNote: string) {
@@ -637,6 +710,24 @@
     <span class="kbd" aria-hidden="true">⌘K</span>
   </button>
 
+  <!-- Cite affordance (V102, Archie-3ea1). Sits in the SAME chrome row as the finder pill, which is
+       the one strip Archie-40fe's geometric tests already hold clear of the filmstrip and the note
+       card — adding a second free-floating surface elsewhere would re-open V22/V71 by another route.
+       The panel it opens is a dialog, so nothing new ever covers the canvas. -->
+  <button class="cite-trigger" onclick={() => (citeOpen = true)} aria-label="Cite this view">
+    <span class="mark" aria-hidden="true">❝</span><span class="lbl">Cite</span>
+  </button>
+
+  {#if citeOpen && CitePanelLazy.current}
+    <CitePanelLazy.current
+      label={citeData.label}
+      link={citeData.link}
+      citation={citeData.citation}
+      contentState={citeData.contentState}
+      onclose={() => (citeOpen = false)}
+    />
+  {/if}
+
   <!-- The ONE mode-independent finder (Q-3/Q-4): a PURE finder over the flattened note tree. On select
        it routes through arriveAtNote (A0 seam) — flips reading + object + fits camera — and closes. -->
   {#if finderOpen}
@@ -746,6 +837,20 @@
     transition: color 160ms ease, box-shadow 160ms ease;
   }
   .finder-trigger:hover { color: var(--accent-2); box-shadow: var(--shadow-lift-mid); }
+  /* Beside the finder pill on the same reserved row — same bottom offset, so the `--strip-h`
+     reservation that keeps the pill off the filmstrip (V22) covers this too. */
+  .cite-trigger {
+    position: fixed; z-index: 30; left: var(--space-5);
+    bottom: calc(var(--strip-h, 0px) + var(--space-3));
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
+    border: none; border-radius: var(--radius-md); cursor: pointer;
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); letter-spacing: 0.04em;
+    transition: color 160ms ease, box-shadow 160ms ease;
+  }
+  .cite-trigger:hover { color: var(--accent-2); box-shadow: var(--shadow-lift-mid); }
+  .cite-trigger .mark { font-size: 1rem; line-height: 1; }
   .finder-trigger .glass { font-size: 1rem; line-height: 1; }
   .finder-trigger .kbd { font-family: var(--font-mono), monospace; font-size: 0.65rem; letter-spacing: 0.1em; color: var(--ink-canvas-muted); }
 
