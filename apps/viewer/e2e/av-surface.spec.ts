@@ -22,9 +22,16 @@ import { goOffline } from "./offline.js";
  *
  * Prior art, checked before writing (repo CLAUDE.md). NOTHING in the corpus drives an AV annotation
  * surface in a browser: `videojs-annotation`'s suite is jsdom unit tests over its own components
- * (`test/unit/`), `hyperaudio-lite` ships no test directory at all, and `clover-iiif` neuters canvas
+ * (`test/unit/`), `hyperaudio-lite`'s suite is jsdom too, and `clover-iiif` neuters canvas
  * in `src/setupTests.ts`. The transferable idea is `offline.ts`'s own — serve the real bytes from the
  * same origin as the app — applied to a media element instead of a tile pyramid.
+ *
+ * CORRECTED 2026-07-26. This sentence used to say `hyperaudio-lite` "ships no test directory at all".
+ * It ships `__TEST__/hyperaudio-lite.test.js`, 311 lines of jest. The CONCLUSION survives and is if
+ * anything better supported: the file's first line is `@jest-environment jsdom` (`:2`), so it cannot
+ * decode media — it asserts the `data-media-src` STRING (`:183`) against an HTML fixture (`:65`) that
+ * jsdom never loads. It even commits a 289 KB `__TEST__/test.mp3` that nothing in the suite decodes,
+ * which is its own argument against committing a seed media binary here (see the V49 block below).
  */
 
 /** A silent 8-bit mono 8 kHz PCM WAV of `seconds` length — the smallest thing a browser will report a
@@ -437,5 +444,131 @@ test.describe("V53 · the transcript aside resizes (and deliberately does not co
     // (Archie-b671, "resizable but NOT minimizable"). If someone later flips it on, this fails.
     await openAudioObject(page);
     await expect(page.locator(".resize-divider[aria-label='Resize transcript'] button.collapse")).toHaveCount(0);
+  });
+});
+
+test.describe("V49 · the temporal map clears the item strip (Archie-b135)", () => {
+  // WHAT THIS TICKET ASSUMED, AND WHAT WAS ACTUALLY TRUE. `Archie-b135` was filed as "the seed has no
+  // local audio/video, so the AV surface has no offline gate", and proposed committing a small media
+  // asset into the seed to get one. The first half is false: this whole file is `goOffline` plus
+  // `withRecording`'s locally-synthesised PCM WAV, so the AV surface has had a hermetic browser gate
+  // since V53 — including `.timeline`, which needs a real decoded duration and gets one here. What was
+  // genuinely missing is only this: nobody had written V49's assertion. So this is it, and no binary
+  // was added to the repository.
+  //
+  // WHY NO COMMITTED ASSET, stated rather than assumed, because "a synthesised one may not exercise
+  // what a real file would" is a fair objection. It would buy one thing this cannot — proof that the
+  // seed's own media URL still resolves — and that is a third-party-uptime check, which `offline.ts`'s
+  // header is explicit about refusing. Against it: every published tree carries the bytes, forever.
+  // Prior art on that cost, opened rather than recalled: `hyperaudio-lite/__TEST__/test.mp3` is a
+  // 289 KB committed audio file whose own suite is `@jest-environment jsdom`
+  // (`__TEST__/hyperaudio-lite.test.js:2`) and therefore never decodes it — it only asserts the
+  // `data-media-src` STRING (`:183`). A binary paying no rent is the outcome to avoid.
+  //
+  // (That same file falsified a "ships no test directory at all" claim, now CORRECTED in this file's
+  // header. An earlier version of this comment said the claim appeared in TWO places, naming
+  // `offline.ts` as the second. It does not — `grep -rn -i hyperaudio apps/viewer/e2e/` returns hits in
+  // this file only, and `offline.ts` never mentioned the library. That miscount was written here, and
+  // an independent reviewer then repeated it back as a should-fix without grepping, which is
+  // `.claude/rules/prior-art-citation-discipline.md`'s own lesson landing on the file that cites it:
+  // a plausible claim, in a comment about citation discipline, that two people passed over.)
+  //
+  // WHY THE GEOMETRY AND NOT A SCREENSHOT: `.claude/rules/` records Archie-40fe's reasoning — a
+  // restyle that moves the strip 4px is not a regression, a restyle that puts it back over the map is.
+  // `occlusion.spec.ts` is the sibling file for the image reader; this is the AV column's version, and
+  // it lives here because only this file owns the machinery that gives the map a duration to lay out
+  // with.
+  const overlaps = (a: { x: number; y: number; width: number; height: number }, b: typeof a): boolean =>
+    a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+  test("the transcript's temporal map is not covered by the filmstrip", async ({ page }) => {
+    await openAudioObject(page, { media: true });
+    await expect(page.locator(".timeline")).toBeVisible(); // needs a real duration — hence `media: true`
+    const strip = page.locator(".filmstrip");
+    await expect(strip).toBeVisible(); // the voynich grid is 12 objects, so the strip is shown
+
+    // Against the STRIP and against every FRAME in it. The band's own box is what `--strip-h` measures,
+    // but a frame that overflows its band would still be the thing sitting on the map.
+    const map = await rectOf(page.locator(".tl-track"));
+    const band = await rectOf(strip);
+    expect(
+      overlaps(map, band),
+      `map [${Math.round(map.x)},${Math.round(map.y)} ${Math.round(map.width)}x${Math.round(map.height)}] ` +
+        `vs strip [${Math.round(band.x)},${Math.round(band.y)} ${Math.round(band.width)}x${Math.round(band.height)}]`,
+    ).toBe(false);
+
+    const frames = page.locator(".filmstrip button.frame");
+    const n = await frames.count();
+    expect(n, "no filmstrip frames — this assertion would be vacuous").toBeGreaterThan(0);
+    for (let i = 0; i < n; i++) {
+      const f = await rectOf(frames.nth(i));
+      expect(overlaps(map, f), `frame ${i} sits on the temporal map`).toBe(false);
+    }
+  });
+
+  // ⚠ THIS TEST IS KNOWINGLY RED ON `dca4215` AND MUST NOT BE LOOSENED TO MAKE IT GREEN.
+  //
+  // It passes on `49327c0` (V49's original fix in place) and fails on `dca4215` (the docking work).
+  // Measured by applying ONLY the fixture/spec changes to a clean worktree at `49327c0`: 85/85 pass,
+  // this test among them. On `dca4215`, `.tl-track` reports `toBeInViewport` **ratio 0** — geometry
+  // below. So the assertion distinguishes the two states, which is exactly what a gate has to do; the
+  // red is a defect in the docked layout, filed to that slice, not a defect in this test.
+  //
+  // The temptation to re-scope this to "reachable by scrolling" is the thing to refuse. `Archie-40fe`'s
+  // whole premise is that floating chrome kept covering the controls; a design answering that by
+  // pushing a control 153px below the fold has not satisfied it. An overlapped control is at least
+  // visibly there. `.claude/rules/post-review-fixes-are-unreviewed.md` names the general form — a gate
+  // that goes green by lowering its own bar has stopped constraining anything.
+  test("the map is on screen ON ARRIVAL, not pushed off the bottom INSTEAD of being covered", async ({ page }) => {
+    // THE HALF THAT MAKES THIS ITS OWN TEST, and it is written against the OUTCOME rather than the
+    // mechanism — deliberately, because the mechanism changed under this test while it was being
+    // written, which is the best possible argument for not asserting one.
+    //
+    // V49's original fix was `padding-bottom: var(--strip-h)` + `box-sizing: border-box` on a 100vh
+    // `.player`, and `Archie-b135` asks for the `box-sizing` removal as the red-green.
+    //
+    // THAT RED-GREEN IS NOT AVAILABLE, and that is a stronger reason to write an outcome assertion than
+    // "the mechanism was superseded". Deleting `box-sizing: border-box` from `.player` is a **no-op**:
+    // `packages/render-core/src/tokens.css:201-203` is a global `* { box-sizing: border-box; }`, so the
+    // computed style does not change. Measured by a reviewer who checked the injection did what it
+    // claimed — with the declaration deleted, `.player` still reports `border-box`, `.tl-track` still
+    // sits at y 556→580, and the suite is green *because nothing changed*. The ticket's proposed
+    // red-green would have proved nothing. (Forcing `content-box` explicitly is what reproduces it, and
+    // that injection does go red against the overlap assertion above.)
+    //
+    // The mechanism is also gone on top of that: the docking work retired the reservation entirely and
+    // moved the strip into `ExhibitView`'s chrome bar BELOW the column (`MediaPlayer.svelte:485-488`).
+    // So an assertion on `.player`'s computed style would be both unfalsifiable AND aimed at code that
+    // no longer exists.
+    //
+    // What is invariant across both designs is the reader's side of it: **the temporal map has to be
+    // ON SCREEN, on arrival, without scrolling.** That last clause is the claim, and it is why nothing
+    // here scrolls into view first: the temporal map is a persistent position signal — the AV analogue
+    // of the image reader's marks — and a position signal you must go looking for is not one. (It is
+    // also what `hyperaudio-lite` is designing around at `hyperaudio-lite.js:648-664`, where the spoken
+    // word is re-homed to `document.title` precisely so the signal survives its surface being hidden.)
+    //
+    // "Not overlapping the strip" (the test above) is satisfied just as well by a map shoved below the
+    // fold — a different defect wearing the fix's clothes, and the one thing neither design gets for
+    // free. Asserting arrival visibility is what separates them.
+    //
+    // Measured on `dca4215` at 1280x720, offline, with a decoded duration:
+    //   viewport   720          .player    y 53  → bottom 917  (h 864, i.e. 197px past the fold)
+    //   .timeline  y 837 → 917  .tl-track  y 873 → bottom 897  ← starts 153px BELOW the fold
+    //   .filmstrip y 926 → 1037 ← also entirely below the fold
+    //   document   scrollHeight 1045 vs clientHeight 720; every ancestor `overflow-y: visible`
+    await openAudioObject(page, { media: true });
+    await expect(page.locator(".timeline")).toBeVisible();
+
+    const vh = page.viewportSize()!.height;
+    // `toBeInViewport` WITHOUT a preceding `scrollIntoViewIfNeeded` — the omission is the assertion.
+    await expect(page.locator(".tl-track")).toBeInViewport();
+    const map = await rectOf(page.locator(".tl-track"));
+    // BOTH edges. `toBeInViewport()` defaults to `ratio: 0` — any intersection at all — so a map whose
+    // top had gone above the fold with its bottom still on screen would satisfy it and the bottom-edge
+    // check together. It cannot happen while nothing scrolls, but "on screen" is a claim about the whole
+    // element and asserting half of it invites the other half to drift.
+    expect(Math.round(map.y), "the temporal map's top edge is above the fold").toBeGreaterThanOrEqual(0);
+    expect(Math.round(map.y + map.height), `the temporal map's bottom edge is off-screen (viewport ${vh}px)`).toBeLessThanOrEqual(vh);
   });
 });

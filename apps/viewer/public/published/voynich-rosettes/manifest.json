@@ -341,6 +341,34 @@
               },
               "archie:logicalId": "00000000053205EP39G5FKC5BC",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/history/00000000053205EP39G5FKC5BC.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/0000000006DPK514V0H2DR8B63/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/ex-voynich.o9",
+                "selector": {
+                  "type": "SvgSelector",
+                  "value": "<svg><polygon points=\"1980,740 2498,924 2937,1268 3030,1820 2855,2325 2525,2764 1980,2880 1470,2703 1032,2368 935,1820 1053,1285 1465,928\" /></svg>"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.006Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "**The north-west rosette.** One medallion of the nine, traced round its rim rather than boxed: the causeways that leave it at four and eight o'clock belong to the joins, not to this circle, and a rectangle drawn here would claim them. The manuscript's own geometry is round, so the annotation is too.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "created": "1970-01-01T00:00:00.006Z",
+              "creator": {
+                "type": "Person",
+                "name": "curator"
+              },
+              "archie:logicalId": "0000000006DPK514V0H2DR8B63",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/history/0000000006DPK514V0H2DR8B63.json"
             }
           ],
           "label": {
