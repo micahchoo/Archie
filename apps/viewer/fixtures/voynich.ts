@@ -34,7 +34,9 @@ const AV_SOURCE = "https://archive.org/download/kryptogramm/04-f18v.mp3";
 // Each folio o1–o11 IS a Beinecke MS 408 leaf → the attribution is truest at the OBJECT level: the
 // Public-Domain-Mark license URI (an approved LICENSES entry) + the MS-408 credit. The sound o12 is
 // Schwerdtfeger's Kryptogramm, a DIFFERENT rights-holder → its own CC BY-NC-SA 3.0 statement + URI.
-const BEINECKE_RIGHTS = "http://creativecommons.org/publicdomain/mark/1.0/"; // Public Domain Mark 1.0 (LICENSES)
+// Exported (Archie-a5b1 / V103): a single-folio exhibit's manifest-level licence is exactly its one
+// folio's, so `voynich-rosettes` states it rather than making a reader open the object to find it.
+export const BEINECKE_RIGHTS = "http://creativecommons.org/publicdomain/mark/1.0/"; // Public Domain Mark 1.0 (LICENSES)
 const BEINECKE_STATEMENT = { label: "Source", value: "Beinecke Rare Book & Manuscript Library, Yale University — MS 408 (public domain)" } as const;
 
 // DESCRIPTIVE METADATA (Archie-b50f) — the seed's dcterms entries, so the shipped sample actually

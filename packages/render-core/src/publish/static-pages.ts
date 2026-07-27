@@ -7,11 +7,13 @@
 // (Studio passes the SAME snarkdown+DOMPurify pipeline the live Viewer uses — P-1 Q3's no-drift
 // invariant); the default renderer ESCAPES everything (the safe floor for non-DOM contexts).
 
-import type { Library, Exhibit } from "../model/model.js";
+import type { Library, Exhibit, RightsFields } from "../model/model.js";
 import type { AnnotationRecord } from "../wadm/types.js";
 import { recordToAnnotation } from "../spine/serialize.js";
 import { targetSource } from "../spine/serialize.js";
 import { commentOfAnnotation, tagsOfAnnotation } from "../query/published.js";
+import { metadataRows } from "../model/metadata-display.js";
+import { licenseLabel } from "../iiif/rights.js";
 
 export interface StaticPageOptions {
   baseUrl: string;
@@ -57,7 +59,7 @@ export const escapeBody = (md: string): string =>
 // One shared, deliberately minimal chrome: readable column, no script, archival tone.
 // Verdant Clearing palette (design/design.md v0.4): parchment ground, moss ink, hunter accent, amber
 // reading-label. System sans echoes LARAZ without shipping a webfont on this archival surface.
-const STYLE = `body{max-width:42rem;margin:2rem auto;padding:0 1rem;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55;color:#1A3C23;background:#F7F4EC}h1,h2{line-height:1.2}article{margin:1.5rem 0;padding:0.75rem 1rem;border-left:3px solid #2D5F3A;background:#EEF1E6}article .reading{font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;color:#9A7B39}article .tags,footer,.credit{color:#6B7D6A;font-size:0.9rem}a{color:#2D5F3A}`;
+const STYLE = `body{max-width:42rem;margin:2rem auto;padding:0 1rem;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55;color:#1A3C23;background:#F7F4EC}h1,h2{line-height:1.2}article{margin:1.5rem 0;padding:0.75rem 1rem;border-left:3px solid #2D5F3A;background:#EEF1E6}article .reading{font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;color:#9A7B39}article .tags,footer,.credit{color:#6B7D6A;font-size:0.9rem}a{color:#2D5F3A}dl.meta{margin:0.75rem 0;font-size:0.9rem}dl.meta dt{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;color:#6B7D6A}dl.meta dd{margin:0 0 0.5rem}`;
 
 /** The SEO head tags (Q-8): Open Graph + Twitter card + canonical + JSON-LD. Rendered only when a
  *  page supplies `meta`; the bare shell (no meta) keeps the minimal charset/viewport/title head. */
@@ -79,6 +81,57 @@ function metaTags(meta: PageMeta): string {
     `<script type="application/ld+json">${JSON.stringify(meta.jsonLd).replace(/<\//g, "<\\/")}</script>`,
   ];
   return lines.join("\n");
+}
+
+/**
+ * One level's rights block: the MUST-display credit, the licence as VISIBLE linked text, and the
+ * descriptive metadata as a finding-aid `<dl>`. Used at all three levels (library · exhibit · object),
+ * so the archival page shows the same ladder the embed does.
+ *
+ * WHY (V103/V104, Archie-a5b1). This page had NO concept of descriptive metadata — `grep -n metadata`
+ * over this file returned nothing, the same signature V110's missing sections had — and it emitted the
+ * licence URI ONLY into schema.org JSON-LD. So the durable, citable, zero-JS face of an exhibit showed
+ * a reader asking "may I use this?" nothing at all, over published manifests carrying a `rights` URI on
+ * every canvas and ten `dcterms` entries per folio. This is the same defect the EMBED had and fixed
+ * (packages/archie-viewer/src/element.ts:958 `creditHtml`, Archie-b681/V105 — "an embed that strips a
+ * required statement is legal exposure, not a missing feature"); the archival page was the last surface
+ * still missing it.
+ *
+ * ALREADY-RESOLVED VALUES ONLY, like every other surface: the opt-in cascade collapses at publish, so
+ * each level prints its OWN fields and nothing is inherited here. That is what makes the three blocks
+ * on one page a readable ladder rather than three copies of the same sentence.
+ *
+ * NO DISCLOSURE. The Viewer and the embed hide the licence and the metadata rows behind an ⓘ; this page
+ * ships zero JavaScript and is read by crawlers and by people with the page saved to disk, so
+ * everything is in the document. Prior art for visible licence prose on a static scholarly page:
+ * quire's `packages/11ty/_includes/components/copyright/licensing.js:24-27` renders
+ * `This work is licensed under a <a rel="license" href=…>NAME</a>.` — the `rel="license"` link
+ * relation is taken from there.
+ */
+function rightsHtml(fields: RightsFields | undefined): string {
+  const parts: string[] = [];
+  const rs = fields?.requiredStatement;
+  if (rs) parts.push(`<p class="credit">${esc(rs.label)}: ${esc(rs.value)}</p>`);
+  // `licenseLabel` returns the URI itself for a URI outside the approved list — forward-compatible, and
+  // still better to a reader than nothing. The href is always the raw URI.
+  const uri = fields?.rights;
+  const licence = licenseLabel(uri);
+  if (uri && licence) {
+    parts.push(`<p class="credit">License: <a rel="license" href="${esc(uri)}">${esc(licence)}</a></p>`);
+  }
+  // The SAME `metadataRows` projection the Viewer panel and the embed use — excluded properties, blank
+  // values, credit echoes and repeat merging all resolve identically, so the three surfaces cannot
+  // disagree about what this level says. Repeats join with "; " (MetadataRun's delimiter): two values
+  // run together read as one.
+  const rows = metadataRows(fields);
+  if (rows.length > 0) {
+    parts.push(
+      `<dl class="meta">${rows
+        .map((r) => `<dt>${esc(r.label)}</dt><dd>${r.values.map((v) => esc(v.text)).join("; ")}</dd>`)
+        .join("")}</dl>`,
+    );
+  }
+  return parts.join("\n");
 }
 
 function pageShell(title: string, body: string, meta?: PageMeta): string {
@@ -129,7 +182,8 @@ export function libraryPageHtml(library: Library, opts: StaticPageOptions): stri
   const parts: string[] = [];
   parts.push(`<h1>${esc(library.title ?? "Library")}</h1>`);
   if (library.summary) parts.push(`<p>${esc(library.summary)}</p>`);
-  if (library.requiredStatement) parts.push(`<p class="credit">${esc(library.requiredStatement.label)}: ${esc(library.requiredStatement.value)}</p>`);
+  const libRights = rightsHtml(library);
+  if (libRights) parts.push(libRights);
   if (opts.viewerBase) parts.push(`<p><a href="${esc(opts.viewerBase)}">Open the interactive viewer</a></p>`);
   parts.push("<ul>");
   for (const e of library.exhibits) {
@@ -198,7 +252,8 @@ export function exhibitPageHtml(exhibit: Exhibit, records: AnnotationRecord[], o
   parts.push(`<p><a href="../index.html">${esc("← Library")}</a></p>`);
   parts.push(`<h1>${esc(exhibit.title)}</h1>`);
   if (exhibit.summary) parts.push(`<p>${esc(exhibit.summary)}</p>`);
-  if (exhibit.requiredStatement) parts.push(`<p class="credit">${esc(exhibit.requiredStatement.label)}: ${esc(exhibit.requiredStatement.value)}</p>`);
+  const exRights = rightsHtml(exhibit);
+  if (exRights) parts.push(exRights);
   if (opts.viewerBase) parts.push(`<p><a href="${esc(opts.viewerBase)}#/${esc(exhibit.slug)}">Open this exhibit in the interactive viewer</a></p>`);
 
   // V110 — the ADR-0014 archival page had NO CONCEPT of a section (`grep -n sections` over this file
@@ -230,8 +285,17 @@ export function exhibitPageHtml(exhibit: Exhibit, records: AnnotationRecord[], o
   const used = new Set<AnnotationRecord>();
   for (const obj of exhibit.objects) {
     const mine = records.filter((r) => targetSource(r) === canvasIRI(obj.id));
-    if (mine.length === 0) continue;
+    // The object's OWN credit / licence / metadata, printed under its heading rather than hoisted into
+    // one block at the top — quire puts the per-figure credit inside the figure's own caption for the
+    // same reason (`packages/11ty/_includes/components/figure/caption.js:25`,
+    // `<span class="q-figure__credit">`): on a citation surface the reader needs to know which item a
+    // rights statement is about, and a hoisted block cannot say that. This is where the licence
+    // actually lives in this corpus — every seed folio carries `rights` on the canvas and none of it
+    // reached this page before.
+    const objRights = rightsHtml(obj);
+    if (mine.length === 0 && objRights === "") continue;
     parts.push(`<h2>${esc(obj.label)}</h2>`);
+    if (objRights) parts.push(objRights);
     for (const r of mine) {
       parts.push(noteHtml(r));
       used.add(r);
