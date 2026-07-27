@@ -456,7 +456,9 @@
     box-shadow: var(--shadow-lift-low);
   }
   .carousel .cnav {
-    display: flex; align-items: center; justify-content: center; min-width: 1.25rem;
+    /* 1.5rem = 24px: the WCAG 2.2 SC 2.5.8 floor (Archie-cf4a). Was 1.25rem/20px, which beat
+       the shared floor in atmosphere.css on specificity and shipped a 20px-wide arrow on phones. */
+    display: flex; align-items: center; justify-content: center; min-width: 1.5rem;
     background: none; border: none; color: var(--ink-canvas-secondary); cursor: pointer; font: inherit;
     font-size: 1.05rem; line-height: 1;
   }
