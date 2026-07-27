@@ -707,8 +707,10 @@
        (`esper/container.js:11`) as its default and claimed the same posture. That `:11` is a React
        default-PARAMETER fallback; the prop is always passed explicitly (`item/container.js:106` ←
        `:43-46`), `reducers/settings.js:38` sets it from `ARGS.frameless`, and `main/tropy.js:59`
-       defaults `frameless: true`. Tropy ships overlay toolbars ON, and switches its header from
-       `flex: 0 0 auto` to `position: absolute` to do it (`_esper.scss:174` vs `:179-183`). It had this
+       defaults `frameless: true`. Tropy ships overlay toolbars ON. Its header's BASE rule is
+       `flex: 0 0 auto; position: relative` (`_esper.scss:174-175`) — the `position: absolute` at
+       `:179-184` is class-gated on `.esper.overlay-mode`, applied at `esper/container.js:36-40`; cited
+       unconditionally it would die the moment a reader opened line 175. It had this
        exact choice and took the other branch. The supporting citation is clover-iiif, which docks its
        item strip below the canvas as flow siblings (`Content.tsx:128-146`) — see ADR-0019's layout
        row for the full reading. -->

@@ -130,55 +130,72 @@ SIBLING of the canvas in normal flow — a row above it, a row below it, or a co
 surface on top of it. This is a contract, not a style: an embed and a shell that disagree about it show
 the same object differently, which is the class of drift this whole table exists to catch.
 
-**What the corpus actually does — a majority, not a default, and one deliberate dissenter.** Four
-systems were read for this; two more are named at the end as unread rather than implied.
+**What the corpus actually does, and the rule that explains the split.** Seven systems were read at
+the cited lines (four of them in `ledgers/PRIORART-chrome-placement-2026-07-26.md`, swept
+independently and agreeing with this file's own reading of universalviewer by a different route).
+The result is not a headcount, it is a distinction:
 
-- **`IIIF/clover-iiif` — DOCKS, twice over.** `Viewer/Viewer.tsx:180-184` renders `<ViewerHeader>` and
-  `<ViewerContent>` as siblings; the column that makes them siblings is `Wrapper`
-  (`Viewer.styled.tsx:125-127`) via its `"> div"` rule (`:138-141`), which lays out the
-  `<Collapsible.Root>` holding both. That is *why* the header can be
-  `backgroundColor: "transparent !important"` (`Viewer/Viewer/Header.styled.ts:59`) — nothing is behind
-  it to be legible against. **The nearer citation for what this ADR does is one level down:** inside
-  `<ViewerContent>`, `Main` (`Viewer.styled.tsx:15-22`, `display: flex` / `flexDirection: "column"`)
-  holds `<Painting>` — the canvas — and `<MediaWrapper>` — the item strip — as flow siblings in a
-  column (`Content.tsx:128-146`). clover docks a thumbnail strip BELOW the canvas, which is exactly
-  what `.chrome-dock` and `.reader-note` do here. Its one genuinely over-canvas control is
-  `PanelToggle` (`Content.tsx:148`, styled `Viewer.styled.tsx:41-82`): `position: absolute` with
-  `background: $primary`, i.e. an **opaque plate** that sidesteps the contrast question rather than
-  solving it.
-- **`IIIF/universalviewer` — DOCKS.** `.headerPanel` and `.footerPanel` are `position: relative`
-  (`modules/uv-shared-module/css/styles.less:100`, `:303`) — normal flow — and the image's
-  `.centerPanel` is the absolutely-positioned element inset between them (`:164-166`), with the side
-  panels inset by an explicit reservation (`inset: calc(5em + 8px) 0 2em`, `:188-189`) and a named grid
-  at md+ (`grid-template-areas: "left center right"`, `:126`). Chrome is never over the image.
-- **`tropy` — OVERLAYS BY DEFAULT, and this is the honest counter-example.** It supports the
-  distinction *structurally*: `src/stylesheets/components/esper/_esper.scss:174` gives `.esper-header`
-  `flex: 0 0 auto` — a flow row — while `:179-183` switches it to `position: absolute; top: 0;
-  width: 100%` under `.esper.overlay-mode`. It **chooses the overlay**. `container.js:11`'s
-  `hasOverlayToolbar = false` is a React default-parameter fallback, not a decision: the prop is always
-  passed explicitly (`item/container.js:106` ← `:43-46`
-  `settings.overlayToolbars && layout !== SIDE_BY_SIDE`), `reducers/settings.js:38` sets
-  `overlayToolbars: ARGS.frameless`, and `main/tropy.js:59` defaults `frameless: true` (the only
-  `false` is the print window, `:398`); the default `layout` is `STACKED` (`reducers/settings.js:22`),
-  so the SIDE_BY_SIDE exclusion never fires. **Tropy ships overlay toolbars ON.** So a corpus system
-  that had precisely this choice in front of it went the other way — which is what the human's ruling
-  declines, knowingly.
-- **`canvas-panel` — ABSTAINS.** It paints no chrome over the image, but it has essentially no chrome
-  to place (one `<button>`), so it is evidence of a small surface rather than of a layout decision. A
-  stated absence, not a supporting vote.
+> **Structural chrome docks wherever a system has any; instrument chrome routinely floats.** Panels,
+> headers, footers, thumbnail strips and navigation sit beside the canvas. Zoom controls, position
+> readouts and canvas-local nav sit *on* it, usually translucent.
 
-**`mirador`, `annomea` and `quire` were NOT read for this question.** They are in the corpus and could
-be; naming the gap is worth more than a fifth citation gathered in a hurry. So the claim this ADR
-rests on is the narrow one and it is enough: **of the systems actually read, docking is the majority
-posture and the one with the better legibility story — and the ruling is a design decision the human
-made on its merits, not a corpus mandate.**
+**Archie docks both.** The first half has ample precedent; the second half is a deliberate departure
+and claims none.
 
-An earlier draft of this paragraph said "the corpus default", cited `:11` as tropy's *decision*, and
-attributed clover's column to `Main`. All three were wrong in the same direction — toward unanimity.
-The first two came from a sweep quoted without opening the files; the third was added in the very
-commit that fixed a different bad citation, by opening a definition and not grepping its **use**. That
-is `.claude/rules/prior-art-citation-discipline.md`'s habit 2 and habit 1b, failing in sequence, and it
-is recorded here rather than silently corrected because the failure mode is the point.
+- **`IIIF/universalviewer` — DOCKS, in two independent layers.** The strongest single piece of
+  evidence in the corpus, because it is arithmetic rather than CSS that merely implies a layout:
+  `Shell.resize()` computes the canvas area as *what is left over* after chrome takes its height —
+  `mainHeight = element.height() − paddingTop − (headerPanel visible ? its height : 0) − (footerPanel
+  visible ? …) − (mobileFooterPanel visible ? …)` (`modules/uv-shared-module/Shell.ts:96-105`), over
+  panels built as sequential children at `:42-66`. The CSS layer agrees: `.headerPanel`/`.footerPanel`
+  are `position: relative` (`css/styles.less:99-102`, `:302-305`) and at ≥768px `.mainPanel` is a grid
+  with `grid-template-areas: "left center right"` (`:114-131`) whose centre track *shrinks* when a
+  panel opens (`:144-150`). Overlay exists only as the sub-768px branch (`:196-207`), selected by
+  viewport width and never by config.
+- **`IIIF/clover-iiif` — DOCKS.** `<ViewerHeader>` and `<ViewerContent>` are siblings
+  (`Viewer/Viewer.tsx:180-184`) in the column `Wrapper` creates via its `"> div"` rule
+  (`Viewer.styled.tsx:125-127`, `:138-141`) — which is why the header can be
+  `backgroundColor: "transparent !important"` (`Viewer/Viewer/Header.styled.ts:59`). **The nearest
+  shape to what this ADR does is one level down:** inside `<ViewerContent>`, `Main`
+  (`Viewer.styled.tsx:15-22`, `display: flex` / `flexDirection: "column"`) holds `<Painting>` — the
+  canvas — and `<MediaWrapper>` — the item strip — as flow siblings (`Content.tsx:128-146`). clover
+  docks a thumbnail strip *below* the canvas, exactly as `.chrome-dock` and `.reader-note` do here.
+  Its one over-canvas control, `PanelToggle` (`Content.tsx:148`, styled `Viewer.styled.tsx:41-82`), is
+  an **opaque plate** — contrast sidestepped, not solved.
+- **`IIIF/mirador` — SPLITS, and it is the clearest statement of the rule above.** Structural panels
+  dock: the sidebar is a persistent MUI `Drawer` whose Paper carries `position: relative !important`
+  specifically to pull it out of fixed positioning into flow (`WindowSideBar.jsx:13-16`, `:26-35`),
+  inside the flex tree at `Window.jsx:96-131`. The canvas's own control bar floats:
+  `WindowCanvasNavigationControls.jsx:18-31` is `position: absolute; bottom: 0; width: 100%;
+  zIndex: 50` at 50% alpha, rendered as a child of the OSD section (`OpenSeadragonViewer.jsx:18-22`).
+  Visibility was traced to `settings.js:534`, not to a default parameter.
+- **`tropy` — OVERLAYS BY DEFAULT.** `.esper-header`'s base rule is `flex: 0 0 auto; position:
+  relative` (`_esper.scss:174-175`); the absolute positioning at `:179-184` is **class-gated** on
+  `.esper.overlay-mode`, applied from `hasOverlayToolbar` at `esper/container.js:36-40`. That prop is
+  always passed explicitly (`item/container.js:106` ← `:43-46`
+  `settings.overlayToolbars && layout !== SIDE_BY_SIDE`) ← `reducers/settings.js:38`
+  `overlayToolbars: ARGS.frameless` ← `main/tropy.js:59` `frameless: true` (the only `false` is the
+  print window, `:398`), with default `layout: STACKED` (`reducers/settings.js:22`) so the exclusion
+  never fires. `container.js:11`'s `hasOverlayToolbar = false` is a default-parameter fallback that is
+  never reached — reading it as the decision is the error this bullet exists to prevent.
+- **`annomea` — OVERLAYS WHOLESALE, and is the strongest case against this ruling.** A 420px narrative
+  pane at `position: fixed; z-index: 400` (`NarrativePane.svelte:254-265`), mounted to
+  `document.body` (`runtime.ts:216-218`) — *outside* the viewer container — with **no inset
+  compensation anywhere**: a grep for margin/padding-left across its `src/` returns one 4px gap on a
+  count label. The canvas is full-bleed and the pane sits on it. An ADR that hides its strongest
+  opposing case is worth less than one that names it.
+- **`canvas-panel` and `quire` — ABSTAIN.** Both are evidence of a small surface, not of a layout
+  decision. canvas-panel has one `<button>`. quire emits its figure as three flow siblings — image,
+  caption, annotations UI (`_includes/components/figure/image/html.js:44-48`) — so its chrome is the
+  scholarly page itself; its one candidate over-canvas surface, the lightbox UI, is styled by a
+  stylesheet that is **not in this checkout** and is therefore unverified rather than counted.
+
+An earlier draft of this paragraph said "the corpus default", cited tropy's `:11` as its *decision*,
+and attributed clover's column to `Main`. All three were wrong in the same direction — toward
+unanimity. The first two came from a sweep quoted without opening the files; the third was added in
+the very commit that fixed a different bad citation, by opening a definition and not grepping its
+**use**. That is `.claude/rules/prior-art-citation-discipline.md`'s habit 2 and habit 1b failing in
+sequence, and it is recorded rather than silently corrected because the failure mode is the point.
 
 **What it covers, and what it deliberately does not.** The row governs PERSISTENT chrome: navigation,
 readouts, the reading legend, the note surface, the item strip, the finder and cite triggers, status
