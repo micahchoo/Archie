@@ -235,6 +235,68 @@ branch cannot clobber them — but they need committing from there, by whoever o
    both blocking questions are answered in the spec, and L5/R6 are withdrawn. Six decisions remain
    (L1–L4, L6, L7); L4/L6/L7 are mine and still contestable.
 
+## Session 5 — the CI desktop gate, and two stale blockers
+
+**Rank 3 SHIPPED (`0a7e9e4`).** `.github/workflows/desktop.yml` builds the packaged binary, boots it
+under Xvfb on a throwaway profile, and asserts what it wrote. Two scripts back it:
+`scripts/desktop-boot.sh` (orchestration) and `scripts/desktop-smoke.sh` (assertions, usable alone
+after a manual drive). **Red-greened against the real P0**: `fs:allow-rename` removed + rebuilt →
+`library.json never became non-empty after 90s`, exit 1.
+
+Its own workflow rather than a job in `checks.yml`, because `on.push.paths` is a workflow-level key
+and a job-level `if:` cannot express path filtering. The first draft *was* a job in `checks.yml`, with
+a commit-message match and a comment claiming it was path-filtered — the comment was the lie, so the
+job moved instead of the comment being softened.
+
+Scope is stated in the workflow header and matters: **it BOOTS, it does not DRIVE.** It proves the app
+can persist its own seeded state through the full temp-then-rename path. It cannot catch the dot-path
+scope class alone, which only fires once an asset is written.
+
+### `Archie-7e2e` was never actually blocked — the recorded blocker was stale twice over
+
+Session 3 recorded `flatpak-builder` as **MISSING** and treated Flatpak as gated on installing it.
+Re-measured this session:
+
+| probe | result |
+|---|---|
+| `org.flatpak.Builder` | **already installed** |
+| `org.gnome.Platform` 49 | **installed** (also 50) |
+| `org.gnome.Sdk` 49 | **installed** |
+| the only real gap | `src-tauri/target/release/archie` did not exist |
+
+The manifest packages `../target/release/archie` — a **release** binary, not the `--debug` one every
+desktop drive so far has used. So the whole blocker was one build command. This is the second time a
+blocker on this ticket was recorded from a probe that answered a narrower question than the claim
+(the first was "blocked in this environment", measured only against Flatpak). Re-measure a recorded
+blocker before believing it.
+
+### `Archie-7e2e` — the Flatpak BUILDS, INSTALLS, RUNS and PASSES
+
+Built with `org.flatpak.Builder` against GNOME 49 and installed `--user`. Booted under Xvfb, and the
+question `Archie-9ece` calls catastrophic is **answered: `defaultLibraryRoot()` resolves correctly
+inside the sandbox** — `~/.var/app/digital.compost.archie/data/digital.compost.archie/library`.
+`scripts/desktop-smoke.sh` against that profile: origin `tauri_localhost_0`, no dev-server origin, no
+0-byte files, no leftover `.tmp-*`, `library.json` 21,597 bytes parsing to 6 exhibits — **PASS**. The
+window renders, and it shows *"Living in Archie's own folder"*, so the copy fix is live in the release
+build too. It also wrote `.archie-mirror.json`, a dot-path — so the `Archie-7b48` scope fix holds under
+the sandbox as well.
+
+**Three build/run details, each of which cost an attempt:**
+
+1. **`flatpak-builder` needs its state dir and build dir on the SAME filesystem, and both must be
+   visible inside the Builder's own sandbox.** `/tmp` is not — it fails at `Failure spawning
+   rofiles-fuse` with a "bad mount point" that does not name the real cause. Stage under `$HOME`.
+   The recipe that worked: copy the manifest plus every source it references into one flat dir and
+   rewrite the relative `path:` entries, so nothing reaches outside it.
+2. **The manifest's `--socket=fallback-x11` does NOT apply on a Wayland session**, and forcing
+   `GDK_BACKEND=x11` then panics with `Failed to initialize GTK` — a message that reads like a broken
+   build rather than a missing socket. `--unset-env=WAYLAND_DISPLAY` does not help: flatpak makes the
+   socket decision from the HOST env before the sandbox env exists. What works is overriding the
+   permission at run time: `flatpak run --socket=x11 --nosocket=wayland --env=DISPLAY=:99 …`.
+3. `pkill -f digital.compost.archie` **matches its own shell's command line** and kills the caller
+   (exit 144). Third instance of this trap in two sessions — use a bracketed pattern
+   (`pgrep -f 'digital[.]compost[.]archie'`) and kill by PID.
+
 ## STATE AT HANDOFF — everything below is MERGED AND PUSHED
 
 `origin/main` = `main` = **`1c435ff`**, 0/0. The whole desktop chain is on the remote: the
