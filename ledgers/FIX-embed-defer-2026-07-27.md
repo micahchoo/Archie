@@ -215,6 +215,14 @@ overlay because its finder has nowhere else to live; the embed's reading pane *i
 (V70/`Archie-c982`). Filtering it in place costs no scrim, no second focus trap, and — the part
 ADR-0019's own layout row cares about — never covers the image.
 
+That shape has direct precedent, which I only found late and verified myself:
+**tropy `src/selectors/items.js:11-13`** — `getVisibleItems` is memoized over `qr.items`, the query
+result, so searching *narrows the existing item grid* rather than opening a result surface beside it.
+The grid IS the results. `qr` is a first-class reducer (`src/reducers/qr.js:5`), not a view-local
+filter, so this is the app's model of search rather than a UI shortcut. Nothing about a locus follows
+from it — tropy has no result ROW to carry one — so it supports the placement decision and nothing
+else.
+
 **It does not port `Archie-9eeb`.** That ticket is open against the shell's finder because a result
 renders only `r.body` and its tags (`SearchOverlay.svelte:100-103`) and never says *where* the hit
 lives; on a many-object exhibit every result reads as if it came from the same place. Here:
@@ -245,8 +253,12 @@ contains.
   So the honest statement is a **stated absence**: *no swept system demonstrates working
   cross-canvas activation-to-region.* clover has the pieces and does not wire them. The embed gets it
   only because `resolveExhibitTarget` already existed, and it claims no precedent.
-  **The ticket still carries the wrong version** and will re-propagate it to whoever picks it up —
-  routed to the lead, since `.seeds/` is not mine to edit.
+  **Closed:** the ticket carried the wrong version and would have re-propagated it; routed to the lead
+  (`.seeds/` is not mine to edit) and fixed on `origin/main` in `09e8921`, which now states the
+  `isContentState`/`isContentSearch` gap and warns off clover as a cross-canvas donor. *Verified by
+  reading that commit's diff — this paragraph originally said the ticket was still wrong, which was
+  true when written and false by the time it was committed. A prose claim about an artifact has to be
+  re-checked against the artifact, not against when you learned it.*
 
 ### The pre-existing defect this uncovered
 
