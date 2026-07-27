@@ -121,6 +121,13 @@ reads as patience rather than as a bug. The second is the useful tell — *a new
 disagrees with the existing one by that margin is the broken one.* Prefer re-running the suite that
 already exists over building a second probe; that is where all three of these came from.
 
+**The first two are preserved in their broken form**, so this rule's evidence is reproducible rather
+than taken on faith: `ledgers/probes/2026-07-26-canvas-reflow-null-diff.mjs` and
+`ledgers/probes/2026-07-26-click-hit-rate-wrong-note.mjs`. They are never run and nothing imports
+them. Note what the first one's header had to record: the misleading artifact was **overwritten in
+place** while chasing the bug, so it no longer existed by the time it was worth studying. Preserve
+first, then repair.
+
 > **Before concluding from a probe: did it examine a non-empty subject?** A difference computed from
 > two nulls is `0`. A `pkill -f` pattern matches the process running it. An `until` loop with no
 > timeout cannot distinguish "not ready yet" from "will never be ready". **Print the subject, not only
