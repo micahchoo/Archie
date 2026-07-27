@@ -1208,10 +1208,16 @@ async function main() {
         const target = await page.evaluate((here) => {
           const s = document.querySelector("archie-viewer").shadowRoot;
           const rows = [...s.querySelectorAll(".rc-notes button")];
-          const i = rows.findIndex((r) => (r.querySelector(".rc-where")?.textContent.trim() ?? "") !== here);
+          // Read the locus ONCE and carry it. Dereferencing `.rc-where` a second time threw when a
+          // red-green probe removed the locus line, which aborted the whole drive — 34 later
+          // assertions never ran and the suite reported 19/20 rather than a clean FAIL here. A probe
+          // that CRASHES the harness still exits 1, so it looks caught; it is not the same thing as
+          // the assertion failing, and the difference is invisible unless you read the totals.
+          const locusOf = (r) => r.querySelector(".rc-where")?.textContent.trim() ?? "";
+          const i = rows.findIndex((r) => locusOf(r) !== here);
           if (i < 0) return null;
           const r = rows[i].getBoundingClientRect();
-          return { i, label: rows[i].querySelector(".rc-where").textContent.trim(),
+          return { i, label: locusOf(rows[i]),
                    at: [Math.round(r.x + r.width / 2), Math.round(r.y + r.height / 2)] };
         }, openLabel);
         if (!target) return { want, openLabel, before, ...got, travel: { skipped: "every hit is on the open object" } };
