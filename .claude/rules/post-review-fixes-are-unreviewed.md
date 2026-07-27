@@ -136,6 +136,55 @@ first, then repair.
 `[[a-green-run-is-one-sample]]` is the false-RED mirror of this: there, one sample was mistaken for a
 result; here, no sample was. Both print something that looks like an answer.
 
+**1a-bis. The injection can be present in the artifact and still never run.** The sharpest instance of
+1a, added the same day, because the usual defence — *check the injection reached the build* — passes.
+
+Five attempts to falsify an e2e assertion all failed, and one of them looked diagnostic: a CSS rule
+was confirmed **present in the built stylesheet** (`main.svelte-1hmgvz1{…height:60%…}`) and had no
+layout effect whatsoever. The theory that followed was a percentage height resolving against an
+`auto` parent — plausible, precedented in this repo (V49's `min-height: 100dvh`), and wrong.
+
+The real cause: the fixture exhibit is a **narrative** one, so the test drives `NarrativeReader.svelte`.
+All five injections had gone into `Reader.svelte` — *a component that route never renders.* They
+compiled, shipped, and never entered the DOM. `grep` found them in the bundle every time.
+
+The tell came only from printing the subject: `.reader main` is `null` on that route while
+`.narrative main` is present, and a spacer probe reported `eater=ABSENT` while `grep` found it in the
+built JS.
+
+> **"It's in the build" is not "it ran."** Before concluding a gate cannot fail, assert the injected
+> thing is in the **rendered DOM**, not merely in the artifact. And when an injection has no effect,
+> suspect *which component is under test* before theorising about CSS.
+
+One more from the same falsification, worth knowing when you write one: an injection can be **too
+strong to falsify anything**. At `flex: 1000` the canvas was starved to nothing and the run died on
+*"the deep-zoom canvas never painted"* — a **precondition** failure, not an assertion failure, which
+proves nothing about the claim. `flex: 1` falsified it. A red run is only evidence if it is red for
+the reason you intended.
+
+**1c. Having done the right thing is not the same as knowing you did.** After an eleven-conflict
+merge, two `add/add` files had been resolved correctly — main's side, wholesale. That was an
+*intention* until four commands made it a finding: `merge-base --is-ancestor <the fix> HEAD`, a line
+count, a `grep -c`, and a byte-identity check per file. **The gap between those two states is
+invisible from inside, because a correct action and an unverified one feel identical.** Run the check
+even when you are confident you already did the thing — especially then, since confidence is what
+suppresses it.
+
+Same merge, the constructive half: 41 lines existed on only one side. They *were* superseded drafts —
+but that was established by reading them and tracing their authorship, not by the fact that dropping
+them felt safe. The trace is what turned "dropping my side was acceptable" into "keeping it would have
+reinstated the blocker the review found" — different claims, and only the second is worth anything.
+
+**Corollary for anyone writing instructions to a concurrent agent.** In a fleet, messages cross by
+design, and guidance that arrives after the work is wasted while a *checkable* assertion is not:
+
+> "take main's side" is guidance. "**203 lines, 8 occurrences, `a440721` present**" is a test the
+> recipient can run against work already done.
+
+The second kind survives arriving late, and converts a crossed message into free independent
+verification. Write briefs with reconciliation numbers attached; it is cheaper than tightening timing
+and it works when timing fails.
+
 **1b. The probe can be correct and still not be read.** A fourth instance, and the most humbling,
 because nothing about the command was wrong. A reviewer established that a corpus library "has no
 note-media feature" by grepping one variable name (`thumbnail`), getting two hits, and concluding the

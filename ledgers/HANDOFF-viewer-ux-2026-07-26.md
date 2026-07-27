@@ -17,8 +17,18 @@ It carries, in order: the studio bundle ratchet's eager/lazy split, and **Archie
 | --- | --- |
 | studio bundle ratchet | **merged.** `gh-pages-build` passes because the metric changed, not because a baseline moved |
 | Archie-a5b1 — rights + metadata on the read side | **merged.** V103 and V104 both closed |
-| dock slice (`ux/dock-chrome-recovered`) | **implementing option 2**, holding at `d3703f4` + the reflow work. Not merged |
-| wave 2 — `1820`, `7b86`/V50, `9eeb`, `ecf4` | queued behind the dock; all four touch files it holds |
+| dock slice | **MERGED** at `dfe7ab4` — all 10 jobs green on `integrate/dock`, fast-forward, no merge commit |
+| wave 2 — `1820`, `7b86`/V50, `9eeb`, `ecf4` | **UNBLOCKED.** All four open, genuinely parallel now — no shared files |
+
+**Wave 2, for whoever picks it up.** `ecf4` was the one that had to wait: `--finder-h`/`--topbar-h`
+do not survive the dock, so unifying tokens earlier would have unified onto values about to vanish.
+
+| ticket | title |
+| --- | --- |
+| `Archie-1820` | The embed's four DEFER-tracked capabilities: note media, reading sheet, cite hovercards, search |
+| `Archie-7b86` | The AV reading surface (V50 — baked waveform peaks) |
+| `Archie-9eeb` | The finder says what it found, not where it is |
+| `Archie-ecf4` | Studio and Viewer token files have already drifted — unify onto one floor |
 
 **`main` is checked out in `.claude/worktrees/merge-main`, a peer session's — do not check it out
 here, and read the stale-ref warning immediately below before branching off anything.**
@@ -75,12 +85,31 @@ made the try worthwhile: we set no `autoResize`, no `preserveImageSizeOnResize`,
 container change (`mount.ts:429`'s only resize handler is `renderNavDots`) — the behaviour was pure
 OSD default.
 
-**The underlying reflow is deterministic, not flaky.** The suite's intermittency is only whether the
-mark stays big enough to catch the remembered pixel. So `selection.spec.ts:96` is being **split into
-two assertions**: one keeping the real-mouse hit test but re-deriving the mark's box after dismissal
-(target **20/20**, up from 17/20), and a new one that **pins the reflow as a contract** so the
-decision cannot be silently reverted. Assert the relationship (canvas grew by the note row's measured
-height), not the literals.
+**The underlying reflow is deterministic, not flaky.** The suite's intermittency was only whether the
+mark stays big enough to catch the remembered pixel. `selection.spec.ts:96` is now **two assertions**,
+both shipped:
+
+- **A** — keeps the real-mouse hit test, re-derives the mark's box after dismissal from
+  `#archie-object-frame` (image-anchored, survives deselection; presence asserted, not skipped on).
+  Red at **4 failed/10** with re-derivation disabled; green at **20/20**, up from the 17/20 baseline.
+- **B** — pins the decision: the dismissed row's height goes back to the image. Red at **3/3**, message
+  `the canvas grew by 71px but the note row was 141px`.
+
+**Two invariants were INVENTED and killed by repeat-running — both are documented in the test as
+explicitly NOT asserted, with denominators.** My brief asserted "the mark's screen position
+consequently moves"; that was my generalisation from one observation and it is false. Measured on the
+note `aHaloNote` actually returns: translation **0px, 20/20**; no-rescale false **5-in-20** (frame
+width 1841 → 1975). Whether growing the viewport re-centres, rescales or does neither depends on
+**which dimension binds the fit** — so neither is a property of the design, and asserting either would
+have gone red on correct code. This is why A *derives* the position rather than computing an offset.
+
+**Why B took six attempts, and the finding is bigger than B.** Five injections went into
+`Reader.svelte`. The fixture exhibit is a **narrative** one, so the test drives
+`NarrativeReader.svelte` — a component that route never renders. They compiled, shipped, and `grep`
+found them in the built JS every time. Recorded as habit **1a-bis** in
+`[[post-review-fixes-are-unreviewed]]`: *"it's in the build" is not "it ran."* Also from that
+falsification: at `flex: 1000` the canvas starves and the run dies on a **precondition** failure
+(*"the deep-zoom canvas never painted"*), which proves nothing — `flex: 1` is what falsifies the claim.
 
 ### ⚠ BRANCH FROM `origin/main`, NEVER `main` — the local ref is STALE
 
