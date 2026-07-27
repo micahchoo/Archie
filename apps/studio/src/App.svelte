@@ -56,6 +56,7 @@
     AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
     timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
     tagsOf, emphasisOf, readingMarkerStyle, withZoomBand, workingToLibrary, resolveLayoutType,
+    READING_PALETTE as CORE_READING_PALETTE,
     isWholeObjectFor, wholeObjectFlagOf, selectorOf, selectorBBox, DZI_TILE_SIZE,
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
   } from "@render/core";
@@ -1303,7 +1304,11 @@
   }
   // Reading colours (ADR-0007: colour identifies the reading; the viewer legend is a colour radio). The
   // curator may PICK one (Archie-1489) — auto-cycled as the sensible default so naming-and-go still works.
-  const READING_PALETTE = ["#3A8C5D", "#a3553a", "#4c5d8a", "#8a6d3b", "#6b4c8a", "#3a7d8a"];
+  // The swatches now live in render-core beside the gate that guards them (Archie-eec7): every entry
+  // must survive any image (>=3:1 vs both white AND black) and no pair may be confusable under normal,
+  // deuteranopic or protanopic vision. The set this replaced collapsed its rust and ochre readings to
+  // ΔE 1.3 for a deuteranope — two different readings, indistinguishable, with no way to tell.
+  const READING_PALETTE = CORE_READING_PALETTE;
   function setNoteReading(reading: string | null) {
     if (!vs.editing) return;
     sess.session.editNote(vs.editing as LogicalId, { reading });

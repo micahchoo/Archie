@@ -52,6 +52,8 @@ export * from "./av/time.js";
 // Layer + tag filtering over Notes (CONTEXT Layers v1 / Tags). Archie filters; pure shows all.
 export * from "./query/filter.js";
 export * from "./query/marker-style.js";
+// The overlay contrast gate + the reading swatches it guards (Archie-eec7).
+export * from "./query/marker-contrast.js";
 // Published-shape (W3CAnnotation) accessors — the canonical home for the viewer's body/reading/overlay reads.
 export * from "./query/published.js";
 // The source-parameterized published-tree reader (the domino) — site/portable/viewer adapt over it.
