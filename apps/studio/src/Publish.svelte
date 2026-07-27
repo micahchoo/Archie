@@ -33,6 +33,7 @@
   import { viewerShareLink, viewerEmbedSnippet } from "./share-link.js";
   import type { GitHubTarget, BrokenLink, IncompleteCanvas, MissingAsset, GitHubPublishResult, PublishProgress } from "@render/core";
   import type { CorruptLogFinding } from "./publish-warnings.js";
+  import { blocksPublish, REPO_SIZE_SOFT_LIMIT_BYTES, type PreflightFinding } from "@render/core";
   import type { DeploySession, DeployTarget, DeployProgress } from "./deploy/types.js";
   import type { DeployResult } from "./deploy/deploy-flows.svelte.js";
   import { untrack } from "svelte";
@@ -82,6 +83,7 @@
     incompleteCanvases = [],
     corruptLogs = [],
     missingAssets = [],
+    preflight = [],
   }: {
     open?: boolean;
     canFolder?: boolean;
@@ -131,6 +133,9 @@
     /** Exhibits whose annotation/section history reads from a torn store — the readable subset (or, when
      *  all-corrupt, nothing) ships. Surfaced as a pre-publish advisory (Archie-a690). */
     corruptLogs?: CorruptLogFinding[];
+    /** Pre-push findings over the BUILT tree + rights coverage (Archie-0cd6 / Archie-8772). The
+     *  severity model is render-core's; this dialog only renders it and honours `block`. */
+    preflight?: PreflightFinding[];
     /** Imported images whose bytes the library's storage couldn't produce — the publish references
      *  them but doesn't contain them (the round-trip loss, 2026-07-19). Post-save advisory. */
     missingAssets?: MissingAsset[];
@@ -379,6 +384,14 @@
   // Torn-store advisory (Archie-a690), split on the load-bearing distinction: an all-corrupt store
   // drops that content from the export entirely (reads as never-authored); a partial one still ships
   // its readable pages. Reader-facing family words.
+  // Preflight (Archie-0cd6 / Archie-8772), split by what the author can do about it. The severity
+  // model is decided in render-core's preflight.ts and is NOT re-litigated here — this dialog groups
+  // by it and honours `block`, which is the whole point of deciding it once.
+  const blockers = $derived(preflight.filter((f) => f.severity === "block"));
+  const preflightWarns = $derived(preflight.filter((f) => f.severity === "warn"));
+  const rightsGap = $derived(preflight.find((f) => f.code === "rights-gap"));
+  const gb = (bytes: number | undefined) => `${((bytes ?? 0) / 1e9).toFixed(2)} GB`;
+
   const lostLogs = $derived(corruptLogs.filter((c) => c.allCorrupt));
   const partialLogs = $derived(corruptLogs.filter((c) => !c.allCorrupt));
   const familyWord = (f: CorruptLogFinding["family"]) => (f === "annotations" ? "annotations" : "section history");
@@ -406,7 +419,9 @@
   const nameError = $derived(
     /[/\s]/.test(owner.trim()) || /[/\s]/.test(repo.trim()) ? "Enter just the names — no slashes, spaces, or full URLs." : "",
   );
-  const canPublish = $derived(owner.trim() !== "" && repo.trim() !== "" && token.trim() !== "" && nameError === "" && advPhase !== "publishing");
+  // A `block` finding refuses the publish outright — the ONLY severity that does. `blocksPublish`
+  // is render-core's single definition of that, not a second predicate written here.
+  const canPublish = $derived(owner.trim() !== "" && repo.trim() !== "" && token.trim() !== "" && nameError === "" && advPhase !== "publishing" && !blocksPublish(preflight));
   // Where the author flips Pages on if we couldn't (private repo / token without Pages scope).
   const pagesSettingsUrl = $derived(`https://github.com/${owner.trim()}/${repo.trim()}/settings/pages`);
 
@@ -932,6 +947,47 @@
                 </ul>
               </div>
             {/if}
+            <!-- PREFLIGHT (Archie-0cd6 / Archie-8772), rendered into the advisory surface this dialog
+                 already has rather than a panel of its own — the batch note's whole point. The three
+                 severities read differently on purpose: a blocker states what will happen and that
+                 Publish is off; a warn states the degradation and lets you through; the rights report
+                 states a fact and asks nothing. -->
+            {#each blockers as b}
+              <div class="broken blocker" role="alert">
+                {#if b.code === "lfs-pointer"}
+                  <p class="b-head">{b.count} {b.count === 1 ? "file is" : "files are"} a Git LFS placeholder, not the real image</p>
+                  <p class="b-sub">These files hold a few lines of text pointing at an image stored elsewhere, not the image itself — and a published site serves that text, so every one of them would appear broken to your readers. Publishing is off until they're replaced. This usually means the library came from a checkout that didn't download its large files; fetch them, then re-add the images.</p>
+                {/if}
+                <ul>
+                  {#each b.examples as e}<li><code>{e}</code></li>{/each}
+                  {#if b.count > b.examples.length}<li class="more">…and {b.count - b.examples.length} more</li>{/if}
+                </ul>
+              </div>
+            {/each}
+            {#each preflightWarns as w}
+              <div class="broken" role="status">
+                {#if w.code === "tree-size"}
+                  <p class="b-head">This library is {gb(w.bytes)} — over GitHub's {gb(REPO_SIZE_SOFT_LIMIT_BYTES)} guideline</p>
+                  <p class="b-sub">Publishing will still work. GitHub asks repositories to stay under this size and may email you about it; if that becomes a problem, publishing fewer exhibits at a time is the usual answer.</p>
+                {:else if w.code === "no-404"}
+                  <p class="b-head">No “page not found” page</p>
+                  <p class="b-sub">Your site works without one. A reader who mistypes a link will see your host's default error page instead of yours.</p>
+                {/if}
+              </div>
+            {/each}
+            {#if rightsGap}
+              <!-- REPORT, never a gate: which items carry a licence is a curatorial decision, and a
+                   tool that blocked on it would be asserting an editorial policy it has no standing
+                   to assert. It says what is missing and gets out of the way. -->
+              <div class="broken report" role="status">
+                <p class="b-head">{rightsGap.count} {rightsGap.count === 1 ? "item has" : "items have"} no credit or licence</p>
+                <p class="b-sub">Nothing is wrong — this is just what your published site will say about who owns what. Add a credit or a licence in each item's details if you want it shown.</p>
+                <ul>
+                  {#each rightsGap.examples as e}<li><code>{e}</code></li>{/each}
+                  {#if rightsGap.count > rightsGap.examples.length}<li class="more">…and {rightsGap.count - rightsGap.examples.length} more</li>{/if}
+                </ul>
+              </div>
+            {/if}
             {#if lostLogs.length > 0}
               <div class="broken" role="status">
                 <p class="b-head">Some saved work won't be in the published site</p>
@@ -1182,6 +1238,11 @@
   .broken li { font-family: var(--font-body); font-size: 0.78rem; line-height: 1.6; color: var(--ink-paper-secondary); }
   .broken code { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-paper-primary); }
   .broken .more { list-style: none; color: var(--ink-paper-muted); }
+  /* The severity model, in three weights of the SAME block — a blocker must not look like a fourth
+     kind of thing. Warning tint is the middle case above; a blocker escalates the stripe to danger,
+     a report drops it to a neutral rule since nothing is wrong. */
+  .broken.blocker { border-left-color: var(--semantic-error); }
+  .broken.report { border-left-color: var(--ink-paper-muted); }
 
   .actions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-4); }
   /* The ONE focal action → rationed signal-orange, soft rounded, signal glow. */

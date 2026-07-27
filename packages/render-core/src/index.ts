@@ -29,6 +29,8 @@ export * from "./session/session.js";
 // Publish primitive: assemble the full site data tree + the architectural zip (CONTEXT publish).
 export * from "./publish/site.js";
 export * from "./publish/ghpages.js";
+// Pre-push preflight + rights coverage (Archie-0cd6 / Archie-8772) — the severity model lives there.
+export * from "./publish/preflight.js";
 // Portable read seam (ADR-0010): read a published tree out of an opened `.archie.zip`, media → blob URLs.
 export * from "./publish/portable.js";
 // ADR-0020: L1 `.archie.zip` self-ID marker — write (publishLibrary stamps archie.json) + read (validateArchieMarker).

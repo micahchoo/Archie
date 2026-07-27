@@ -7,6 +7,7 @@
 // library-meta.svelte.ts): the $state container is never reassigned, getters stay live.
 import {
   MemoryFilesystem, ZipFilesystem, publishLibrary, collectFiles, publishToGitHub, renderMarkdown, readStructureReport, asExhibitId,
+  preflightTree, rightsCoverageFinding, blocksPublish, type PreflightFinding,
   type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type MissingAsset, type GitHubTarget, type PublishProgress, type IncrementalScope, type SectionLog, type PublishResult,
 } from "@render/core";
 import { supportsStreamingZipSave, openStreamingZipSave, saveZipToDisk, downloadHtml } from "./binding.js";
@@ -102,12 +103,16 @@ export function createPublishFlows(deps: PublishDeps) {
   // ONE open flag (Archie-1921 — PublishDialog + the Publish wizard merged into one scrimmed surface):
   // the old `dialogOpen`/`publishOpen` pair (one per dialog, toggled in lockstep by the chooser's
   // "Publish to the web" card) is gone now that there's only one surface to show or hide.
-  const s = $state<{ open: boolean; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; corruptLogs: CorruptLogFinding[]; missingAssets: MissingAsset[] }>({
+  const s = $state<{ open: boolean; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; corruptLogs: CorruptLogFinding[]; missingAssets: MissingAsset[]; preflight: PreflightFinding[] }>({
     open: false, // the merged Publish & Share surface
     brokenLinks: [], // intra-Library links that degrade to plain text on publish (dialog advisory)
     incompleteCanvases: [], // Image objects publishing with no width/height (IIIF Pres 3 §5.3; dialog advisory)
     corruptLogs: [], // torn annotation/structure stores publishing under-represented (Archie-a690; dialog advisory)
     missingAssets: [], // imported-asset sources whose bytes the store couldn't produce — published dangling (round-trip loss advisory)
+    // Pre-push preflight over the BUILT tree + rights coverage (Archie-0cd6 / Archie-8772). The
+    // severity model lives in render-core's preflight.ts; this just carries the findings to the
+    // dialog, which renders them into the advisory surface it already has.
+    preflight: [],
   });
   let cachedSiteFs: MemoryFilesystem | null = null; // the no-originals projection from openPublish, reused by publish
 
@@ -253,6 +258,14 @@ export function createPublishFlows(deps: PublishDeps) {
   }
   // Project the Library into the static site tree (in a MemoryFilesystem). Same projection the zip
   // uses — different sink. withOriginals (opt-in) re-projects with preserved source files included.
+  /** Walk the built tree for pre-push findings and fold in the rights-coverage report. One place, so
+   *  every destination that projects a site gets the same gate. */
+  async function runPreflight(fs: Filesystem): Promise<PreflightFinding[]> {
+    const findings = await preflightTree(await fs.root());
+    const rights = rightsCoverageFinding(deps.buildFullLibrary());
+    return rights ? [...findings, rights] : findings;
+  }
+
   /** One resolution point for the publish base, so the three sinks cannot disagree. `override` is the
    *  first-deploy case (the URL is known from owner+repo before we stage). */
   const baseFor = (override?: string) => override ?? deps.publishBase();
@@ -356,6 +369,9 @@ export function createPublishFlows(deps: PublishDeps) {
     get brokenLinks(): BrokenLink[] { return s.brokenLinks; },
     get incompleteCanvases(): IncompleteCanvas[] { return s.incompleteCanvases; },
     get corruptLogs(): CorruptLogFinding[] { return s.corruptLogs; },
+    get preflight(): PreflightFinding[] { return s.preflight; },
+    /** Does the preflight refuse this publish? The dialog's gate — one call, one definition. */
+    get publishBlocked(): boolean { return blocksPublish(s.preflight); },
     get missingAssets(): MissingAsset[] { return s.missingAssets; },
     openMenu() { s.open = true; },
     close() { s.open = false; },
@@ -445,6 +461,7 @@ export function createPublishFlows(deps: PublishDeps) {
       s.incompleteCanvases = incompleteCanvases;
       s.missingAssets = missingAssets;
       s.corruptLogs = corruptLogs;
+      s.preflight = await runPreflight(fs);
       return fs;
     },
     /** Entering the GitHub wizard step from the destination chooser (Archie-1921 — one merged surface
@@ -468,6 +485,9 @@ export function createPublishFlows(deps: PublishDeps) {
         s.incompleteCanvases = ic;
         s.missingAssets = ma;
         s.corruptLogs = cl;
+        // Preflight walks the BUILT tree, so it can only run once the projection lands — same
+        // reactive fill-in as the advisories above (the wizard is already on screen by then).
+        void runPreflight(fs).then((p) => { s.preflight = p; });
       }).catch((e) => {
         // A projection failure here degrades to "no cached tree yet" — collectSiteFiles() re-projects on
         // demand at actual publish time, so this is a lost warm cache, not a lost publish. Log rather

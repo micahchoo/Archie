@@ -2717,6 +2717,7 @@
       incompleteCanvases={p.incompleteCanvases}
       corruptLogs={p.corruptLogs}
       missingAssets={p.missingAssets}
+      preflight={p.preflight}
     />
   {/if}
   {#if cmdkOpen && CmdKComp}{@const CK = CmdKComp}<CK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />{/if}
