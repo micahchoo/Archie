@@ -8,6 +8,15 @@ describe("bindingLocationLabel", () => {
   it("unbound reads as this browser, with no mechanics (SafetyState owns those now)", () => {
     expect(bindingLocationLabel({ kind: "unbound" } as Binding)).toBe("this browser");
   });
+
+  it("says Archie's own folder on DESKTOP — 'this browser' is false there (the resident store is a real folder)", () => {
+    expect(bindingLocationLabel({ kind: "unbound" } as Binding, true)).toBe("Archie\u2019s own folder");
+  });
+
+  it("a BOUND library reads the same on both platforms — only the unbound default differs", () => {
+    const b = { kind: "folder", name: "Field Notes" } as Binding;
+    expect(bindingLocationLabel(b, true)).toBe(bindingLocationLabel(b, false));
+  });
   it("folder names the folder", () => {
     expect(bindingLocationLabel({ kind: "folder", name: "Field Notes" } as Binding)).toBe("folder “Field Notes”");
   });

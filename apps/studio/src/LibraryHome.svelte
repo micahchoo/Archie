@@ -43,6 +43,7 @@
   import { hasRealWorkIn } from "./safety-state.svelte.js";
   import { viewPrefs } from "./view-prefs.svelte.js";
   import { readDroppedFolderFiles } from "./folder-drop.js";
+  import { isTauri } from "./tauri-fs.js";
 
   let {
     exhibits,
@@ -544,13 +545,13 @@
          save-state word, so this only ever answers "where does this library live". -->
     <section class="projectbar">
       <p class="line">
-        Living in {bindingLocationLabel(binding)}
+        Living in {bindingLocationLabel(binding, isTauri())}
         <span class="sep">·</span>
         <button class="text-link link" onclick={onopenproject} disabled={bindingBusy}>Open a library…</button>
         {#if binding.kind !== "unbound"}
           <span class="sep">·</span>
           <button class="text-link link" onclick={onclose} disabled={bindingBusy}
-            title="Detach from disk — your work stays in this browser">Close</button>
+            title={isTauri() ? "Detach from this folder — your work stays in Archie\u2019s own folder" : "Detach from disk — your work stays in this browser"}>Close</button>
         {/if}
         {#if recents.length > 0}
           <span class="sep">·</span>

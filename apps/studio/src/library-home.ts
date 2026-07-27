@@ -10,8 +10,13 @@ import type { Binding } from "@render/core";
  * SafetyState now owns every save-state word (Saved/Saving/Action needed/Failed) at the library HEADER,
  * so this line states location ONLY — never dirty/auto-mirror mechanics, never "Save".
  */
-export function bindingLocationLabel(binding: Binding): string {
-  if (binding.kind === "unbound") return "this browser";
+export function bindingLocationLabel(binding: Binding, isDesktop = false): string {
+  // "this browser" is the WEB answer for unbound, and it was shown on desktop too, where it is simply
+  // false — the desktop resident store is a real folder under the OS app-data dir (resident-store.ts
+  // → defaultLibraryRoot). Both phrases mean the same thing to a reader ("the default place, managed
+  // for you"), which is why one word is the whole fix. `isDesktop` is a PARAMETER rather than an
+  // isTauri() call so this module stays pure and platform-free; the caller knows which app it is.
+  if (binding.kind === "unbound") return isDesktop ? "Archie’s own folder" : "this browser";
   const kind = binding.kind === "folder" ? "folder" : "file";
   return `${kind} “${binding.name ?? ""}”`;
 }
