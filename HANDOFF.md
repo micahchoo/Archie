@@ -24,7 +24,7 @@ content-drifted records newer on the restored side. **Check `git status` on `.se
 resolves it to `/`. A 20-run "baseline" measurement came back 20/20 FAIL for that reason alone and
 was nearly reported as a red-green proof. Run baseline copies from inside the repo.
 
-## Done — 15 tickets
+## Done — 22 tickets moved
 
 Each code change is red-green proven by injecting the defect and watching the gate fail.
 
@@ -45,10 +45,55 @@ Each code change is red-green proven by injecting the defect and watching the ga
 | Archie-b5c2 | `8c0abc3` | **premise corrected, ticket left open** — see below. |
 | Archie-7e5b | `0d8f444` | S3a + S3b shipped ahead of the wiring; dedupe-removed → 1 fail, first-object-only → 1 fail. Ticket stays open for the caller. |
 | Archie-ea57 | `99b937a` | axe ratchet; **it found 676 real violations on its first run** and they were fixed, not baselined. Revert one token → 8 pages red, exit 1. |
+| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
+| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
+| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
+| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
+| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
+| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
+| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
+| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
+| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
+| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
+| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
+| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
+| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
+| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
+| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
 | Archie-7e5b | `0d8f444` | S3a + S3b shipped ahead of the wiring; dedupe-removed → 1 fail, first-object-only → 1 fail. Ticket stays open for the caller. |
 | Archie-ea57 | `99b937a` | axe ratchet; **it found 676 real violations on its first run** and they were fixed, not baselined. Revert one token → 8 pages red, exit 1. |
+| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
+| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
+| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
+| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
+| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
+| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
+| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
+| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
+| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
+| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
+| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
+| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
+| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
+| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
+| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
 | Archie-7e5b | `0d8f444` | S3a + S3b shipped ahead of the wiring; dedupe-removed → 1 fail, first-object-only → 1 fail. Ticket stays open for the caller. |
 | Archie-ea57 | `99b937a` | axe ratchet; **it found 676 real violations on its first run** and they were fixed, not baselined. Revert one token → 8 pages red, exit 1. |
+| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
+| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
+| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
+| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
+| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
+| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
+| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
+| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
+| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
+| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
+| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
+| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
+| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
+| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
+| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
 
 ### Three things I would not want lost
 
