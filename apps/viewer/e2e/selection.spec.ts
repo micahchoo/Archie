@@ -192,19 +192,27 @@ test.describe("the selection ring means something (V43)", () => {
         `dismissed row's height is supposed to go to the image, and only to the image`,
     ).toBeLessThanOrEqual(2);
 
-    // 2. It is a TRANSLATION, not a rescale: OSD re-centres in the taller viewport, so the image
-    //    shifts by half the growth and its on-screen size is unchanged. A re-anchoring change (the
-    //    `preserveImageSizeOnResize` experiment, or a future top-left pin) fails one of these two.
-    expect(
-      Math.abs(anchorClosed.width - anchorOpen.width),
-      `the image RESCALED on dismiss (frame width ${Math.round(anchorOpen.width)} → ` +
-        `${Math.round(anchorClosed.width)}); the reflow is supposed to be a pure translation`,
-    ).toBeLessThanOrEqual(2);
-    expect(
-      Math.abs((anchorClosed.y - anchorOpen.y) - grew / 2),
-      `the image moved ${Math.round(anchorClosed.y - anchorOpen.y)}px for a ${Math.round(grew)}px ` +
-        `growth; OSD re-centres, so it should move by half`,
-    ).toBeLessThanOrEqual(2);
+    // WHAT IS DELIBERATELY *NOT* ASSERTED, and this took three measurements to establish. Drafts of
+    // this test also claimed two things about the IMAGE's response to the reflow. Both are false, and
+    // both were caught only by repeat-running (`[[a-green-run-is-one-sample]]`):
+    //
+    //   · "it translates by half the growth" — from one note, whose frame moved [35,272,…] →
+    //     [35,343,…], exactly half of 141. Against the note `aHaloNote` returns, the frame moves
+    //     **0px** for the same 141px growth, 20/20.
+    //   · "it is never rescaled" — false 5 times in 20 on the very same note: frame width
+    //     1841 → 1975.
+    //
+    // Both hold sometimes. Whether growing the viewport re-centres, rescales, or does neither depends
+    // on which dimension binds the fit at that moment, so none of it is an invariant of the DESIGN —
+    // it is a property of the image and the camera. Asserting either would have pinned an accident of
+    // one fixture and gone red on correct code.
+    //
+    // What survives is the decision itself, above: the row's height goes back to the image. That is
+    // what a permanent reservation would break, and it is the whole of what the human ruled.
+    //
+    // It is also exactly why the click assertion above DERIVES the mark's new position from the frame
+    // instead of applying a computed offset. The shift is real, varies by note, and is the sort of
+    // thing a test must read rather than predict.
   });
 });
 
