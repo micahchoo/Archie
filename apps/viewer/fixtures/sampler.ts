@@ -114,8 +114,10 @@ export const samplerAudioNotes: SamplerTimeNote[] = [
   // drives it. That test is what makes these two tag strings load-bearing — it asserts the chips read
   // exactly `#cadence` and `#transcript` and that clicking one arrives with THAT facet active and the
   // other off, so renaming either tag here without updating the spec reddens it rather than passing
-  // silently. It also found `Archie-d37d` on its first run: the cite trigger occludes the FIRST chip,
-  // so the test drives the second one and records the geometry at the call site.
+  // silently. It also found `Archie-d37d` on its first run: the cite trigger occluded the FIRST chip.
+  // That closed OBVIATED on 2026-07-27 — the chrome dock made the note card and the trigger flow
+  // siblings, so the card ends at y 592 and the bar begins there — and the test now hit-tests every
+  // chip and drives both, with the before/after geometry recorded at the call site.
   {
     objectId: "ex-sampler.sa1",
     t: "180,220",
