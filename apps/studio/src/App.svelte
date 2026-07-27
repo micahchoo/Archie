@@ -50,6 +50,7 @@
   import { modality } from "./modality.svelte";
   import { applyClick, selectAll as selectAllIds, applyMarquee, type ClickMods } from "./overview-selection.js";
   import { teardownAndRemoveExhibits } from "./exhibit-teardown.js";
+  import { liveNoteIdsOnCanvas, conflictsBlockingRemoval as blockingRemovalConflicts, dedupeById } from "./conflict-gate.js";
   import { warnAnnotationPublishCorruption, type CorruptLogFinding } from "./publish-warnings.js";
   import {
     AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
@@ -520,9 +521,45 @@
   // log, then drop it; the LAST exhibit leaves a truly-empty library (no DEFAULT_EXHIBITS reseed). ---
   // Tombstone an object's notes (ADR-0003 append-only; recoverable via history) then drop it from meta. The
   // shared core: removeCurrentObject navigates afterwards; the overview pencil's removeObjectById stays put.
+  /**
+   * The logicalIds of an object's live notes, deduped (Archie-7e5b S3b).
+   *
+   * `session.notes()` returns every live HEAD, so a conflicted note appears once PER head — a delete
+   * loop over it would call `deleteNote` on the same logicalId twice. Dedupe at the source.
+   */
+  function liveNoteIdsOn(objId: string): LogicalId[] {
+    return liveNoteIdsOnCanvas(sess.session.notes(), vs.canvasIdOf(objId), (t) => srcOf(t as never)) as LogicalId[];
+  }
+
+  /**
+   * Refuse an object removal that would abort half-way (Archie-7e5b S3b), and say why.
+   *
+   * `deleteNote` resolves the note's linear head, which THROWS on plural heads (the C4 merge
+   * contract — a conflicted note has no single head to tombstone). The delete loops below are not
+   * transactional: a throw partway through leaves some notes tombstoned, `markObjectRemoved`
+   * un-called and `lib.removeObject` never run — a half-removed object, plus an unhandled rejection.
+   *
+   * So the check runs BEFORE any mutation and refuses the whole operation. All-or-nothing is the
+   * only honest option here: skipping the conflicted notes instead would remove the object and strand
+   * them pointing at a canvas that no longer exists. This is the same posture as the per-note edit
+   * gate (`conflictedNoteIds` at the sidebar) — a conflict is resolved in Review, not routed around.
+   *
+   * Returns the blocking ids, or an empty array when the removal is safe.
+   */
+  const conflictsBlockingRemoval = (objIds: readonly string[]): string[] =>
+    blockingRemovalConflicts(objIds, liveNoteIdsOn, (id) => conflictedNoteIds.has(id));
+
+  /** The shared refusal message + note, so both removal paths say the same thing. */
+  function refuseForConflicts(blocking: readonly string[], what: string): void {
+    const n = blocking.length;
+    importNote = {
+      message: `${what} still ${n === 1 ? "has a note that two people" : `has ${n} notes that two people`} edited at the same time. Open Review to settle ${n === 1 ? "it" : "them"} first — nothing has been deleted.`,
+      ok: false,
+    };
+  }
+
   async function deleteObjectNotesAndMeta(objId: string) {
-    const cid = vs.canvasIdOf(objId);
-    for (const r of sess.session.notes().filter((n) => !n.deleted && srcOf(n.target) === cid)) sess.session.deleteNote(r.logicalId as LogicalId);
+    for (const id of liveNoteIdsOn(objId)) sess.session.deleteNote(id);
     bump();
     // Tag the incremental mirror BEFORE removeObject so the trigger it fires (via onAfterPersist) sees the
     // removal: rewrite the exhibit's manifest AND prune the object's orphaned tree files (spike-0002). The
@@ -534,6 +571,8 @@
   }
   async function removeCurrentObject() {
     const objId = vs.currentObjectId;
+    const blocking = conflictsBlockingRemoval([objId]);
+    if (blocking.length > 0) { refuseForConflicts(blocking, "This item"); return; }
     const remaining = vs.OBJECTS.filter((o) => o.id !== objId);
     await deleteObjectNotesAndMeta(objId);
     if (remaining[0]) vs.switchObject(remaining[0].id);
@@ -542,6 +581,8 @@
   // Overview pencil-CRUD delete (Archie-79be): remove ANY object without opening it; stay in the overview.
   // If the cursor pointed at the removed object, advance it to a survivor so the (unmounted) editor stays valid.
   async function removeObjectById(objId: string) {
+    const blocking = conflictsBlockingRemoval([objId]);
+    if (blocking.length > 0) { refuseForConflicts(blocking, "That item"); return; }
     await deleteObjectNotesAndMeta(objId);
     // ADR-0024 #2: Overview is mandatory at every object count, so a delete from the overview STAYS on the
     // overview (even down to one, or zero — the empty overview is the only place to re-add). Just keep the
@@ -893,9 +934,13 @@
     const present = vs.OBJECTS.map((o) => o.id);
     const list = present.filter((id) => ids.has(id)); // canonical order, only ids still in the exhibit
     if (list.length === 0) { clearSel(); return; }
+    // Precheck the WHOLE selection before touching anything (Archie-7e5b S3b): this loop tombstones
+    // notes for every id and only then calls one batched `removeObjects`, so a plural-head throw on
+    // the third object would leave the first two's notes tombstoned with no meta mutation at all.
+    const blocking = conflictsBlockingRemoval(list);
+    if (blocking.length > 0) { refuseForConflicts(blocking, list.length === 1 ? "That item" : "One of the selected items"); return; }
     for (const objId of list) {
-      const cid = vs.canvasIdOf(objId);
-      for (const r of sess.session.notes().filter((n) => !n.deleted && srcOf(n.target) === cid)) sess.session.deleteNote(r.logicalId as LogicalId);
+      for (const id of liveNoteIdsOn(objId)) sess.session.deleteNote(id);
       const gone = vs.OBJECTS.find((o) => o.id === objId);
       const assetName = gone && isAsset(gone.source) ? gone.source.slice(ASSET_PREFIX.length) : undefined;
       bnd.markObjectRemoved(vs.currentSlug, objId, assetName); // per-id orphan cleanup (asset name known only here)
@@ -1355,7 +1400,14 @@
   const notes = $derived(
     objNotes.filter((r) => rdg.noteVisible(r) && (editorFilter === "all" || String(r.lastEditor ?? "unknown") === editorFilter)),
   );
-  const objAnnotations = $derived.by<W3CAnnotation[]>(() => { void rev; return sess.session.workingAnnotations().filter((a) => srcOf(a.target) === vs.canvasId && !hiddenByStructure.has(a.id)); });
+  // Archie-7e5b S3a: `workingAnnotations()` yields every live HEAD, so a conflicted note arrives as
+  // TWO annotations sharing one `id` — Annotorious is handed duplicate ids and draws the note twice,
+  // with only one of them addressable. Dedupe to a single representative, the same rule `objNotes`
+  // above applies to the sidebar list; both sides stay reachable through MergeReview.
+  const objAnnotations = $derived.by<W3CAnnotation[]>(() => {
+    void rev;
+    return dedupeById(sess.session.workingAnnotations().filter((a) => srcOf(a.target) === vs.canvasId && !hiddenByStructure.has(a.id)));
+  });
   // O(1) marker lookup for the live styler: Annotorious calls styleOf per marker on every restyle
   // (hover / solo / reading toggle), so a per-call array scan was O(n²) across the canvas. Rebuilt only
   // when the working-annotation set changes.
@@ -1622,8 +1674,30 @@
     }
   }
   // Geometry edit on canvas → re-derive geo-truth on a Map (null clears it if the new shape is unparseable).
-  const onUpdate = (a: W3CAnnotation) => { sess.session.editNote(a.id as LogicalId, { target: oneTarget(a.target), ...(isMapCurrent ? { geo: geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) ?? null } : {}) }); bump(); };
-  const ondelete = (id: string) => { sess.session.deleteNote(id as LogicalId); bump(); if (vs.selected === id) vs.selected = null; if (vs.editing === id) vs.editing = null; };
+  // The canvas drag path used to bypass the note-level C4 edit gate entirely (Archie-7e5b S3a): the
+  // sidebar refuses to open a conflicted note for editing, but a geometry drag called `editNote` by
+  // id regardless — and `editNote` resolves the linear head, which THROWS on plural heads. Inside an
+  // Annotorious callback that throw is uncaught, so the drag left the marker moved on screen and
+  // nothing written. Refuse here too, with the same message the removal paths use, and re-render so
+  // the marker snaps back to its stored geometry rather than lying about an edit that never landed.
+  const onUpdate = (a: W3CAnnotation) => {
+    if (conflictedNoteIds.has(a.id)) {
+      importNote = { message: "Two people edited this note at the same time. Open Review to settle it before moving its marker — nothing has changed.", ok: false };
+      bump(); // re-render from the log: the dragged marker returns to where it actually is
+      return;
+    }
+    sess.session.editNote(a.id as LogicalId, { target: oneTarget(a.target), ...(isMapCurrent ? { geo: geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) ?? null } : {}) });
+    bump();
+  };
+  const ondelete = (id: string) => {
+    // Same gate as onUpdate: deleteNote resolves the linear head and throws on plural heads.
+    if (conflictedNoteIds.has(id)) {
+      importNote = { message: "Two people edited this note at the same time. Open Review to settle it before deleting it — nothing has changed.", ok: false };
+      bump();
+      return;
+    }
+    sess.session.deleteNote(id as LogicalId); bump(); if (vs.selected === id) vs.selected = null; if (vs.editing === id) vs.editing = null;
+  };
   // Hand-annotate AV: AvEditor marked a [start,end] region → create a supplementing time note, then
   // select it so the WADM form opens to type the note (the temporal analogue of onCreate for OSD draws).
   function onCreateTime(start: number, end: number, box?: { x: number; y: number; w: number; h: number }) {
