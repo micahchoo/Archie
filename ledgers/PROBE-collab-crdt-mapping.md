@@ -52,8 +52,9 @@ requires no model rewrite. The probe additionally *decided the layer*, which was
 
 ## Scale-up confirmation — D1, browser/multi-tab (2026-07-18, ticket `Archie-a66d`)
 
-Model B re-proven at product scale: `prototypes/multi-tab-live-sync/` (throwaway; `bun run dev`,
-two tabs) drives the REAL render-core merge machinery — `appendNew`/`appendEdit` (spine/log),
+Model B re-proven at product scale: `prototypes/multi-tab-live-sync/` (throwaway, **deleted
+2026-07-26** per the clean-up note below; recoverable from git history) drove the REAL
+render-core merge machinery — `appendNew`/`appendEdit` (spine/log),
 `headsOf`/`resolveConflict` (spine/merge), `projectHeads` (spine/heads), nothing stubbed — over a
 grow-only `Y.Map<rev, AnnotationRecord>` synced across tabs via BroadcastChannel. Verified
 end-to-end by a Playwright two-tab driver (`verify-two-tab.mjs`), **12/12 checks**: live edit
@@ -86,6 +87,10 @@ in-browser; the gate's open question remains authored structure only.
 
 ## Reproduce / clean up
 
-Terminal probe: `cd prototypes/crdt-annotation-merge && bun probe.ts`. Multi-tab demo:
-`cd prototypes/multi-tab-live-sync && bun run dev` (two tabs), `node verify-two-tab.mjs` to
-re-verify. Both throwaway — delete once read; this ledger holds the answers.
+Terminal probe: `cd prototypes/crdt-annotation-merge && bun probe.ts` — still present.
+
+The multi-tab demo (`prototypes/multi-tab-live-sync/`, `bun run dev` + `verify-two-tab.mjs`)
+was **deleted 2026-07-26**, executing this section's own instruction: both were throwaway,
+to be deleted once read, with this ledger holding the answers. Its D1 ledger — the durable
+write-up this prototype existed to produce — is `ledgers/TABS.md`. Recover the prototype from
+git history if a re-run is ever needed.
