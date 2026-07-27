@@ -37,11 +37,22 @@ The separation the ticket asks for, per token, with the evidence that decided it
 
 | token | verdict | why |
 | --- | --- | --- |
-| `--text-lede` (`1.0625rem`) | **accidental** | reads as authoring-only and is not: the READING surface hardcodes this exact size at `Gallery.svelte:216`, `Reader.svelte:779`, `NarrativeReader.svelte:958` and `:1045`, `NoteLightbox.svelte:117`, `SearchOverlay.svelte:131`, `MediaPlayer.svelte:614`. One prose scale; only one of two apps had a name for it. |
-| `--text-note` (`0.95rem`) | **accidental** | same shape — viewer literals at `Reader.svelte:799`, `SearchOverlay.svelte:161`, `SidebarObjectNav.svelte:127`, `NarrativeReader.svelte:1017`. |
+| `--text-lede` (`1.0625rem`) | **accidental** | reads as authoring-only and is not: the READING surface hardcodes this exact size at seven prose sites — `Gallery.svelte:216`, `Reader.svelte:779`, `NarrativeReader.svelte:958` and `:1045`, `NoteLightbox.svelte:117`, `SearchOverlay.svelte:131`, `MediaPlayer.svelte:614`. One prose scale; only one of two apps had a name for it. |
+| `--text-note` (`0.95rem`) | **accidental** | same shape, but the honest count is **two** viewer prose sites, not four: `Reader.svelte:799` (`.object-summary`) and `SearchOverlay.svelte:161` (`.finder-empty`). See the correction below. |
 | `--scrim-dim` | **accidental** | studio wants it and could not have it: `TutorialModal.svelte:37` reads `var(--scrim-dim, rgba(26, 60, 35, 0.82))` — the token's own value inlined as a fallback because the token was missing from studio's copy. A fallback literal that duplicates the floor's value IS the drift, one step before it diverges. |
 | `.eyebrow` colour | **drift, not divergence** | not two tokens; one rule edited on one side. Unification is the fix and the only visible change it makes. |
 | the other 100 tokens | identical | nothing to decide. |
+
+**A correction, kept rather than quietly fixed, because the shape recurs.** The first draft of the
+`--text-note` row cited four viewer sites. Two of them do not survive being opened:
+`SidebarObjectNav.svelte:127` is `.overview .mark`, and `NarrativeReader.svelte:1017` is
+`.to-index .grid-mark` — both `line-height: 1` glyph sizing that happens to use the same number, as
+is `NotePopup.svelte:194`'s `.np-icon.expand`. I had grepped for the VALUE and written the claim as
+if I had grepped for the USE. The conclusion survives on two real sites; the count did not, and
+`[[post-review-fixes-are-unreviewed]]`'s rule — reconcile every number you report against a number
+you actually read — is what caught it, while writing the report rather than while making the change.
+The floor's comment carries the three exclusions explicitly so the eventual literal-conversion pass
+does not fold them in.
 
 **Genuine divergence: none.** That is a finding, not a shrug, and it is why there is no app-local
 layer file in this change. Studio's genuinely app-local custom properties already exist and are
@@ -248,8 +259,8 @@ byte-equal.
 Each of these is real, each was measured, and each is outside this slice's territory or size.
 
 1. **`--text-lede` is referenced by nothing, in either app, and `--text-note` exactly once**
-   (`App.svelte:3135`). The two values are hardcoded as literals at roughly 40 sites across both apps
-   — the list in the "accidental" table above is only the viewer's share. The tokens are now on the
+   (`App.svelte:3135`). Counted: `1.0625rem` appears 7× in the viewer and 7× in studio; `0.95rem`
+   5× in the viewer (2 of them prose) and 19× in studio. The tokens are now on the
    floor, which is the prerequisite; converting the literals is a mechanical pass over ~20 `.svelte`
    files in two apps and belongs in its own reviewable ticket. Deleting `--text-lede` instead was
    considered and rejected: it names a real, repeatedly-used size, and concurrent slices are editing

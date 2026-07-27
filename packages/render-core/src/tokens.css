@@ -123,12 +123,15 @@
  --text-ui-md: 0.75rem;
 
  /* ── Type scale (prose) — descriptive copy and note bodies ──
-     Promoted from studio's copy (Archie-ecf4). They read as authoring-only and are not: the reading
-     surface hardcodes these exact two sizes and never names them — 1.0625rem at Gallery.svelte:216,
-     Reader.svelte:779, NarrativeReader.svelte:958/1045, NoteLightbox.svelte:117, SearchOverlay.svelte:131,
-     MediaPlayer.svelte:614; 0.95rem at Reader.svelte:799, SearchOverlay.svelte:161,
-     SidebarObjectNav.svelte:127, NarrativeReader.svelte:1017. So this is one prose scale that only one
-     of two apps had a name for — accidental divergence, not a genuine one. */
+     Promoted from studio's copy (Archie-ecf4). They read as authoring-only and are not: the READING
+     surface hardcodes these exact two sizes and never names them. Prose sites only, counted by opening
+     each one — 1.0625rem ×7: Gallery.svelte:216, Reader.svelte:779, NarrativeReader.svelte:958 and
+     :1045, NoteLightbox.svelte:117, SearchOverlay.svelte:131, MediaPlayer.svelte:614; 0.95rem ×2:
+     Reader.svelte:799 (.object-summary), SearchOverlay.svelte:161 (.finder-empty). The viewer's three
+     OTHER 0.95rem literals — SidebarObjectNav.svelte:127, NarrativeReader.svelte:1017,
+     NotePopup.svelte:194 — are glyph/icon sizing that happens to share the number and are NOT evidence
+     for this token; don't fold them in when someone eventually converts the literals.
+     So: one prose scale that only one of two apps had a name for — accidental divergence, not genuine. */
  --text-lede: 1.0625rem;
  /* intro/lede + summary copy — one step above body, NOT display-size */
  --text-note: 0.95rem;
