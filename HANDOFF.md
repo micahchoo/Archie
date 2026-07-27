@@ -24,33 +24,48 @@ content-drifted records newer on the restored side. **Check `git status` on `.se
 resolves it to `/`. A 20-run "baseline" measurement came back 20/20 FAIL for that reason alone and
 was nearly reported as a red-green proof. Run baseline copies from inside the repo.
 
-## Done — 7 tickets, each red-green proven
+## Done — 13 tickets
+
+Each code change is red-green proven by injecting the defect and watching the gate fail.
 
 | Ticket | Commit | Gate, and how it was proven |
 |---|---|---|
-| Archie-3e2d | `4cb0009` | 25 runs @ 32-way load: **21/4 fail → 25/0**. Also fixed a 2nd instance of the same class found mid-fix. |
-| Archie-36e6 | `a44436b` | e2e on `pnpm build` output; each half independently red (revert Reader → 1+2 fail; revert Narrative → 3 fails). |
+| Archie-3e2d | `4cb0009` | 25 runs @ 32-way load: **21/4 fail → 25/0**. Fixed a 2nd instance of the same class found mid-fix. |
+| Archie-36e6 | `a44436b` | e2e on `pnpm build` output; each half independently red. |
 | Archie-5a15 | `deaadbb` | both defects reverted independently, both red. |
 | Archie-d25f | `c23cf48` | demotion-loses-provenance → 3 core fail; provenance-survives-edit → studio fail. |
 | Archie-15a5 | `c7b1631` | race-window probe: asserted fact ABSENT at the old wait's break point in **20/20** boots. |
 | Archie-a1d4 | `708e7bb` | not-rendered → 4 fail; head-in-prior-list → 2 fail. |
-| Archie-321c | `a027454` | "Anonymous" fallback → 1 fail; CFF stub → 1 fail; tags dropped → 2 fail. |
+| Archie-321c | `a027454` | "Anonymous" → 1 fail; CFF stub → 1 fail; tags dropped → 2 fail. **Held open** (needs Zotero). |
+| Archie-6d85 | `836517c` | dispatch removed → 2 fail; base-not-restored → 2 fail. |
+| Archie-0cd6 | `83141b8` | severity model + preflight walk. Two weak tests rewritten before shipping (see below). |
+| Archie-8772 | `83141b8` | rights coverage as a `report`, keyed-read-only, never gates. |
+| Archie-7e2e | — | answered: opener chain verified plugin → `open` crate → `xdg-open` → OpenURI portal, **inside a real GNOME 49 sandbox**. |
+| Archie-e47d | — | answered by audit: all 9 anchors already intercept; no bare `target=_blank` remains. |
+| Archie-b5c2 | `8c0abc3` | **premise corrected, ticket left open** — see below. |
 
-**Archie-321c is IMPLEMENTED but deliberately still OPEN.** Its gate is "save a real published page
-into a real Zotero and read back item type + fields" — that needs a human with Zotero. Everything
-else in it shipped. The ticket body carries an `IMPLEMENTED 2026-07-27` section saying what remains.
+### Three things I would not want lost
 
-### One honest limit worth keeping
+1. **Archie-15a5's original flake did not reproduce.** The old script also passed 20/20 — on a
+   32-core box `sleep 2` still covers WebKit's flush. The race-window probe is what demonstrates the
+   defect. Don't upgrade that to "proven red-green end to end".
+2. **Archie-b5c2's premise was wrong and is now corrected** (`docs/research/freecut-unverified-claims.md`
+   item 3). FSA `createWritable()` with no options starts the temp file EMPTY — there is no copy of
+   the existing file, so the per-save cost is proportional to bytes WRITTEN, not to the file being
+   replaced. The ticket stays OPEN: the remaining number needs a real folder handle, which needs a
+   user gesture. The ticket body now says exactly how to get it.
+3. **Two of my own tests could not fail and were rewritten** before shipping (0cd6): a severity
+   assertion that filtered a hand-written list of codes, and a size warn that never crossed its
+   threshold. Injecting the bug is what caught both.
 
-Archie-15a5's original end-to-end flake **did not reproduce** here: the old script also passed 20/20,
-because on a 32-core box `sleep 2` still happens to cover WebKit's flush. The race-window probe is
-what demonstrates the defect (it measured whether the localStorage origin file exists at the instant
-the old wait breaks — absent 20/20). Don't upgrade that to "proven red-green end to end".
+## Gates, all green at `8c0abc3`
 
-## Gates, all green at `8bd4162`
+render-core **1243/1243** · studio **977/977** · viewer **190/190** · studio e2e **12/12** ·
+svelte-check 0/0 both apps · `tsc --noEmit` clean everywhere.
 
-render-core **1224/1224** · studio **977/977** · viewer **184/184** · viewer e2e `exhibit-rights`
-4/4 · svelte-check 0/0 both apps · `tsc --noEmit` clean everywhere.
+**The viewer e2e suite is RED on `main`, not from this work** — `selection.spec.ts:96` fails in the
+full suite and passes in isolation. Verified pre-existing by running the full suite on clean `main`
+in a separate worktree. Filed as **Archie-06fb**; it is the only gate on the real-pointer hit path.
 
 Run tests PER APP (`pnpm exec vitest` inside the package). Typecheck is
 `node ../../node_modules/typescript-native/bin/tsc --noEmit` (TS7); never bare `tsc`.
@@ -59,24 +74,33 @@ The Tauri debug binary is built (`src-tauri/target/debug/archie`), so `scripts/d
 
 ## Where to pick up
 
-**61 non-map tickets remain open** (`sd list`; 9 more are maps/epics, out of scope for this goal).
+**57 non-map tickets remain open** (`sd list`; 9 more are maps/epics, out of scope for this goal).
 
-In the order I'd take them:
+What is left is NOT more of the same. The tickets closed above were the implementable tail; most of
+the remainder is one of three shapes, and the shape decides who can move it:
 
-1. **`batch:publish-gates` — Archie-0cd6 + Archie-8772 (+ the blocked Archie-fde8).** Deliberately
-   NOT started. The batch note is explicit that these are three gates on ONE surface (the publish
-   dialog) and that the warn-vs-hard-gate call must be made once, not three times. The pure half
-   (a preflight walk + rights-coverage computation in render-core) is the testable part; the dialog
-   is a design decision worth confirming with the user before building three panels.
-2. **Archie-6d85** — port the embed's tree dispatch (`archie-viewer/src/load.ts:120-128`, already
-   tested) into `apps/viewer` so `#/?src=<tree base>` works. Contained; the ticket names the donor
-   lines. Note it does NOT fix a mis-based tree's 404ing images — that is the base ticket.
-3. **Archie-1cf0** (Zip64) is a dependency swap with two security decisions inside it (does
-   `SRC_MAX_BYTES` rise? does the read side move?). Not a grind ticket — needs a decision pass.
+**A. Blocked on ONE undecided question — Archie-3504, "how publish learns its destination URL."**
+Several published-tree tickets sit behind it (`19c5`, `8d3d`, and the base-path half of `0cd6`'s
+preflight, which I deliberately did not write for exactly this reason). Deciding 3504 unblocks the
+most work per unit of your time of anything on the board. It is a `wayfinder:grilling` ticket — it
+wants a decision, not code.
 
-Many of the rest are `wayfinder:grilling` / `research` / `prototype` — decision tickets, not
-implementable without a call from the user (e.g. Archie-3504 "how publish learns its destination
-URL", which several published-tree tickets sit behind). 16 are blocked.
+**B. `grilling` / `research` / `prototype` decision tickets** — `c367` (the export surface's final
+option set), `ebe7` (video bake vs mediabunny), `fc75`/`7eae` (schema version in the marker), `3754`
+(bulk metadata import), `33bf` (deep-link grammar), `5fb5`, `be3a`, `0f72`, `8150`, `01c9`, `69a6`,
+`5582`, `039e`, `30ff`, `e09d`, `027c`. These produce a decision or a spike report; several are worth
+doing as a batch in one sitting because they share a subject.
+
+**C. Needs a human at a machine** — `9ece` + `a09d` + the belt-and-braces half of `e47d` are the
+`batch:packaged-drive` group (drive the packaged/Flatpak build, fill in the verification rows).
+`321c` needs Zotero. `b5c2` needs someone to pick a folder in a headed browser (~5 min; the ticket
+says exactly what to run). `c74e` (prove 1,000 images end to end) and `79be`/`87ba` are human gates
+by construction.
+
+**Genuinely implementable without a decision, if you want more grinding:** `1cf0` (Zip64 — but read
+its two security questions first), `7e5b` (wire a real conflict source), `eec7` / `cf4a` / `ea57`
+(a11y + touch passes), `5a15`-adjacent polish. `06fb` (the red e2e I filed) is worth doing early —
+it is the only gate on the real-pointer hit path and it is currently red on `main`.
 
 ## Working notes carried forward
 
