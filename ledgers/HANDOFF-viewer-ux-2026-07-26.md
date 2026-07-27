@@ -10,14 +10,81 @@ Worktrees `.claude/worktrees/chrome-occlusion` (driver) and `.claude/worktrees/m
 
 ## CURRENT STATE — read this and nothing else for state
 
-**Local `main` = `c10307c`; `origin/main` = `8841c1b`.** They differ: a concurrent session has seven
-commits on local `main` that are **not pushed** (desktop `fs:allow-rename`, ledger prunes, an
-architecture-doc count fix, its own handoff updates). `main` is checked out in
-`.claude/worktrees/merge-main`, which that session owns — **do not check it out here.**
+**`origin/main` = `ead0ad7`, GREEN on all 10 Checks jobs plus Deploy** (verified against the SHA).
+It carries, in order: the studio bundle ratchet's eager/lazy split, and **Archie-a5b1 (V103/V104)**.
+
+| what | state |
+| --- | --- |
+| studio bundle ratchet | **merged.** `gh-pages-build` passes because the metric changed, not because a baseline moved |
+| Archie-a5b1 — rights + metadata on the read side | **merged.** V103 and V104 both closed |
+| dock slice (`ux/dock-chrome-recovered`) | **implementing option 2**, holding at `d3703f4` + the reflow work. Not merged |
+| wave 2 — `1820`, `7b86`/V50, `9eeb`, `ecf4` | queued behind the dock; all four touch files it holds |
+
+**`main` is checked out in `.claude/worktrees/merge-main`, a peer session's — do not check it out
+here, and read the stale-ref warning immediately below before branching off anything.**
+
+### Archie-a5b1 — MERGED, and the ticket's premise was half wrong
+
+**V104's "renders nothing, anywhere" is false for the SPA** — driven against the built viewer, the
+voynich grid header renders 3 exhibit rows and the reader's Details tab renders 9 object rows. It is
+true for the **archival published page**, which is the surface the originating audit (Archie-c405,
+*"the published tree's public face"*) was actually looking at: `grep -n metadata static-pages.ts`
+returned zero hits. There is also a real seed half — 4 of 7 exhibits carried no metadata at any level.
+
+**V103 fired on both halves at once.** Seed: no exhibit and no library set `rights` anywhere in the
+corpus, and three exhibits were lifting only the *credit* half of a rights object while dropping the
+licence. Render: even where `rights` was set, the archival page emitted it **only into JSON-LD**, so
+no licence URI appeared in any human-readable published page.
+
+**Artifact measurement, counted independently on both sides rather than taken from the report:**
+
+```
+main before:  dl class="meta"  0     rel="license"  0
+main after:   dl class="meta"  26    rel="license"  40    (216 <dt> rows across 8 pages)
+```
+
+Three levels were left **deliberately unlicensed with the reason stated**, because their contents
+carry two or three licences and a blanket claim would be false. Six seed URIs still resolve to no
+human label — a vocabulary gap in Studio's approved-URI picker, left alone and **pinned by a test**
+rather than papered over. Nine others were a one-character `https:`/`http:` mismatch and are fixed.
+Full separation evidence: `ledgers/FIX-a5b1-rights-metadata-2026-07-26.md`.
+
+**Queued from it, deliberately not fixed — a single-object exhibit never renders its exhibit-level
+credit, licence or metadata anywhere in the SPA.** `MetadataRun` lives only in `ObjectGrid.svelte:50`
+and a `single` layout routes straight past it to the Reader; measured `dl.run .pair count=0` against
+data carrying 3 rows, with the on-screen credit belonging to the *object*. The exhibit's
+`requiredStatement` is a **IIIF MUST-display** and is silently dropped for that whole layout. Same
+boundary for the narrative reader (`NarrativeReader.svelte:778` shows the credit, has no metadata
+run). The fix is a new prop through `Reader`/`MediaPlayer` plus a **placement decision in reader
+chrome** — the dock's territory, so it waits for the dock rather than being decided twice. UV's
+`CenterPanel.ts:170-174` is the precedent.
+
+### The note-dismiss reflow — DECIDED by the human: accept it
+
+Dismissing a note removes the docked note row, the canvas grows 416 → **557px** (Δ +141, exactly the
+row), OSD re-fits and the image moves. Three options were costed; **option 2, accept the reflow,** was
+chosen: *the reader dismissed the note in order to see more image, so giving them more image is
+correct, and a permanent 141px reservation is 25% of the canvas paid in the common case — it undoes
+the `:empty` gating this slice built to keep the chrome tax proportional.*
+
+**Option 3 was measured and FAILED — worse than doing nothing.** Same instrument, same N, quiet
+machine, fresh build each: baseline **17/20** passing; `preserveImageSizeOnResize: true` **9/20**.
+15% → 55% failure. The option preserves *size* and says nothing about *anchor*, so holding on-screen
+size across a 141px growth forces a zoom change and the mark moves further. Reverted. The grep that
+made the try worthwhile: we set no `autoResize`, no `preserveImageSizeOnResize`, and drive no fit on
+container change (`mount.ts:429`'s only resize handler is `renderNavDots`) — the behaviour was pure
+OSD default.
+
+**The underlying reflow is deterministic, not flaky.** The suite's intermittency is only whether the
+mark stays big enough to catch the remembered pixel. So `selection.spec.ts:96` is being **split into
+two assertions**: one keeping the real-mouse hit test but re-deriving the mark's box after dismissal
+(target **20/20**, up from 17/20), and a new one that **pins the reflow as a contract** so the
+decision cannot be silently reverted. Assert the relationship (canvas grew by the note row's measured
+height), not the literals.
 
 ### ⚠ BRANCH FROM `origin/main`, NEVER `main` — the local ref is STALE
 
-Local `main` sits at **`879e519`**; `origin/main` is ahead of it. The merges in this effort were pushed
+Local `main` sits at **`879e519`**; `origin/main` is at `ead0ad7` — **five commits ahead.** The merges in this effort were pushed
 with `git push origin HEAD:main`, **which does not move the local ref**, and local `main` is checked
 out in `.claude/worktrees/merge-main` (a peer session's), so it cannot be safely fast-forwarded from
 here — advancing a ref under a checked-out worktree leaves that worktree's files inconsistent with it.
