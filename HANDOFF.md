@@ -80,34 +80,62 @@ The Tauri debug binary is built (`src-tauri/target/debug/archie`), so `scripts/d
 
 ## Where to pick up
 
-**56 non-map tickets remain open** (`sd list`; 9 more are maps/epics, out of scope for this goal).
+**56 non-map tickets remain open.** I sorted these wrongly mid-session — I lumped
+`research` and `prototype` in with `grilling` as "needs a decision from you". That was
+wrong: only `grilling` produces a decision. `research` produces FINDINGS and `prototype`
+produces a SPIKE, and both are work an agent can do. The accurate sort:
 
-What is left is NOT more of the same. The tickets closed above were the implementable tail; most of
-the remainder is one of three shapes, and the shape decides who can move it:
+| kind | count | who |
+|---|---|---|
+| `wayfinder:task` | 28 | mixed — see below |
+| `wayfinder:grilling` | 12 | **you** — these produce decisions |
+| `wayfinder:prototype` | 10 | **an agent** — these produce spikes |
+| `wayfinder:research` | 5 | **an agent** — these produce findings |
 
-**A. Blocked on ONE undecided question — Archie-3504, "how publish learns its destination URL."**
-Several published-tree tickets sit behind it (`19c5`, `8d3d`, and the base-path half of `0cd6`'s
-preflight, which I deliberately did not write for exactly this reason). Deciding 3504 unblocks the
-most work per unit of your time of anything on the board. It is a `wayfinder:grilling` ticket — it
-wants a decision, not code.
+Of the 28 tasks: **7 are PARKED by the user** (`ac4c`, `f1e2`, `e2db`, `b60c`, `f366`,
+`96e6`, `5ae6` — "user: dropped, 2026-06-09"). Do not drive those; they were declined.
+Several more are human gates (`9ece`, `a09d`, `79be`, `c74e`) or partially done by me
+(`321c`, `eec7`, `cf4a`, `7e5b`).
 
-**B. `grilling` / `research` / `prototype` decision tickets** — `c367` (the export surface's final
-option set), `ebe7` (video bake vs mediabunny), `fc75`/`7eae` (schema version in the marker), `3754`
-(bulk metadata import), `33bf` (deep-link grammar), `5fb5`, `be3a`, `0f72`, `8150`, `01c9`, `69a6`,
-`5582`, `039e`, `30ff`, `e09d`, `027c`. These produce a decision or a spike report; several are worth
-doing as a batch in one sitting because they share a subject.
+### Genuinely implementable next, in the order I'd take them
 
-**C. Needs a human at a machine** — `9ece` + `a09d` + the belt-and-braces half of `e47d` are the
-`batch:packaged-drive` group (drive the packaged/Flatpak build, fill in the verification rows).
-`321c` needs Zotero. `b5c2` needs someone to pick a folder in a headed browser (~5 min; the ticket
-says exactly what to run). `c74e` (prove 1,000 images end to end) and `79be`/`87ba` are human gates
-by construction.
+1. **Archie-7b86 V50 — the audio waveform.** The highest-value concrete item left. The
+   audio object is "860×700 of empty cream with a browser-default scrubber". Studio
+   ALREADY drives wavesurfer (`AvEditor.svelte:263` — peaks cache, regions plugin), so
+   there is an in-repo donor, not just a library. **The catch that makes this bigger
+   than it looks:** wavesurfer is a *studio* dep, and adding a bare-name import to the
+   viewer needs BOTH a direct dep in `apps/viewer/package.json` AND an
+   `optimizeDeps.include` entry — `.claude/rules/viewer-optimizedeps-bare-includes.md`,
+   which has bitten three times. Design note: attach WaveSurfer to the EXISTING `<audio>`
+   element via its `media` option rather than letting it own playback, so the native
+   controls (and their keyboard/AT behaviour) survive and there stays one clock. I
+   started reading into this and deliberately did NOT begin it — adding a runtime dep
+   deserves a fresh context, not the tail of a long session.
+2. **Archie-7b86 V49** — the temporal map ships fully covered by the item strip. The
+   ticket flags it as the same shape as `Archie-40fe`'s occlusion cluster; check whether
+   it wants that reservation fix rather than a local one.
+3. **Archie-7b86 V53** — enumerate the four affordances the AV reader drops against
+   `Reader.svelte` before designing. The audit named the count, not the list.
+4. **The 5 research tickets** (`0f72`, `5582`, `8150`, `b5c2`, `b9c4`) — findings work.
+   `b5c2` is half done: its premise is corrected, only the measurement is left, and the
+   ticket says exactly how to get it.
+5. **The 10 prototype tickets** — spikes. `86ff` (where the tiling threshold sits) and
+   `027c` (export-fidelity harness) are the most self-contained.
+6. **`1244`** (visual pass over Studio chrome) and **`99db`** (onboarding prose) are low
+   priority but need no decision.
 
-**Genuinely implementable without a decision, if you want more grinding:** `eec7` (screen-reader
-walk + overlay contrast — note `ea57`'s ratchet now covers the published pages, so this is the APP
-surfaces), `cf4a` (touch design pass), `1cf0` (Zip64 — read its two security questions first).
-`06fb` (the red e2e I filed) is worth doing early: it is the only gate on the real-pointer hit path,
-it is currently red on `main`, and its ticket now carries the bisection and the `d=(0,0)` clue.
+### What genuinely needs you
+
+- **`Archie-3504` — how publish learns its destination URL.** The keystone: `19c5`,
+  `8d3d` and the base-path half of the preflight all sit behind it. I left that check
+  unwritten rather than build against a guess.
+- The other 11 `grilling` tickets.
+- **Human-at-a-machine:** the screen-reader walk (`eec7`'s other half — its own text says
+  this has never been done anywhere in the repo), Zotero for `321c`, a folder-picker
+  gesture for `b5c2`, and the `batch:packaged-drive` group (`9ece`/`a09d`).
+- **`1cf0`** (Zip64) opens with two security decisions — does `SRC_MAX_BYTES` rise, does
+  the read side move. Its own text says raising a hostile-input cap is a decision, not a
+  bug fix.
 
 ## Working notes carried forward
 
