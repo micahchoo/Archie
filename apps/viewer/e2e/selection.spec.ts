@@ -106,20 +106,39 @@ test.describe("the selection ring means something (V43)", () => {
     // user-visible effect failing to turn a test red is the test behaving. The click path IS gated:
     // cutting the canvas→app selection seam turns this red, and it is position-sensitive.
     //
-    // Until this build there was nowhere in the viewer suite to drive one: hit-testing needs a painted
-    // canvas at a known screen position, and offline there was none. The mark's position is taken from
-    // the halo the address-open draws, then the note is dismissed and the same pixel clicked cold.
+    // THE PIXEL IS RE-DERIVED AFTER THE DISMISSAL, and that is the whole of the 2026-07-26 change.
+    // This used to measure the halo, press Escape, and click the REMEMBERED pixel, on the premise that
+    // dismissal "leaves the image exactly where it is". That premise was true while the note card
+    // floated over the canvas. It is false by design since the note docked (ADR-0019's layout row):
+    // closing the note removes its row, the canvas grows, and OSD re-centres. This assertion was never
+    // about geometry — it is about whether a real pointer reaches the mark — so it now derives the
+    // mark's post-dismissal position instead of asserting the old one.
+    //
+    // The reference is `#archie-object-frame`: a DOM overlay anchored to the IMAGE that survives
+    // deselection, so the shift it undergoes is the shift the mark undergoes. Measured 2026-07-26 at
+    // 1280x720 — canvas 416 → 557px, frame [35,272,1841,1151] → [35,343,1841,1151]: same width, same
+    // height, y +71. A pure TRANSLATION, no rescale, which is why a single offset is a sound
+    // correction rather than an approximation. The reflow itself is pinned by its own test below.
     const note = await aHaloNote(baseURL!);
     await goOffline(page);
     await openPaintedNote(page, note.ulid);
 
     const box = (await boxOf(page, HALO))!;
-    const cx = box.x + box.width / 2;
-    const cy = box.y + box.height / 2;
+    // Fail loudly rather than skip: this frame is the coordinate reference, and a fixture that stops
+    // carrying a whole-object note on this object must not silently degrade the assertion.
+    await expect(page.locator(FRAME), "no object frame to re-derive the mark's position from").toHaveCount(1);
+    const anchorOpen = (await boxOf(page, FRAME))!;
 
-    await page.keyboard.press("Escape"); // rung one: dismiss, leaving the image exactly where it is
+    await page.keyboard.press("Escape"); // rung one: dismiss, which now also reflows the canvas
     await expect(page.locator(HALO)).toHaveCount(0);
     await expect(page.locator(".note-pop")).toHaveCount(0);
+    await expect(page.locator(".note-dock")).toHaveCount(0); // the row is gone; the canvas has grown
+
+    const anchorClosed = (await boxOf(page, FRAME))!;
+    const dx = anchorClosed.x - anchorOpen.x;
+    const dy = anchorClosed.y - anchorOpen.y;
+    const cx = box.x + box.width / 2 + dx;
+    const cy = box.y + box.height / 2 + dy;
 
     await page.mouse.click(cx, cy);
 
@@ -128,6 +147,64 @@ test.describe("the selection ring means something (V43)", () => {
     await expect(page.locator(".note-pop")).toBeVisible({ timeout: 15_000 });
     await expect(page.locator(".note-pop")).toContainText(note.text.slice(0, 40));
     await expect(page.locator(HALO)).toHaveCount(1);
+  });
+
+  test("dismissing a note gives its height back to the image (ADR-0019 layout row)", async ({ page, baseURL }) => {
+    // THIS PINS A DESIGN DECISION, and it exists because a decision no test states is one that gets
+    // silently reverted. The human ruled on 2026-07-26: the note card DOCKS below the canvas, and
+    // dismissing it returns that height to the image rather than holding a permanent reservation.
+    //
+    // The reasoning, so a future reader does not "fix" this: the reader dismissed the note IN ORDER TO
+    // SEE MORE IMAGE, so giving them more image is the correct response. A permanent reservation would
+    // be ~141px at 1280x720 — 25% of the 557px canvas — paid in the common case where no note is open,
+    // and it would undo the `:empty` gating this slice built to keep the chrome tax proportional.
+    //
+    // Two rejected alternatives, both measured rather than argued:
+    //   · reserve the row permanently — the 25% flat cost above;
+    //   · `preserveImageSizeOnResize: true` on the OSD mount — measured over 20 runs of the assertion
+    //     above: 17/20 passing became 9/20. It preserves SIZE, not ANCHOR, so holding the on-screen
+    //     scale across the growth forces a zoom change and moves the mark further.
+    //
+    // Asserted as RELATIONSHIPS, not as 141/416/557, so a viewport or token change does not make this
+    // a maintenance tax. The literals above are the record of what was measured, not the contract.
+    const note = await aHaloNote(baseURL!);
+    await goOffline(page);
+    await openPaintedNote(page, note.ulid);
+    await expect(page.locator(".note-dock")).toHaveCount(1);
+
+    const rowH = (await boxOf(page, ".note-dock"))!.height;
+    const canvasOpen = (await boxOf(page, ".openseadragon-canvas"))!;
+    await expect(page.locator(FRAME)).toHaveCount(1);
+    const anchorOpen = (await boxOf(page, FRAME))!;
+    expect(rowH, "the docked note row has no height").toBeGreaterThan(0);
+
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".note-dock")).toHaveCount(0);
+
+    const canvasClosed = (await boxOf(page, ".openseadragon-canvas"))!;
+    const anchorClosed = (await boxOf(page, FRAME))!;
+    const grew = canvasClosed.height - canvasOpen.height;
+
+    // 1. The image gets the row's height back. Reserving the row permanently makes this 0 and fails.
+    expect(
+      Math.abs(grew - rowH),
+      `the canvas grew by ${Math.round(grew)}px but the note row was ${Math.round(rowH)}px — the ` +
+        `dismissed row's height is supposed to go to the image, and only to the image`,
+    ).toBeLessThanOrEqual(2);
+
+    // 2. It is a TRANSLATION, not a rescale: OSD re-centres in the taller viewport, so the image
+    //    shifts by half the growth and its on-screen size is unchanged. A re-anchoring change (the
+    //    `preserveImageSizeOnResize` experiment, or a future top-left pin) fails one of these two.
+    expect(
+      Math.abs(anchorClosed.width - anchorOpen.width),
+      `the image RESCALED on dismiss (frame width ${Math.round(anchorOpen.width)} → ` +
+        `${Math.round(anchorClosed.width)}); the reflow is supposed to be a pure translation`,
+    ).toBeLessThanOrEqual(2);
+    expect(
+      Math.abs((anchorClosed.y - anchorOpen.y) - grew / 2),
+      `the image moved ${Math.round(anchorClosed.y - anchorOpen.y)}px for a ${Math.round(grew)}px ` +
+        `growth; OSD re-centres, so it should move by half`,
+    ).toBeLessThanOrEqual(2);
   });
 });
 

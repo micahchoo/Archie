@@ -174,6 +174,23 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     immediateRender: true,
     maxZoomPixelRatio: 16, // fine-mark placement (anvil viewer.ts:94)
     minZoomImageRatio: 0.5,
+    // RESIZE BEHAVIOUR IS OSD'S DEFAULT, AND THAT IS NOW A CHOICE RATHER THAN AN OVERSIGHT
+    // (human ruling, 2026-07-26 — ADR-0019's layout row). We set no `autoResize` and no
+    // `preserveImageSizeOnResize`, and nothing here re-fits on a container change (the one `resize`
+    // handler below only repositions navigator dots). So when the docked note row opens or closes,
+    // the canvas changes height and OSD re-centres: the image TRANSLATES by half the delta and its
+    // on-screen size is unchanged.
+    //
+    // That is deliberate. Dismissing a note gives its height back to the image, because the reader
+    // dismissed it in order to see more image; the alternative — reserving the row permanently — is a
+    // flat ~141px (25% of the canvas at 1280x720) paid in the common case where no note is open.
+    //
+    // `preserveImageSizeOnResize: true` was measured and REJECTED: it preserves size, not anchor, so
+    // holding the scale across the growth forces a zoom change and moves the mark further. Over 20
+    // runs of `selection.spec.ts`'s real-click assertion it took 17/20 passing to 9/20. If you are
+    // here to stop the image moving, an ANCHOR-preserving resize (pin the top-left, extend downward)
+    // is the unexplored option — not this one. `selection.spec.ts` pins the current behaviour.
+
     // Worklist 1.1: the locator mini-map (verified openseadragon@5.0.1 options — showNavigator/
     // navigatorPosition/navigatorSizeRatio/navigatorAutoFade).
     ...(opts.locator ? { showNavigator: true, navigatorPosition: "BOTTOM_RIGHT", navigatorSizeRatio: 0.15, navigatorAutoFade: true } : {}),
