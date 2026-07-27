@@ -15,12 +15,17 @@ commits on local `main` that are **not pushed** (desktop `fs:allow-rename`, ledg
 architecture-doc count fix, its own handoff updates). `main` is checked out in
 `.claude/worktrees/merge-main`, which that session owns — **do not check it out here.**
 
-**The red ratchet is FIXED, on a branch, and not yet merged:** `fix/studio-eager-ratchet`
-(`5abefaa`, `1fe20e6`), pushed, based on local `main@c10307c`. CI on it: `gh-pages-build` **green**
-— that is the job that was red — plus `unit-scripts`, `typecheck`, `svelte-check`, `astro-check`,
-`test`, `perf-ratchets`, `embed-smoke`, `archie-viewer-artifact` all green; `e2e` was still running
-at time of writing. **Whoever holds `main` next should merge this branch first**; it is independent
-of the dock.
+**`main` = `1f9ae8b` and is GREEN — the red ratchet is merged.** All 10 Checks jobs plus Deploy
+pass at that SHA (verified against the SHA, not just the top of the run list). `gh-pages-build`,
+the job that was red, passes because the metric changed — **not** because its baseline was moved to
+accommodate it.
+
+`main` moved twice under this work. The sequence, because the next reader will otherwise mistrust
+the merge: built off local `main@c10307c` → branch green at `f9aa11e` → `origin/main` had advanced
+to `879e519` (a peer's prototype/doc deletions) → merged that in, file sets disjoint asserted by
+`comm -12` (empty) → **re-ran the ratchet and the scripts suite after the merge** rather than
+assuming deletions were inert → fast-forwarded. `fix/studio-eager-ratchet` still exists and is
+identical to `main`; it can be deleted.
 
 **Dispatched and in flight:** `rights-metadata-a5b1` (worktree-isolated, branch
 `fix/a5b1-rights-metadata`) on Archie-a5b1 — V103/V104. Its first job is diagnostic: separate the
@@ -149,7 +154,50 @@ answer different questions, and neither answers the other's.**
 sequenced AFTER the dock work because `--finder-h`/`--topbar-h` do not survive it — the dock retires
 both.
 
-### THE DOCK SLICE — REVIEWED. Code approved; two citation BLOCKERs open.
+### THE DOCK SLICE — review items ALL CLOSED at `e956e10`; one NEW defect open
+
+**Both blockers and all should-fixes are done** on `ux/dock-chrome-recovered` (worktree
+`.claude/worktrees/dock-chrome-solo`), gates at `e956e10`: typecheck 6/6 · viewer `check:svelte`
+1523 0/0 · studio `check` 1179 0/0 · vitest viewer 184 / render-mount 191 / archie-viewer 185 ·
+smoke **PASS 45/45, 44/44 labels** · viewer e2e **139/1** · `dist/` clean after rebuild+sync.
+
+B1 (tropy) and B2 (clover's `Main`) were both re-verified from source by the author, who also
+diagnosed B2's own cause in the ADR rather than quietly correcting it: *opened the file, confirmed
+what `Main` is, did not grep where it is used* — inside the commit that was fixing the previous bad
+citation. S2 is the one worth carrying: `boxes.length >= N` is now a **named REQUIRED set** in both
+`occlusion.spec.ts` and `smoke.mjs`, red-greened (renaming `.canvas-dock` now FAILS with
+`docked chrome that MUST be on screen is absent: .canvas-dock`; it was green before).
+
+**⚠ NEW DEFECT, open, and it is a design call — not a test bug.** The 1 failure in 139 is
+`selection.spec.ts:96` "a REAL mouse click on a mark opens its note", sampled at **2 failures in 8**.
+Measured at 1280×720 on the painted `screenshots` canvas:
+
+```
+with the note open   .openseadragon-canvas  y 114  h 416     .note-dock 141px
+after Escape         .openseadragon-canvas  y 114  h 557     .note-dock gone
+                                             Δ h  +141
+```
+
+Dismissing the note grows the canvas by the note row's height, **OSD re-fits, and the image moves**.
+The test measures a halo's screen box, presses Escape, then clicks that same pixel cold — its
+premise ("dismiss, leaving the image exactly where it is") was true pre-dock, when the card floated.
+The dock invalidates it. Three options: reserve the row permanently (canvas pays ~141px always,
+contradicting the `:empty` gating); accept the reflow (the camera shifts under the cursor); or give
+the space back without re-fitting (`preserveImageSizeOnResize`).
+
+**Author is measuring the third under a scope grant to `@render/mount` OSD config.** The decision
+rule given: *if the fix is right, the test becomes true again on its own terms and needs no edit* —
+its premise is a statement about what the reader experiences, not a test artifact. Acceptance
+criterion is the **halo's** screen box unchanged (±1px) while the canvas grows, sampled ≥20×;
+`preserveImageSizeOnResize` preserves *size* and says nothing about *anchor*, so a re-center would
+move the halo by half the delta and means option 3 failed. If it fails, options 1 and 2 go to the
+human — that one is not the fleet's to call.
+
+**Also worth a grep before trusting the OSD option:** check whether the resize path here is
+`autoResize`, or whether `read-mount`/`createMount` drives its own `fitBounds` on container change.
+If we re-fit ourselves, the OSD option never reaches it and the fix is in our code.
+
+### ⚠ HISTORY — the review as delivered (two citation BLOCKERs, since closed)
 
 Report: `ledgers/REVIEW-canvas-chrome-dock-2026-07-26.md` (preserved on `main` at `cac7605`).
 **Verdict: approve the code, fix the evidence.**
