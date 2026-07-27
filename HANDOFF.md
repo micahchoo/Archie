@@ -24,7 +24,7 @@ content-drifted records newer on the restored side. **Check `git status` on `.se
 resolves it to `/`. A 20-run "baseline" measurement came back 20/20 FAIL for that reason alone and
 was nearly reported as a red-green proof. Run baseline copies from inside the repo.
 
-## Done — 13 tickets
+## Done — 15 tickets
 
 Each code change is red-green proven by injecting the defect and watching the gate fail.
 
@@ -43,6 +43,12 @@ Each code change is red-green proven by injecting the defect and watching the ga
 | Archie-7e2e | — | answered: opener chain verified plugin → `open` crate → `xdg-open` → OpenURI portal, **inside a real GNOME 49 sandbox**. |
 | Archie-e47d | — | answered by audit: all 9 anchors already intercept; no bare `target=_blank` remains. |
 | Archie-b5c2 | `8c0abc3` | **premise corrected, ticket left open** — see below. |
+| Archie-7e5b | `0d8f444` | S3a + S3b shipped ahead of the wiring; dedupe-removed → 1 fail, first-object-only → 1 fail. Ticket stays open for the caller. |
+| Archie-ea57 | `99b937a` | axe ratchet; **it found 676 real violations on its first run** and they were fixed, not baselined. Revert one token → 8 pages red, exit 1. |
+| Archie-7e5b | `0d8f444` | S3a + S3b shipped ahead of the wiring; dedupe-removed → 1 fail, first-object-only → 1 fail. Ticket stays open for the caller. |
+| Archie-ea57 | `99b937a` | axe ratchet; **it found 676 real violations on its first run** and they were fixed, not baselined. Revert one token → 8 pages red, exit 1. |
+| Archie-7e5b | `0d8f444` | S3a + S3b shipped ahead of the wiring; dedupe-removed → 1 fail, first-object-only → 1 fail. Ticket stays open for the caller. |
+| Archie-ea57 | `99b937a` | axe ratchet; **it found 676 real violations on its first run** and they were fixed, not baselined. Revert one token → 8 pages red, exit 1. |
 
 ### Three things I would not want lost
 
@@ -58,10 +64,10 @@ Each code change is red-green proven by injecting the defect and watching the ga
    assertion that filtered a hand-written list of codes, and a size warn that never crossed its
    threshold. Injecting the bug is what caught both.
 
-## Gates, all green at `8c0abc3`
+## Gates, all green at `99b937a`
 
-render-core **1243/1243** · studio **977/977** · viewer **190/190** · studio e2e **12/12** ·
-svelte-check 0/0 both apps · `tsc --noEmit` clean everywhere.
+render-core **1243/1243** · studio **987/987** · viewer **190/190** · studio e2e **12/12** ·
+`pnpm a11y:check` 0 violations · svelte-check 0/0 both apps · `tsc --noEmit` clean everywhere.
 
 **The viewer e2e suite is RED on `main`, not from this work** — `selection.spec.ts:96` fails in the
 full suite and passes in isolation. Verified pre-existing by running the full suite on clean `main`
@@ -74,7 +80,7 @@ The Tauri debug binary is built (`src-tauri/target/debug/archie`), so `scripts/d
 
 ## Where to pick up
 
-**57 non-map tickets remain open** (`sd list`; 9 more are maps/epics, out of scope for this goal).
+**56 non-map tickets remain open** (`sd list`; 9 more are maps/epics, out of scope for this goal).
 
 What is left is NOT more of the same. The tickets closed above were the implementable tail; most of
 the remainder is one of three shapes, and the shape decides who can move it:
@@ -97,10 +103,11 @@ doing as a batch in one sitting because they share a subject.
 says exactly what to run). `c74e` (prove 1,000 images end to end) and `79be`/`87ba` are human gates
 by construction.
 
-**Genuinely implementable without a decision, if you want more grinding:** `1cf0` (Zip64 — but read
-its two security questions first), `7e5b` (wire a real conflict source), `eec7` / `cf4a` / `ea57`
-(a11y + touch passes), `5a15`-adjacent polish. `06fb` (the red e2e I filed) is worth doing early —
-it is the only gate on the real-pointer hit path and it is currently red on `main`.
+**Genuinely implementable without a decision, if you want more grinding:** `eec7` (screen-reader
+walk + overlay contrast — note `ea57`'s ratchet now covers the published pages, so this is the APP
+surfaces), `cf4a` (touch design pass), `1cf0` (Zip64 — read its two security questions first).
+`06fb` (the red e2e I filed) is worth doing early: it is the only gate on the real-pointer hit path,
+it is currently red on `main`, and its ticket now carries the bisection and the `d=(0,0)` clue.
 
 ## Working notes carried forward
 
