@@ -635,7 +635,16 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     // archie:-link rewrite the JSON heads pages get; the throwaway sink keeps the brokenLinks
     // advisory counts identical to the JSON path (canvas-matched refs already reported above).
     const htmlRecords = heads.map((h) => rewriteHeadBodies(h, exhibit.slug, rw, []));
-    await writeText(exDir, "index.html", exhibitPageHtml(exhibit, htmlRecords, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.renderBody !== undefined ? { renderBody: opts.renderBody } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
+    // `manifestExhibit`, NOT `exhibit` (Archie-5a15). The static page emits schema.org ImageObject
+    // `contentUrl` and resolves its og:image from `objects[].source`; the working model still holds
+    // the pre-publish path, so the shipped page advertised `/assets/01KX….JPG` — a URL that exists
+    // only in the author's OPFS. `manifestExhibit` is the same exhibit with the published asset
+    // triple (source / tileSource / thumbnail) already substituted, which is exactly what the
+    // manifest one line above is built from; the page and the manifest now agree by construction.
+    // Its `sections` also carry the resolved `archie:` cites, so section prose on the archival page
+    // stops shipping raw refs. Everything else the page reads (title, summary, rights,
+    // requiredStatement, readings, object labels and ids) is copied through untouched.
+    await writeText(exDir, "index.html", exhibitPageHtml(manifestExhibit, htmlRecords, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.renderBody !== undefined ? { renderBody: opts.renderBody } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
   });
   // Library landing + sitemap (ADR-0014): the human/crawler entry the data repo never had.
   await writeText(root, "index.html", libraryPageHtml(library, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));

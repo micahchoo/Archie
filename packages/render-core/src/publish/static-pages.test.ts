@@ -195,6 +195,54 @@ describe("SEO meta — og/twitter/canonical + schema.org JSON-LD (Q-8)", () => {
     expect(typeof img["contentUrl"]).toBe("string");
   });
 
+  // Archie-5a15 defect 1. The page and the manifest are two projections of ONE exhibit, and they were
+  // built from different objects: site.ts handed the static page the pre-rewrite working model while
+  // the manifest was built from the published projection. So the shipped page advertised a
+  // `/assets/…` contentUrl — a path that exists only inside the author's OPFS — to every crawler.
+  // Asserting `typeof contentUrl === "string"` (as the ImageObject test above did, and still does for
+  // its own purpose) cannot see this: the broken value is a perfectly good string.
+  it("an IMPORTED object's contentUrl is the PUBLISHED url, and agrees with the manifest byte for byte", async () => {
+    const fs = new MemoryFilesystem();
+    const exC = {
+      id: asExhibitId("exC"), slug: "c", title: "C",
+      objects: [{ id: asObjectId("o1"), source: "/assets/photo.jpg", label: "Imported", width: 4, height: 4 }],
+    };
+    await publishLibrary(fs, { id: asLibraryId("lib"), title: "L", exhibits: [exC] }, () => [], {
+      baseUrl: BASE, getAsset: async () => new Uint8Array([1, 2, 3, 4]).buffer,
+    });
+    const html = await readText(fs, ["c", "index.html"]);
+    const ld = jsonLd(html) as Record<string, unknown>;
+    const img = (ld["image"] ?? (ld["hasPart"] as unknown[])?.[0]) as Record<string, unknown>;
+
+    expect(img["contentUrl"]).toBe(`${BASE}c/assets/photo.jpg`);
+    // The working path must be GONE from the whole page, not merely absent from this one field.
+    expect(html).not.toContain('"/assets/photo.jpg"');
+
+    // …and it must equal what the manifest says. Two projections of one exhibit that disagree is the
+    // shape of this bug; pinning them together is what stops it recurring in a different field.
+    const manifest = JSON.parse(await readText(fs, ["c", "manifest.json"]));
+    expect(JSON.stringify(manifest)).toContain(img["contentUrl"] as string);
+  });
+
+  // Archie-5a15 defect 2. Both static pages advertised `${baseUrl}og-card.png`; nothing in this repo
+  // has ever written that file, and it 404'd on the live site. The tag is now emitted only when there
+  // is a real image, and the twitter card type degrades with it — `summary_large_image` over a
+  // missing image renders nothing at all.
+  it("omits og:image entirely (and downgrades the twitter card) when the tree carries no image", async () => {
+    const fs = new MemoryFilesystem();
+    const exN = { id: asExhibitId("exN"), slug: "n", title: "No pictures", objects: [] };
+    await publishLibrary(fs, { id: asLibraryId("lib"), title: "L", exhibits: [exN] }, () => [], { baseUrl: BASE });
+
+    for (const page of [["n", "index.html"], ["index.html"]]) {
+      const html = await readText(fs, page);
+      expect(html, `${page.join("/")} still advertises an og:image`).not.toContain('property="og:image"');
+      expect(html, `${page.join("/")} still advertises a twitter:image`).not.toContain('name="twitter:image"');
+      expect(html).toContain('name="twitter:card" content="summary"');
+      // The phantom file, by name — the regression this ticket is actually about.
+      expect(html).not.toContain("og-card.png");
+    }
+  });
+
   it("the library page emits a CollectionPage with one hasPart entry per exhibit", async () => {
     const { fs } = await publishToMem();
     const ld = jsonLd(await readText(fs, ["index.html"])) as Record<string, unknown>;

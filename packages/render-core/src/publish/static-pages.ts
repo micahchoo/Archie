@@ -31,8 +31,10 @@ export interface StaticPageOptions {
 export interface PageMeta {
   title: string;
   description?: string;
-  /** ABSOLUTE og:image URL. */
-  ogImage: string;
+  /** ABSOLUTE og:image URL. OMITTED when the tree carries no image to point at — advertising a card
+   *  that was never written is worse than carrying no card (Archie-5a15: both static pages named
+   *  `og-card.png`, nothing in the repo ever wrote one, and it 404'd on the live site). */
+  ogImage?: string;
   /** ABSOLUTE canonical URL of this page. */
   canonical: string;
   /** og:type — "article" for an exhibit, "website" for the library landing. */
@@ -41,12 +43,27 @@ export interface PageMeta {
   jsonLd: Record<string, unknown>;
 }
 
-/** og:image for an exhibit: the cover if absolute, else the first object's absolute source, else the
- *  brand card at the publish base. Mirrors apps/viewer ogImageFor but works from the baseUrl render-core
- *  already holds (the viewer module reads archie.config.json — not importable cleanly into core). */
-function ogImageForExhibit(exhibit: Exhibit, baseUrl: string): string {
-  const abs = (u: string | undefined): string | undefined => (u && /^https?:\/\//.test(u) ? u : undefined);
-  return abs(exhibit.cover) ?? abs(exhibit.objects[0]?.source) ?? `${baseUrl}og-card.png`;
+const abs = (u: string | undefined): string | undefined => (u && /^https?:\/\//.test(u) ? u : undefined);
+
+/** og:image for an exhibit: the cover if absolute, else the first object's absolute source, else NONE.
+ *  Mirrors apps/viewer ogImageFor but works from the baseUrl render-core already holds (the viewer
+ *  module reads archie.config.json — not importable cleanly into core).
+ *
+ *  There is deliberately no fallback. The old one named `${baseUrl}og-card.png`, which no code path in
+ *  this repo has ever written (Archie-5a15) — so every card-less exhibit advertised a 404 to every
+ *  crawler and social unfurler that asked. Callers must be handed the PUBLISHED object projection for
+ *  this to resolve: a working `/assets/…` path is not absolute and falls through to undefined. */
+function ogImageForExhibit(exhibit: Exhibit, _baseUrl: string): string | undefined {
+  return abs(exhibit.cover) ?? abs(exhibit.objects[0]?.source);
+}
+
+/** og:image for the library landing: the first listed exhibit that offers one. Same no-fallback rule. */
+function ogImageForLibrary(library: Library): string | undefined {
+  for (const e of library.exhibits) {
+    const img = abs(e.cover) ?? abs(e.objects[0]?.source);
+    if (img) return img;
+  }
+  return undefined;
 }
 
 const esc = (s: string): string =>
@@ -71,11 +88,13 @@ function metaTags(meta: PageMeta): string {
     `<meta property="og:title" content="${esc(meta.title)}">`,
     ...(meta.description ? [`<meta property="og:description" content="${esc(meta.description)}">`] : []),
     `<meta property="og:url" content="${esc(meta.canonical)}">`,
-    `<meta property="og:image" content="${esc(meta.ogImage)}">`,
-    `<meta name="twitter:card" content="summary_large_image">`,
+    ...(meta.ogImage ? [`<meta property="og:image" content="${esc(meta.ogImage)}">`] : []),
+    // `summary_large_image` REQUIRES an image; without one Twitter/X renders nothing at all, so the
+    // card type degrades with the image rather than advertising a large card over a blank.
+    `<meta name="twitter:card" content="${meta.ogImage ? "summary_large_image" : "summary"}">`,
     `<meta name="twitter:title" content="${esc(meta.title)}">`,
     ...(meta.description ? [`<meta name="twitter:description" content="${esc(meta.description)}">`] : []),
-    `<meta name="twitter:image" content="${esc(meta.ogImage)}">`,
+    ...(meta.ogImage ? [`<meta name="twitter:image" content="${esc(meta.ogImage)}">`] : []),
     // JSON.stringify already escapes the JSON; guard the one HTML-significant sequence that can break
     // out of a <script> element (`</` → `<\/`).
     `<script type="application/ld+json">${JSON.stringify(meta.jsonLd).replace(/<\//g, "<\\/")}</script>`,
@@ -211,7 +230,7 @@ export function libraryPageHtml(library: Library, opts: StaticPageOptions): stri
   const meta: PageMeta = {
     title,
     ...(library.summary ? { description: library.summary } : {}),
-    ogImage: `${opts.baseUrl}og-card.png`,
+    ...(ogImageForLibrary(library) ? { ogImage: ogImageForLibrary(library)! } : {}),
     canonical: `${opts.baseUrl}index.html`,
     ogType: "website",
     jsonLd,
@@ -324,7 +343,7 @@ export function exhibitPageHtml(exhibit: Exhibit, records: AnnotationRecord[], o
   const meta: PageMeta = {
     title: exhibit.title,
     ...(exhibit.summary ? { description: exhibit.summary } : {}),
-    ogImage: ogImageForExhibit(exhibit, opts.baseUrl),
+    ...(ogImageForExhibit(exhibit, opts.baseUrl) ? { ogImage: ogImageForExhibit(exhibit, opts.baseUrl)! } : {}),
     canonical: `${opts.baseUrl}${exhibit.slug}/index.html`,
     ogType: "article",
     jsonLd,
