@@ -21,8 +21,9 @@
    a token added to one side only (--text-lede/--text-note here, --scrim-dim there — so studio's
    TutorialModal inlined the scrim's literal as a var() fallback), and a VALUE edited on one side only
    (the .eyebrow contrast fix at the foot of this file reached the reader and never reached the author).
-   Neither divergence was decided; both were accumulation. The copy is gone — `apps/studio/src/
-   tokens.css` no longer exists, and `apps/studio/src/tokens.test.ts` fails if one comes back.
+   Neither divergence was decided; both were accumulation. The copy is gone — that file no longer
+   exists, and `apps/studio/src/tokens.test.ts` fails if any file under apps/studio/src redeclares a
+   token declared here, whether as a restored copy or as one shadowed value in a component.
 
    WHERE AN APP-LOCAL TOKEN GOES. Today there are none, and that is a measurement, not an aspiration:
    every token here is design vocabulary (palette, type, spacing, depth) that an authoring surface and a
