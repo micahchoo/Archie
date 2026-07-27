@@ -117,7 +117,14 @@ export const escapeBody = (md: string): string =>
 // One shared, deliberately minimal chrome: readable column, no script, archival tone.
 // Verdant Clearing palette (design/design.md v0.4): parchment ground, moss ink, hunter accent, amber
 // reading-label. System sans echoes LARAZ without shipping a webfont on this archival surface.
-const STYLE = `body{max-width:42rem;margin:2rem auto;padding:0 1rem;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55;color:#1A3C23;background:#F7F4EC}h1,h2{line-height:1.2}article{margin:1.5rem 0;padding:0.75rem 1rem;border-left:3px solid #2D5F3A;background:#EEF1E6}article .reading{font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;color:#9A7B39}article .tags,footer,.credit{color:#6B7D6A;font-size:0.9rem}a{color:#2D5F3A}dl.meta{margin:0.75rem 0;font-size:0.9rem}dl.meta dt{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;color:#6B7D6A}dl.meta dd{margin:0 0 0.5rem}details.versions{margin-top:0.5rem;font-size:0.85rem;color:#6B7D6A}details.versions summary{cursor:pointer}details.versions ol{margin:0.35rem 0 0;padding-left:1.25rem}details.cite{margin:1.5rem 0;font-size:0.9rem}details.cite summary{cursor:pointer}details.cite pre{white-space:pre-wrap;word-break:break-word;margin:0}`;
+// PALETTE NOTE (Archie-ea57): the muted text colour is #5C6B5B and the reading eyebrow #846829, not
+// the design palette's #6B7D6A / #9A7B39. Measured with axe over the built pages, those two failed
+// WCAG 2.1 AA contrast on this ground at 4.01:1 and 3.63:1 against the 4.5:1 requirement for normal
+// text — 676 violating nodes across the 8 published pages, all of them these two tokens. The
+// replacements clear AA on BOTH grounds this page uses (paper #F7F4EC: 5.15 and 4.78; the article
+// tint #EEF1E6: 4.95 and 4.60). Keep any future value here above 4.5:1 on #EEF1E6, the darker of
+// the two — `node scripts/a11y-check.mjs` is the gate.
+const STYLE = `body{max-width:42rem;margin:2rem auto;padding:0 1rem;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55;color:#1A3C23;background:#F7F4EC}h1,h2{line-height:1.2}article{margin:1.5rem 0;padding:0.75rem 1rem;border-left:3px solid #2D5F3A;background:#EEF1E6}article .reading{font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;color:#846829}article .tags,footer,.credit{color:#5C6B5B;font-size:0.9rem}a{color:#2D5F3A}dl.meta{margin:0.75rem 0;font-size:0.9rem}dl.meta dt{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;color:#5C6B5B}dl.meta dd{margin:0 0 0.5rem}details.versions{margin-top:0.5rem;font-size:0.85rem;color:#5C6B5B}details.versions summary{cursor:pointer}details.versions ol{margin:0.35rem 0 0;padding-left:1.25rem}details.cite{margin:1.5rem 0;font-size:0.9rem}details.cite summary{cursor:pointer}details.cite pre{white-space:pre-wrap;word-break:break-word;margin:0}`;
 
 /** The SEO head tags (Q-8): Open Graph + Twitter card + canonical + JSON-LD. Rendered only when a
  *  page supplies `meta`; the bare shell (no meta) keeps the minimal charset/viewport/title head. */

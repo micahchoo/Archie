@@ -1,0 +1,18 @@
+{
+  "tags": [
+    "wcag2a",
+    "wcag2aa",
+    "wcag21a",
+    "wcag21aa"
+  ],
+  "pages": {
+    "geo-map/index.html": [],
+    "index.html": [],
+    "language-atlas/index.html": [],
+    "sampler/index.html": [],
+    "screenshots/index.html": [],
+    "voynich-reading/index.html": [],
+    "voynich-rosettes/index.html": [],
+    "voynich/index.html": []
+  }
+}
