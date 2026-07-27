@@ -235,6 +235,30 @@ branch cannot clobber them — but they need committing from there, by whoever o
    both blocking questions are answered in the spec, and L5/R6 are withdrawn. Six decisions remain
    (L1–L4, L6, L7); L4/L6/L7 are mine and still contestable.
 
+## STATE AT HANDOFF — everything below is MERGED AND PUSHED
+
+`origin/main` = `main` = **`1c435ff`**, 0/0. The whole desktop chain is on the remote: the
+`fs:allow-rename` P0, the folder picker, the JavaScriptCore `Object.assign` fix, the dot-path scope
+fix, the scope-side gate, `scripts/desktop-smoke.sh`, and the "Living in this browser" copy fix.
+Verified in `main`'s own tree before pushing, not by exit code.
+
+**What is DONE:** ranks 1 (merge+push), 2 (`Archie-ce7a` + P2-a), and 6 (the copy) — plus three
+defects that were not on any list, and a gate extension.
+
+**What is NOT:** the desktop DRIVE gate in CI (rank 3 — `desktop-smoke.sh` now exists in-repo and
+red-greens, but nothing runs it automatically and nothing drives the UI); Flatpak `Archie-7e2e`
+(rank 4); P2-b (rank 5). `Archie-9ece` cannot close until 4 and 5 are done.
+
+**One loose end, not mine:** an LSP diagnostic on `App.svelte:2535` (`FitOptions` — "no properties in
+common") appeared during the rebase. It is NOT reproducible by the project's own gate — a fresh
+`svelte-check` is 1183 files / 0 errors / 0 warnings, and `tsc --noEmit` is clean — and that file's
+recent commits are main's, not this branch's. Treated as stale language-server cache. If it recurs
+for someone else, that is a real signal and worth re-opening.
+
+**Copy defect still open, unticketed:** `Archie-7b48`'s refusal message blames disk space for a
+permission failure ("free some space" on a disk with ~1 TB free). `AddFileRefusal` classifies by
+PHASE by design; whether a scope rejection should be distinguished on desktop is a product call.
+
 ## Session 4 (2026-07-26, later still) — the desktop build was DRIVEN, end to end
 
 Commits `8a4d67c` (picker), `b5089ce` (the JSC fix). The P0 from session 3 is merged; `main` was at
