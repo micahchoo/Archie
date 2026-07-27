@@ -284,7 +284,44 @@ rank 3 and should move into the repo.
   21,606 bytes, header "Saved".
 - **"Living in this browser" is confirmed on desktop** (rank 6) — visible in the drive screenshots.
 
-### NEW and UNFIXED: asset persist reports failure while the bytes land
+### FIXED same day: `Archie-7b48` — scope globs refuse dot-paths (`7cdf1fa`)
+
+The defect described below was diagnosed and fixed. `fs.exists()` on the `.bake-schema` marker was
+refused by the capability **scope**:
+
+> forbidden path: …/assets/`.bake-schema`, maybe it is not allowed on the scope for `allow-exists`
+> permission in your capability file
+
+**Tauri matches fs scope globs with a leading-dot rule — `**` does not match a path component that
+starts with a dot.** `$APPDATA/**` covers `library.json` only because `$APPDATA` expands to a
+*literal* path, so the dots in `.local` are never matched by a wildcard; it is exclusively the
+trailing dot-components that fall outside. Archie writes two: `.bake-schema` (`asset-store.ts:26`)
+and `.archie-cache/` (`resident-store.ts:146`). Four scope entries added, commented in the manifest
+as load-bearing so nobody prunes them as defensive.
+
+**Attribution settled: NOT the picker.** The failing call is in the shared asset-persist path, so
+every desktop media add — folder pick, drag-drop, single file — hit it. It predates both picker
+fixes.
+
+**P2-a is now a genuine PASS.** Verified on a packaged build with a clean profile and no probe in
+the binary: *"Added 3 files to 2 exhibits"*, 3 assets + 2 markers on disk, and **both authored
+exhibits survive a relaunch with media and thumbnails intact.**
+
+**Two things this left open, neither ticketed:**
+- **The copy blamed disk space for a permission failure.** `AddFileRefusal` classifies by *phase*,
+  never by sniffing the error — deliberate and right in general (the header comment explains why
+  sniffing cross-engine DOMExceptions is "a guess wearing the costume of a diagnosis"). Here it told
+  the user to free space on a disk with ~1 TB free. Worth deciding whether a scope/permission
+  rejection, which IS knowable on desktop, should be distinguished.
+- **The capability gate cannot see this class.** `check-tauri-capabilities.mjs` derives required
+  PERMISSIONS from the `TauriFsBridge` interface and would have caught the `fs:allow-rename` P0. It
+  says nothing about SCOPE — `fs:allow-exists` *was* granted; the path was out of scope. A scope-side
+  check is derivable (scan for dot-path literals handed to `getFile`/`getDirectory`, assert the
+  manifest carries matching dot-globs) and is **not written**.
+
+Original report, kept because the contradiction is what made it findable:
+
+### ~~NEW and UNFIXED~~: asset persist reports failure while the bytes land
 
 Creating the exhibit produced:
 
