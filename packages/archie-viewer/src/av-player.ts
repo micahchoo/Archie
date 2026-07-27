@@ -5,7 +5,7 @@
 //   • activeNoteIndex     — which cue is "now playing" (highlight on timeupdate)
 //   • transcriptTextOf    — a cue's / whole-track note's prose
 //   • parseTimeFragment   — the landing `t=` offset (clamped here, mirroring apps/viewer av-landing.ts)
-//   • createNoteCard / noteBodyHtml (./note-card) — the SANITIZED note body, reused verbatim
+//   • createNoteCard (./note-card) — the SANITIZED note body + media, reused verbatim
 //
 // LAZY-loaded: element.ts `await import("./av-player.js")` only when an AV object opens, so the
 // gallery / image-reader bundles never pull this in (mirrors the ./reader.js lazy boundary).
@@ -18,7 +18,8 @@
 // isRemoteSource) BEFORE the <audio>/<video> src is set — an offline embed shows the same notice as a
 // blocked image, never a silently-failing media element.
 //
-// SECURITY: note bodies reach innerHTML ONLY through `noteBodyHtml` (renderMarkdown → DOMPurify), the
+// SECURITY: note bodies reach innerHTML ONLY through the card's own `noteParts` (renderMarkdown →
+// DOMPurify, with media lifted out by splitNoteMedia first), the
 // same sanitized pipeline the image note-card uses. Cue/whole-track LABELS use textContent, never HTML.
 
 import {
@@ -30,7 +31,7 @@ import {
   type W3CAnnotation,
   type TimeRange,
 } from "@render/core";
-import { createNoteCard, noteBodyHtml, type NoteCard } from "./note-card.js";
+import { createNoteCard, type NoteCard } from "./note-card.js";
 
 /** A time-anchored note: its id (overlay/resolver selection key), its prose, and its `t=` window. */
 export interface AvCue {
@@ -254,7 +255,7 @@ export function mountAvPlayer(host: HTMLElement, opts: AvPlayerOptions): AvPlaye
     const c = cues.find((x) => x.id === id);
     if (!c) return false;
     media.currentTime = c.range.start;
-    card.show(noteBodyHtml(annotations, c.id));
+    card.showNote(annotations, c.id);
     return true;
   };
 
@@ -262,7 +263,7 @@ export function mountAvPlayer(host: HTMLElement, opts: AvPlayerOptions): AvPlaye
    *  moving the playhead would be a lie about where the note points. */
   const showWholeNote = (id: string): boolean => {
     if (!wholeNotes.some((n) => n.id === id)) return false;
-    card.show(noteBodyHtml(annotations, id));
+    card.showNote(annotations, id);
     return true;
   };
 
@@ -332,7 +333,7 @@ export function mountAvPlayer(host: HTMLElement, opts: AvPlayerOptions): AvPlaye
     const at = clampSeekStart(target, media.duration);
     if (at > 0) media.currentTime = at; // paused: no play() (the AV-landing rule)
     if (landCue) {
-      card.show(noteBodyHtml(annotations, landCue.id)); // the click path's card open, on arrival
+      card.showNote(annotations, landCue.id); // the click path's card open, on arrival
       onTimeUpdate(); // sync the active-cue highlight to the landed playhead
     }
   };

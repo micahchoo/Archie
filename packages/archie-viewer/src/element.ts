@@ -51,7 +51,11 @@ import {
 // and undo the lazy `await import("./reader.js")` below.
 import { OfflineRemoteBlockedError } from "./reader-guards.js";
 import type { AvPlayerSurface } from "./av-player.js";
-import { createNoteCard, noteBodyHtml, type NoteCard } from "./note-card.js";
+// TYPE-ONLY (erased). Every call site is past the reader boundary, so the module itself is fetched
+// with `await import("./note-card.js")` in #openObject. A value import here would put its graph —
+// renderMarkdown, splitNoteMedia, the sheet — on the page-load path for code the gallery never runs
+// (.claude/rules/archie-viewer-eager-closure.md).
+import type { NoteCard } from "./note-card.js";
 import { resolveExhibitTarget, type ResolvedTarget } from "./target-resolve.js";
 import { resolveContentState } from "./content-state.js";
 import { embedHeightMessage, heightToPost, isFramed } from "./embed-autogrow.js";
@@ -524,10 +528,11 @@ export class ArchieViewerElement extends HTMLElement {
     // (commentOfAnnotation → renderMarkdown, the SANITIZED pipeline the full viewer uses). Created
     // before the mount so the overlay's first onSelect has a card to drive; torn down with the surface.
     // The card is a ROW under the canvas, not a float over its corner (ADR-0019's layout row).
+    const { createNoteCard } = await import("./note-card.js"); // LAZY, like the reader above
     this.#noteCard = createNoteCard(this.#root.querySelector<HTMLElement>(".reader-note") ?? host);
     const onSelect = (id: string | null): void => {
-      // noteBodyHtml returns "" for null/unknown ids → show() hides the card.
-      this.#noteCard?.show(noteBodyHtml(annotations, id));
+      // showNote resolves the id itself and hides on a null/unknown one.
+      this.#noteCard?.showNote(annotations, id);
       // V70's other direction: a mark clicked on the canvas highlights its row in the index.
       this.#chrome?.setSelected(id);
     };
@@ -605,7 +610,7 @@ export class ArchieViewerElement extends HTMLElement {
         // (camera) — the ADR-0006 nav contract, the same pair a cite-ladder landing applies.
         this.#surface?.setSelected(id);
         this.#surface?.fitBounds(id);
-        this.#noteCard?.show(noteBodyHtml(notes(), id));
+        this.#noteCard?.showNote(notes(), id);
         // S1: on an AV object the embed owns no note card (the PLAYER owns one), so a row had nothing
         // to open — 5 rows rendered on ex-voynich.o12 and none of them was a door. Route it into the
         // player instead: seek to the note's cue and show its body, exactly as clicking that cue does.
