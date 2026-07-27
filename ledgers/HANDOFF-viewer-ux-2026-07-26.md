@@ -33,6 +33,32 @@ do not survive the dock, so unifying tokens earlier would have unified onto valu
 **`main` is checked out in `.claude/worktrees/merge-main`, a peer session's — do not check it out
 here, and read the stale-ref warning immediately below before branching off anything.**
 
+### ⚠ THE MAP DISAGREES WITH THE CODE — reconcile before reading `sd ready`
+
+**Measured 2026-07-27, unactioned at time of writing.** `sd list --label map:viewer-ux` reports **10
+open**. Four of those entries are stale, so the frontier a reader gets is wrong:
+
+| ticket | what the map says | what is true |
+| --- | --- | --- |
+| `f4fb`, `b135`, `0cc6` | open | **shipped** — the fixture slice, merged at `8683b02` |
+| `4524` | open (blocked) | **unblocked, unbuilt.** Both recorded blockers dissolved: `ExhibitView` is free now the dock landed, and `5252f69` added the reading-bearing AV note it waited for. It is a build, not a blocked ticket — fold it into `7b86`, same surface |
+| `d6e9`, `d37d` | open (blocked on the dock) | **unblocked, unmeasured.** Parked for exactly this moment. `d37d` may close as *no longer has a subject* — if `.cite-trigger` moved with the chrome, its occlusion has none |
+| `1820`, `7b86`, `9eeb`, `ecf4` | open | genuinely open — wave 2 |
+
+On `map:dc-metadata`: **`a5b1` is merged (`ead0ad7`) and still open.** `aafd` is a live decision for
+the human — *should the read boundary reject excluded dcterms properties, or display them?* — a policy
+question about what Archie promises, not something to default.
+
+**This is the same failure class the whole effort kept finding, one level up.** A list that claims
+coverage it does not have; `sd ready` is a gate whose reference nobody refreshed. The reconciliation
+(close with resolution reasons pointing at merge SHAs + ledgers, append gists to the map's
+Decisions-so-far) was **recommended and NOT executed** — `.seeds/` writes were not authorised.
+
+**Also unfiled and therefore currently only in prose:** the IIIF MUST-display violation a5b1 found — a
+single-object exhibit silently drops its exhibit-level `requiredStatement` for the whole `single`
+layout, same for the narrative reader's metadata run. Needs one placement decision in reader chrome at
+the *top* of a slice. UV's `CenterPanel.ts:170-174` is the precedent. **It exists in no ticket.**
+
 ### Archie-a5b1 — MERGED, and the ticket's premise was half wrong
 
 **V104's "renders nothing, anywhere" is false for the SPA** — driven against the built viewer, the
