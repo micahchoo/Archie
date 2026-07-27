@@ -1,0 +1,1 @@
+import{a,b,c,d,e,f,g}from"./chunk-KEVJ6BC2.js";import"./chunk-AP722ACG.js";export{b as BASE_MARK_COLOUR,a as annotationsFor,c as injectStyle,g as mountReaderChrome,d as positionLabel,e as previewOf,f as readingColourById};
