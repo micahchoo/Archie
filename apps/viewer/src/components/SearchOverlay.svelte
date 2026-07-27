@@ -10,16 +10,24 @@
     buildSearchIndex,
     filterResults,
     flattenExhibitNotes,
+    locateNotes,
     type StoredDoc,
   } from "../lib/search-index.js";
   import { dialog } from "../lib/dialog-a11y.js";
 
-  let { data, initialTag = null, onselect, onclose }: {
+  let { data, objects = [], sections = null, initialTag = null, onselect, onclose }: {
     /** The published exhibit's note tree — base notes + per-reading overlays, flattened into the index. */
     data: {
       annotationsByObject: Record<string, W3CAnnotation[]>;
       readingAnnotationsByObject: Record<string, Record<string, W3CAnnotation[]>>;
     };
+    /** The exhibit's objects, for NAMING a hit's place (V106). The note maps above are keyed by object
+     *  id, so which object is already known here — what is missing without this is what it is CALLED.
+     *  Optional and defaulting to `[]`: absent, every result simply renders with no locus line, which
+     *  is what shipped before Archie-9eeb. */
+    objects?: readonly { id: string; label: string }[];
+    /** The narrative spine, when this exhibit has one — a hit in a narrative names its section too. */
+    sections?: readonly { id: string; title: string; objectId: string }[] | null;
     /** Pre-scope the finder with this tag active as a facet (a tag chip elsewhere opened the overlay). */
     initialTag?: string | null;
     /** A result was picked → land on that note (ExhibitView.arriveAtNote). The overlay closes itself. */
@@ -40,6 +48,12 @@
     for (const a of flat) for (const t of tagsOfAnnotation(a)) s.add(t);
     return [...s].sort((x, y) => x.localeCompare(y));
   });
+
+  // WHERE each note lives, in the reader's nouns (V106, Archie-9eeb). Derived, not stored: `objects`
+  // and `sections` are props, and a narrative's spine can change under the overlay in principle.
+  // This builds no address — `ExhibitView.svelte:206` (`locus`) is the one address writer, and
+  // `choose` routes through `arriveAtNote`, which feeds that writer. See `locateNotes`.
+  const placeOf = $derived(locateNotes(data, objects, sections));
 
   let query = $state("");
   // Active tag facets (OR'd by filterResults). Seeded from a chip that opened the overlay pre-scoped.
@@ -96,8 +110,23 @@
 
   <ul class="finder-results">
     {#each results as r (r.id)}
+      {@const where = placeOf.get(r.id)}
       <li>
         <button class="result" onclick={() => choose(r.id)}>
+          <!-- WHERE the hit lives, before WHAT it says. Per-ROW, not a group header: mirador's
+               `SearchHit.jsx:120-125` renders the canvas label inline above each hit's snippet, which
+               is what a relevance-ranked list needs. clover-iiif's `ContentSearch.tsx:83-88` header-
+               per-canvas idiom is the better shape for ITS list and the wrong one for ours — it
+               groups by `target.source.id` (`:50-58`), and grouping a MiniSearch result set by object
+               would reorder it by place instead of by match quality. Section naming follows quire,
+               the one corpus system that labels a hit by narrative unit rather than by canvas
+               (`content/_assets/javascript/application/index.js:108-109`). -->
+          {#if where}
+            <span class="result-locus">
+              <span class="locus-object">{where.objectLabel}</span>
+              {#if where.sectionTitle}<span class="locus-section">{where.sectionTitle}</span>{/if}
+            </span>
+          {/if}
           <span class="result-body">{r.body}</span>
           {#if r.tags.length}<span class="result-tags">{#each r.tags as t}<span class="tag">#{t}</span>{/each}</span>{/if}
         </button>
@@ -154,6 +183,13 @@
     transition: background 160ms ease, border-color 160ms ease;
   }
   .result:hover { background: var(--surface-paper-hover); border-left-color: var(--accent); }
+  /* The locus line (V106) — quiet mono, above the prose: place first, then what was said there. It
+     reads as an eyebrow, not as content, so it never competes with the note body for the eye. */
+  .result-locus { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); margin-bottom: var(--space-2); }
+  .locus-object { font-family: var(--font-ui), monospace; font-size: 0.65rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-secondary); }
+  /* The section reads as subordinate to the object it sits on — same scale, lighter ink, own marker. */
+  .locus-section { font-family: var(--font-ui), monospace; font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); }
+  .locus-section::before { content: "§ "; }
   .result-body { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .result-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
   .tag { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-secondary); background: var(--surface-paper-hover); padding: 2px var(--space-3); border-radius: var(--radius-sm); }
