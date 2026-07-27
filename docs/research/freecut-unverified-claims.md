@@ -17,10 +17,26 @@ Companion docs: [freecut-gaps.md](freecut-gaps.md) (source-depth follow-up), fre
 2. **WebKit evicts infrequently-opened origins with zero storage pressure.** Directly hits
    Archie's use case (occasionally-opened local libraries) in Safari web studio.
    (web.dev/persistent-storage)
-3. **Outside OPFS, every FSA `createWritable()` save pays a full temp-file copy** — no true
-   in-place streaming write to user-visible folders; in-place editing exists only via OPFS
-   `SyncAccessHandle`. Fine for write-once AV originals; bad for large frequently-rewritten
-   files. Feeds the folder-primary design. (fs.spec.whatwg.org)
+3. ~~**Outside OPFS, every FSA `createWritable()` save pays a full temp-file copy**~~ — **HALF
+   WRONG, corrected 2026-07-27 against the spec text (Archie-b5c2).** The temp-file indirection is
+   real; the *copy* is not, and Archie never pays it.
+
+   > "This is typically implemented by writing data to a temporary file, and only replacing the file
+   > entry … when the writable filestream is closed. **If `keepExistingData` is false or not
+   > specified, the temporary file starts out empty**, otherwise the existing file is first copied to
+   > this temporary file." — fs.spec.whatwg.org §2.3.2, and the IDL declares
+   > `boolean keepExistingData = false`.
+
+   `fs/fsa.ts:15` calls `createWritable()` with **no options**, so every Archie save takes the
+   default: the temp file starts EMPTY. Per-save cost outside OPFS is therefore *create temp + write
+   the new bytes + atomic swap on close* — proportional to what is WRITTEN, not to the size of the
+   file being replaced. A 4 GB video is not re-copied when its sidecar JSON is rewritten.
+
+   What survives of the claim, and still matters: there is **no true in-place streaming write** to a
+   user-visible folder (in-place editing exists only via OPFS `SyncAccessHandle`), so a frequently
+   rewritten file pays a temp-create + rename per save. That is a per-save constant, not a
+   size-proportional penalty — a materially different input to the folder-primary design than the
+   original claim implied. (fs.spec.whatwg.org)
 4. **FSA locking is platform-enforced:** writable streams take shared locks, sync handles
    exclusive; holders block each other — the browser itself serializes concurrent writers.
    (fs.spec.whatwg.org)
