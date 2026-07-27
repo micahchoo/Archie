@@ -1,0 +1,129 @@
+name: Desktop
+
+# Boots the REAL packaged desktop binary and asserts what it wrote (Archie-9ece).
+#
+# WHY THIS IS A SEPARATE WORKFLOW. It needs path filtering, and `on.push.paths` is a workflow-level
+# key — a job-level `if:` cannot express it. (The first draft put this job in checks.yml with a
+# commit-message heuristic and a comment claiming it was path-filtered; those are different things,
+# and the comment was the lie. If you fold this back into checks.yml, drop the filter honestly or
+# use dorny/paths-filter — do not reintroduce a message match.)
+#
+# WHY IT EXISTS AT ALL. Three desktop defects shipped in one week with every headless gate green,
+# and each was invisible to a different layer:
+#
+#   fs:allow-rename ungranted   every durable write failed at its temp-then-rename commit point.
+#                               First boot: 18 directories, 4 files, ZERO bytes of content, behind a
+#                               soft "Retry save". 100% of authored work lost, app looking healthy.
+#                               fs/tauri.test.ts runs over node:fs, which has no permission system.
+#   JSC readonly property       Object.assign on webkitRelativePath throws in JavaScriptCore and not
+#                               in Chromium. NO static check can see this — jsdom and Playwright's
+#                               Chromium both implement the permissive shape.
+#   scope refuses dot-paths     the command was granted and the PATH refused, so the asset job
+#                               rejected AFTER its bytes landed. Invisible to a check that reads
+#                               permission identifiers.
+#
+# The structural gate (scripts/check-tauri-capabilities.mjs, in checks.yml) catches the first and
+# third — but only because someone knew to write those checks. This job catches them from the other
+# side, without knowing what to look for: it asks whether the app could write its own library.
+#
+# Proven red-green 2026-07-26: with fs:allow-rename removed from the manifest and the app rebuilt,
+# desktop-boot.sh fails at "library.json never became non-empty after 90s" and exits 1.
+#
+# SCOPE — stated so a green run is not over-read. This BOOTS, it does not DRIVE. It proves the app
+# can persist its own seeded state through the full temp-then-rename path. It does NOT exercise
+# ingest, so on its own it cannot catch the dot-path scope class, which only fires once an asset is
+# written. That needs a driven import (scripts/desktop-smoke.sh MIN_ASSETS, driven per the recipe in
+# its header). Driving GTK + WebKit through xdotool is fragile enough — inline autocompletion
+# corrupts typed paths, Enter does not commit the GTK location bar — that it is deliberately left as
+# a local recipe rather than pretended at here.
+
+on:
+  push:
+    paths:
+      - "src-tauri/**"
+      - "packages/render-core/src/fs/**"
+      - "apps/studio/src/tauri-fs.ts"
+      - "apps/studio/src/resident-store.ts"
+      - "apps/studio/src/folder-native.ts"
+      - "apps/studio/src/webkit-relative-path.ts"
+      - "scripts/desktop-*.sh"
+      - "scripts/check-tauri-capabilities.mjs"
+      - "scripts/lib/tauri-capabilities.mjs"
+      - ".github/workflows/desktop.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src-tauri/**"
+      - "packages/render-core/src/fs/**"
+      - "apps/studio/src/tauri-fs.ts"
+      - "apps/studio/src/resident-store.ts"
+      - "apps/studio/src/folder-native.ts"
+      - "apps/studio/src/webkit-relative-path.ts"
+      - "scripts/desktop-*.sh"
+      - "scripts/check-tauri-capabilities.mjs"
+      - "scripts/lib/tauri-capabilities.mjs"
+      - ".github/workflows/desktop.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  boot-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      # Tauri v2's Linux deps, plus the two this smoke needs directly: Xvfb (on a runner there is no
+      # display at all, and on a Wayland desktop the app renders to a surface X cannot read — see
+      # desktop-boot.sh) and x11-utils for xdpyinfo, which the script polls to know the display is
+      # actually up rather than sleeping a guess.
+      - name: Install webkit2gtk + Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
+            libgtk-3-dev xvfb x11-utils
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # `tauri build`, NEVER plain `cargo build`: only this bakes frontendDist. A cargo build bakes
+      # devUrl, so the binary tries to load http://localhost:5174 and the run measures nothing at all
+      # (on a developer machine that URL may even be another worktree's dev server). desktop-smoke.sh
+      # asserts the resulting ORIGIN is tauri_localhost_0 for exactly this reason.
+      - name: Build the packaged desktop binary
+        run: pnpm exec tauri build --debug --no-bundle
+
+      - name: Boot it and assert the library it wrote
+        run: ./scripts/desktop-boot.sh
+
+      - name: Upload the app log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-boot-logs
+          path: |
+            /tmp/archie-app.log
+            /tmp/archie-xvfb.log
+          if-no-files-found: ignore
