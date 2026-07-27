@@ -207,7 +207,7 @@ and neither presence, nor text, nor count, nor `toBeVisible` answers it.
 
 | gate | result |
 | --- | --- |
-| `pnpm --filter @archie/viewer run check:svelte` | 1523 files, **0 errors 0 warnings** |
+| `pnpm --filter @archie/viewer run check:svelte` | 1524 files, **0 errors 0 warnings** |
 | `apps/viewer` `pnpm typecheck` (TS7 by explicit path, never bare `tsc`) | clean |
 | `apps/viewer` vitest | **190/190** (17 in `search-index.test.ts`, 6 of them new) |
 | `finder-locus.spec.ts`, `VIEWER_E2E_PORT=4362` | **4/4**, and 20/20 invocations |
