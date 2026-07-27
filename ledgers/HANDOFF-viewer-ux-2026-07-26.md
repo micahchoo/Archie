@@ -10,18 +10,57 @@ Worktrees `.claude/worktrees/chrome-occlusion` (driver) and `.claude/worktrees/m
 
 ## CURRENT STATE — read this and nothing else for state
 
-**`origin/main` = `ead0ad7`, GREEN on all 10 Checks jobs plus Deploy** (verified against the SHA).
-It carries, in order: the studio bundle ratchet's eager/lazy split, and **Archie-a5b1 (V103/V104)**.
+**`origin/main` = `1a586eb`.** Last full green was `dfe7ab4` (all 10 Checks jobs plus Deploy, verified
+against the SHA); everything since is docs and `.seeds/`. It carries the studio bundle ratchet's
+eager/lazy split, **Archie-a5b1 (V103/V104)**, and the **canvas-chrome dock**.
 
 | what | state |
 | --- | --- |
 | studio bundle ratchet | **merged.** `gh-pages-build` passes because the metric changed, not because a baseline moved |
 | Archie-a5b1 — rights + metadata on the read side | **merged.** V103 and V104 both closed |
-| dock slice | **MERGED** at `dfe7ab4` — all 10 jobs green on `integrate/dock`, fast-forward, no merge commit |
-| wave 2 — `1820`, `7b86`/V50, `9eeb`, `ecf4` | **UNBLOCKED.** All four open, genuinely parallel now — no shared files |
+| dock slice | **merged** at `dfe7ab4` — fast-forward, no merge commit |
+| map reconciliation | **done.** 4 stale tickets closed, `36e6` filed, both maps' Decisions-so-far updated |
+| **wave 2 — four slices IN FLIGHT** | dispatched 2026-07-27, worktree-isolated, disjoint territory |
+| `36e6`, `d25f` | decided, **not dispatched** — see the rulings below |
 
-**Wave 2, for whoever picks it up.** `ecf4` was the one that had to wait: `--finder-h`/`--topbar-h`
-do not survive the dock, so unifying tokens earlier would have unified onto values about to vanish.
+### Wave 2 — who owns what, and the two shared files
+
+| slice | tickets | territory | e2e port |
+| --- | --- | --- | --- |
+| `av-surface-slice` | `7b86`, `4524`, `d37d`, `d6e9` | `MediaPlayer.svelte`, AV note card, `fixtures/**`, `av-surface`+`note-surface` specs | 4361 |
+| `finder-locus-slice` | `9eeb` | `SearchOverlay.svelte`, `search-index.ts` | 4362 |
+| `token-unify-slice` | `ecf4` | both `tokens.css`, the shared token package, `tokens-source.mjs` | 4363 |
+| `embed-defer-slice` | `1820` | `packages/archie-viewer/**`, `recipes/smoke.mjs`, ADR-0019 rows | 4364 |
+
+**`ExhibitView.svelte` is SHARED between the AV and finder slices — append-only at mount sites.**
+I fenced territory without noticing both needed it (`4524` threads legend props to `MediaPlayer`;
+`9eeb` needs `objects`/`sections` for hit labels). Both are granted, both restricted to their own
+mount site, both forbidden `locus` (`:206-227`) and its `$effect` (`:229-235`), both required to make
+new props **optional with defaults** so either merge order works, and both quoting their exact diff.
+Nobody reformats or re-indents a line they did not add — that is how the dock's merge became eleven
+conflicts.
+
+### Decisions taken 2026-07-27 (human) — four, all recorded on the tickets
+
+**`Archie-aafd` — RESOLVED, and its premise was wrong.** It asked "reject or display an excluded
+dcterms property?" but `metadataRows` rule 1 (`metadata-display.ts:99`) already drops them on display.
+The real defect: `isMetadataEntry` (`model.ts:86`) accepts it, `seedRows` (`metadata-rows.ts:88`) maps
+it into an **editable Studio row**, display drops it — so a curator types into a field that renders
+nowhere. Neither of the ticket's options fixed that. Ruling: **demote to verbatim at deserialize**
+(precedent already in-repo at `iiif-import.ts:85`, making the zip and IIIF paths one rule),
+**preserve `sourceProperty`** so an untouched foreign tree re-publishes byte-faithful, **drop it on
+edit** (it is provenance about *that value*; keeping it would have Archie emit a typed claim its
+source never carried). Publish-preflight rejected. Implementation is **`Archie-d25f`**.
+
+**`Archie-36e6` — placement decided.** Exhibit-level credit/licence/metadata goes **beside the object
+credit** on all three readers, extending the `.credit-row` that already exists at `Reader.svelte:366`,
+`MediaPlayer.svelte:206`, `NarrativeReader.svelte:303`. Always on screen, so the IIIF MUST-display
+obligation needs no argument. Docking rejected (permanent height the dock slice worked to avoid); a
+UV-style panel rejected (`CenterPanel.ts:170-174` does open unconditionally, so the precedent is
+sound — but it is a new surface built three times, the option most likely to drift, and drift is why
+the ticket exists). **Echo rule: on an EXACT folded match the OBJECT row yields to the EXHIBIT row**,
+following `metadataRows` rule 3's shape; a near-match keeps both. Reuse rule 3's fold/compare, don't
+write a second one.
 
 | ticket | title |
 | --- | --- |
