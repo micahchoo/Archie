@@ -297,6 +297,43 @@ the sandbox as well.
    (exit 144). Third instance of this trap in two sessions — use a bracketed pattern
    (`pgrep -f 'digital[.]compost[.]archie'`) and kill by PID.
 
+### P2-b — the precondition CANNOT be built on this platform, and that is itself the finding
+
+Run properly and it did not go the way the row assumed. Method: build the **pre-flip** binary
+(`61d070a`, the commit before `b7a747e` "mount the native folder as the resident store"), which is
+OPFS-canonical on desktop; author a distinctive exhibit in it; then boot the current build and watch
+the migration.
+
+| step | result |
+|---|---|
+| pre-flip boots on a clean profile | window up, "6 EXHIBITS", "Saved", *"Living in this browser"*, **no `library/` folder** — OPFS-canonical confirmed |
+| create exhibit `P2B-CANARY-OPFS` | created, exhibit view opens |
+| **relaunch pre-flip** | **canary GONE.** Only "New exhibit" + the 6 examples |
+| `storage/` throughout | **8.0K — `salt` only.** Never grew, before or after authoring |
+| then boot current on that profile | `library/` written; **`migrated.json` ABSENT** |
+
+`opfs-to-folder.ts` writes the marker ONLY on a real copy — `no-source` writes nothing — so the
+absent marker means the migration found nothing to migrate. **That is correct behaviour, not a bug:
+there was nothing there.** The pre-flip build never persisted anything to OPFS on this WebKitGTK.
+
+**Do not record P2-b as passed.** What was actually established:
+
+1. **The migration's no-source path is correct** — it does not fabricate a marker, and the folder
+   store initialises cleanly over a profile with no OPFS content.
+2. **The migration's copy path is UNEXERCISED here** and cannot be exercised on this platform,
+   because the precondition (a persisted OPFS library) is unreachable. It would need a webview where
+   OPFS actually persists — macOS/Windows — or a hand-fabricated OPFS store, which is WebKit-internal
+   and not faithfully constructible.
+3. **The flip fixed a real Linux data-loss bug.** Pre-flip, authored work did not survive a relaunch
+   *at all*: the canary vanished and `storage/` never grew past `salt`. Post-flip, P2-a passes —
+   exhibits and media survive with `library.json` at 22,475 bytes. That contrast is measured on the
+   same machine, same webview, same profile path, and is the strongest argument for the flip that
+   exists. It also reframes the ticket: on Linux there was never a library to migrate, so the
+   migration is a safety net for other platforms rather than the Linux upgrade path.
+
+The pre-flip worktree is at `/tmp/archie-preflip` (detached at `61d070a`, deps installed, built) —
+`git worktree remove` it when done.
+
 ## STATE AT HANDOFF — everything below is MERGED AND PUSHED
 
 `origin/main` = `main` = **`1c435ff`**, 0/0. The whole desktop chain is on the remote: the
