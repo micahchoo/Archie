@@ -79,6 +79,83 @@ export function flattenExhibitNotes(data: {
 /** Stored search result — the index's `storeFields`, narrowed for callers. */
 export type StoredDoc = Pick<SearchDoc, "id" | "logicalId" | "tags" | "body">;
 
+/**
+ * WHERE a note lives, in the reader's own nouns (V106, Archie-9eeb).
+ *
+ * A result that says only what it found is half an answer: the reader can read the prose but has no
+ * idea which of twenty-one folios it is on. This is the finder's half of the address ladder — the
+ * NOUN half. It deliberately builds no hash: `ExhibitView.svelte:206` (`locus`) is the ONE address
+ * writer, and activating a result routes through `arriveAtNote` → `locusNote` → that derivation, so
+ * the finder never needs (and must never grow) an address model of its own.
+ */
+export type NoteLocus = {
+  objectId: string;
+  /** The object's authored label — what a reader calls it. Never a ULID. */
+  objectLabel: string;
+  /** Present only in a narrative, and only when ONE section activates this object (see below). */
+  sectionId?: string;
+  sectionTitle?: string;
+};
+
+/**
+ * Map every note in the exhibit to the place it lives.
+ *
+ * Object attribution is free: `annotationsByObject` / `readingAnnotationsByObject` are KEYED by
+ * object id, so the finder already knows which object a hit sits on. What it cannot know without
+ * `objects` is what that object is CALLED — hence the label lookup. Base pages win over reading
+ * overlays, matching `flattenExhibitNotes`'s de-dupe order, so a note carried in both is attributed
+ * once and identically.
+ *
+ * Section attribution is deliberately conservative. A note is anchored to an OBJECT; a section
+ * merely *activates* one, and a narrative spine may revisit the same object across several sections
+ * (`Section.objectId`, model.ts:189). When two sections share an object, no section owns the note —
+ * naming one of them would be a confident lie about where the reader will land. So a section is
+ * reported only when exactly one activates that object; otherwise the object name stands alone,
+ * which is true either way.
+ *
+ * An object with no known label yields NO entry rather than a ULID-shaped one: a locus a reader
+ * cannot read is worse than an honest absence, and the overlay renders nothing in that case.
+ */
+export function locateNotes(
+  data: {
+    annotationsByObject: Record<string, W3CAnnotation[]>;
+    readingAnnotationsByObject: Record<string, Record<string, W3CAnnotation[]>>;
+  },
+  objects: readonly { id: string; label: string }[],
+  sections?: readonly { id: string; title: string; objectId: string }[] | null,
+): Map<string, NoteLocus> {
+  const labelOf = new Map(objects.map((o) => [o.id, o.label]));
+
+  // Sections that activate each object. Only a SOLE occupant is reported (see the doc comment).
+  const sectionsByObject = new Map<string, { id: string; title: string }[]>();
+  for (const s of sections ?? []) {
+    const list = sectionsByObject.get(s.objectId);
+    if (list) list.push({ id: s.id, title: s.title });
+    else sectionsByObject.set(s.objectId, [{ id: s.id, title: s.title }]);
+  }
+
+  const out = new Map<string, NoteLocus>();
+  const place = (objectId: string, notes: W3CAnnotation[]): void => {
+    const objectLabel = labelOf.get(objectId);
+    if (objectLabel === undefined || objectLabel === "") return; // honest absence, never a ULID
+    const owning = sectionsByObject.get(objectId);
+    const sole = owning?.length === 1 ? owning[0] : undefined;
+    for (const a of notes) {
+      if (!a.id || out.has(a.id)) continue; // first wins — base before readings
+      out.set(a.id, {
+        objectId,
+        objectLabel,
+        ...(sole ? { sectionId: sole.id, sectionTitle: sole.title } : {}),
+      });
+    }
+  };
+
+  for (const [objectId, list] of Object.entries(data.annotationsByObject)) place(objectId, list);
+  for (const [objectId, byReading] of Object.entries(data.readingAnnotationsByObject))
+    for (const list of Object.values(byReading)) place(objectId, list);
+  return out;
+}
+
 /** PURE finder (Q-4): tags OR each other (union of any note carrying ≥1 active tag); a text query
  *  ANDs that union (narrows it to notes also matching the prose/tag search). No active tags + no
  *  query ⇒ everything (the open-overlay browse state). Extracted out of the overlay component so the
