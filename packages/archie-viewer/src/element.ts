@@ -51,7 +51,11 @@ import {
 // and undo the lazy `await import("./reader.js")` below.
 import { OfflineRemoteBlockedError } from "./reader-guards.js";
 import type { AvPlayerSurface } from "./av-player.js";
-import { createNoteCard, noteBodyHtml, type NoteCard } from "./note-card.js";
+// TYPE-ONLY (erased). Every call site is past the reader boundary, so the module itself is fetched
+// with `await import("./note-card.js")` in #openObject. A value import here would put its graph —
+// renderMarkdown, splitNoteMedia, the sheet — on the page-load path for code the gallery never runs
+// (.claude/rules/archie-viewer-eager-closure.md).
+import type { NoteCard } from "./note-card.js";
 import { resolveExhibitTarget, type ResolvedTarget } from "./target-resolve.js";
 import { resolveContentState } from "./content-state.js";
 import { embedHeightMessage, heightToPost, isFramed } from "./embed-autogrow.js";
@@ -524,10 +528,11 @@ export class ArchieViewerElement extends HTMLElement {
     // (commentOfAnnotation → renderMarkdown, the SANITIZED pipeline the full viewer uses). Created
     // before the mount so the overlay's first onSelect has a card to drive; torn down with the surface.
     // The card is a ROW under the canvas, not a float over its corner (ADR-0019's layout row).
+    const { createNoteCard } = await import("./note-card.js"); // LAZY, like the reader above
     this.#noteCard = createNoteCard(this.#root.querySelector<HTMLElement>(".reader-note") ?? host);
     const onSelect = (id: string | null): void => {
-      // noteBodyHtml returns "" for null/unknown ids → show() hides the card.
-      this.#noteCard?.show(noteBodyHtml(annotations, id));
+      // showNote resolves the id itself and hides on a null/unknown one.
+      this.#noteCard?.showNote(annotations, id);
       // V70's other direction: a mark clicked on the canvas highlights its row in the index.
       this.#chrome?.setSelected(id);
     };
@@ -563,6 +568,24 @@ export class ArchieViewerElement extends HTMLElement {
     };
     // The reading pane mounts AFTER the canvas so a mount failure still leaves the way out visible.
     await this.#mountAside(exhibit, object, section, () => annotations);
+
+    // ARRIVING AT A CITED NOTE MUST OPEN IT, not merely frame it.
+    //
+    // `#applyFragment` calls `surface.setSelected` + `fitBounds`, which paint the halo and move the
+    // camera — but `setSelected` is a PROGRAMMATIC state set and deliberately does not re-enter the
+    // overlay's `onSelect` (that would be a feedback loop), so nothing showed the body. The reader
+    // landed on the right region of the right object with an empty note pane.
+    //
+    // Found by the Archie-1820 finder's own smoke assertion, which travels to a hit on another
+    // object: the reader title changed correctly and the card stayed shut. It is NOT a finder bug —
+    // every `selectId` landing had it, so `<archie-viewer target="#/<slug>/a/<id>">`, the whole
+    // cite-ladder note rung, arrived silent too. One fix covers both because both arrive here.
+    //
+    // Placed after #mountAside so the chrome exists to take the row highlight in the same beat.
+    if (resolved?.selectId) {
+      this.#noteCard?.showNote(annotations, resolved.selectId);
+      this.#chrome?.setSelected(resolved.selectId);
+    }
   }
 
   /**
@@ -605,7 +628,7 @@ export class ArchieViewerElement extends HTMLElement {
         // (camera) — the ADR-0006 nav contract, the same pair a cite-ladder landing applies.
         this.#surface?.setSelected(id);
         this.#surface?.fitBounds(id);
-        this.#noteCard?.show(noteBodyHtml(notes(), id));
+        this.#noteCard?.showNote(notes(), id);
         // S1: on an AV object the embed owns no note card (the PLAYER owns one), so a row had nothing
         // to open — 5 rows rendered on ex-voynich.o12 and none of them was a door. Route it into the
         // player instead: seek to the note's cue and show its body, exactly as clicking that cue does.
@@ -621,6 +644,15 @@ export class ArchieViewerElement extends HTMLElement {
       onstep: (objectId) => {
         const next = exhibit.objects.find((o) => o.id === objectId);
         if (next) void this.#openObject(exhibit, next);
+      },
+      // A search hit on ANOTHER object (Archie-1820). Reuses the cite-ladder landing wholesale rather
+      // than inventing a second way to arrive: a `selectId` on a resolved object target is exactly
+      // what #applyFragment already applies post-mount (setSelected + fitBounds), so a hit lands on
+      // the note's own region — not on the object's top. Archie-9eeb's second half, for free, because
+      // target-resolve.ts is the embed's ONE address resolver and this adds no other.
+      onfind: (objectId, noteId) => {
+        const next = exhibit.objects.find((o) => o.id === objectId);
+        if (next) void this.#openObject(exhibit, next, { kind: "object", objectId, selectId: noteId });
       },
       onoverview: () => { this.#teardownSurface(); this.#setView({ kind: "exhibit", exhibit }); },
     });

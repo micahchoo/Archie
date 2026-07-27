@@ -8,7 +8,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { readingMarkerStyle } from "@render/core";
 import type { AObject, PortableExhibit, W3CAnnotation } from "@render/core";
-import { mountReaderChrome, previewOf, positionLabel, readingColourById, BASE_MARK_COLOUR } from "./reader-chrome.js";
+import { mountReaderChrome, previewOf, positionLabel, readingColourById, searchExhibit, BASE_MARK_COLOUR } from "./reader-chrome.js";
 
 const note = (id: string, comment: string): W3CAnnotation =>
   ({
@@ -36,7 +36,10 @@ function mount(ex: PortableExhibit, annotations: W3CAnnotation[], activeReading:
   const aside = document.createElement("div");
   const surface = document.createElement("div");
   document.body.append(aside, surface);
-  const calls = { select: [] as string[], reading: [] as (string | null)[], step: [] as string[], overview: 0 };
+  const calls = {
+    select: [] as string[], reading: [] as (string | null)[], step: [] as string[], overview: 0,
+    find: [] as { objectId: string; noteId: string }[],
+  };
   const chrome = mountReaderChrome(aside, surface, {
     exhibit: ex,
     object: ex.objects[0]!,
@@ -46,6 +49,7 @@ function mount(ex: PortableExhibit, annotations: W3CAnnotation[], activeReading:
     onreading: (id) => calls.reading.push(id),
     onstep: (id) => calls.step.push(id),
     onoverview: () => { calls.overview += 1; },
+    onfind: (objectId, noteId) => calls.find.push({ objectId, noteId }),
   });
   return { aside, surface, chrome, calls };
 }
@@ -242,5 +246,118 @@ describe("scrollIntoView is optional", () => {
     (row as unknown as { scrollIntoView?: unknown }).scrollIntoView = undefined;
     expect(() => chrome.setSelected("a1")).not.toThrow();
     vi.restoreAllMocks();
+  });
+});
+
+// ---- Archie-1820: the finder ---------------------------------------------------------------------
+//
+// Scoped exhibit: notes on THREE objects plus a reading-only note, so "searches the whole exhibit",
+// "carries the locus" and "is mode-independent" are separable claims rather than one lucky fixture.
+const findable = () =>
+  exhibit({
+    annotationsByObject: {
+      o1: [note("a1", "The first note about wheels"), note("a2", "The second note")],
+      o2: [note("b1", "Another mention of wheels, elsewhere")],
+      o3: [note("c1", "Nothing relevant here")],
+    },
+    readingAnnotationsByObject: { o1: { cipher: [note("r1", "A cipher reading of the wheels")] } },
+  });
+
+describe("searchExhibit — finding a note across the exhibit (Archie-1820)", () => {
+  it("finds notes on OTHER objects, not just the open one", () => {
+    const hits = searchExhibit(findable(), "wheels");
+    expect(hits.map((h) => h.id).sort()).toEqual(["a1", "b1", "r1"]);
+  });
+
+  it("every hit NAMES ITS OBJECT — the locus Archie-9eeb is open about", () => {
+    // The shell's finder renders a hit's body and tags and nothing else, so on a many-object exhibit
+    // every result reads as if it came from the same place. A hit that cannot say where it is is the
+    // defect; assert the locus, not merely that something matched.
+    const byId = Object.fromEntries(searchExhibit(findable(), "wheels").map((h) => [h.id, h]));
+    expect(byId["a1"]!.objectLabel).toBe("Plate one");
+    expect(byId["b1"]!.objectLabel).toBe("Plate two");
+    expect(byId["b1"]!.objectId).toBe("o2");
+  });
+
+  it("is MODE-INDEPENDENT: a note living only in a non-active reading is still findable", () => {
+    // search-index.ts:58-61 — the shell flattens every reading for the same reason. A finder scoped
+    // to the active layer quietly lies about what the exhibit contains.
+    expect(searchExhibit(findable(), "cipher").map((h) => h.id)).toEqual(["r1"]);
+  });
+
+  it("matches the words a READER sees, not the markup", () => {
+    const e = exhibit({ annotationsByObject: { o1: [note("a1", "see [the plate](https://x.test/plate.html)")] } });
+    expect(searchExhibit(e, "the plate").map((h) => h.id)).toEqual(["a1"]); // the link TEXT matches
+    expect(searchExhibit(e, "https")).toEqual([]);                          // the href does not
+  });
+
+  it("is case-insensitive, and an empty query matches nothing (not everything)", () => {
+    expect(searchExhibit(findable(), "WHEELS").length).toBe(3);
+    expect(searchExhibit(findable(), "   ")).toEqual([]);
+  });
+
+  it("de-dupes a note that appears in both the base and a reading", () => {
+    const dup = exhibit({
+      annotationsByObject: { o1: [note("a1", "shared wheels note")] },
+      readingAnnotationsByObject: { o1: { cipher: [note("a1", "shared wheels note")] } },
+    });
+    expect(searchExhibit(dup, "wheels").length).toBe(1);
+  });
+});
+
+describe("the finder in the pane (Archie-1820)", () => {
+  const rowsOf = (aside: HTMLElement) => [...aside.querySelectorAll(".rc-notes button")];
+
+  it("typing replaces the object's notes with exhibit-wide hits, each showing its object", () => {
+    const e = findable();
+    const { aside } = mount(e, e.annotationsByObject!["o1"]!);
+    expect(rowsOf(aside).length).toBe(2); // o1's own notes
+    const find = aside.querySelector<HTMLInputElement>(".rc-find")!;
+    find.value = "wheels";
+    find.dispatchEvent(new Event("input"));
+    const rows = rowsOf(aside);
+    expect(rows.length).toBe(3);
+    expect(rows.map((r) => r.querySelector(".rc-where")?.textContent)).toEqual([
+      "Plate one", "Plate one", "Plate two",
+    ]);
+  });
+
+  it("clearing the query restores the OPEN object's index", () => {
+    const e = findable();
+    const { aside } = mount(e, e.annotationsByObject!["o1"]!);
+    const find = aside.querySelector<HTMLInputElement>(".rc-find")!;
+    find.value = "wheels";
+    find.dispatchEvent(new Event("input"));
+    find.value = "";
+    find.dispatchEvent(new Event("input"));
+    expect(rowsOf(aside).length).toBe(2);
+    expect(aside.querySelector(".rc-where")).toBeNull(); // no locus line on the object's own notes
+  });
+
+  it("a hit ELSEWHERE travels (onfind); a hit HERE is an ordinary selection (onselect)", () => {
+    // The two are different journeys and must not collapse: onfind opens another object AND lands on
+    // the note, onselect only moves the camera on the object already open.
+    const e = findable();
+    const { aside, calls } = mount(e, e.annotationsByObject!["o1"]!);
+    const find = aside.querySelector<HTMLInputElement>(".rc-find")!;
+    find.value = "wheels";
+    find.dispatchEvent(new Event("input"));
+    const rows = rowsOf(aside) as HTMLButtonElement[];
+    rows[2]!.click(); // "Plate two"
+    expect(calls.find).toEqual([{ objectId: "o2", noteId: "b1" }]);
+    expect(calls.select).toEqual([]);
+    rows[0]!.click(); // "Plate one" — the open object
+    expect(calls.select).toEqual(["a1"]);
+    expect(calls.find.length).toBe(1); // unchanged: no travel needed
+  });
+
+  it("an empty result names the query back rather than showing a bare blank", () => {
+    const e = findable();
+    const { aside } = mount(e, e.annotationsByObject!["o1"]!);
+    const find = aside.querySelector<HTMLInputElement>(".rc-find")!;
+    find.value = "zzzznothing";
+    find.dispatchEvent(new Event("input"));
+    expect(rowsOf(aside).length).toBe(0);
+    expect(aside.querySelector(".rc-empty")!.textContent).toContain("zzzznothing");
   });
 });
