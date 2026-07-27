@@ -15,6 +15,26 @@ commits on local `main` that are **not pushed** (desktop `fs:allow-rename`, ledg
 architecture-doc count fix, its own handoff updates). `main` is checked out in
 `.claude/worktrees/merge-main`, which that session owns — **do not check it out here.**
 
+### ⚠ BRANCH FROM `origin/main`, NEVER `main` — the local ref is STALE
+
+Local `main` sits at **`879e519`**; `origin/main` is ahead of it. The merges in this effort were pushed
+with `git push origin HEAD:main`, **which does not move the local ref**, and local `main` is checked
+out in `.claude/worktrees/merge-main` (a peer session's), so it cannot be safely fast-forwarded from
+here — advancing a ref under a checked-out worktree leaves that worktree's files inconsistent with it.
+
+So `git checkout -b <branch> main` silently gives you a base two or more commits behind. Measured
+2026-07-26: `integrate/a5b1` was cut that way and came out **without the ratchet fix that had already
+been merged**. It was caught only because the editor flagged files as "modified" that showed my own
+committed work missing — not by any check.
+
+```
+git fetch origin && git checkout -b <branch> origin/main     # correct
+git checkout -b <branch> main                                # STALE base
+```
+
+Same for merging: `git merge origin/main`, not `git merge main`. Resolve properly by advancing local
+`main` once the `merge-main` worktree is free.
+
 **`main` = `1f9ae8b` and is GREEN — the red ratchet is merged.** All 10 Checks jobs plus Deploy
 pass at that SHA (verified against the SHA, not just the top of the run list). `gh-pages-build`,
 the job that was red, passes because the metric changed — **not** because its baseline was moved to
