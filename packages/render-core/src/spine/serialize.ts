@@ -316,24 +316,37 @@ export interface HistoryOutput {
  * The history sidecar: a per-logicalId AnnotationPage holding the FULL version chain
  * (citation-dereference targets) plus an index mapping logicalId -> page url.
  */
-export function toHistory(log: AnnotationLog, opts: SerializeOptions = {}): HistoryOutput {
-  const baseUrl = opts.baseUrl ?? "";
-  const historyBase = opts.historyBase ?? "annotations/history/";
-  const ids = citationIds(log, baseUrl);
+/**
+ * Group a log's deduped records by logicalId, each list sorted oldest-first (version, then rev as the
+ * tiebreak for concurrent same-version revisions). This IS a note's biography.
+ *
+ * Extracted from `toHistory` so the JSON history sidecar and the static archival page's version block
+ * (Archie-a1d4) read the same grouping and ordering. Two hand-rolled groupings that must agree is how
+ * the citation ids and the rendered version numbers would silently drift apart.
+ */
+export function recordsByLogicalId(log: AnnotationLog): Map<LogicalId, AnnotationRecord[]> {
   const byLogical = new Map<LogicalId, AnnotationRecord[]>();
   for (const r of dedupe(log)) {
     const arr = byLogical.get(r.logicalId);
     if (arr) arr.push(r);
     else byLogical.set(r.logicalId, [r]);
   }
+  for (const recs of byLogical.values()) recs.sort((a, b) => a.version - b.version || cmp(a.rev, b.rev));
+  return byLogical;
+}
+
+export function toHistory(log: AnnotationLog, opts: SerializeOptions = {}): HistoryOutput {
+  const baseUrl = opts.baseUrl ?? "";
+  const historyBase = opts.historyBase ?? "annotations/history/";
+  const ids = citationIds(log, baseUrl);
+  const byLogical = recordsByLogicalId(log);
   const index: Record<string, string> = {};
   const pages: Record<string, W3CAnnotationPage> = {};
   for (const [lid, recs] of byLogical) {
     const url = `${historyBase}${lid}.json`;
     index[lid] = url;
-    const items: W3CAnnotation[] = [...recs]
-      .sort((a, b) => a.version - b.version || cmp(a.rev, b.rev))
-      .map((r) => withDagMeta(withProvLink(recordToAnnotation(r, ids.get(r.rev)!), r.parent, ids), r));
+    // Already sorted by recordsByLogicalId; mapped in place.
+    const items: W3CAnnotation[] = recs.map((r) => withDagMeta(withProvLink(recordToAnnotation(r, ids.get(r.rev)!), r.parent, ids), r));
     pages[lid] = { "@context": WADM_CONTEXT, id: url, type: "AnnotationPage", items };
   }
   return { index, pages };

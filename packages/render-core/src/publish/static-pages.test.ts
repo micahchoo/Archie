@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { publishLibrary } from "./site.js";
 import { sitemapXml, exhibitPageHtml, libraryPageHtml } from "./static-pages.js";
 import { MemoryFilesystem } from "../fs/memory.js";
-import { appendNew, appendDelete } from "../spine/log.js";
+import { appendNew, appendEdit, appendDelete } from "../spine/log.js";
 import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import type { Library } from "../model/model.js";
 import type { AnnotationLog } from "../wadm/types.js";
@@ -410,5 +410,73 @@ describe("the rights ladder reaches the archival page (V103/V104)", () => {
     expect(h).toContain("LIBRARY-CREDIT-LINE");
     expect(h).toContain('<a rel="license" href="http://rightsstatements.org/vocab/InC/1.0/">In Copyright</a>');
     expect(h).toContain("<dt>Publisher</dt><dd>LIBRARY-PUBLISHER</dd>");
+  });
+});
+
+// Archie-a1d4 — the note's BIOGRAPHY on the archival page. Version-anchored citation needs prior
+// versions to be addressable in the artifact itself, not only in the JSON sidecar beside it.
+describe("version block — the note's biography (Archie-a1d4)", () => {
+  /** A library whose single note has been edited twice: v1 → v2 → v3 (the head). */
+  async function publishEditedNote(): Promise<{ fs: MemoryFilesystem; lid: string }> {
+    let log: AnnotationLog = [];
+    const a = appendNew(log, { target: canvas("a", "o1"), body: { type: "TextualBody", value: "draft" }, lastEditor: alice, modifiedAt: "2026-01-01T00:00:00.000Z", now: 1 });
+    log = a.log;
+    const lid = a.record.logicalId;
+    log = appendEdit(log, lid, { body: { type: "TextualBody", value: "second" }, lastEditor: alice, modifiedAt: "2026-02-02T00:00:00.000Z", now: 2 }).log;
+    log = appendEdit(log, lid, { body: { type: "TextualBody", value: "final reading" }, lastEditor: alice, modifiedAt: "2026-03-03T00:00:00.000Z", now: 3 }).log;
+
+    const library: Library = {
+      id: asLibraryId("lib"), title: "L",
+      exhibits: [{ id: asExhibitId("exA"), slug: "a", title: "A", objects: [{ id: asObjectId("o1"), source: "https://img/a.jpg", label: "F1", width: 4, height: 4 }] }],
+    };
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, library, () => log, { baseUrl: BASE });
+    return { fs, lid };
+  }
+
+  it("lists every PRIOR version under a durable anchor, and not the head", async () => {
+    const { fs, lid } = await publishEditedNote();
+    const html = await readText(fs, ["a", "index.html"]);
+    expect(html).toContain(`<li id="note-${lid}@v1"`);
+    expect(html).toContain(`<li id="note-${lid}@v2"`);
+    expect(html).not.toContain(`<li id="note-${lid}@v3"`); // the head is the article itself
+    expect(html).toContain("2 earlier versions");
+  });
+
+  it("carries each version's date, and NOT its superseded body", async () => {
+    const { fs } = await publishEditedNote();
+    const html = await readText(fs, ["a", "index.html"]);
+    expect(html).toContain('<time datetime="2026-01-01T00:00:00.000Z">');
+    expect(html).toContain('<time datetime="2026-02-02T00:00:00.000Z">');
+    // The current reading is on the page; the superseded ones are one dereference away, in the
+    // history sidecar. Reprinting them would bury the note under its own history.
+    expect(html).toContain("final reading");
+    expect(html).not.toContain("second");
+    expect(html).not.toContain(">draft<");
+  });
+
+  it("is ADDITIVE: the frozen #note-<logicalId> anchor still resolves to the article", async () => {
+    const { fs, lid } = await publishEditedNote();
+    const html = await readText(fs, ["a", "index.html"]);
+    // decision P-1: the anchor grammar is frozen. The block appends INSIDE the article, so the
+    // article keeps its id and every existing citation still lands on the same element.
+    expect(html).toContain(`<article id="note-${lid}">`);
+    const article = html.slice(html.indexOf(`<article id="note-${lid}">`));
+    const end = article.indexOf("</article>");
+    expect(article.slice(0, end)).toContain('<details class="versions">');
+  });
+
+  it("ZERO JS: the disclosure is a native <details>, so it opens with scripting off", async () => {
+    const { fs } = await publishEditedNote();
+    const html = await readText(fs, ["a", "index.html"]);
+    expect(html).toContain("<details class=\"versions\">");
+    expect(html).toContain("<summary>");
+    expect(html).not.toContain("<script>"); // the only script tag is the JSON-LD one (typed)
+  });
+
+  it("a NEVER-EDITED note gets no block at all (v1 has no biography to tell)", async () => {
+    const { fs } = await publishToMem();
+    const html = await readText(fs, ["a", "index.html"]);
+    expect(html).not.toContain('<details class="versions">');
   });
 });

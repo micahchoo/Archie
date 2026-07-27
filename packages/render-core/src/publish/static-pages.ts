@@ -24,6 +24,15 @@ export interface StaticPageOptions {
   /** The artifact's true publish time (ISO 8601). Threaded into JSON-LD `datePublished`/`dateModified`
    *  and the sitemap `<lastmod>`. Absent = those fields are omitted (the honest default). */
   publishedAt?: string;
+  /**
+   * A note's BIOGRAPHY: logicalId → every deduped record for it, oldest first (Archie-a1d4). Exactly
+   * what `recordsByLogicalId` returns and what the JSON history sidecar is built from — one grouping,
+   * so the rendered version numbers cannot drift from the citation ids.
+   *
+   * Absent = no version block, and the page is byte-identical to before. That matters: a publish
+   * without a log, and every pre-existing caller, must keep their current output.
+   */
+  history?: ReadonlyMap<string, readonly AnnotationRecord[]>;
 }
 
 /** The SEO head projection a page carries (Q-8): Open Graph + Twitter card + a canonical link + one
@@ -76,7 +85,7 @@ export const escapeBody = (md: string): string =>
 // One shared, deliberately minimal chrome: readable column, no script, archival tone.
 // Verdant Clearing palette (design/design.md v0.4): parchment ground, moss ink, hunter accent, amber
 // reading-label. System sans echoes LARAZ without shipping a webfont on this archival surface.
-const STYLE = `body{max-width:42rem;margin:2rem auto;padding:0 1rem;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55;color:#1A3C23;background:#F7F4EC}h1,h2{line-height:1.2}article{margin:1.5rem 0;padding:0.75rem 1rem;border-left:3px solid #2D5F3A;background:#EEF1E6}article .reading{font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;color:#9A7B39}article .tags,footer,.credit{color:#6B7D6A;font-size:0.9rem}a{color:#2D5F3A}dl.meta{margin:0.75rem 0;font-size:0.9rem}dl.meta dt{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;color:#6B7D6A}dl.meta dd{margin:0 0 0.5rem}`;
+const STYLE = `body{max-width:42rem;margin:2rem auto;padding:0 1rem;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55;color:#1A3C23;background:#F7F4EC}h1,h2{line-height:1.2}article{margin:1.5rem 0;padding:0.75rem 1rem;border-left:3px solid #2D5F3A;background:#EEF1E6}article .reading{font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;color:#9A7B39}article .tags,footer,.credit{color:#6B7D6A;font-size:0.9rem}a{color:#2D5F3A}dl.meta{margin:0.75rem 0;font-size:0.9rem}dl.meta dt{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;color:#6B7D6A}dl.meta dd{margin:0 0 0.5rem}details.versions{margin-top:0.5rem;font-size:0.85rem;color:#6B7D6A}details.versions summary{cursor:pointer}details.versions ol{margin:0.35rem 0 0;padding-left:1.25rem}`;
 
 /** The SEO head tags (Q-8): Open Graph + Twitter card + canonical + JSON-LD. Rendered only when a
  *  page supplies `meta`; the bare shell (no meta) keeps the minimal charset/viewport/title head. */
@@ -251,6 +260,44 @@ export function exhibitPageHtml(exhibit: Exhibit, records: AnnotationRecord[], o
     rid === undefined ? undefined : (readings.find((r) => r.id === rid)?.name ?? rid);
   const canvasIRI = (objId: string) => `${opts.baseUrl}${exhibit.slug}/canvas/${objId}`;
 
+  /**
+   * The version block: for a note past v1, a COLLAPSED list of its prior versions with a durable
+   * anchor each. Strictly additive to the frozen `#note-<logicalId>` grammar (decision P-1) — the
+   * article keeps its id and its existing children; this appends inside it, so every existing
+   * citation still resolves to the same element.
+   *
+   * `<details>` because it must be zero-JS: the disclosure is native, so a reader with scripting off
+   * (and a crawler) still reaches the content. Anchors are `note-<lid>@v<n>`; `@` is legal in a
+   * fragment and cannot collide with a logicalId, which is ULID-shaped.
+   *
+   * Prior versions carry the biography — when, and by whom when known — NOT their bodies. A page that
+   * reprinted every superseded body would bury the current reading under its own history, and the
+   * full record is one dereference away in the history sidecar this page's tree already ships.
+   */
+  const versionsHtml = (rec: AnnotationRecord): string => {
+    const all = opts.history?.get(rec.logicalId);
+    if (!all) return "";
+    const prior = all.filter((r) => r.version < rec.version);
+    if (prior.length === 0) return "";
+    const rows = prior.map((r) => {
+      const when = r.modifiedAt ? `<time datetime="${esc(r.modifiedAt)}">${esc(r.modifiedAt)}</time>` : "";
+      // "when available" is load-bearing: a solo library has no editor identity, and printing an
+      // empty by-line would read as a missing attribution rather than an absent concept.
+      const who = r.lastEditor ? `<span class="editor">${esc(r.lastEditor)}</span>` : "";
+      const sep = when && who ? " · " : "";
+      return `<li id="note-${esc(rec.logicalId)}@v${r.version}">v${r.version}${when || who ? " — " : ""}${when}${sep}${who}</li>`;
+    });
+    const n = prior.length;
+    return [
+      `<details class="versions">`,
+      `<summary>${n} earlier version${n === 1 ? "" : "s"}</summary>`,
+      `<ol>`,
+      ...rows,
+      `</ol>`,
+      `</details>`,
+    ].join("\n");
+  };
+
   const noteHtml = (rec: AnnotationRecord): string => {
     const ann = recordToAnnotation(rec, rec.logicalId);
     const comment = commentOfAnnotation(ann);
@@ -263,6 +310,7 @@ export function exhibitPageHtml(exhibit: Exhibit, records: AnnotationRecord[], o
       render(comment),
       ...(tags.length > 0 ? [`<div class="tags">${tags.map((t) => `#${esc(t)}`).join(" ")}</div>`] : []),
       ...(live ? [`<div class="tags"><a href="${esc(live)}">View on the image</a></div>`] : []),
+      ...(versionsHtml(rec) ? [versionsHtml(rec)] : []),
       `</article>`,
     ].join("\n");
   };

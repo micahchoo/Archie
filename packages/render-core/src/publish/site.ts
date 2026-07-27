@@ -32,7 +32,7 @@ import type { SectionLog } from "../spine/structure.js";
 import { asExhibitId, asLibraryId } from "../wadm/brand.js";
 import { toHistory } from "../spine/serialize.js";
 import { projectHeads } from "../spine/heads.js";
-import { headsPageFromRecords, headsPagesByReading, citationIdMap, targetSource } from "../spine/serialize.js";
+import { headsPageFromRecords, headsPagesByReading, citationIdMap, targetSource, recordsByLogicalId } from "../spine/serialize.js";
 import { stamp } from "../migrate/migrate.js";
 import { ARCHIE_LIBRARY_MARKER } from "./marker.js";
 import { mapLimit, PUBLISH_CONCURRENCY } from "../concurrency.js";
@@ -644,7 +644,10 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     // Its `sections` also carry the resolved `archie:` cites, so section prose on the archival page
     // stops shipping raw refs. Everything else the page reads (title, summary, rights,
     // requiredStatement, readings, object labels and ids) is copied through untouched.
-    await writeText(exDir, "index.html", exhibitPageHtml(manifestExhibit, htmlRecords, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.renderBody !== undefined ? { renderBody: opts.renderBody } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
+    // The note biography (Archie-a1d4): the SAME grouping the history sidecar above was built from,
+    // so a rendered "v2" and the citation id minted for v2 cannot disagree.
+    const historyByLogical = recordsByLogicalId(log);
+    await writeText(exDir, "index.html", exhibitPageHtml(manifestExhibit, htmlRecords, { baseUrl, history: historyByLogical, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.renderBody !== undefined ? { renderBody: opts.renderBody } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
   });
   // Library landing + sitemap (ADR-0014): the human/crawler entry the data repo never had.
   await writeText(root, "index.html", libraryPageHtml(library, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
