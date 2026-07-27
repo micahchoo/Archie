@@ -10,8 +10,33 @@ Worktrees `.claude/worktrees/chrome-occlusion` (driver) and `.claude/worktrees/m
 
 ## CURRENT STATE — read this and nothing else for state
 
-**`origin/main` = local `main` = `7ee0b82`** (16:10). The fixture slice is MERGED; the dock slice is
-under review and NOT merged.
+**Local `main` = `c10307c`; `origin/main` = `8841c1b`.** They differ: a concurrent session has seven
+commits on local `main` that are **not pushed** (desktop `fs:allow-rename`, ledger prunes, an
+architecture-doc count fix, its own handoff updates). `main` is checked out in
+`.claude/worktrees/merge-main`, which that session owns — **do not check it out here.**
+
+**`main` = `1f9ae8b` and is GREEN — the red ratchet is merged.** All 10 Checks jobs plus Deploy
+pass at that SHA (verified against the SHA, not just the top of the run list). `gh-pages-build`,
+the job that was red, passes because the metric changed — **not** because its baseline was moved to
+accommodate it.
+
+`main` moved twice under this work. The sequence, because the next reader will otherwise mistrust
+the merge: built off local `main@c10307c` → branch green at `f9aa11e` → `origin/main` had advanced
+to `879e519` (a peer's prototype/doc deletions) → merged that in, file sets disjoint asserted by
+`comm -12` (empty) → **re-ran the ratchet and the scripts suite after the merge** rather than
+assuming deletions were inert → fast-forwarded. `fix/studio-eager-ratchet` still exists and is
+identical to `main`; it can be deleted.
+
+**Dispatched and in flight:** `rights-metadata-a5b1` (worktree-isolated, branch
+`fix/a5b1-rights-metadata`) on Archie-a5b1 — V103/V104. Its first job is diagnostic: separate the
+SEED gap from the RENDER gap, which the ticket notes nobody has done and which have opposite fixes.
+Territory-fenced away from canvas chrome, `smoke.mjs`, `bundle-size.mjs`, studio's vite config and
+`checks.yml`.
+
+**Corpus sweep landed:** `ledgers/PRIORART-chrome-placement-2026-07-26.md`. See below — it changes
+what ADR-0019 is allowed to claim.
+
+The fixture slice is MERGED; the dock slice is under review and NOT merged.
 
 | sha | what |
 | --- | --- |
@@ -23,7 +48,47 @@ under review and NOT merged.
 | `a440721` | the flake fix that merge shipped (see below) |
 | `6dec59b`, `7ee0b82` | `a-green-run-is-one-sample.md` + the counting-trap sharpenings |
 
-### ⚠ `main` IS RED, AND IT IS NOT FROM OUR WORK
+### ✅ RESOLVED — the ratchet now measures the load path (was: `main` IS RED)
+
+**Fixed on `fix/studio-eager-ratchet`; the section below is the diagnosis, kept because it is the
+evidence.** The eager/lazy split was taken, not the baseline raise. What shipped:
+
+- `apps/studio/vite.config.ts` gains `build.manifest: true` — nothing serves or reads it; it exists
+  so the ratchet can walk the entry's static closure.
+- `scripts/lib/eager-closure.mjs` walks Vite's manifest from every `isEntry` following `imports` and
+  **never `dynamicImports`** — the same boundary `packages/archie-viewer/build.mjs:139` draws off
+  esbuild's metafile (`kind === "import-statement"`). Extracted to `scripts/lib/` so it is testable
+  without a dist; seven cases, including "the lazy chunk's static subtree stays out" and "one static
+  edge brings the whole subtree in".
+- Both metrics ratchet per app. Studio: **454.3 KB eager / 875.1 KB total** — 420.8 KB of the dist
+  is lazy. Viewer is Astro and multi-page, emits no manifest, keeps totals only (a stated gap).
+- A baseline that exists with **no measurement beside it** is a FAILURE, not a skip — otherwise
+  deleting `build.manifest` would silently retire the gate.
+- The total baseline moved 558.8 → 875.1 **deliberately, in that commit**, and only because the
+  metric that constrains the load path now exists beside it.
+
+**Red-green, measured, not asserted.** A static `import "@render/archie-viewer/single?raw"` in
+`main.ts`, rebuilt:
+
+```
+ok    apps/studio dist (js+css gz) [total]     875.1KB → 875KB   (Δ -0.1KB, allowed +87.5KB)
+FAIL  apps/studio dist (js+css gz) [eager]     454.3KB → 729.1KB (Δ +274.8KB, allowed +45.4KB)
+```
+
+**Total moved −0.1 KB while 274.8 KB landed on the load path.** That is the blindness, in this
+repo's own numbers, in the direction that matters. Exit 1 confirmed directly — the first reading was
+`exit=0` because `$?` after a pipe is `tail`'s status, which is the same "name the question the
+probe answers" trap the rules describe. Removing the manifest also correctly fails. Restored, green
+again, from a full `scripts/build-gh-pages.sh` (the exact CI build path).
+
+**A second gate was found switched off while doing this.** `node --test` on a glob matching
+**nothing** prints `tests 0` and **exits 0**. CI's `unit-scripts` job ran
+`node --test scripts/lib/*.test.mjs` bare, so renaming that directory would have left the job green
+under a name that still read as enforcement. It now refuses an empty match and echoes the files it
+runs; the floor is *derived* (>0 files found), never a stored count. Found the honest way: my own
+first run of the new suite reported 0 tests / exit 0 because my shell was in `apps/studio`.
+
+### ⚠ HISTORY — the diagnosis that led there
 
 ```
 FAIL  apps/studio dist (js+css gz)  558.8KB → 875.1KB (Δ +316.3KB, allowed +55.9KB)
@@ -45,6 +110,33 @@ Three options, put to the human, undecided at time of writing: raise the studio 
 the move the rules warn about — a gate satisfied by moving its own reference); give studio's ratchet
 an **eager/lazy split** like the embed's (recommended — passes honestly and makes the metric answer
 the question people think it asks); or leave it red (not viable, it blocks the dock merge).
+**Taken: the split.** One correction to the diagnosis above, since a reader will otherwise carry the
+wrong file: the lazy reach is `publish-flows.svelte.ts:402`,
+`import("@render/archie-viewer/single?raw")` — a direct dynamic import of the package subpath, not
+`import("./single-file-export.js")`. And it is not the only lazy weight: `import("utif2")`
+(`tiff-transcode.ts:36`) is another 39 KB gz. Together ~319 KB of the +316.3 KB.
+
+### PRIOR ART — ADR-0019 cannot claim a "corpus default"
+
+`ledgers/PRIORART-chrome-placement-2026-07-26.md` (universalviewer, mirador, annomea, quire; none
+previously swept, every line opened at the cited line). Across seven systems the count is **2 dock /
+3 place something over the canvas / 2 abstain**.
+
+The result worth knowing is **mirador**, which splits by chrome *class* rather than taste:
+structural navigation docks (`Window.jsx:96-131`, a persistent Drawer at `position: relative
+!important`) while the canvas's own zoom/nav bar floats (`WindowCanvasNavigationControls.jsx:18-31`,
+`position:absolute; bottom:0; z-index:50` at 50% alpha, a child of the OSD section).
+
+So the claim that survives: **structural chrome docks wherever a system has any; instrument chrome
+routinely floats** — which makes Archie's second half a deliberate departure, not a convention.
+The ledger carries the exact ADR sentence. **annomea is the honest counter-example even to the
+narrowed form** — it floats a 420 px narrative pane with zero inset compensation, and that belongs
+in the ADR too.
+
+The sweep also corrects **BLOCKER 1 by one word**: `_esper.scss:175` is `position: relative`; the
+`absolute` at `:179-184` is gated on `.esper.overlay-mode` (applied at `esper/container.js:39`). The
+tropy citation is right about the mechanism and dies on contact with line 175 if phrased
+unconditionally. Corrected sentence is in the ledger.
 
 ### The flake that reached `main`, and the rule it earned
 
@@ -62,7 +154,50 @@ answer different questions, and neither answers the other's.**
 sequenced AFTER the dock work because `--finder-h`/`--topbar-h` do not survive it — the dock retires
 both.
 
-### THE DOCK SLICE — REVIEWED. Code approved; two citation BLOCKERs open.
+### THE DOCK SLICE — review items ALL CLOSED at `e956e10`; one NEW defect open
+
+**Both blockers and all should-fixes are done** on `ux/dock-chrome-recovered` (worktree
+`.claude/worktrees/dock-chrome-solo`), gates at `e956e10`: typecheck 6/6 · viewer `check:svelte`
+1523 0/0 · studio `check` 1179 0/0 · vitest viewer 184 / render-mount 191 / archie-viewer 185 ·
+smoke **PASS 45/45, 44/44 labels** · viewer e2e **139/1** · `dist/` clean after rebuild+sync.
+
+B1 (tropy) and B2 (clover's `Main`) were both re-verified from source by the author, who also
+diagnosed B2's own cause in the ADR rather than quietly correcting it: *opened the file, confirmed
+what `Main` is, did not grep where it is used* — inside the commit that was fixing the previous bad
+citation. S2 is the one worth carrying: `boxes.length >= N` is now a **named REQUIRED set** in both
+`occlusion.spec.ts` and `smoke.mjs`, red-greened (renaming `.canvas-dock` now FAILS with
+`docked chrome that MUST be on screen is absent: .canvas-dock`; it was green before).
+
+**⚠ NEW DEFECT, open, and it is a design call — not a test bug.** The 1 failure in 139 is
+`selection.spec.ts:96` "a REAL mouse click on a mark opens its note", sampled at **2 failures in 8**.
+Measured at 1280×720 on the painted `screenshots` canvas:
+
+```
+with the note open   .openseadragon-canvas  y 114  h 416     .note-dock 141px
+after Escape         .openseadragon-canvas  y 114  h 557     .note-dock gone
+                                             Δ h  +141
+```
+
+Dismissing the note grows the canvas by the note row's height, **OSD re-fits, and the image moves**.
+The test measures a halo's screen box, presses Escape, then clicks that same pixel cold — its
+premise ("dismiss, leaving the image exactly where it is") was true pre-dock, when the card floated.
+The dock invalidates it. Three options: reserve the row permanently (canvas pays ~141px always,
+contradicting the `:empty` gating); accept the reflow (the camera shifts under the cursor); or give
+the space back without re-fitting (`preserveImageSizeOnResize`).
+
+**Author is measuring the third under a scope grant to `@render/mount` OSD config.** The decision
+rule given: *if the fix is right, the test becomes true again on its own terms and needs no edit* —
+its premise is a statement about what the reader experiences, not a test artifact. Acceptance
+criterion is the **halo's** screen box unchanged (±1px) while the canvas grows, sampled ≥20×;
+`preserveImageSizeOnResize` preserves *size* and says nothing about *anchor*, so a re-center would
+move the halo by half the delta and means option 3 failed. If it fails, options 1 and 2 go to the
+human — that one is not the fleet's to call.
+
+**Also worth a grep before trusting the OSD option:** check whether the resize path here is
+`autoResize`, or whether `read-mount`/`createMount` drives its own `fitBounds` on container change.
+If we re-fit ourselves, the OSD option never reaches it and the fix is in our code.
+
+### ⚠ HISTORY — the review as delivered (two citation BLOCKERs, since closed)
 
 Report: `ledgers/REVIEW-canvas-chrome-dock-2026-07-26.md` (preserved on `main` at `cac7605`).
 **Verdict: approve the code, fix the evidence.**
