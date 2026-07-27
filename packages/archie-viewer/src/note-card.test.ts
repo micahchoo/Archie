@@ -137,7 +137,7 @@ describe("createNoteCard — show renders the body, hide/empty conceals it", () 
     expect(h.querySelector(".archie-note-card")).toBeNull();
     // The layer mounts on the ROOT (it covers the whole element), so a destroy that only removed the
     // card would leak one layer per object open.
-    expect(h.getRootNode().querySelector(".archie-note-sheet-layer")).toBeNull();
+    expect((h.getRootNode() as ShadowRoot).querySelector(".archie-note-sheet-layer")).toBeNull();
   });
 });
 
@@ -272,7 +272,7 @@ describe("createNoteCard — the reading sheet (Archie-1820)", () => {
     card.showNote([annoWith("m", MEDIA_NOTE)], "m");
     h.querySelector<HTMLButtonElement>(".archie-note-media button.tile")!.click();
     expect(sheetLayer(h).hidden).toBe(false);
-    expect(h.getRootNode().querySelectorAll("[aria-modal='true']").length).toBe(1);
+    expect((h.getRootNode() as ShadowRoot).querySelectorAll("[aria-modal='true']").length).toBe(1);
   });
 
   it("the card is HIDDEN, NOT UNMOUNTED, while the sheet is open", () => {

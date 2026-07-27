@@ -116,6 +116,14 @@ const NOTE_STYLES = `
      anyway, and escaping to document.body (the shell's ProseCites portal trick) would leave the
      shadow root and lose every token this file styles against. */
   .archie-note-sheet-layer { position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; }
+  /* MUST come with the rule above, and must stay. A class selector outranks the UA's '[hidden] {
+     display: none }', so 'display: grid' alone leaves the layer laid out at all times — a
+     full-element transparent div at z-index 60, silently eating every click on the canvas beneath it.
+     recipes/smoke.mjs caught exactly that: the region hit-test started returning the layer, and
+     'a real mouse click on a region opens its note' went red. Same shape as the OSD overlay wrapper
+     in .claude/rules/osd-overlay-wrapper.md — an invisible box that is nonetheless the topmost hit
+     target. Any future rule that sets 'display' on a toggled element needs its own [hidden] pair. */
+  .archie-note-sheet-layer[hidden] { display: none; }
   .archie-note-sheet-scrim { position: absolute; inset: 0; background: var(--moss-shadow); opacity: .55; }
   /* Scrim and sheet are SIBLINGS, not nested — the shell's idiom (NoteLightbox.svelte:38/43,
      ReadingSheet.svelte:48/49). That is precisely why no stopPropagation appears anywhere here:
