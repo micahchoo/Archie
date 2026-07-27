@@ -314,3 +314,41 @@ describe("pickableProperties", () => {
     expect(pickableProperties([], "zzz")).toEqual([]);
   });
 });
+
+// Archie-d25f ruling 3: the demotion record is PROVENANCE about a value, so it survives exactly as
+// long as that value does. These pin both halves — a test that only asserted the drop would pass
+// against code that never carried it in the first place.
+describe("demoted-entry provenance through the editor (Archie-d25f)", () => {
+  const demoted: MetadataEntry = { label: "Title", value: "MS 408", sourceProperty: "dcterms:title" };
+
+  it("an UNTOUCHED demoted row re-exports its source property byte-faithfully", () => {
+    expect(toEntries(seedRows([demoted], "object"))).toEqual([demoted]);
+  });
+
+  it("EDITING the value drops the source property — the record no longer describes this datum", () => {
+    const rows = seedRows([demoted], "object");
+    rows[0]!.value = "MS 409";
+    const out = toEntries(rows);
+    expect(out[0]).not.toHaveProperty("sourceProperty");
+    expect(out[0]!.value).toBe("MS 409");
+    // …and it must NOT have become a typed dcterms:title carrying a value its source never had.
+    expect(out[0]).not.toHaveProperty("property");
+  });
+
+  it("RELABELLING is not an edit for this purpose — the property/value pairing still holds", () => {
+    const rows = seedRows([demoted], "object");
+    rows[0]!.label = "Work title";
+    expect(toEntries(rows)[0]!.sourceProperty).toBe("dcterms:title");
+  });
+
+  it("editing the value and then typing it BACK restores the record (it describes the value, not the act)", () => {
+    const rows = seedRows([demoted], "object");
+    rows[0]!.value = "MS 409";
+    rows[0]!.value = "MS 408";
+    expect(toEntries(rows)[0]!.sourceProperty).toBe("dcterms:title");
+  });
+
+  it("sameEntries sees a provenance-only difference (so re-seeding can't silently eat it)", () => {
+    expect(sameEntries([demoted], [{ label: "Title", value: "MS 408" }])).toBe(false);
+  });
+});

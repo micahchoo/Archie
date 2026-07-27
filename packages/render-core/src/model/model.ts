@@ -3,6 +3,9 @@
 // (manifest/collection/exhibits.json) derive from. Exhibit-nested ownership (ADR-0001 / Q-1):
 // an Exhibit owns its Objects; there is no shared object pool.
 
+// Safe by construction: dcterms.ts is a leaf (it imports nothing), so this cannot cycle.
+import { dctermsLabel, METADATA_EXCLUDED_PROPERTIES } from "./dcterms.js";
+import type { CarryDisposition } from "./carry.js";
 import type { TileSourceDescriptor } from "../iiif/resolve.js";
 import type { ExhibitId, LibraryId, ObjectId } from "../wadm/brand.js";
 
@@ -72,6 +75,20 @@ export interface MetadataEntry {
   label?: string;
   /** The entry's value (plain text). */
   value: string;
+  /**
+   * PROVENANCE, not a claim: the dcterms property this entry arrived carrying, when the read boundary
+   * DEMOTED it to verbatim (Archie-d25f / decided in Archie-aafd). Set only by
+   * `sanitizeMetadataEntries`, only for properties in `METADATA_EXCLUDED_PROPERTIES`, and never
+   * authored in Studio.
+   *
+   * Why it exists: Archie is an archival tool, so an untouched foreign tree must round-trip byte-
+   * faithful — serialize writes the source property back exactly as it came in. Why it is dropped on
+   * edit: the record says "this arrived as dcterms:title with THIS value". Once the curator changes
+   * the value it is no longer that datum, and re-emitting a typed `dcterms:title` carrying a value its
+   * source never had would be the two-disagreeing-surfaces failure the exclusion set exists to
+   * prevent — with Archie's name on it.
+   */
+  sourceProperty?: string;
 }
 
 /** Is `v` a well-formed {@link MetadataEntry}? `value` a string, at least one of property/label a
@@ -92,20 +109,58 @@ export function isMetadataEntry(v: unknown): v is MetadataEntry {
 
 /**
  * Read-boundary filter for an untrusted `metadata` array: keep the well-formed entries (re-built to
- * exactly the three known fields), SKIP the malformed ones — per-item tolerant, never throw (data-
- * integrity contract #2: corrupt ≠ empty, and one bad entry must not void its siblings). Returns
- * `undefined` for a non-array or an array with no valid entries, so callers spread it conditionally
- * and an absent/empty field stays byte-absent.
+ * exactly the known fields), SKIP the malformed ones — per-item tolerant, never throw (data-integrity
+ * contract #2: corrupt ≠ empty, and one bad entry must not void its siblings). Returns `undefined`
+ * for a non-array or an array with no valid entries, so callers spread it conditionally and an
+ * absent/empty field stays byte-absent.
+ *
+ * DEMOTION (Archie-d25f, decided in Archie-aafd). `isMetadataEntry` validates only the `dcterms:`
+ * prefix, so a foreign `.archie.zip` carrying an EXCLUDED property — one that collides with a native
+ * typed slot, like `dcterms:title` — used to pass straight through into an editable Studio row that
+ * `metadataRows` rule 1 then dropped on display. The curator could type into a field that rendered
+ * nowhere: an invisible-edit trap, worse than either rejecting or displaying.
+ *
+ * So an excluded property is DEMOTED here to a verbatim entry — property stripped, value kept under
+ * its vocabulary label. Lossless in the value, renders on the page, never claims the native slot, so
+ * disjointness holds. `iiif-import.ts` already applies exactly this rule to IIIF imports; this makes
+ * the zip path and the import path ONE rule rather than two that can drift.
+ *
+ * `isMetadataEntry` is a type GUARD and cannot transform — the demotion is a normalization step
+ * beside it, deliberately not inside it.
  */
+// Carry sentinel for the sanitize boundary (`.claude/rules/render-core-data-integrity.md` rule 3).
+// Every MetadataEntry field is classified here, so adding a field to the type without deciding what
+// this read boundary does with it is a COMPILE error rather than a field that silently stops
+// round-tripping. `sourceProperty` is the field that made this sentinel necessary.
+const _sanitizeEntryCarry = {
+  property: "carry", // dropped ONLY on the demotion branch, where it moves to sourceProperty
+  label: "carry",
+  value: "carry",
+  sourceProperty: "carry", // minted on demotion; carried through on re-read so a 2nd save still round-trips
+} satisfies Record<keyof MetadataEntry, CarryDisposition>;
+
 export function sanitizeMetadataEntries(v: unknown): MetadataEntry[] | undefined {
   if (!Array.isArray(v)) return undefined;
   const out: MetadataEntry[] = [];
   for (const item of v) {
     if (!isMetadataEntry(item)) continue;
+    const excluded = item.property !== undefined && METADATA_EXCLUDED_PROPERTIES.has(item.property);
+    if (excluded) {
+      // Label precedence matches the IIIF-import precedent: the third party's own wording wins when
+      // present (an alias they chose is data), else the vocabulary's preferred label. One of the two
+      // always exists — a demoted entry with no label would be invisible AND unaddressable, and
+      // `dctermsLabel` covers every member of the exclusion set.
+      const label = item.label?.trim() || dctermsLabel(item.property!) || item.property!.slice("dcterms:".length);
+      out.push({ label, value: item.value, sourceProperty: item.property! });
+      continue;
+    }
     out.push({
       ...(item.property !== undefined ? { property: item.property } : {}),
       ...(item.label !== undefined ? { label: item.label } : {}),
       value: item.value,
+      // Carried through, not minted: a tree Archie itself wrote already holds the provenance record,
+      // and dropping it here would un-round-trip on the SECOND save.
+      ...(typeof (item as MetadataEntry).sourceProperty === "string" ? { sourceProperty: (item as MetadataEntry).sourceProperty! } : {}),
     });
   }
   return out.length > 0 ? out : undefined;

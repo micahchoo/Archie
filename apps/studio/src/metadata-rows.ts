@@ -33,6 +33,18 @@ export interface MetadataRow {
   /** Display-label override, or the sole label of a custom row. */
   label?: string;
   value: string;
+  /**
+   * PROVENANCE carried through the editor, never authored (Archie-d25f). Set when the read boundary
+   * demoted an excluded dcterms property to verbatim; `toEntries` writes it back so an untouched
+   * foreign tree round-trips byte-faithful.
+   */
+  sourceProperty?: string;
+  /**
+   * The value this row arrived with. The provenance record means "arrived as `sourceProperty` with
+   * THIS value", so it survives only while the value is unchanged — this is what `toEntries` compares
+   * against. Editor-local: never persisted, never part of an entry.
+   */
+  sourceValue?: string;
 }
 
 let rowSeq = 0;
@@ -90,6 +102,9 @@ export function seedRows(entries: readonly MetadataEntry[] | undefined, level: M
         ...(e.property !== undefined ? { property: e.property } : {}),
         ...(e.label !== undefined ? { label: e.label } : {}),
         value: e.value,
+        // Carry the demotion record AND the value it describes, so an untouched row re-exports what
+        // came in and an edited one does not (Archie-d25f ruling 3).
+        ...(e.sourceProperty !== undefined ? { sourceProperty: e.sourceProperty, sourceValue: e.value } : {}),
       }),
     );
   }
@@ -109,10 +124,17 @@ export function toEntries(rows: readonly MetadataRow[]): MetadataEntry[] {
     if (value === "") continue;
     const label = overrideLabelOf(r);
     if (r.property === undefined && label === undefined) continue;
+    // RULING 3 (Archie-d25f): the provenance record survives only while the VALUE is untouched. It
+    // asserts "this arrived as <sourceProperty> with this value"; once the curator changes the value
+    // that is no longer true, and re-exporting the typed property would have Archie publishing a
+    // `dcterms:title` claim carrying a value its source never had. A relabel is NOT an edit for this
+    // purpose — the label is display, the pairing still holds.
+    const keepsProvenance = r.sourceProperty !== undefined && value === r.sourceValue;
     out.push({
       ...(r.property !== undefined ? { property: r.property } : {}),
       ...(label !== undefined ? { label } : {}),
       value,
+      ...(keepsProvenance ? { sourceProperty: r.sourceProperty! } : {}),
     });
   }
   return out;
@@ -124,7 +146,7 @@ export function sameEntries(a: readonly MetadataEntry[], b: readonly MetadataEnt
   if (a.length !== b.length) return false;
   return a.every((x, i) => {
     const y = b[i]!;
-    return x.property === y.property && x.label === y.label && x.value === y.value;
+    return x.property === y.property && x.label === y.label && x.value === y.value && x.sourceProperty === y.sourceProperty;
   });
 }
 
