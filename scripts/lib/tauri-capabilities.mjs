@@ -109,6 +109,130 @@ export function auditCapabilities(bridgeSource, manifest) {
   return { ok: unmapped.length === 0 && missing.length === 0, methods, unmapped, missing };
 }
 
+// ---------------------------------------------------------------------------------------------
+// SCOPE (Archie-7b48). A second, independent way the manifest can be wrong — and the permission
+// audit above is structurally blind to it.
+//
+// Granting `fs:allow-exists` says the COMMAND may run. It says nothing about WHICH PATHS it may run
+// on. Tauri matches scope globs with a leading-dot rule: `**` does NOT match a path component that
+// begins with a dot. `$APPDATA/**` therefore covers `library/library.json` but NOT
+// `library/exhibits/<slug>/assets/.bake-schema` — note it covers the dots in `.local` only because
+// `$APPDATA` expands to a LITERAL path, so no wildcard has to match them. Measured on a packaged
+// build: `fs.exists()` on that marker was refused as `forbidden path`, the asset save job rejected
+// AFTER its bytes had already landed, and the ingest reported "couldn't store on this device — free
+// some space" on a disk with ~1 TB free. Every permission the audit above checks was granted.
+//
+// DERIVED, not hand-listed, for the same reason the method list is: the dot-segments come from the
+// app's own `getFile(…)` / `getDirectory(…)` call sites. Writing a new hidden file or dotdir with no
+// matching scope entry is then a hard failure rather than a silent runtime refusal.
+
+/** A `.dotname` path segment — a hidden FILE or DIRECTORY the app asks the filesystem for. */
+const DOT_SEGMENT = /^\.[A-Za-z0-9][\w.-]*$/;
+
+/**
+ * Dot-prefixed path segments the app hands to `getFile` / `getDirectory`.
+ *
+ * Two forms are recognised, because both occur: a bare literal (`getDirectory(".archie-cache", …)`)
+ * and a module const (`const SCHEMA_MARKER = ".bake-schema"` → `getFile(SCHEMA_MARKER, …)`). The
+ * const indirection is followed ONE level, per file — enough for the real call sites and short of
+ * pretending this is a type checker.
+ *
+ * Deliberately scoped to those two method names rather than "any string starting with a dot": file
+ * EXTENSIONS (".json", ".jpg") and the temp-write SUFFIX (".tmp-") are dot-strings that are not path
+ * segments, and a check that flagged them would be noise. A suffix is safe anyway — the leading-dot
+ * rule is about a component's FIRST character.
+ *
+ * @param {{path: string, text: string}[]} sources app + render-core TypeScript sources
+ * @returns {{segment: string, path: string}[]} unique segments with the file that asks for them
+ */
+export function dotPathSegments(sources) {
+  const found = new Map();
+  for (const { path, text } of sources) {
+    const consts = new Map();
+    for (const m of text.matchAll(/\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*["'](\.[^"']*)["']/g)) {
+      consts.set(m[1], m[2]);
+    }
+    for (const m of text.matchAll(/\bgetFile|\bgetDirectory/g)) {
+      // Read the first argument as written: a quoted literal, or a bare identifier.
+      const rest = text.slice(m.index + m[0].length);
+      const arg = /^\s*\(\s*(?:["'](?<lit>[^"']*)["']|(?<ident>[A-Za-z_$][\w$]*))/u.exec(rest);
+      if (!arg?.groups) continue;
+      const value = arg.groups.lit ?? consts.get(arg.groups.ident ?? "");
+      if (typeof value === "string" && DOT_SEGMENT.test(value) && !found.has(value)) {
+        found.set(value, { segment: value, path });
+      }
+    }
+  }
+  return [...found.values()].sort((a, b) => a.segment.localeCompare(b.segment));
+}
+
+/**
+ * Scope roots the manifest wildcards over, e.g. `$APPDATA/**` → `$APPDATA`.
+ *
+ * The root must be LITERAL — a prefix containing no wildcard of its own. Without that condition the
+ * dot-globs this module requires (`$APPDATA/**\/.*\/**`) also end in `/**`, so they would be read as
+ * roots needing their own dot-coverage, and the requirement would regress infinitely. Caught by the
+ * gate failing against a manifest that was already correct, which is the good direction to fail in.
+ */
+export function scopeWildcardRoots(manifest) {
+  const roots = [];
+  for (const p of manifest.permissions ?? []) {
+    if (!p || typeof p !== "object" || p.identifier !== "fs:scope") continue;
+    for (const a of p.allow ?? []) {
+      const m = typeof a?.path === "string" ? /^([^*]*)\/\*\*$/.exec(a.path) : null;
+      if (m) roots.push(m[1]);
+    }
+  }
+  return roots;
+}
+
+/** Every allow-path in the manifest's fs:scope, verbatim. */
+function scopePaths(manifest) {
+  const out = new Set();
+  for (const p of manifest.permissions ?? []) {
+    if (!p || typeof p !== "object" || p.identifier !== "fs:scope") continue;
+    for (const a of p.allow ?? []) if (typeof a?.path === "string") out.add(a.path);
+  }
+  return out;
+}
+
+/**
+ * If the app asks for ANY dot-segment, then every wildcarded scope root must also admit dot-paths —
+ * both a hidden file (`<root>/**\/.*`) and a hidden directory's contents (`<root>/**\/.*\/**`).
+ *
+ * @returns {{ok: boolean, segments: {segment: string, path: string}[], missing: {root: string, glob: string}[]}}
+ */
+export function auditScope(sources, manifest) {
+  const segments = dotPathSegments(sources);
+  const missing = [];
+  if (segments.length > 0) {
+    const have = scopePaths(manifest);
+    for (const root of scopeWildcardRoots(manifest)) {
+      for (const glob of [`${root}/**/.*`, `${root}/**/.*/**`]) {
+        if (!have.has(glob)) missing.push({ root, glob });
+      }
+    }
+  }
+  return { ok: missing.length === 0, segments, missing };
+}
+
+/** Human-readable report for the scope audit. @param {ReturnType<typeof auditScope>} r */
+export function formatScopeReport(r) {
+  const lines = [
+    `hidden path segments the app requests: ${r.segments.length}` +
+      (r.segments.length ? ` (${r.segments.map((s) => s.segment).join(", ")})` : ""),
+  ];
+  for (const { root, glob } of r.missing) {
+    lines.push(
+      `MISSING   ${glob} — ${root}/** does not admit dot-paths.`,
+      `          Tauri's scope globs will not match a component starting with "." — the command is`,
+      `          granted but the PATH is refused, and the failure lands AFTER bytes are written.`,
+    );
+  }
+  lines.push(r.ok ? "ok — hidden paths are in scope" : "FAILED");
+  return lines.join("\n");
+}
+
 /** Human-readable report for the CLI. @param {ReturnType<typeof auditCapabilities>} r */
 export function formatReport(r) {
   const lines = [`TauriFsBridge methods checked: ${r.methods.length} (${r.methods.join(", ")})`];
