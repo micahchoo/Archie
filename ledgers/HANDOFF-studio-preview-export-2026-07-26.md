@@ -235,6 +235,76 @@ branch cannot clobber them — but they need committing from there, by whoever o
    both blocking questions are answered in the spec, and L5/R6 are withdrawn. Six decisions remain
    (L1–L4, L6, L7); L4/L6/L7 are mine and still contestable.
 
+## Session 4 (2026-07-26, later still) — the desktop build was DRIVEN, end to end
+
+Commits `8a4d67c` (picker), `b5089ce` (the JSC fix). The P0 from session 3 is merged; `main` was at
+`da0d467` and **4 ahead of `origin/main` — still unpushed.**
+
+### The drive recipe finally works, and the old one was wrong
+
+**Use Xvfb. Do not drive the app on the Wayland session.** Session 3 recorded that
+`WEBKIT_DISABLE_COMPOSITING_MODE=1` "renders correctly every time". Re-measured: on this
+Wayland/XWayland desktop the app window captures **blank** with the flag set and verified present in
+`/proc/PID/environ`, `import -window root` is refused outright, and synthetic pointer events never
+reach the app (the GTK File menu would not even open). That claim came from ONE observation on a
+`cargo build` binary that was loading the main checkout's dev server — contaminated by the same
+origin problem everything else was corrected for. It is withdrawn.
+
+On a nested X server everything works — render, capture, click, type:
+
+```
+Xvfb :99 -screen 0 1600x1000x24 &
+DISPLAY=:99 GDK_BACKEND=x11 WEBKIT_DISABLE_COMPOSITING_MODE=1 ./src-tauri/target/debug/archie
+DISPLAY=:99 import -window root shot.png     # works here, refused on Wayland
+```
+
+Two GTK-chooser details that cost a cycle each: **inline autocompletion corrupts `xdotool type`**
+(`/tmp/archie-drive` became `/tmp/archie-chie-drive`) — paste via `xclip` instead; and **Enter does
+not commit** the location bar, you must click `Open`.
+
+`/tmp/archie-drive/assert-store.sh` is the assertion set (origin is `tauri_localhost_0`, no
+dev-server origin, no 0-byte files, no leftover `.tmp-*`, `library.json` parses). It is the seed of
+rank 3 and should move into the repo.
+
+### What the drive proved, and what it found
+
+- **`Archie-ce7a` is FIXED.** The native "Select Folder" dialog opens (directory mode — files greyed
+  out), and the app read the fixture exactly as the unit tests predicted: *"VoynichTest · 3 images ·
+  0 audio · 0 video"*, *"This will create 2 exhibits"*, title prefilled from the folder name.
+  `notes.txt` and `.thumbnails/cache.jpg` were correctly excluded.
+- **A second, worse defect, found only by driving: `Object.assign(file, { webkitRelativePath })`
+  throws in JavaScriptCore** — `TypeError: Attempted to assign to readonly property`. WebKitGTK
+  defines the property as a getter-only prototype accessor; Chromium makes it a plain own property.
+  **Two of the three call sites were pre-existing** — drag-and-drop folder import and the "one
+  exhibit from everything" flatten choice were both already broken on desktop. Fixed in one shared
+  helper, `webkit-relative-path.ts`, using `Object.defineProperty`.
+  *The lesson for this repo: jsdom AND Chromium-based Playwright both implement the permissive
+  shape, so no gate we own could have caught it. Only the packaged app can.*
+- **The P0 write fix re-confirmed independently** — fresh profile, packaged origin, `library.json`
+  21,606 bytes, header "Saved".
+- **"Living in this browser" is confirmed on desktop** (rank 6) — visible in the drive screenshots.
+
+### NEW and UNFIXED: asset persist reports failure while the bytes land
+
+Creating the exhibit produced:
+
+> Added 0 files to 1 exhibit. Couldn't store "page-2.jpg" on this device — check the save indicator,
+> and free some space. The remaining 2 files were not attempted.
+
+Header flipped to "⚠ Retry save". **But the asset is on disk at its final name and is correct** —
+`exhibits/voynichtest/assets/01KYGEMTJ9Y372J5QH39GSWM0Y-page-2.jpg`, 7159 bytes, a valid JPEG, no
+0-byte files anywhere, no leftover `.tmp-*`. So the temp-then-rename fully succeeded and the job
+still threw: `enqueueSave("assets:<slug>", "Media", …)` rejected, `persistAsset` returned false, and
+the ingest classified it `storage` and stopped early (by design — see the `STOPPED_EARLY` comment).
+
+Ruled out already: it is **not** `requestPersistence` (early-returns on Tauri) and **not** the
+single-writer gate (that path returns false without running the job, and `library.json` writes fine
+through the same queue). The `console.error("Save failed for …")` goes to the webview console, which
+needs another probe build to read — that is the next step, not a guess.
+
+**Do not attribute this to the picker fix without evidence**: the failing seam is asset persistence,
+which the drag-drop path shares. It plausibly predates both fixes. It needs its own ticket.
+
 ## Artifacts
 
 | path | what |
