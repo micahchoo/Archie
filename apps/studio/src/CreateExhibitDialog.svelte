@@ -44,6 +44,7 @@
   import type { ManifestPlan } from "./iiif-import.js";
   import { summarizeFolderFiles, folderGroupCount, flattenedRelativePaths, type FolderSummary } from "./folder-import.js";
   import { readDroppedFolderFiles } from "./folder-drop.js";
+  import { withRelativePath } from "./webkit-relative-path.js";
   import { isTauri, pickAndReadTauriFolder } from "./tauri-fs.js";
   import Spinner from "./Spinner.svelte";
   // Scrimmed surface via the shared helper (Archie-5968): the hand-rolled Esc handler, Tab-trap, and
@@ -550,7 +551,7 @@
   // stale in-place edit.
   function applyFlatten(files: File[]): File[] {
     const paths = flattenedRelativePaths(pickedFromFiles(files));
-    return files.map((f, i) => Object.assign(new File([f], f.name, { type: f.type, lastModified: f.lastModified }), { webkitRelativePath: paths[i] }));
+    return files.map((f, i) => withRelativePath(new File([f], f.name, { type: f.type, lastModified: f.lastModified }), paths[i] ?? f.name));
   }
 
   function submitFolder() {

@@ -12,9 +12,8 @@
 // `webkitRelativePath || name` to know which first-level subfolder a file came from, and
 // `folderNameFrom` takes the exhibit title from the FIRST path segment. So the paths this walker
 // assigns must be root-prefixed exactly as a `webkitdirectory` pick is — "MyFolder/scans/page-2.jpg",
-// never "scans/page-2.jpg". folder-drop.ts:45 established the technique (webkitRelativePath is a
-// plain own property on a File instance, not a prototype-locked accessor); this file reuses it rather
-// than inventing a third shape.
+// never "scans/page-2.jpg". The stamping itself goes through webkit-relative-path.ts, shared with the
+// drop walker — do NOT assign the property directly (it throws on WebKitGTK; that module explains).
 //
 // MEMORY — the one place this genuinely differs from the browser, and it is deliberate.
 // A browser `File` (from a drop or an <input>) is a LAZY, disk-backed Blob reference: its bytes are
@@ -42,6 +41,7 @@
 // batch-import path in Studio uses.
 
 import { isHiddenPath, isImportableMedia } from "./folder-import.js";
+import { withRelativePath } from "./webkit-relative-path.js";
 
 /** The slice of TauriFsBridge this walker needs — narrowed so unit tests need no Tauri runtime. */
 export interface NativeFolderBridge {
@@ -117,10 +117,8 @@ export async function readNativeFolderFiles(
         skipped++;
         continue;
       }
-      // Same own-property assignment folder-drop.ts:45 uses, for the same reason.
-      const file = new File([bytes as BlobPart], entry.name);
-      Object.assign(file, { webkitRelativePath: relativePath });
-      out.push(file);
+      // MUST go through withRelativePath — a bare assign throws on WebKitGTK (see that module).
+      out.push(withRelativePath(new File([bytes as BlobPart], entry.name), relativePath));
     }
   }
 

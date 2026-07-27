@@ -19,6 +19,8 @@
 // since an unreadable directory batch doesn't reveal how many files it would have yielded. Callers
 // fold `skipped` into their own "N couldn't be added" surfacing so a drag-drop failure reads the
 // same as any other batch-import path in Studio.
+import { withRelativePath } from "./webkit-relative-path.js";
+
 export interface DroppedFolderResult {
   files: File[];
   skipped: number;
@@ -39,11 +41,11 @@ export async function readDroppedFolderFiles(items: readonly DataTransferItem[])
         skipped++;
         return;
       }
-      // webkitRelativePath is a plain own property on a File instance (not a prototype-locked
-      // accessor) — this is the same technique ingest-flows.test.ts's fixtures already use
-      // (`Object.assign(new File(...), { webkitRelativePath })`).
-      Object.assign(file, { webkitRelativePath: `${prefix}${entry.name}` });
-      out.push(file);
+      // webkitRelativePath goes through withRelativePath, NOT Object.assign. This comment used to
+      // claim it was "a plain own property, not a prototype-locked accessor" — true in Chromium,
+      // FALSE in JavaScriptCore, where an assign throws TypeError and broke this walker in the
+      // packaged desktop app (Archie-ce7a). See webkit-relative-path.ts.
+      out.push(withRelativePath(file, `${prefix}${entry.name}`));
     } else if (entry.isDirectory) {
       const reader = (entry as FileSystemDirectoryEntry).createReader();
       const readBatch = () => new Promise<FileSystemEntry[]>((resolve, reject) => reader.readEntries(resolve, reject));
