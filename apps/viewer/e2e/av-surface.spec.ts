@@ -22,9 +22,16 @@ import { goOffline } from "./offline.js";
  *
  * Prior art, checked before writing (repo CLAUDE.md). NOTHING in the corpus drives an AV annotation
  * surface in a browser: `videojs-annotation`'s suite is jsdom unit tests over its own components
- * (`test/unit/`), `hyperaudio-lite` ships no test directory at all, and `clover-iiif` neuters canvas
+ * (`test/unit/`), `hyperaudio-lite`'s suite is jsdom too, and `clover-iiif` neuters canvas
  * in `src/setupTests.ts`. The transferable idea is `offline.ts`'s own — serve the real bytes from the
  * same origin as the app — applied to a media element instead of a tile pyramid.
+ *
+ * CORRECTED 2026-07-26. This sentence used to say `hyperaudio-lite` "ships no test directory at all".
+ * It ships `__TEST__/hyperaudio-lite.test.js`, 311 lines of jest. The CONCLUSION survives and is if
+ * anything better supported: the file's first line is `@jest-environment jsdom` (`:2`), so it cannot
+ * decode media — it asserts the `data-media-src` STRING (`:183`) against an HTML fixture (`:65`) that
+ * jsdom never loads. It even commits a 289 KB `__TEST__/test.mp3` that nothing in the suite decodes,
+ * which is its own argument against committing a seed media binary here (see the V49 block below).
  */
 
 /** A silent 8-bit mono 8 kHz PCM WAV of `seconds` length — the smallest thing a browser will report a
@@ -458,11 +465,13 @@ test.describe("V49 · the temporal map clears the item strip (Archie-b135)", () 
   // (`__TEST__/hyperaudio-lite.test.js:2`) and therefore never decodes it — it only asserts the
   // `data-media-src` STRING (`:183`). A binary paying no rent is the outcome to avoid.
   //
-  // (That same file corrects a claim this repo repeats in two places — `av-surface.spec.ts`'s header
-  // above and `offline.ts`'s — that "hyperaudio-lite ships no test directory at all". It ships 311
-  // lines of jest. The conclusion those headers drew survives, because jsdom cannot drive media; the
-  // supporting sentence does not, and `.claude/rules/prior-art-citation-discipline.md` says to correct
-  // it rather than leave it because it points the right way.)
+  // (That same file falsified a "ships no test directory at all" claim, now CORRECTED in this file's
+  // header. An earlier version of this comment said the claim appeared in TWO places, naming
+  // `offline.ts` as the second. It does not — `grep -rn -i hyperaudio apps/viewer/e2e/` returns hits in
+  // this file only, and `offline.ts` never mentioned the library. That miscount was written here, and
+  // an independent reviewer then repeated it back as a should-fix without grepping, which is
+  // `.claude/rules/prior-art-citation-discipline.md`'s own lesson landing on the file that cites it:
+  // a plausible claim, in a comment about citation discipline, that two people passed over.)
   //
   // WHY THE GEOMETRY AND NOT A SCREENSHOT: `.claude/rules/` records Archie-40fe's reasoning — a
   // restyle that moves the strip 4px is not a regression, a restyle that puts it back over the map is.
@@ -516,10 +525,21 @@ test.describe("V49 · the temporal map clears the item strip (Archie-b135)", () 
     // written, which is the best possible argument for not asserting one.
     //
     // V49's original fix was `padding-bottom: var(--strip-h)` + `box-sizing: border-box` on a 100vh
-    // `.player`, and `Archie-b135` asks for the `box-sizing` removal as the red-green. That fix no
-    // longer exists: the docking work retired the reservation entirely and moved the strip into
-    // `ExhibitView`'s chrome bar BELOW the column (`MediaPlayer.svelte:485-488`). An assertion on
-    // `.player`'s computed height would now be red against correct code.
+    // `.player`, and `Archie-b135` asks for the `box-sizing` removal as the red-green.
+    //
+    // THAT RED-GREEN IS NOT AVAILABLE, and that is a stronger reason to write an outcome assertion than
+    // "the mechanism was superseded". Deleting `box-sizing: border-box` from `.player` is a **no-op**:
+    // `packages/render-core/src/tokens.css:201-203` is a global `* { box-sizing: border-box; }`, so the
+    // computed style does not change. Measured by a reviewer who checked the injection did what it
+    // claimed — with the declaration deleted, `.player` still reports `border-box`, `.tl-track` still
+    // sits at y 556→580, and the suite is green *because nothing changed*. The ticket's proposed
+    // red-green would have proved nothing. (Forcing `content-box` explicitly is what reproduces it, and
+    // that injection does go red against the overlap assertion above.)
+    //
+    // The mechanism is also gone on top of that: the docking work retired the reservation entirely and
+    // moved the strip into `ExhibitView`'s chrome bar BELOW the column (`MediaPlayer.svelte:485-488`).
+    // So an assertion on `.player`'s computed style would be both unfalsifiable AND aimed at code that
+    // no longer exists.
     //
     // What is invariant across both designs is the reader's side of it: **the temporal map has to be
     // ON SCREEN, on arrival, without scrolling.** That last clause is the claim, and it is why nothing
@@ -544,6 +564,11 @@ test.describe("V49 · the temporal map clears the item strip (Archie-b135)", () 
     // `toBeInViewport` WITHOUT a preceding `scrollIntoViewIfNeeded` — the omission is the assertion.
     await expect(page.locator(".tl-track")).toBeInViewport();
     const map = await rectOf(page.locator(".tl-track"));
+    // BOTH edges. `toBeInViewport()` defaults to `ratio: 0` — any intersection at all — so a map whose
+    // top had gone above the fold with its bottom still on screen would satisfy it and the bottom-edge
+    // check together. It cannot happen while nothing scrolls, but "on screen" is a claim about the whole
+    // element and asserting half of it invites the other half to drift.
+    expect(Math.round(map.y), "the temporal map's top edge is above the fold").toBeGreaterThanOrEqual(0);
     expect(Math.round(map.y + map.height), `the temporal map's bottom edge is off-screen (viewport ${vh}px)`).toBeLessThanOrEqual(vh);
   });
 });

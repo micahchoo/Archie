@@ -13,6 +13,7 @@
     "build:gh-pages": "bash scripts/build-gh-pages.sh",
     "bundle:baseline": "node scripts/bundle-size.mjs",
     "bundle:check": "node scripts/bundle-size.mjs --check",
+    "capabilities:check": "node scripts/check-tauri-capabilities.mjs",
     "sync-dist": "node scripts/sync-dist.mjs",
     "sync-dist:check": "node scripts/sync-dist.mjs --check"
   },

@@ -1,0 +1,26 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000001Q92G6H0YJFZSA1213.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/000000001Q92G6H0YJFZSA1213/v1",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/ex-voynich.o5",
+      "modified": "1970-01-01T00:00:00.055Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The wheels on this sheet are usually read beside the herbal pages that open the book — the same hand, a different subject. That comparison page is held here beside them. ![f1r — the opening herbal leaf, for comparison](https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg)",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "000000001Q92G6H0YJFZSA1213",
+      "archie:rev": "000000001QBC8K81982TBVTTFC",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

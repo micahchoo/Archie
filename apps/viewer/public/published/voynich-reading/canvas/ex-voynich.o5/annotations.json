@@ -31,6 +31,55 @@
       },
       "archie:logicalId": "0000000005C72491FHD1YF5DQ4",
       "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/0000000005C72491FHD1YF5DQ4.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/000000001PHZWZ7NX80JCEXFAZ/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/ex-voynich.o5",
+        "selector": {
+          "type": "SvgSelector",
+          "value": "<svg><polygon points=\"1420,940 1928,1140 2290,1557 2257,2112 1920,2528 1420,2745 906,2548 602,2106 555,1559 909,1136\" /></svg>"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.054Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "**One wheel of the astronomical foldout.** The page is drawn as a set of rings — a hub, a band of labelled stars, an outer rim — and the claim here is about *this* wheel and not its neighbours on the same sheet. Traced round the rim for the same reason as the rosette: a box would take in the sheet's fold and the wheel beside it.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "created": "1970-01-01T00:00:00.054Z",
+      "creator": {
+        "type": "Person",
+        "name": "curator"
+      },
+      "archie:logicalId": "000000001PHZWZ7NX80JCEXFAZ",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000001PHZWZ7NX80JCEXFAZ.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/000000001Q92G6H0YJFZSA1213/v1",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/ex-voynich.o5",
+      "modified": "1970-01-01T00:00:00.055Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The wheels on this sheet are usually read beside the herbal pages that open the book — the same hand, a different subject. That comparison page is held here beside them. ![f1r — the opening herbal leaf, for comparison](https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg)",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "created": "1970-01-01T00:00:00.055Z",
+      "creator": {
+        "type": "Person",
+        "name": "curator"
+      },
+      "archie:logicalId": "000000001Q92G6H0YJFZSA1213",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000001Q92G6H0YJFZSA1213.json"
     }
   ]
 }

@@ -34,7 +34,9 @@ const AV_SOURCE = "https://archive.org/download/kryptogramm/04-f18v.mp3";
 // Each folio o1–o11 IS a Beinecke MS 408 leaf → the attribution is truest at the OBJECT level: the
 // Public-Domain-Mark license URI (an approved LICENSES entry) + the MS-408 credit. The sound o12 is
 // Schwerdtfeger's Kryptogramm, a DIFFERENT rights-holder → its own CC BY-NC-SA 3.0 statement + URI.
-const BEINECKE_RIGHTS = "http://creativecommons.org/publicdomain/mark/1.0/"; // Public Domain Mark 1.0 (LICENSES)
+// Exported (Archie-a5b1 / V103): a single-folio exhibit's manifest-level licence is exactly its one
+// folio's, so `voynich-rosettes` states it rather than making a reader open the object to find it.
+export const BEINECKE_RIGHTS = "http://creativecommons.org/publicdomain/mark/1.0/"; // Public Domain Mark 1.0 (LICENSES)
 const BEINECKE_STATEMENT = { label: "Source", value: "Beinecke Rare Book & Manuscript Library, Yale University — MS 408 (public domain)" } as const;
 
 // DESCRIPTIVE METADATA (Archie-b50f) — the seed's dcterms entries, so the shipped sample actually
@@ -184,6 +186,55 @@ export const voynichPolygonNotes: VoynichPolygonNote[] = [
     objectId: "ex-voynich.o9",
     points: "1980,740 2498,924 2937,1268 3030,1820 2855,2325 2525,2764 1980,2880 1470,2703 1032,2368 935,1820 1053,1285 1465,928",
     comment: "**The north-west rosette.** One medallion of the nine, traced round its rim rather than boxed: the causeways that leave it at four and eight o'clock belong to the joins, not to this circle, and a rectangle drawn here would claim them. The manuscript's own geometry is round, so the annotation is too.",
+  },
+  // A SECOND polygon, on o5 rather than o9, and the object choice is load-bearing for the TEST as well
+  // as for the content (Archie-f4fb review, BLOCKER-1).
+  //
+  // The content reason: f67r's astronomical foldout is built out of radial wheels, so a wheel is the
+  // same argument as a rosette — round subject, round annotation.
+  //
+  // The TEST reason, which is why a second one exists at all. `buildVoynichLog`'s `keep()` filter had no
+  // test that could fail: of the three exhibits it produces, the only object-restricted one
+  // (`voynich-rosettes`, o9 ONLY) *carries* o9, so there was no exhibit from which a polygon should be
+  // absent. The old negative assertion named the atlas / geo / sampler — but those are built by
+  // `buildAtlasLog` / `buildGeoLog` / `buildSamplerLog`, three functions that never reference this array,
+  // so no change to `keep()` could ever put a polygon in them. It asserted over data the filter cannot
+  // reach, and deleting `keep()` outright left it green at 8/8.
+  //
+  // Putting a polygon on an object the rosettes exhibit EXCLUDES makes that exhibit a genuine negative
+  // case: this note must appear in `voynich` and `voynich-reading` and must NOT appear in
+  // `voynich-rosettes`. Delete `keep()` and that assertion goes red. The branch is now covered by a test
+  // that can fail, which is the only kind worth having.
+  {
+    objectId: "ex-voynich.o5",
+    points: "1420,940 1928,1140 2290,1557 2257,2112 1920,2528 1420,2745 906,2548 602,2106 555,1559 909,1136",
+    comment: "**One wheel of the astronomical foldout.** The page is drawn as a set of rings — a hub, a band of labelled stars, an outer rim — and the claim here is about *this* wheel and not its neighbours on the same sheet. Traced round the rim for the same reason as the rosette: a box would take in the sheet's fold and the wheel beside it.",
+  },
+];
+
+// MEDIA-BEARING WHOLE-OBJECT NOTES (Archie-0cc6 review, SHOULD-FIX-1) — a NEW array, appended LAST by
+// both consumers so no existing note's logical id moves.
+//
+// It exists because the sheet's "a modal REPLACES the sheet, never stacks on it" guard is implemented
+// THREE times, not twice: `Reader.svelte`, `MediaPlayer.svelte`, and `NarrativeReader.svelte`. The first
+// two were gated by the media-route tests; the narrative one was not, and reverting it left the whole
+// suite green at 137.
+//
+// The reason it could not be gated is exactly the reason this slice exists: `grep -rn '!\[' fixtures/*.ts`
+// returned two hits, both in `sampler.ts`, and the sampler is a GRID exhibit. **No fixture anywhere could
+// reach the narrative reader's sheet-media route.** A correct guard, on a path nothing could touch.
+//
+// On o5 because it is section s2's object (`voynichSections`), so the narrative reader opens on it two
+// beats in — a note a reader actually arrives at rather than one parked where only a test would look.
+// The prose survives `splitNoteMedia` stripping the image, which is what keeps the ⤢ on the card: a note
+// with no text left has nothing to expand, and the sheet is the surface under test.
+export interface VoynichMediaNote { objectId: string; comment: string }
+export const voynichMediaNotes: VoynichMediaNote[] = [
+  {
+    objectId: "ex-voynich.o5",
+    comment:
+      "The wheels on this sheet are usually read beside the herbal pages that open the book — the same hand, a different subject. That comparison page is held here beside them. " +
+      "![f1r — the opening herbal leaf, for comparison](https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg)",
   },
 ];
 

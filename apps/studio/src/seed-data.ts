@@ -16,7 +16,7 @@ import {
 // `tileSource` lives on WorkingObjectMeta — types cleanly regardless of store.ts's re-export shape.
 type ExhibitMeta = WorkingExhibitMeta;
 import { atlasTitle, atlasSummary, atlasRights, atlasReadings, atlasObjects, atlasNotes } from "../../viewer/fixtures/atlas.js";
-import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichWholeObjectNotes, voynichPolygonNotes, polygonSelectorValue, voynichSections } from "../../viewer/fixtures/voynich.js";
+import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichWholeObjectNotes, voynichPolygonNotes, voynichMediaNotes, polygonSelectorValue, voynichSections } from "../../viewer/fixtures/voynich.js";
 // The geo-annotation prototype's content lives in the SHARED fixture (single source of truth, §A) — the
 // SAME module the Viewer's published bake reads. Re-export GEO_TEMPLATE/geoBasemap so existing Studio
 // consumers (geo-notes.test.ts) keep importing them from here while the definitions live in one place.
@@ -140,6 +140,15 @@ function seededVoynich(author: ClientId, slug: string, opts: { objectIds?: Set<s
       target: polySel(canvasIdFor(BASE, slug, n.objectId), n.points),
       body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }],
       ...(n.reading ? { reading: n.reading } : {}),
+    });
+  }
+  // Media-bearing whole-object notes (Archie-0cc6 review) — LAST, matching sample-data.ts's append order.
+  // CARRY CONTRACT: `VoynichMediaNote` is read HERE and in `apps/viewer/fixtures/sample-data.ts`.
+  for (const n of voynichMediaNotes) {
+    if (!keep(n.objectId)) continue;
+    s.createNote({
+      target: canvasIdFor(BASE, slug, n.objectId),
+      body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }],
     });
   }
   return s;

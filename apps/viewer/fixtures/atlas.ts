@@ -20,7 +20,12 @@ export const atlasSummary =
   "Eight map pages from UNESCO's Atlas of the World's Languages in Danger (2010) — every dot a language losing its speakers. The same dots read two ways: a linguist's census, and what the quiet means in the places it falls.";
 
 export const atlasRights = {
-  rights: "https://creativecommons.org/licenses/by-sa/4.0/",
+  // `http:`, not `https:` — the SAME licence, but `LICENSES` (iiif/rights.ts) keys its human labels on
+  // the http form, and `licenseLabel` falls back to printing the raw URI for anything it doesn't
+  // recognise. With `https:` here all nine of this exhibit's licensed levels rendered the bare string
+  // "https://creativecommons.org/licenses/by-sa/4.0/" at the reader instead of "CC BY-SA 4.0"
+  // (Archie-a5b1 / V103 — measured: 25 of the seed's 40 licensed items resolved, 15 did not).
+  rights: "http://creativecommons.org/licenses/by-sa/4.0/",
   requiredStatement: { label: "Source", value: "UNESCO, Atlas of the World's Languages in Danger, 3rd edition (2010), ed. Christopher Moseley — digitized at the Internet Archive. CC BY-SA 4.0." },
 };
 

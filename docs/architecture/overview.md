@@ -97,5 +97,4 @@ Full subsystem details: `docs/architecture/subsystems/`.
 - `CONTEXT.md` — domain language, locked frames, UX specifications
 - `HANDOFF.md` — implementation history and current state
 - `docs/IMPLEMENTATION-STRATEGY.md` — phase-by-phase build plan
-- `docs/adr/` — Architecture Decision Records (0001–0004)
-- `.understand-anything/` — Knowledge graph (237 nodes, 188 files analyzed)
+- `docs/adr/` — Architecture Decision Records (0001–0026)

@@ -12,6 +12,7 @@
       "Eight map pages from UNESCO's Atlas of the World's Languages in Danger (2010) — every dot a language losing its speakers. The same dots read two ways: a linguist's census, and what the quiet means in the places it falls."
     ]
   },
+  "rights": "http://creativecommons.org/licenses/by-sa/4.0/",
   "requiredStatement": {
     "label": {
       "none": [
@@ -33,7 +34,7 @@
           "North America"
         ]
       },
-      "rights": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "rights": "http://creativecommons.org/licenses/by-sa/4.0/",
       "requiredStatement": {
         "label": {
           "none": [
@@ -236,7 +237,7 @@
           "Western South America"
         ]
       },
-      "rights": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "rights": "http://creativecommons.org/licenses/by-sa/4.0/",
       "requiredStatement": {
         "label": {
           "none": [
@@ -439,7 +440,7 @@
           "The Caucasus"
         ]
       },
-      "rights": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "rights": "http://creativecommons.org/licenses/by-sa/4.0/",
       "requiredStatement": {
         "label": {
           "none": [
@@ -642,7 +643,7 @@
           "Western Africa"
         ]
       },
-      "rights": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "rights": "http://creativecommons.org/licenses/by-sa/4.0/",
       "requiredStatement": {
         "label": {
           "none": [
@@ -845,7 +846,7 @@
           "Siberia"
         ]
       },
-      "rights": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "rights": "http://creativecommons.org/licenses/by-sa/4.0/",
       "requiredStatement": {
         "label": {
           "none": [
@@ -1048,7 +1049,7 @@
           "The Himalaya"
         ]
       },
-      "rights": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "rights": "http://creativecommons.org/licenses/by-sa/4.0/",
       "requiredStatement": {
         "label": {
           "none": [
@@ -1251,7 +1252,7 @@
           "South-East Asia"
         ]
       },
-      "rights": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "rights": "http://creativecommons.org/licenses/by-sa/4.0/",
       "requiredStatement": {
         "label": {
           "none": [
@@ -1454,7 +1455,7 @@
           "Australia"
         ]
       },
-      "rights": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "rights": "http://creativecommons.org/licenses/by-sa/4.0/",
       "requiredStatement": {
         "label": {
           "none": [

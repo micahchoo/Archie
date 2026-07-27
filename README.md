@@ -327,7 +327,7 @@ graph TD
 - **How it wires together:** `packages/render-core/src/index.ts` (barrel export), `fs/seam.ts` (three storage backends, one interface), `apps/studio/src/binding.ts` (the three-config persistence system), `publish/site.ts` (the publishing engine).
 - **The map medium (geo-annotation, [ADR-0015](docs/adr/0015-map-medium-bounded-extent.md)):** `geometry/geo.ts` (lng/lat ↔ world-pixel, bounded extent), `iiif/resolve.ts` (XYZ tile source), with the `archie:geo` anchor threaded through the spine and the IIIF manifest; `apps/studio/src/AddMapModal.svelte` is the add-map flow.
 
-**Additional maps:** [`docs/architecture/`](docs/architecture/), [`docs/adr/`](docs/adr/) (ADRs 0001–0017), [`docs/decisions/`](docs/decisions/) (Q-N decision records), and a generated knowledge graph in [`.understand-anything/`](.understand-anything/).
+**Additional maps:** [`docs/architecture/`](docs/architecture/), [`docs/adr/`](docs/adr/) (ADRs 0001–0026), and [`docs/decisions/`](docs/decisions/) (Q-N decision records).
 
 ## Status & roadmap
 
@@ -365,7 +365,7 @@ Tests live alongside source (`*.test.ts`), not in a separate directory. For new 
 | [`CONTEXT.md`](CONTEXT.md) | Domain language, locked design frames, full glossary |
 | [`docs/README.md`](docs/README.md) | Index to all design & architecture docs |
 | [`docs/architecture/overview.md`](docs/architecture/overview.md) | Architecture map (start here as a developer) |
-| [`docs/adr/`](docs/adr/) | Architecture Decision Records (0001–0017) |
+| [`docs/adr/`](docs/adr/) | Architecture Decision Records (0001–0026) |
 | [`docs/decisions/`](docs/decisions/) | Citable decision records (Q-N) |
 | [`docs/geo-annotation/`](docs/geo-annotation/) | The geo-annotation extension — design + phasing (Map medium, geo-truth) |
 | [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.md) | Phasing, sequencing, validation gates, deferred work |

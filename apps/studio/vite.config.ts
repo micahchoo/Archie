@@ -53,6 +53,15 @@ const archieTokens: PluginOption = {
 export default defineConfig({
   base: "/studio/",
   plugins: [archieTokens, svelte(), rootRedirect],
+  build: {
+    // Not served, and not read by the app: the manifest exists so `scripts/bundle-size.mjs` can walk
+    // the entry's STATIC closure (`imports`, never `dynamicImports`) and ratchet page-load weight
+    // apart from total dist weight. Same distinction packages/archie-viewer/build.mjs draws off
+    // esbuild's metafile (`kind === "import-statement"`); Vite spells it as two sibling arrays.
+    // Dropping this degrades the ratchet to totals-only, which is blind in BOTH directions — see
+    // .claude/rules/archie-viewer-eager-closure.md for the measured case.
+    manifest: true,
+  },
   server: {
     // strictPort: the single-origin contract is LOAD-BEARING (shared OPFS). A silent port bump
     // would 502 the front door's /studio proxy. Fail loudly; kill the stale server and rerun `pnpm dev`.

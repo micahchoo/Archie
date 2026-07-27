@@ -6,6 +6,15 @@ symptom below was verified against files on disk, not inferred. Issues are order
 by leverage; directions by strength. Each **Run it** block is self-contained —
 paste it into a fresh session with no skill loaded.
 
+> **Pruned 2026-07-26.** The per-issue working ledgers for closed issues
+> (`ledgers/ARTIFACTS.md`, `CAPABILITY.md`, `CARRY.md`, `COLDSTART.md`, `COVERAGE.md`,
+> `DARKDATA.md`, `DEPS.md`, `GATE.md`, `HEADROOM.md`, `METHOD.md`, `PERSIST.md`,
+> `READPOLICY.md`, `SHOWROOM.md`, `SILENCE.md`, `STALENESS.md`) were deleted — they were
+> dated inventories, not contracts. Links to them below are dead on purpose. Their durable
+> conclusions were promoted into `.claude/rules/` (notably `render-core-data-integrity.md`
+> for PERSIST/CARRY/READPOLICY/STALENESS) and into CI (`.github/workflows/checks.yml` for
+> GATE). Recover any of them from git history if you need the raw evidence.
+
 **Re-run 2026-07-05** (fresh tend diagnosis, this session; commit examined `246550d`, main). A
 5-explorer subagent workflow re-walked the codebase and diffed against this backlog; the main loop
 verified every load-bearing finding against the files before recording it. Standing state confirmed:

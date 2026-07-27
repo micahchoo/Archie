@@ -3,7 +3,7 @@
 // publishLibrary and reads it back per-exhibit, exactly as a static consumer would. One log per exhibit;
 // each note targets its object's canvas.
 import { appendNew, asClientId, asExhibitId, asLibraryId, type AObject, type AnnotationLog, type Library, type Section } from "@render/core";
-import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichWholeObjectNotes, voynichPolygonNotes, polygonSelectorValue, voynichSections, voynichCredits, voynichExhibitMetadata } from "./voynich.js";
+import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichWholeObjectNotes, voynichPolygonNotes, voynichMediaNotes, polygonSelectorValue, voynichSections, voynichCredits, voynichExhibitMetadata, BEINECKE_RIGHTS } from "./voynich.js";
 // Single source of truth lives in the viewer-owned base module (not this demo file), so the shell
 // can import canvasIdFor without pulling in demo fixtures. Re-exported for gen-published.mts.
 import { BASE, canvasIdFor } from "../src/published-base.js";
@@ -184,6 +184,16 @@ function buildVoynichLog(slug: string, opts: { objectIds?: Set<string>; includeA
       body: addBody(n.comment), motivation: "commenting", lastEditor: author, now: ++now, rng, ...(n.reading ? { reading: n.reading } : {}),
     }));
   }
+  // Media-bearing whole-object notes (Archie-0cc6 review) — appended after the polygons, LAST of all, so
+  // every note above keeps the logical id it already published. Bare canvas IRI, no selector: the
+  // markdown image is lifted out by splitNoteMedia into a NoteMedia tile on whichever reader opens it.
+  for (const n of voynichMediaNotes) {
+    if (!keep(n.objectId)) continue;
+    ({ log } = appendNew(log, {
+      target: canvasIdFor(slug, n.objectId),
+      body: addBody(n.comment), motivation: "commenting", lastEditor: author, now: ++now, rng,
+    }));
+  }
   return log;
 }
 
@@ -240,9 +250,28 @@ export const library: Library = {
     // own Beinecke credit lives on the object (rights un-hack); the exhibit `requiredStatement` is the chrome
     // credit line. Each summary EXPLICITLY names its layout word.
     //
+    // THE LICENCE LADDER (V103, Archie-a5b1). The finding was that the OBJECT is licensed and the levels
+    // above it are not — a reader looking for "may I use this?" finds the answer only at the deepest
+    // level. That was true, and it was a SEED gap: no exhibit and no library set `rights` anywhere in
+    // the corpus, measured across all six. It is fixed here for every exhibit whose objects agree on
+    // ONE licence — rosettes (1 folio, Public Domain Mark), language-atlas (8 pages, all CC BY-SA 4.0),
+    // geo-map (1 map, ODbL). Those three previously lifted only the CREDIT half of their rights to the
+    // exhibit and dropped the licence half; they now spread both.
+    //
+    // Three levels stay deliberately unlicensed, because a blanket statement there would be FALSE, and
+    // a false licence is worse than an absent one:
+    //   · `voynich` / `voynich-reading` — 11 public-domain folios PLUS a CC BY-NC-SA 3.0 recording. Two
+    //     licences, no honest manifest-level answer; the exhibit `requiredStatement` names both, and each
+    //     object states its own.
+    //   · `sampler` — three objects, three different licences, by design (it is the media-type sampler).
+    //   · the LIBRARY — Beinecke + Internet Archive + OpenStreetMap. There is no library-wide licence to
+    //     state, for the same reason the library carries no library-wide credit (see `summary` above).
+    // Each of those is reachable per-object on the archival page, which now prints every level's own
+    // credit, licence and Dublin Core rows (packages/render-core/src/publish/static-pages.ts).
+    //
     // SINGLE — "The Rosettes": just o9 (the f85v–86r foldout), no sections → resolveLayout = single → Reader
     // deep-zoom + the 3-option readings legend over the one canvas.
-    { id: asExhibitId("ex-voynich-rosettes"), slug: "voynich-rosettes", title: "The Rosettes", summary: "A single-folio deep-zoom study: the Rosettes foldout (f85v–86r), the largest spread in MS 408, read three ways — cipher, hoax, and natural language — over one canvas.", cover: "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg", objects: rosettesObjs, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits }, metadata: voynichExhibitMetadata },
+    { id: asExhibitId("ex-voynich-rosettes"), slug: "voynich-rosettes", title: "The Rosettes", summary: "A single-folio deep-zoom study: the Rosettes foldout (f85v–86r), the largest spread in MS 408, read three ways — cipher, hoax, and natural language — over one canvas.", cover: "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg", objects: rosettesObjs, readings: voynichReadings, rights: BEINECKE_RIGHTS, requiredStatement: { label: "Source", value: voynichCredits }, metadata: voynichExhibitMetadata },
     // GRID — "The Whole Manuscript" (the MAIN voynich slug): all 11 folios + the sounded page, NO sections →
     // resolveLayout = grid → ObjectGrid; click a folio → Reader with the prev/next carousel + legend + tags.
     { id: asExhibitId("ex-voynich"), slug: "voynich", title: "The Whole Manuscript", summary: "A grid of all eleven folios of MS 408 across its six sections — herbal, astronomical, balneological, cosmological, pharmaceutical, and recipes — to browse side by side, each readable three ways, with a sounded page.", cover: "https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg", objects: voynichObjs, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits }, metadata: voynichExhibitMetadata },
@@ -253,13 +282,13 @@ export const library: Library = {
     // Archive's IIIF (CC BY-SA 4.0 on every object). Two Readings (Linguist's/Community) carry the
     // rival-interpretations differentiator beyond manuscripts. cover = a 400px IIIF derivative of the
     // North America page.
-    { id: asExhibitId("ex-atlas"), slug: "language-atlas", title: atlasTitle, summary: atlasSummary, cover: `${atlasObjects[0]!.source}/full/400,/0/default.jpg`, objects: atlasObjects.map((o) => ({ ...o, ...atlasRights })), readings: atlasReadings, requiredStatement: atlasRights.requiredStatement },
+    { id: asExhibitId("ex-atlas"), slug: "language-atlas", title: atlasTitle, summary: atlasSummary, cover: `${atlasObjects[0]!.source}/full/400,/0/default.jpg`, objects: atlasObjects.map((o) => ({ ...o, ...atlasRights })), readings: atlasReadings, ...atlasRights },
     // GEO — "World map (geo-annotation prototype)" (ADR-0015): one OSM slippy-map basemap object, geo-annotated
     // with city pins anchored to lng/lat. ONE object → resolveLayout = single → the Reader mounts the bounded
     // map raster (render-mount/xyz) + the lng/lat readout on each opened pin. The descriptor, object, cover and
     // pins all come from the SHARED ./geo.js — the same source Studio's seed reads (no drift). cover = the
     // whole-world tile (z0/0/0). No readings: this prototype carries one reading of place, not rival camps.
-    { id: asExhibitId("ex-geo"), slug: "geo-map", title: geoTitle, summary: geoSummary, cover: geoCover, objects: geoObjects.map((o) => ({ ...o, ...geoRights })), requiredStatement: geoRights.requiredStatement },
+    { id: asExhibitId("ex-geo"), slug: "geo-map", title: geoTitle, summary: geoSummary, cover: geoCover, objects: geoObjects.map((o) => ({ ...o, ...geoRights })), ...geoRights },
     // SAMPLER — "Showroom Sampler": a small AV + note-media demo (a video to frame-annotate, an audio
     // recording with a transcript, a note that carries a picture). >1 object, no sections → grid.
     // Additive: a NEW slug, so no existing exhibit's object/note counts change.

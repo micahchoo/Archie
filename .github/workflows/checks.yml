@@ -47,8 +47,28 @@ jobs:
         with:
           node-version: 24
 
+      # `node --test` on a glob that matches nothing reports "tests 0" and exits 0 — measured
+      # 2026-07-26. So a rename of scripts/lib/, or a test file moving out of it, would turn this
+      # job green while it covered nothing, and the job name would still read as enforcement. Assert
+      # the glob matched before running it; the floor is DERIVED (>0 files found), not a stored count
+      # that a future patch could quietly lower — see .claude/rules/post-review-fixes-are-unreviewed.md.
       - name: scripts/lib unit suite
-        run: node --test scripts/lib/*.test.mjs
+        run: |
+          shopt -s nullglob
+          files=(scripts/lib/*.test.mjs)
+          if (( ${#files[@]} == 0 )); then
+            echo "::error::no files matched scripts/lib/*.test.mjs — this gate is covering nothing"
+            exit 1
+          fi
+          echo "running ${#files[@]} test file(s): ${files[*]}"
+          node --test "${files[@]}"
+
+      # Archie-91e7: every TauriFsBridge method must be granted in the desktop capability manifest.
+      # Ungranted commands are denied at RUNTIME in the packaged app only — no unit suite, typecheck
+      # or build can see it (fs/tauri.test.ts runs over node:fs, which has no permission system), so
+      # this structural check is the only cheap gate for the class. Bare node, no toolchain needed.
+      - name: desktop capability manifest covers the fs bridge
+        run: node scripts/check-tauri-capabilities.mjs
 
   test:
     runs-on: ubuntu-latest
