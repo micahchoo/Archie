@@ -23,7 +23,15 @@
     "fs:allow-write",
     {
       "identifier": "fs:scope",
-      "allow": [{ "path": "$APPDATA/**" }, { "path": "$HOME/**" }]
+      "comment": "Archie-7b48: the `.*` entries are LOAD-BEARING, not defensive. Tauri matches scope globs with a leading-dot rule, so a `**` wildcard does NOT match a path component that starts with a dot — and Archie writes two of them: `.bake-schema` (asset-store.ts, one per assets dir) and `.archie-cache/` (resident-store.ts, the desktop-only hidden peaks cache). Without these, fs.exists('.bake-schema') is refused as `forbidden path`, the asset save job REJECTS AFTER the bytes have already landed, and the ingest misreports it as 'couldn't store on this device — free some space' on a disk with a terabyte free. Measured 2026-07-26 on a packaged build. Note $APPDATA/** alone covers library.json because $APPDATA expands to a LITERAL path (the dots in .local are not matched by a wildcard); only the trailing dot-components need these extra entries.",
+      "allow": [
+        { "path": "$APPDATA/**" },
+        { "path": "$APPDATA/**/.*" },
+        { "path": "$APPDATA/**/.*/**" },
+        { "path": "$HOME/**" },
+        { "path": "$HOME/**/.*" },
+        { "path": "$HOME/**/.*/**" }
+      ]
     },
     {
       "identifier": "opener:allow-open-url",
