@@ -26,6 +26,7 @@ import type { DziTileSource } from "../iiif/resolve.js";
 import type { PortableExhibit } from "./portable.js"; // type-only (erased) — the readings superset; type-cycle is harmless
 import { readExhibitTree, fsJsonSource } from "./read.js";
 import { libraryPageHtml, exhibitPageHtml, sitemapTxt, sitemapXml } from "./static-pages.js";
+import { citationCff } from "../cite/citation.js";
 import { readAnnotations } from "../spine/persist.js";
 import { writeStructure } from "../spine/structure-persist.js";
 import type { SectionLog } from "../spine/structure.js";
@@ -653,6 +654,13 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
   await writeText(root, "index.html", libraryPageHtml(library, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
   // Crawler sitemaps: keep sitemap.txt (the simple, already-cited surface) AND add the standard
   // sitemap.xml (sitemaps.org 0.9) so search engines ingest it directly with <lastmod> (Q-8).
+  // CITATION.cff (Archie-321c): the file GitHub's "Cite this repository" widget reads, and the one a
+  // data-repo depositor is asked for. Written ONLY when the library records a creator — CFF 1.2.0
+  // makes `authors` required, so a creator-less library cannot produce a VALID file, and an invalid
+  // one is worse than none: it teaches every downstream tool a wrong fact with the repo's authority
+  // behind it. `citationCff` returns undefined in that case; no file, no stub.
+  const cff = citationCff({ title: library.title ?? "Library", url: baseUrl, rights: library, id: String(library.id), type: "webpage" });
+  if (cff) await writeText(root, "CITATION.cff", cff);
   await writeText(root, "sitemap.txt", sitemapTxt(library, baseUrl));
   await writeText(root, "sitemap.xml", sitemapXml(library, baseUrl, opts.publishedAt));
   // Library-level image index (ADR-0023, spike-0004): a cheap always-rewritten projection like

@@ -480,3 +480,79 @@ describe("version block — the note's biography (Archie-a1d4)", () => {
     expect(html).not.toContain('<details class="versions">');
   });
 });
+
+// Archie-321c — machine-citable. `citation_*` (Google Scholar's names) and `DC.*` are what a
+// reference manager's page translator actually reads; neither OpenGraph nor schema.org JSON-LD gives
+// Zotero an item type + author + date. The governing rule everywhere here is VALIDATE-AND-OMIT.
+describe("machine-citable head + cite block + CITATION.cff (Archie-321c)", () => {
+  const withCreator = (creator: string): Library => ({
+    id: asLibraryId("lib"), title: "The Library",
+    requiredStatement: { label: "Attribution", value: "Beinecke" },
+    rights: "https://creativecommons.org/licenses/by/4.0/",
+    metadata: [
+      { property: "dcterms:creator", value: creator },
+      { property: "dcterms:date", value: "ca. 1404-1438" },
+      { property: "dcterms:publisher", value: "Yale University" },
+    ],
+    exhibits: [{ id: asExhibitId("exA"), slug: "a", title: "Exhibit Alpha", objects: [],
+      metadata: [{ property: "dcterms:creator", value: creator }] }],
+  });
+
+  async function pub(library: Library): Promise<MemoryFilesystem> {
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, library, () => [], { baseUrl: BASE });
+    return fs;
+  }
+
+  it("emits citation_* and DC.* tags on the exhibit page", async () => {
+    const html = await readText(await pub(withCreator("Ada Lovelace")), ["a", "index.html"]);
+    expect(html).toContain('<meta name="citation_title" content="Exhibit Alpha">');
+    expect(html).toContain('<meta name="citation_author" content="Lovelace, Ada">');
+    expect(html).toContain('<meta name="DC.creator" content="Lovelace, Ada">');
+    expect(html).toContain('<meta name="citation_public_url" content="https://u.gh.io/lib/a/index.html">');
+  });
+
+  it("an UNKNOWN author is OMITTED, never 'Anonymous' — a fabricated attribution is the worse error", async () => {
+    const { library, getLog } = fixture(); // the base fixture records no dcterms:creator
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, library, getLog, { baseUrl: BASE });
+    const html = await readText(fs, ["a", "index.html"]);
+    expect(html).toContain('<meta name="citation_title"'); // the citable head is still there
+    expect(html).not.toContain('name="citation_author"');
+    expect(html).not.toContain("Anonymous");
+  });
+
+  it("the cite block renders APA, Chicago and BibTeX from ONE csl item, with zero JS", async () => {
+    const html = await readText(await pub(withCreator("Ada Lovelace")), ["a", "index.html"]);
+    expect(html).toContain('<details class="cite">');
+    expect(html).toContain("<summary>Cite this exhibit</summary>");
+    expect(html).toContain("<dt>APA</dt>");
+    expect(html).toContain("<dt>BibTeX</dt>");
+    expect(html).toContain("@misc{"); // a real BibTeX entry, not a label
+    // All three name the same author — they are projections of one item, so they cannot disagree.
+    expect((html.match(/Lovelace/g) ?? []).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("writes a CITATION.cff when the library records a creator", async () => {
+    const cff = await readText(await pub(withCreator("Ada Lovelace")), ["CITATION.cff"]);
+    expect(cff).toContain("cff-version: 1.2.0");
+    expect(cff).toContain('family-names: "Lovelace"');
+    expect(cff).toContain('given-names: "Ada"');
+    expect(cff).toContain('license-url: "https://creativecommons.org/licenses/by/4.0/"');
+    // A year alone cannot make a CFF date — inventing Jan 1 is the half-record this refuses.
+    expect(cff).not.toContain("date-released");
+  });
+
+  it("an INSTITUTIONAL creator becomes a CFF entity (name:), not a person", async () => {
+    const cff = await readText(await pub(withCreator("Beinecke Rare Book Library")), ["CITATION.cff"]);
+    expect(cff).toContain('- name: "Beinecke Rare Book Library"');
+    expect(cff).not.toContain("family-names");
+  });
+
+  it("writes NO CITATION.cff at all when there is no creator — an invalid one is worse than none", async () => {
+    const { library, getLog } = fixture();
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, library, getLog, { baseUrl: BASE });
+    await expect(readText(fs, ["CITATION.cff"])).rejects.toThrow();
+  });
+});

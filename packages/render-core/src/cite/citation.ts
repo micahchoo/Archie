@@ -142,3 +142,85 @@ export function citationFor(input: CitationInput): { csl: CslItem; text: string 
   const csl = cslItemFor(input);
   return { csl, text: citationText(csl) };
 }
+
+/**
+ * APA 7 reference, built FROM the CSL item like `citationText` — same omit-what-you-lack rule.
+ *
+ * Shape: `Author. (Year). Title. Container. Publisher. URL`
+ * APA's "n.d." for a missing date is DELIBERATELY not emitted. "n.d." is a positive claim that no
+ * date exists; Archie's absence means nobody recorded one, which is a different fact. A reader adding
+ * this to a paper knows their own venue's rule; inventing the claim for them is the error.
+ */
+export function apaText(item: CslItem): string {
+  const parts: string[] = [];
+  // APA inverts to `Family, G.` — but an institutional name (cslName kept it whole, no `given`) is a
+  // group author and stays exactly as written.
+  const apaName = (n: CslName): string => (n.given ? `${n.family}, ${n.given.split(/\s+/).map((g) => `${g[0]!.toUpperCase()}.`).join(" ")}` : n.family);
+  if (item.author?.length) parts.push(`${item.author.map(apaName).join(", ")}.`);
+  const year = item.issued?.["date-parts"]?.[0]?.[0];
+  if (year !== undefined) parts.push(`(${year}).`);
+  parts.push(`${item.title}.`);
+  if (item["container-title"]) parts.push(`${item["container-title"]}.`);
+  if (item.publisher) parts.push(`${item.publisher}.`);
+  if (item.URL) parts.push(item.URL);
+  return parts.join(" ");
+}
+
+/** BibTeX-escape: the five characters that are syntactically significant inside a field value. */
+const bibEscape = (s: string): string => s.replace(/[\\{}$&#%_~^]/g, (c) => `\\${c}`);
+
+/** A BibTeX key: ASCII word characters only, so it is safe in every .bib parser. */
+const bibKey = (item: CslItem): string => (item.id || item.title).replace(/[^A-Za-z0-9]+/g, "").slice(0, 40) || "archie";
+
+/**
+ * A BibTeX entry. `@misc` for everything: Archie cites images, notes and exhibit pages, none of
+ * which is an `@article`/`@book`, and `@misc` is the type every BibTeX style renders without a
+ * custom .bst. Fields absent from the CSL item are absent here — same rule as the other two.
+ */
+export function bibtexText(item: CslItem): string {
+  const fields: Array<[string, string]> = [];
+  if (item.author?.length) fields.push(["author", item.author.map((n) => (n.given ? `${n.given} ${n.family}` : `{${n.family}}`)).join(" and ")]);
+  fields.push(["title", item.title]);
+  if (item["container-title"]) fields.push(["booktitle", item["container-title"]]);
+  if (item.publisher) fields.push(["publisher", item.publisher]);
+  const year = item.issued?.["date-parts"]?.[0]?.[0];
+  if (year !== undefined) fields.push(["year", String(year)]);
+  if (item.URL) fields.push(["url", item.URL]);
+  if (item.note) fields.push(["note", item.note]);
+  if (item.rights) fields.push(["rights", item.rights]);
+  const body = fields.map(([k, v]) => `  ${k} = {${bibEscape(v)}}`).join(",\n");
+  return `@misc{${bibKey(item)},\n${body}\n}`;
+}
+
+/**
+ * A CITATION.cff document for the published tree's root, or `undefined`.
+ *
+ * `undefined` is the important half. The CFF 1.2.0 schema makes `authors` REQUIRED, so a library with
+ * no recorded creator cannot produce a valid file — and an invalid CITATION.cff is worse than none:
+ * GitHub's "Cite this repository" widget reads it, and a half-record teaches every downstream tool a
+ * wrong fact with the repository's own authority behind it. Validate-and-omit, as the ticket says.
+ * Hand-written YAML (a serializer would be a dependency for six keys) — every value is quoted and
+ * escaped, so a title containing `:` or a quote cannot break the document.
+ */
+export function citationCff(input: CitationInput & { url?: string }): string | undefined {
+  const item = cslItemFor(input);
+  if (!item.author?.length) return undefined;
+  const q = (s: string): string => `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+  const lines = [
+    "cff-version: 1.2.0",
+    `message: ${q("If you use this work, please cite it as below.")}`,
+    `title: ${q(item.title)}`,
+    "authors:",
+    // CFF distinguishes a person (family-names/given-names) from an entity (name). cslName already
+    // made that determination once — reuse it rather than re-deciding here.
+    ...item.author.flatMap((a) => (a.given ? [`  - family-names: ${q(a.family)}`, `    given-names: ${q(a.given)}`] : [`  - name: ${q(a.family)}`])),
+    "type: dataset",
+  ];
+  // NO `date-released`. CFF types it as a full date and Archie usually holds only a year (dcterms:date
+  // is free text — "ca. 1404-1438"), so emitting it would mean inventing a month and a day. That is
+  // the half-record this function exists to refuse, and a fabricated January 1st is indistinguishable
+  // from a real one to every tool that reads it.
+  if (item.URL) lines.push(`url: ${q(item.URL)}`);
+  if (item.rights) lines.push(`license-url: ${q(item.rights)}`);
+  return `${lines.join("\n")}\n`;
+}
