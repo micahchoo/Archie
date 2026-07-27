@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { publishLibrary } from "./site.js";
-import { sitemapXml, exhibitPageHtml } from "./static-pages.js";
+import { sitemapXml, exhibitPageHtml, libraryPageHtml } from "./static-pages.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { appendNew, appendDelete } from "../spine/log.js";
 import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
@@ -248,5 +248,119 @@ describe("exhibitPageHtml — the narrative reaches the archival page (V110)", (
   it("says nothing about a narrative when the exhibit has no sections", () => {
     const plain = { id: "ex-2", slug: "grid", title: "Grid", objects: [] } as unknown as Parameters<typeof exhibitPageHtml>[0];
     expect(exhibitPageHtml(plain, [], { baseUrl: "https://x/" })).not.toContain("The narrative");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// V103 / V104 (Archie-a5b1) — the rights ladder and the Dublin Core rows reach the archival page.
+//
+// Before this, `grep -n metadata` over static-pages.ts returned NOTHING (V110's exact signature) and
+// the licence URI went only into schema.org JSON-LD, so the durable citation surface answered "may I
+// use this?" with silence over manifests carrying a `rights` URI on every canvas and ten dcterms
+// entries per folio.
+//
+// Its OWN fixture, deliberately: the file's shared `fixture()` is consumed by twenty assertions
+// including a byte-identical-idempotency one, and `.claude/rules/test-fixtures.md` forbids reshaping a
+// shared fixture for one test. These call the builders directly, as the V110 block above does.
+// ─────────────────────────────────────────────────────────────────────────────
+describe("the rights ladder reaches the archival page (V103/V104)", () => {
+  const exhibit = {
+    id: "ex-r", slug: "r", title: "Rights Exhibit", summary: "sum",
+    rights: "http://creativecommons.org/licenses/by/4.0/",
+    requiredStatement: { label: "Source", value: "EXHIBIT-CREDIT-LINE" },
+    metadata: [
+      { property: "dcterms:subject", value: "EXHIBIT-SUBJECT" },
+      { property: "dcterms:creator", value: "Ada" },
+      { property: "dcterms:creator", value: "Grace" },
+      { property: "dcterms:title", value: "EXCLUDED-COLLIDES-WITH-NATIVE-TITLE" },
+      { property: "dcterms:date", value: "   " },
+    ],
+    objects: [
+      {
+        id: "o1", source: "https://img/1.jpg", label: "Folio One",
+        rights: "http://creativecommons.org/publicdomain/mark/1.0/",
+        requiredStatement: { label: "Held by", value: "OBJECT-CREDIT-LINE" },
+        metadata: [{ property: "dcterms:provenance", value: "OBJECT-PROVENANCE" }],
+      },
+      { id: "o2", source: "https://img/2.jpg", label: "BARE-OBJECT-NO-RIGHTS" },
+    ],
+  } as unknown as Parameters<typeof exhibitPageHtml>[0];
+
+  const html = () => exhibitPageHtml(exhibit, [], { baseUrl: "https://x/" });
+
+  it("prints the exhibit's Dublin Core rows as a finding-aid <dl>", () => {
+    const h = html();
+    expect(h).toContain("<dl class=\"meta\">");
+    expect(h).toContain("<dt>Subject</dt><dd>EXHIBIT-SUBJECT</dd>");
+  });
+
+  it("prints the OBJECT's own rows under the object's heading — the level where the licence actually lives", () => {
+    const h = html();
+    // Ordering is the assertion, not mere presence: a hoisted block at the top of the page would
+    // contain the same string and could not say WHICH item the statement is about.
+    const heading = h.indexOf("<h2>Folio One</h2>");
+    expect(heading, "the object heading must render even though it carries no notes").toBeGreaterThan(-1);
+    const provenance = h.indexOf("OBJECT-PROVENANCE");
+    expect(provenance).toBeGreaterThan(heading);
+    expect(h.indexOf("OBJECT-CREDIT-LINE")).toBeGreaterThan(heading);
+  });
+
+  it("renders the licence as VISIBLE linked text at both levels, not only as JSON-LD `license`", () => {
+    const h = html();
+    // `rel="license"` cannot appear inside the JSON-LD object, so this fails against the old code
+    // (which emitted the URI only into `jsonLd.license`) and against any regression back to it.
+    expect(h).toContain('<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>');
+    expect(h).toContain('<a rel="license" href="http://creativecommons.org/publicdomain/mark/1.0/">Public Domain Mark 1.0</a>');
+  });
+
+  it("links a licence OUTSIDE the approved vocabulary as its own URI rather than dropping it", () => {
+    // `licenseLabel` falls back to the URI itself for anything not in `LICENSES` — forward
+    // compatibility, and the behaviour 15 of the seed's 40 licensed items actually take today
+    // (CC 3.0 versions and ODbL are simply not in the picker's list). A reader still gets a
+    // resolvable link; what they must never get is silence.
+    const odbl = {
+      ...(exhibit as unknown as Record<string, unknown>),
+      rights: "https://opendatacommons.org/licenses/odbl/",
+      metadata: [],
+    } as unknown as Parameters<typeof exhibitPageHtml>[0];
+    const h = exhibitPageHtml(odbl, [], { baseUrl: "https://x/" });
+    expect(h).toContain('<a rel="license" href="https://opendatacommons.org/licenses/odbl/">https://opendatacommons.org/licenses/odbl/</a>');
+  });
+
+  it("goes through the metadataRows projection — repeats merge, excluded and blank entries drop", () => {
+    const h = html();
+    // Merged repeat, delimited (two stacked values read as one without it).
+    expect(h).toContain("<dt>Creator</dt><dd>Ada; Grace</dd>");
+    // `dcterms:title` collides with the native title already on the page; `dcterms:date` is blank.
+    expect(h).not.toContain("EXCLUDED-COLLIDES-WITH-NATIVE-TITLE");
+    expect(h).not.toContain("<dt>Date</dt>");
+  });
+
+  it("stays silent for an object with neither notes nor rights (no empty headings)", () => {
+    expect(html()).not.toContain("BARE-OBJECT-NO-RIGHTS");
+  });
+
+  it("entity-escapes a hostile metadata value (the same XSS floor as note bodies)", () => {
+    const hostile = {
+      ...(exhibit as unknown as Record<string, unknown>),
+      metadata: [{ property: "dcterms:provenance", value: "<script>alert(1)</script>" }],
+    } as unknown as Parameters<typeof exhibitPageHtml>[0];
+    const h = exhibitPageHtml(hostile, [], { baseUrl: "https://x/" });
+    expect(h).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+    expect(h).not.toContain("<script>alert(1)</script>");
+  });
+
+  it("the library page carries the library's own credit, licence and rows", () => {
+    const library = {
+      id: "lib", title: "L", summary: "s",
+      rights: "http://rightsstatements.org/vocab/InC/1.0/",
+      requiredStatement: { label: "Attribution", value: "LIBRARY-CREDIT-LINE" },
+      metadata: [{ property: "dcterms:publisher", value: "LIBRARY-PUBLISHER" }],
+      exhibits: [],
+    } as unknown as Library;
+    const h = libraryPageHtml(library, { baseUrl: "https://x/" });
+    expect(h).toContain("LIBRARY-CREDIT-LINE");
+    expect(h).toContain('<a rel="license" href="http://rightsstatements.org/vocab/InC/1.0/">In Copyright</a>');
+    expect(h).toContain("<dt>Publisher</dt><dd>LIBRARY-PUBLISHER</dd>");
   });
 });
