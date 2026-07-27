@@ -83,10 +83,40 @@ if [ ! -s "$LJ" ]; then
   exit 1
 fi
 
+# Wait for the SECOND fact the assertions read: the localStorage origin file (Archie-15a5).
+#
+# library.json is an fs write this script polls; the origin is whatever WebKit has flushed to its
+# own database, asynchronously, on its own schedule. Nothing about the first implies the second, so
+# breaking out of the loop above and asserting the origin was a gate measuring something ADJACENT to
+# what it claims — confirmed flaky 2026-07-27, red then green on the identical commit (ebd7424),
+# every other assertion passing and the origin reported as `<none>` rather than wrong.
+#
+# Not a hard exit: desktop-smoke.sh owns the assertion, and letting it report keeps one failure
+# format. This loop only makes the wait match the claim.
+LS_DIR="$APP/localstorage"
+for _ in $(seq 1 "$BOOT_TIMEOUT"); do
+  compgen -G "$LS_DIR/tauri_localhost_0*" >/dev/null 2>&1 && break
+  kill -0 "$APP_PID" 2>/dev/null || break
+  sleep 1
+done
+compgen -G "$LS_DIR/tauri_localhost_0*" >/dev/null 2>&1 \
+  || echo "desktop-boot: localstorage origin still absent after ${BOOT_TIMEOUT}s — the smoke will report it"
+
 echo "library written; stopping the app"
-kill "$APP_PID" 2>/dev/null
+# SIGTERM and WAIT FOR EXIT, rather than kill + a constant sleep. WebKit flushes its databases during
+# teardown, so the shutdown itself is part of what produces the fact being asserted; `sleep 2` was the
+# same race with a bigger number, and growing the constant is explicitly the wrong fix here.
+kill -TERM "$APP_PID" 2>/dev/null
+for _ in $(seq 1 40); do
+  kill -0 "$APP_PID" 2>/dev/null || break
+  sleep 0.5
+done
+if kill -0 "$APP_PID" 2>/dev/null; then
+  echo "desktop-boot: the app ignored SIGTERM after 20s — killing (its flush may be incomplete)"
+  kill -KILL "$APP_PID" 2>/dev/null
+fi
+wait "$APP_PID" 2>/dev/null
 APP_PID=""
-sleep 2
 
 APP="$APP" "$ROOT/scripts/desktop-smoke.sh"
 status=$?
