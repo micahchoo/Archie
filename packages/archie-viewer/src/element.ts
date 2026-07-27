@@ -568,6 +568,24 @@ export class ArchieViewerElement extends HTMLElement {
     };
     // The reading pane mounts AFTER the canvas so a mount failure still leaves the way out visible.
     await this.#mountAside(exhibit, object, section, () => annotations);
+
+    // ARRIVING AT A CITED NOTE MUST OPEN IT, not merely frame it.
+    //
+    // `#applyFragment` calls `surface.setSelected` + `fitBounds`, which paint the halo and move the
+    // camera — but `setSelected` is a PROGRAMMATIC state set and deliberately does not re-enter the
+    // overlay's `onSelect` (that would be a feedback loop), so nothing showed the body. The reader
+    // landed on the right region of the right object with an empty note pane.
+    //
+    // Found by the Archie-1820 finder's own smoke assertion, which travels to a hit on another
+    // object: the reader title changed correctly and the card stayed shut. It is NOT a finder bug —
+    // every `selectId` landing had it, so `<archie-viewer target="#/<slug>/a/<id>">`, the whole
+    // cite-ladder note rung, arrived silent too. One fix covers both because both arrive here.
+    //
+    // Placed after #mountAside so the chrome exists to take the row highlight in the same beat.
+    if (resolved?.selectId) {
+      this.#noteCard?.showNote(annotations, resolved.selectId);
+      this.#chrome?.setSelected(resolved.selectId);
+    }
   }
 
   /**
@@ -626,6 +644,15 @@ export class ArchieViewerElement extends HTMLElement {
       onstep: (objectId) => {
         const next = exhibit.objects.find((o) => o.id === objectId);
         if (next) void this.#openObject(exhibit, next);
+      },
+      // A search hit on ANOTHER object (Archie-1820). Reuses the cite-ladder landing wholesale rather
+      // than inventing a second way to arrive: a `selectId` on a resolved object target is exactly
+      // what #applyFragment already applies post-mount (setSelected + fitBounds), so a hit lands on
+      // the note's own region — not on the object's top. Archie-9eeb's second half, for free, because
+      // target-resolve.ts is the embed's ONE address resolver and this adds no other.
+      onfind: (objectId, noteId) => {
+        const next = exhibit.objects.find((o) => o.id === objectId);
+        if (next) void this.#openObject(exhibit, next, { kind: "object", objectId, selectId: noteId });
       },
       onoverview: () => { this.#teardownSurface(); this.#setView({ kind: "exhibit", exhibit }); },
     });

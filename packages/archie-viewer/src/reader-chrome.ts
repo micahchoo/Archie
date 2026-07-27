@@ -93,6 +93,58 @@ export function previewOf(ann: W3CAnnotation): string {
   return text.length > 180 ? `${text.slice(0, 179)}…` : text;
 }
 
+/** One search hit: the note, and — the part Archie-9eeb is open about — WHERE it is. */
+export interface NoteHit {
+  id: string;
+  objectId: string;
+  /** The object's own label. A hit that does not say where it lives is the defect, not the feature. */
+  objectLabel: string;
+  preview: string;
+}
+
+/**
+ * Find notes across the WHOLE exhibit whose words match `query`.
+ *
+ * NO INDEX, AND THAT IS THE FINDING. `Archie-1820` expected this row to resolve as DROP-justified
+ * because "the index and minisearch are real weight" — but the embed does not need either. The shell
+ * builds a MiniSearch over the exhibit (`search-index.ts:48-56`, prefix + fuzzy 0.2) because its
+ * finder is a library-scale browse surface; the embed already holds the exhibit's entire note tree in
+ * memory the moment the exhibit opens (`annotationsByObject`), so a scan over it is exact, allocation
+ * -light, and costs no dependency at all. The weight objection dissolves rather than being paid.
+ *
+ * What is deliberately NOT ported: fuzzy and prefix matching. A substring match is a promise the embed
+ * can keep exactly ("these notes contain what you typed"); fuzzy scoring without a relevance-ranked UI
+ * is a promise it cannot.
+ *
+ * Scope mirrors the shell's `flattenExhibitNotes` (`search-index.ts:62-77`): base notes PLUS every
+ * reading's notes, de-duped by id, first occurrence winning. The finder is mode-INDEPENDENT on
+ * purpose — a note that lives only in a reading the visitor has not activated is still findable, or
+ * the search quietly lies about what the exhibit contains.
+ */
+export function searchExhibit(exhibit: PortableExhibit, query: string): NoteHit[] {
+  const q = query.trim().toLowerCase();
+  if (q.length === 0) return [];
+  const hits: NoteHit[] = [];
+  const seen = new Set<string>();
+  for (const obj of exhibit.objects ?? []) {
+    const byR = exhibit.readingAnnotationsByObject?.[obj.id] ?? {};
+    const pools = [exhibit.annotationsByObject?.[obj.id] ?? [], ...Object.values(byR)];
+    for (const pool of pools) {
+      for (const ann of pool) {
+        const id = String(ann.id ?? "");
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        // Match the words a READER sees, never the markup: `stripMarkdown` is the same canonical
+        // strip `previewOf` uses, so a hit can never be on a `](url)` the reader cannot see.
+        const text = stripMarkdown(commentOfAnnotation(ann));
+        if (!text.toLowerCase().includes(q)) continue;
+        hits.push({ id, objectId: obj.id, objectLabel: obj.label, preview: previewOf(ann) });
+      }
+    }
+  }
+  return hits;
+}
+
 /**
  * annotation id → its Reading's colour, for ONE object. Built from the exhibit's own
  * `readingAnnotationsByObject`, exactly as ExhibitView.svelte's `readingColourById` does — a note not
@@ -122,6 +174,8 @@ export interface ReaderChromeOptions {
   onreading(id: string | null): void;
   onstep(objectId: string): void;
   onoverview(): void;
+  /** A search hit on ANOTHER object: open that object AND land on that note (Archie-1820). */
+  onfind(objectId: string, noteId: string): void;
 }
 
 export interface ReaderChrome {
@@ -143,6 +197,20 @@ const CHROME_STYLES = `
     border-radius: var(--radius-sm); background: var(--surface-paper-card); color: inherit;
     font-size: .9rem; line-height: 1.45;
     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .rc-find {
+    width: 100%; box-sizing: border-box; margin: 0 0 var(--space-3);
+    padding: var(--space-2) var(--space-3); font: inherit; font-size: var(--text-ui-sm);
+    color: inherit; background: var(--surface-paper-card);
+    border: 1px solid var(--border-paper); border-radius: var(--radius-sm);
+  }
+  .rc-find:focus { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+  .rc-list { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+  .rc-note-text { display: block; }
+  /* The locus. Quiet, but always present on a hit — see rowFor()'s note on Archie-9eeb. */
+  .rc-where {
+    display: block; margin-top: var(--space-1); font-family: var(--font-ui);
+    font-size: var(--text-ui-xs); letter-spacing: .06em; color: var(--ink-paper-secondary);
   }
   .rc-notes button:hover { background: var(--surface-paper-hover); }
   .rc-notes button[aria-current="true"] { background: var(--surface-paper-hover); border-color: var(--accent); font-weight: 600; }
@@ -237,34 +305,117 @@ export function mountReaderChrome(
   heading.textContent = `${annotations.length} ${annotations.length === 1 ? "note" : "notes"}`;
   pane.append(heading);
 
-  const rows = new Map<string, HTMLButtonElement>();
-  if (annotations.length === 0) {
-    const empty = doc.createElement("p");
-    empty.className = "rc-empty";
-    empty.textContent = "No notes on this item yet.";
-    pane.append(empty);
-  } else {
+  // ---- the finder (Archie-1820) ------------------------------------------------------------------
+  // A filter over the pane's own list rather than a modal over the canvas. The shell needs an overlay
+  // because its finder is library-scale and has nowhere else to live; the embed's reading pane is
+  // already a note index, so searching it in place costs no new surface, no scrim, and no second
+  // focus trap — and it never covers the image, which is what ADR-0019's layout row asks of chrome.
+  const find = doc.createElement("input");
+  find.type = "search";
+  find.className = "rc-find";
+  find.setAttribute("aria-label", "Search notes in this exhibit");
+  find.placeholder = "Search notes in this exhibit…";
+  pane.append(find);
+
+  const listHost = doc.createElement("div");
+  listHost.className = "rc-list";
+  pane.append(listHost);
+
+  let rows = new Map<string, HTMLButtonElement>();
+
+  /** Build one row. `where` names the object when the row is a search hit from elsewhere. */
+  const rowFor = (id: string, preview: string, where: string | null, onclick: () => void): HTMLLIElement => {
+    const li = doc.createElement("li");
+    const btn = doc.createElement("button");
+    btn.type = "button";
+    btn.dataset["note"] = id;
+    // textContent, never innerHTML: a list preview is plain stripped text, and the only sanitized
+    // HTML in this package goes through note-card.ts's renderMarkdown pipeline.
+    const line = doc.createElement("span");
+    line.className = "rc-note-text";
+    line.textContent = preview;
+    btn.append(line);
+    if (where !== null) {
+      // THE LOCUS. Archie-9eeb is open against the shell's finder precisely because its results say
+      // what a note says and never where it is, so on a 21-object exhibit every hit reads as if it
+      // came from the same place. A hit here names its object before it is ever clicked. Donor for
+      // the shape (opened at the line): clover-iiif `ContentSearch.tsx:50-58` groups hits by
+      // `target.source.id` and renders the canvas label as a group HEADER (`:83-88`) rather than
+      // repeating it per row — a refinement worth taking if these lists ever get long enough to
+      // repeat a name many times.
+      const loc = doc.createElement("span");
+      loc.className = "rc-where";
+      loc.textContent = where;
+      btn.append(loc);
+    }
+    const colour = colourById[id];
+    if (colour) btn.style.borderLeftColor = colour;
+    btn.addEventListener("click", onclick);
+    rows.set(id, btn);
+    li.append(btn);
+    return li;
+  };
+
+  /** The object's OWN notes — the default view of the pane (V70's index). */
+  function renderNotes(): void {
+    listHost.textContent = "";
+    rows = new Map();
+    heading.textContent = `${annotations.length} ${annotations.length === 1 ? "note" : "notes"}`;
+    if (annotations.length === 0) {
+      const empty = doc.createElement("p");
+      empty.className = "rc-empty";
+      empty.textContent = "No notes on this item yet.";
+      listHost.append(empty);
+      return;
+    }
     const list = doc.createElement("ul");
     list.className = "rc-notes";
     list.setAttribute("aria-label", "Notes on this item");
     for (const ann of annotations) {
       const id = String(ann.id ?? "");
-      const li = doc.createElement("li");
-      const btn = doc.createElement("button");
-      btn.type = "button";
-      btn.dataset["note"] = id;
-      // textContent, never innerHTML: a list preview is plain stripped text, and the only sanitized
-      // HTML in this package goes through note-card.ts's renderMarkdown pipeline.
-      btn.textContent = previewOf(ann);
-      const colour = colourById[id];
-      if (colour) btn.style.borderLeftColor = colour;
-      btn.addEventListener("click", () => opts.onselect(id));
-      rows.set(id, btn);
-      li.append(btn);
-      list.append(li);
+      list.append(rowFor(id, previewOf(ann), null, () => opts.onselect(id)));
     }
-    pane.append(list);
+    listHost.append(list);
   }
+
+  /** Search results, exhibit-wide. */
+  function renderHits(q: string): void {
+    const hits = searchExhibit(exhibit, q);
+    listHost.textContent = "";
+    rows = new Map();
+    heading.textContent = `${hits.length} ${hits.length === 1 ? "match" : "matches"} in this exhibit`;
+    if (hits.length === 0) {
+      const empty = doc.createElement("p");
+      empty.className = "rc-empty";
+      // Name the query back, so an empty result is legible as "nothing matched THIS".
+      empty.textContent = `No notes match “${q}”.`;
+      listHost.append(empty);
+      return;
+    }
+    const list = doc.createElement("ul");
+    list.className = "rc-notes";
+    list.setAttribute("aria-label", "Search results");
+    for (const h of hits) {
+      list.append(rowFor(h.id, h.preview, h.objectLabel, () => {
+        // A hit on THIS object is an ordinary selection; one elsewhere has to travel. Both land on
+        // the note itself, never on the object's top — which is the second half of what Archie-9eeb
+        // asks for, and the half clover-iiif does NOT deliver for search hits (its poll-then-zoom at
+        // `Item.tsx:119-132` is gated on `isContentState`, a prop `ContentSearch.tsx` never passes,
+        // so its cross-canvas path stops at the canvas). No swept system demonstrates this working;
+        // the embed gets it for free only because `resolveExhibitTarget` already existed.
+        if (h.objectId === object.id) opts.onselect(h.id);
+        else opts.onfind(h.objectId, h.id);
+      }));
+    }
+    listHost.append(list);
+  }
+
+  find.addEventListener("input", () => {
+    const q = find.value.trim();
+    if (q.length === 0) renderNotes();
+    else renderHits(q);
+  });
+  renderNotes();
 
   // ---- V30: object navigation (donor: SidebarObjectNav.svelte) -----------------------------------
   // Shown whenever the exhibit HAS siblings. A single-object exhibit still gets "Back to Exhibit" —
