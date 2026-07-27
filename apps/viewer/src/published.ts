@@ -11,7 +11,7 @@ import {
   // The untrusted-archive open seam (ISSUES.md Issue 5 canonicalization): the zip-bomb-cap +
   // ADR-0020-marker-validate + capped-fetch logic used to be copy-pasted here and in
   // packages/archie-viewer/src/load.ts — both now compose these instead of redefining them.
-  openArchieLibrary, openArchieLibraryFromUrl, SRC_MAX_BYTES, fsJsonSource, FailedReadError, assertArchieTreeMarker,
+  openArchieLibrary, openArchieLibraryFromUrl, looksLikeZip, SRC_MAX_BYTES, fsJsonSource, FailedReadError, assertArchieTreeMarker,
   // V7/V11: ONE rule for resolving a tree-relative asset ref against its library base.
   assetUrlAgainst,
   type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit, type ImageIndex, type NoteTransform,
@@ -21,7 +21,31 @@ import { mergeImageIndex } from "./gallery-view.js";
 
 export { SRC_MAX_BYTES };
 
-const PUBLISHED = `${import.meta.env.BASE_URL}published`;
+const OWN_TREE = `${import.meta.env.BASE_URL}published`;
+
+// The published tree the HOSTED read path is pointed at (Archie-6d85).
+//
+// It used to be pinned to this deploy's own `/published`, so no URL existed that opened SOMEBODY
+// ELSE's published tree in a hosted viewer — `?src=` accepted zip bytes only. Repointing this one
+// variable is what makes `#/?src=<tree base>` work, because `genUrl` is the single place a hosted
+// path is turned into a URL and `toServingOrigin` is the single place a canonical asset URL is
+// rebased onto the serving origin. Both read it live.
+let PUBLISHED = OWN_TREE;
+
+/** Point the hosted reader at a foreign published tree (`?src=<base>`), or back at our own. Clears
+ *  the session caches — they are keyed by slug, and two trees can hold the same slug. */
+export function setHostedTreeBase(base: string | null): void {
+  const next = base === null ? OWN_TREE : base.replace(/\/+$/, "");
+  if (next === PUBLISHED) return;
+  PUBLISHED = next;
+  hostedCache.clear();
+  hostedGeneration = null;
+}
+
+/** The tree currently being read (for tests and for the "you are reading a foreign tree" affordance). */
+export function hostedTreeBase(): string {
+  return PUBLISHED;
+}
 
 // --- hosted rebase (ADR-0010 portable read seam) ----------------------------------------------
 // The published manifest bakes every local-import asset URL against the CANONICAL origin (BASE,
@@ -282,7 +306,63 @@ export async function openLibraryFromFile(file: Blob): Promise<void> {
  * checks) before the decode step ever runs.
  */
 export async function openLibraryFromSrc(url: string, maxBytes: number = SRC_MAX_BYTES): Promise<void> {
+  // A non-`.zip` src is a published TREE BASE, read lazily over HTTP rather than pulled down as one
+  // payload. This is the dispatch the embed already ships and tests (archie-viewer/src/load.ts:120-128);
+  // ported here so the same URL opens in the hosted viewer, which is what the static pages' exhibit
+  // links need when a tree is read from anywhere but its canonical host.
+  //
+  // If the tree read fails AND the base itself serves zip bytes (a `.zip`-less zip link), fall back to
+  // the zip path — same order, and the same reason, as the embed's.
+  if (!/\.zip(\?|#|$)/i.test(url)) {
+    try {
+      await openHostedTree(url);
+      return;
+    } catch (treeErr) {
+      const bytes = await fetchIfZipBytes(url, maxBytes);
+      if (bytes) { openPortableLibrary(await openArchieLibrary(bytes)); return; }
+      throw treeErr; // not a zip either — surface the tree-open error, not the sniff's
+    }
+  }
   openPortableLibrary(await openArchieLibraryFromUrl(url, { maxBytes })); // fetch defaults to global fetch
+}
+
+/**
+ * Open a foreign published tree: leave portable mode, repoint the hosted reader, and VALIDATE before
+ * committing to it. Validation is the same pair the embed and our own boot both use — the ADR-0020
+ * marker gate (lenient on absent, current-required when present) then `exhibits.json` — so a URL that
+ * is merely a website fails here rather than rendering an empty hall that looks like an empty library.
+ */
+async function openHostedTree(base: string): Promise<void> {
+  const previous = hostedTreeBase();
+  closePortableLibrary();
+  setHostedTreeBase(base);
+  try {
+    await assertArchieTreeMarker(httpSource);
+    await httpSource.get<ExhibitsJson>("exhibits.json");
+  } catch (e) {
+    setHostedTreeBase(previous === OWN_TREE ? null : previous); // don't strand the viewer on a dead tree
+    throw e;
+  }
+}
+
+/** Fetch a `.zip`-less URL once and return its bytes IFF they are a zip. `null` for anything else —
+ *  including a network failure, so the caller can surface the original TREE error instead of this
+ *  one. That swallow is why this isn't core's `fetchArchieLibraryBytes`, which always throws; same
+ *  carve-out the embed documents at `load.ts` `openSrcAsZipIfBytesAreZip`. */
+async function fetchIfZipBytes(url: string, maxBytes: number): Promise<Uint8Array | null> {
+  let res: Response;
+  try {
+    res = await fetch(url);
+  } catch {
+    return null;
+  }
+  if (!res.ok) return null;
+  const declared = Number(res.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > maxBytes) throw new Error("That library is too large to open here.");
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if (!looksLikeZip(bytes)) return null;
+  if (bytes.byteLength > maxBytes) throw new Error("That library is too large to open here.");
+  return bytes;
 }
 // ----------------------------------------------------------------------------------------------
 

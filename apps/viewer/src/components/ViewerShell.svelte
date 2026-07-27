@@ -137,12 +137,14 @@
     // Live source (Q-3): probe the same-origin Studio working store BEFORE the gallery load so an
     // authored exhibit appears with no publish step. Quiet no-op everywhere it can't apply.
     await initLiveSource();
-    // ?src= (ADR-0009): open the hosted zip first, then apply the rest of the route.
+    // ?src= (ADR-0009): open the hosted library first, then apply the rest of the route. Since
+    // Archie-6d85 the src may be a `.archie.zip` OR a published TREE BASE — openLibraryFromSrc
+    // dispatches on the extension, so nothing here needs to know which.
     if (route.src) {
       try {
         await openLibraryFromSrc(route.src);
       } catch (e) {
-        openError = e instanceof Error ? e.message : "That library couldn’t be opened. Make sure it’s an Archie .archie.zip file.";
+        openError = e instanceof Error ? e.message : "That library couldn’t be opened. Give it an Archie .archie.zip file, or the address of a published Archie library.";
         phase = "empty";
         return;
       }
