@@ -12,6 +12,7 @@
       "Drop pins on a live map — each one stays on its place as you zoom and pan, anchored to a longitude and latitude. An early look at annotating maps in Archie."
     ]
   },
+  "rights": "https://opendatacommons.org/licenses/odbl/",
   "requiredStatement": {
     "label": {
       "none": [
