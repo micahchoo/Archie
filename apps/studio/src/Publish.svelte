@@ -30,6 +30,7 @@
   // cancellation wired to component lifecycle, so they keep running in the background across a close — a
   // publish that finishes while the surface is closed lands on success/manual-pages/error and is reflected
   // the moment the surface reopens (requirement 3).
+  import { viewerShareLink, viewerEmbedSnippet } from "./share-link.js";
   import type { GitHubTarget, BrokenLink, IncompleteCanvas, MissingAsset, GitHubPublishResult, PublishProgress } from "@render/core";
   import type { CorruptLogFinding } from "./publish-warnings.js";
   import type { DeploySession, DeployTarget, DeployProgress } from "./deploy/types.js";
@@ -202,15 +203,10 @@
   const CANONICAL_HOST = new URL(CANONICAL_VIEWER).host;
   let zipUrl = $state("");
   let copied = $state(false);
-  const shareLink = $derived.by(() => {
-    const u = zipUrl.trim();
-    if (!u) return "";
-    try {
-      const p = new URL(u);
-      if (p.protocol !== "https:" && p.protocol !== "http:") return ""; // a junk string composes a junk link
-    } catch { return ""; }
-    return `${CANONICAL_VIEWER}?src=${encodeURIComponent(u)}`;
-  });
+  // Archie-4f7c: the grammar is `#/?src=` (INSIDE the hash), not `?src=`. Minted by share-link.ts so
+  // it can be round-tripped against the viewer's own parseRoute in a test — a real query param is
+  // invisible to the viewer, which reads only location.hash, so every link this emitted was dead.
+  const shareLink = $derived(viewerShareLink(CANONICAL_VIEWER, zipUrl));
   const canCopy = typeof navigator !== "undefined" && !!navigator.clipboard;
   function copyShareLink() {
     navigator.clipboard.writeText(shareLink)
@@ -227,7 +223,7 @@
   const wcSnippet = $derived(zipUrl.trim() === "" ? "" :
 `<script type="module" src="${CDN_RUNTIME}" crossorigin="anonymous"></scr` + `ipt>
 <archie-viewer src="${zipUrl.trim()}"></archie-viewer>`);
-  const embedSnippet = $derived(shareLink === "" ? "" : `<iframe src="${shareLink}" width="100%" height="600" style="border:0" allowfullscreen loading="lazy" referrerpolicy="no-referrer" title="Archie exhibit"></iframe>`);
+  const embedSnippet = $derived(viewerEmbedSnippet(shareLink));
   let copiedWc = $state(false);
   let copiedEmbed = $state(false);
   function copyWc() {
