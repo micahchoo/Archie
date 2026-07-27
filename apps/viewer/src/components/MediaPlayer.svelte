@@ -23,11 +23,12 @@
   //     `PrimaryWindow.jsx:46-70`, on the canvas alone.
   // So the note surface, the sheet, the lightbox and the rich prose renderer are shared components
   // here, not re-implementations: ONE note renderer (Archie-c982/dbbc), reached from a temporal spine.
-  import { parseMediaFragment, activeNoteIndex, transcriptTextOf, splitNoteMedia, stripMarkdown, tagsOfAnnotation as tagsOf, geoOf, geoCenter, formatLngLat, type NoteMediaItem, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
+  import { parseMediaFragment, activeNoteIndex, transcriptTextOf, splitNoteMedia, metadataRows, stripMarkdown, tagsOfAnnotation as tagsOf, geoOf, geoCenter, formatLngLat, type NoteMediaItem, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
   import ResizeDivider from "@render/svelte/ResizeDivider.svelte";
   import { clampSeekStart } from "../av-landing.js";
   import { loadAsideWidth, saveAside, type AsideState } from "../aside-persistence.js";
   import Credit from "./Credit.svelte";
+  import MetadataRun from "./MetadataRun.svelte";
   import NoteLightbox from "./NoteLightbox.svelte";
   import NotePopup from "./NotePopup.svelte";
   import ReadingSheet from "./ReadingSheet.svelte";
@@ -37,6 +38,7 @@
     object,
     annotations = [],
     rights,
+    exhibitRights,
     initialSeek,
     onlocus,
     onback,
@@ -50,6 +52,9 @@
     annotations?: W3CAnnotation[];
     /** The recording's credit/license (Q5) — AV is MUST-display too; shown by the title. */
     rights?: RightsFields;
+    /** The EXHIBIT's credit/license/metadata (Archie-36e6) — a single-object AV exhibit routes straight
+     *  here, so this is the only place its MUST-display requiredStatement can appear. */
+    exhibitRights?: RightsFields;
     /** Deep-link time offset (#/<slug>/a/<id>?t=…, Phase 3 / 4.7): on `loadedmetadata` the playhead seeks
      *  to this clamped offset PAUSED — section-142: landing seeks but must NOT auto-play, so this does NOT
      *  go through `seekTo` (which couples play()). Garbage / out-of-range → head (0). */
@@ -81,6 +86,9 @@
      *  this path is currently unexercised either way — recorded rather than inferred.) */
     onopenfinder?: (tag: string) => void;
   } = $props();
+
+  // The EXHIBIT-level metadata run, shown beside the credit stack (Archie-36e6).
+  const exhibitMeta = $derived(metadataRows(exhibitRights));
 
   const objectNav = $derived(
     !!siblings && siblings.length > 1 && !!currentId && !!onstep && !!onoverview,
@@ -417,7 +425,8 @@
     <p class="eyebrow">Transcript · {cues.length} {cues.length === 1 ? "line" : "lines"}</p>
     {#if isVideo}<h1 class="vid-label">{object.label}</h1>{/if}
     <p class="hint">Select any line to jump there in the recording and open its note. As it plays, the line being spoken lights up.</p>
-    <p class="credit-row"><Credit {rights} tone="paper" /></p>
+    <p class="credit-row"><Credit {rights} {exhibitRights} objectLevelLabel="This recording" tone="paper" /></p>
+    <MetadataRun rows={exhibitMeta} tone="paper" />
     {#if cues.length === 0}
       <p class="empty">No transcript for this recording.</p>
     {:else}

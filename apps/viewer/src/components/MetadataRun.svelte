@@ -10,13 +10,17 @@
   // by nature (creator / date / subject — DEFAULT_METADATA_FIELDS.exhibit); a long one wraps.
   // Repeats keep a visible delimiter — "; " between values — for the same reason the panel bullets
   // them: two values run together read as one.
+  //
+  // TONE (Archie-36e6): the exhibit header sits on --surface-canvas, but the three readers show the
+  // same exhibit-level run in a PAPER sidebar. Same run, two grounds — so the ink tokens are switched
+  // by tone rather than hard-coded, exactly as Credit.svelte does it.
   import type { MetadataRow } from "@render/core";
 
-  let { rows }: { rows: MetadataRow[] } = $props();
+  let { rows, tone = "canvas" }: { rows: MetadataRow[]; tone?: "paper" | "canvas" } = $props();
 </script>
 
 {#if rows.length > 0}
-  <dl class="run">
+  <dl class="run {tone}">
     {#each rows as row (row.key)}
       <div class="pair">
         <dt>{row.label}</dt>
@@ -34,7 +38,12 @@
   dt {
     font-family: var(--font-ui), monospace; font-size: 0.62rem; font-weight: 500;
     letter-spacing: 0.18em; text-transform: uppercase; white-space: nowrap;
-    color: var(--ink-canvas-muted);
   }
-  dd { margin: 0; font-family: var(--font-body), sans-serif; font-size: 0.85rem; line-height: 1.6; color: var(--ink-canvas-secondary); }
+  .canvas dt { color: var(--ink-canvas-muted); }
+  .paper dt { color: var(--ink-paper-muted); }
+  dd { margin: 0; font-family: var(--font-body), sans-serif; font-size: 0.85rem; line-height: 1.6; }
+  .canvas dd { color: var(--ink-canvas-secondary); }
+  .paper dd { color: var(--ink-paper-secondary); }
+  /* In a reader sidebar the run is a narrow column, not a wide caption line. */
+  .paper.run { flex-direction: column; gap: var(--space-2); max-width: none; margin: var(--space-2) 0 0; }
 </style>

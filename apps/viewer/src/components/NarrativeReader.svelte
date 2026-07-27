@@ -11,12 +11,13 @@
   import ReadingSheet from "./ReadingSheet.svelte";
   import NotePopup from "./NotePopup.svelte";
   import Credit from "./Credit.svelte";
+  import MetadataRun from "./MetadataRun.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
   import ProseCites from "./ProseCites.svelte";
   import { type MarkerStyle, type FrameOverlay, formatZoomRatio, zoomBand } from "@render/svelte";
   import { loadAsideWidth, saveAsideWidth, scopedKey, loadSessionCollapsed, saveSessionCollapsed, type AsideState } from "../aside-persistence.js";
   import { untrack } from "svelte";
-  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, readingIdOf, stripMarkdown, withZoomBand, type MarkerStyleSpec, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
+  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, readingIdOf, stripMarkdown, metadataRows, withZoomBand, type MarkerStyleSpec, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
   import { ownerObjectOf, arrivalSectionIndex } from "../narrative-landing.js";
   import { navPosition, navRegionName, navStepName, noteIndexOpenMark } from "../product-copy.js";
 
@@ -102,6 +103,10 @@
      *  that tag as a facet — the narrative's only discovery surface besides the finder itself. */
     onopenfinder?: (tag: string) => void;
   } = $props();
+
+  // The exhibit-level metadata run (Archie-36e6) — this reader already showed the exhibit CREDIT but
+  // never its metadata, so a narrative exhibit dropped creator/date entirely.
+  const exhibitMeta = $derived(metadataRows(rights));
 
   // Per-exhibit, session-scoped collapse (Archie-c5cb). Read once, at mount, from the slug-scoped key.
   // svelte-ignore state_referenced_locally -- initial-capture is the contract: the slug is fixed for a
@@ -782,7 +787,10 @@
     <p class="hint">{asidePane === "sections"
       ? `Read down the page, or jump to any section. The image follows along, zooming to what each section is about${multiObject ? ", and switching between items as you go" : ""}.`
       : "Notes written on the item you’re reading. Select one to open it — its marker lights up on the image."}</p>
+    <!-- `rights` here is ALREADY the exhibit's (ExhibitView passes exhibitRights to this reader), so the
+         credit line was correct — what was missing is its metadata run (Archie-36e6). -->
     <p class="credit-row"><Credit {rights} tone="paper" /></p>
+    <MetadataRun rows={exhibitMeta} tone="paper" />
     <!-- Pane toggle: the authored read (sections) ⇄ the active object's notes. Without it, an item's
          notes were reachable only by spotting canvas markers — no listable surface in the narrative. -->
     <div class="pane-toggle" role="group" aria-label="Show sections or notes">

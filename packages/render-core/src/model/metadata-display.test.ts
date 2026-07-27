@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { metadataRows, metadataEntryLabel, LONG_VALUE_CHARS } from "./metadata-display.js";
+import { metadataRows, metadataEntryLabel, isExactEcho, LONG_VALUE_CHARS } from "./metadata-display.js";
 import type { MetadataEntry, RightsFields } from "./model.js";
 
 const md = (metadata: MetadataEntry[], rest: Partial<RightsFields> = {}): RightsFields => ({ metadata, ...rest });
@@ -199,5 +199,30 @@ describe("metadataRows — native slots are never rows", () => {
   it("does not treat an ABSENT credit as an empty-string match", () => {
     const rows = metadataRows(md([{ property: "dcterms:creator", value: "A" }], { requiredStatement: { label: "Attribution", value: "" } }));
     expect(rows).toHaveLength(1);
+  });
+});
+
+// The two-level credit stack's yield rule (Archie-36e6). Same fold/compare as metadataRows rule 3 —
+// these cases pin that "same" means EXACT-after-folding and nothing looser, because the whole point of
+// the near-match carve-out is that hiding a differing authored credit is the worse error.
+describe("isExactEcho", () => {
+  it("matches across case, surrounding space and collapsed inner whitespace", () => {
+    expect(isExactEcho("  Beinecke   Rare Book Library ", "beinecke rare book library")).toBe(true);
+  });
+
+  it("does NOT match when one string merely CONTAINS the other", () => {
+    expect(isExactEcho("Beinecke", "Beinecke Rare Book Library")).toBe(false);
+    expect(isExactEcho("Beinecke Rare Book Library", "Beinecke")).toBe(false);
+  });
+
+  it("an absent or blank side is never an echo (two empties are not a match)", () => {
+    expect(isExactEcho(undefined, "Beinecke")).toBe(false);
+    expect(isExactEcho("Beinecke", undefined)).toBe(false);
+    expect(isExactEcho("", "")).toBe(false);
+    expect(isExactEcho("   ", undefined)).toBe(false);
+  });
+
+  it("distinct statements do not match", () => {
+    expect(isExactEcho("Beinecke Rare Book Library", "Beinecke, gift of J. Voynich")).toBe(false);
   });
 });

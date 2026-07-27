@@ -60,6 +60,24 @@ export function metadataEntryLabel(entry: MetadataEntry): string | undefined {
 }
 
 /**
+ * Rule 3's fold-and-compare, exposed for the two-level credit stack (Archie-36e6).
+ *
+ * A reader that shows the exhibit credit AND the object credit together will very often be handed
+ * the identical sentence twice — a single-object exhibit usually carries the same statement at both
+ * levels — and printing it twice in two voices is indistinguishable from a data bug. That is exactly
+ * the misreading rule 3 exists to prevent, so the stack reuses this comparison rather than growing a
+ * second one that can drift from it.
+ *
+ * EXACT (folded) matches only. A near-match — one string containing the other — is deliberately NOT
+ * an echo: we cannot know which is the fuller statement, and silently hiding authored attribution is
+ * the worse error for a MUST-display field.
+ */
+export function isExactEcho(a: string | undefined, b: string | undefined): boolean {
+  const fa = fold(a);
+  return fa !== "" && fa === fold(b);
+}
+
+/**
  * Project a level's `RightsFields` into display rows.
  *
  * Rules, in application order — each one closes a way the flat list misreads on the page:
