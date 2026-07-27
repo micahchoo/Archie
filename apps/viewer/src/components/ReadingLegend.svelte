@@ -61,10 +61,21 @@
       {/each}
     </div>
     {#if activeDesc && !hidden}<p class="desc">{activeDesc}</p>{/if}
-    <!-- Hide-all: a declutter toggle, separate from the layer radios (visibility ≠ which reading). -->
-    <button type="button" class="hide-toggle" aria-pressed={hidden} onclick={() => onhiddenchange?.(!hidden)}>
-      {hidden ? "Show notes" : "Hide all"}
-    </button>
+    <!-- Hide-all: a declutter toggle, separate from the layer radios (visibility ≠ which reading).
+
+         GATED ON THE HANDLER (Archie-4524), and the gate is the point rather than defensive coding.
+         This button used to render unconditionally and call `onhiddenchange?.(…)`, so a host that
+         mounted the legend without wiring it would ship a control that renders, is enabled, and does
+         nothing — the dead-door defect this codebase keeps finding (`MediaPlayer.svelte`'s
+         `onopenfinder` gate is the same idiom, for the same reason). The AV surface is that host:
+         "hide all the notes" has no honest meaning where the notes ARE the transcript you are reading
+         along with, so it wires the radios and not this. Reader and NarrativeReader both pass
+         `onhiddenchange`, so nothing changes for them. -->
+    {#if onhiddenchange}
+      <button type="button" class="hide-toggle" aria-pressed={hidden} onclick={() => onhiddenchange?.(!hidden)}>
+        {hidden ? "Show notes" : "Hide all"}
+      </button>
+    {/if}
   </aside>
 {/if}
 
