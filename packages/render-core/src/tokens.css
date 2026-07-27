@@ -4,21 +4,35 @@
    voices: Vinque Antique (ornate display) / LARAZ (clean body) / LARAZ (quiet chrome), with FOP VHS
    reserved for the wordmark/marquee. Semantic token NAMES preserved so component refs resolve.
 
-   THIS IS THE SHARED TOKEN LAYER (Archie-52a9 / Archie-c314). It lives in render-core — layer zero,
-   below every consumer — because THREE surfaces need the same vocabulary and only two of them are
-   apps: `apps/viewer` (its Astro pages import `@render/core/tokens.css`) and the framework-free
-   `<archie-viewer>` embed, which cannot use a `<link>` at all and reads these bytes as text into its
-   shadow root (`packages/archie-viewer/tokens-source.mjs`). It used to live inside apps/viewer, which
-   made the embed reach up into an app for its design system — the wrong direction, and the thing that
-   let V9/V31/V69 happen (the embed simply grew its own literals instead).
+   THIS IS THE SHARED TOKEN LAYER (Archie-52a9 / Archie-c314 / Archie-ecf4). It lives in render-core —
+   layer zero, below every consumer — because it has THREE consumers and only two of them are apps:
 
-   ONE FILE, NO COPIES. Do not add a second copy "for" a consumer; a copy is what drifts.
-   KNOWN, TRACKED EXCEPTION: `apps/studio/src/tokens.css` is still a separate copy and has ALREADY
-   diverged — studio carries --text-lede/--text-note that this file does not. The divergence used to run
-   the other way too (--topbar-h/--scrim-top/--pane-top here and not there); it does not any more,
-   because the dock work (ADR-0019's layout row) retired all three from BOTH files. Verified 2026-07-26:
-   neither file defines any of them. Unifying the copies is filed separately — do not assume the two
-   agree. */
+     • `apps/studio`   — `main.ts` imports `@render/core/tokens.css` as its FIRST stylesheet
+     • `apps/viewer`   — its Astro pages import `@render/core/tokens.css`
+     • `<archie-viewer>` — the framework-free embed, which cannot use a `<link>` at all and reads these
+       bytes as TEXT into its shadow root (`packages/archie-viewer/tokens-source.mjs`)
+
+   It used to live inside apps/viewer, which made the embed reach up into an app for its design system —
+   the wrong direction, and the thing that let V9/V31/V69 happen (the embed simply grew its own literals
+   instead).
+
+   ONE FILE, NO COPIES. Do not add a second copy "for" a consumer; a copy is what drifts. Studio WAS
+   that second copy until 2026-07-27, and it drifted in exactly the two ways a copy always does:
+   a token added to one side only (--text-lede/--text-note here, --scrim-dim there — so studio's
+   TutorialModal inlined the scrim's literal as a var() fallback), and a VALUE edited on one side only
+   (the .eyebrow contrast fix at the foot of this file reached the reader and never reached the author).
+   Neither divergence was decided; both were accumulation. The copy is gone — that file no longer
+   exists, and `apps/studio/src/tokens.test.ts` fails if any file under apps/studio/src redeclares a
+   token declared here, whether as a restored copy or as one shadowed value in a component.
+
+   WHERE AN APP-LOCAL TOKEN GOES. Today there are none, and that is a measurement, not an aspiration:
+   every token here is design vocabulary (palette, type, spacing, depth) that an authoring surface and a
+   reading surface want identically, and studio's genuinely app-local custom properties (--studio-aside-w,
+   --plate-w) are per-component RUNTIME channels written by `style:` bindings and declared at their use
+   site, which is where they belong. If a real one ever appears, it goes in a NEW thin app-local
+   stylesheet imported AFTER this one — never by editing this file for one consumer — and it carries a
+   comment at the token saying which surface needs it and why the other cannot. An unexplained app-local
+   token is how this recurs. */
 
 :root {
  /* ── Palette (Verdant Clearing — names kept for resolution; values now green) ── */
@@ -108,6 +122,21 @@
  --text-ui-xs: 0.7rem;
  --text-ui-md: 0.75rem;
 
+ /* ── Type scale (prose) — descriptive copy and note bodies ──
+     Promoted from studio's copy (Archie-ecf4). They read as authoring-only and are not: the READING
+     surface hardcodes these exact two sizes and never names them. Prose sites only, counted by opening
+     each one — 1.0625rem ×7: Gallery.svelte:216, Reader.svelte:779, NarrativeReader.svelte:958 and
+     :1045, NoteLightbox.svelte:117, SearchOverlay.svelte:131, MediaPlayer.svelte:614; 0.95rem ×2:
+     Reader.svelte:799 (.object-summary), SearchOverlay.svelte:161 (.finder-empty). The viewer's three
+     OTHER 0.95rem literals — SidebarObjectNav.svelte:127, NarrativeReader.svelte:1017,
+     NotePopup.svelte:194 — are glyph/icon sizing that happens to share the number and are NOT evidence
+     for this token; don't fold them in when someone eventually converts the literals.
+     So: one prose scale that only one of two apps had a name for — accidental divergence, not genuine. */
+ --text-lede: 1.0625rem;
+ /* intro/lede + summary copy — one step above body, NOT display-size */
+ --text-note: 0.95rem;
+ /* note/annotation body text — same size reading and editing */
+
  /* ── Spacing (8px base — loose, space-led) ── */
  --space-1: 4px;
  --space-2: 8px;
@@ -135,7 +164,10 @@
      (`--scrim-dim` below is unrelated and stays: it is a MODAL backdrop, and a modal deliberately
      takes over the surface rather than sharing it.) */
  /* Modal backdrop dim (reading sheet, lightbox): the Verdant moss dusk, matching --shadow-lift-* — was a
-     pre-Verdant mauve rgba(59,49,56,…) that cast a cool-purple wash behind the warm-paper focus surfaces. */
+     pre-Verdant mauve rgba(59,49,56,…) that cast a cool-purple wash behind the warm-paper focus surfaces.
+     Both surfaces use it — viewer: CitePanel/NoteLightbox/ReadingSheet/SearchOverlay; studio:
+     TutorialModal.svelte:37, which carried the literal as a var() fallback for as long as studio had its
+     own copy of this file and this token was not in it. */
  --scrim-dim: rgba(26, 60, 35, 0.82);
 
  /* ── Radius — soft & generous (kept from Soft Static) ── */
@@ -208,7 +240,11 @@ body {
  font-weight: 400;
  letter-spacing: 0.26em;
  text-transform: uppercase;
- /* 0.70 (was 0.55): at 12px uppercase + heavy tracking the eyebrow is the viewer's most-repeated label;
-     0.55 alpha forest on cream sat ~3:1. One token edit lifts every eyebrow to a readable quiet. */
+ /* 0.70 (was 0.55): at 12px uppercase + heavy tracking the eyebrow is the most-repeated label on both
+     surfaces; 0.55 alpha forest on cream sat ~3:1. One edit lifts every eyebrow to a readable quiet.
+     Studio ran at 0.55 until 2026-07-27 — the fix landed in the reader's copy of this file and simply
+     never reached the author's. Measured on the running app: studio's exhibit eyebrow computed
+     rgba(26, 60, 35, 0.55) before unification and rgba(26, 60, 35, 0.7) after. That one number is the
+     whole argument for not having two copies. */
  color: rgba(26, 60, 35, 0.70);
 }

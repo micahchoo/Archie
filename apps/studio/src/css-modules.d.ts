@@ -1,6 +1,8 @@
 // Ambient declaration for the side-effect CSS imports at the top of main.ts. Vite resolves
-// `import "./tokens.css"` at build time — the module has no runtime value and ships no types, so the
-// compiler has to be told it exists.
+// `import "./markers.css"` at build time — the module has no runtime value and ships no types, so the
+// compiler has to be told it exists. The `*.css` pattern also covers the SHARED token layer's
+// package-subpath specifier, `@render/core/tokens.css` (Archie-ecf4), which is why unifying studio
+// onto that file needed no change here.
 //
 // Why this file appeared: TypeScript 5 accepted a bare side-effect import of an undeclared module
 // silently. TypeScript 7 reports TS2882 ("Cannot find module or type declarations for side-effect
