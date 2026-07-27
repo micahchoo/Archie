@@ -205,7 +205,8 @@ Every number below was copied from output, not inferred from a neighbouring one.
 | `apps/viewer` `pnpm run typecheck` (TS 7 native, by path) | clean |
 | `apps/viewer` `pnpm run check:svelte` | **1523 files, 0 errors, 0 warnings** |
 | `apps/viewer` e2e `av-surface.spec.ts` | **16/16 passed** |
-| `apps/viewer` e2e, whole suite | see the table in *Repeat runs* |
+| `apps/viewer` e2e, whole suite | **145/145 passed** (1.8m) |
+| `apps/studio` `pnpm exec vitest run` | **75 files, 963 tests passed** (the fixtures are shared) |
 
 e2e ran on `VIEWER_E2E_PORT=4361` throughout, one run at a time, each one rebuilding
 (`gen-published` + `astro build`) in its own webServer — the log was checked for the build lines
@@ -233,9 +234,73 @@ All three were caught by running, and all three were informative rather than noi
 
 ### Red-green, per new assertion
 
-See the section below — filled in after the probes were run, on a committed tree, restoring from
-`/tmp` rather than `git checkout --`.
+Five injections, each run against the built bundle in a real browser. **The tree was committed
+(`27d02e4`) before the first probe**, every injection was made by a script that asserted its anchor
+was UNIQUE (`assert s.count(old) == 1`) before replacing, and every restore was
+`cp /tmp/<file>.bak` — never `git checkout --` or `git restore`
+(`.claude/rules/drive-must-not-recreate-the-thing-under-test.md`; that command has destroyed
+uncommitted work here three times). Each injection was verified to have landed before running.
+
+| # | injection | expected red | measured |
+| --- | --- | --- | --- |
+| 1 | **delete the `abjad` fixture note** (`voynich.ts:363`) — the ticket's own step 3 | the two layer assertions | `the legend lists…` FAIL, received `"Natural-language reading0"`; `the abjad layer adds its line` FAIL, expected 5 received 4. `no Hide-all` correctly still passes. **2 failed / 1 passed** |
+| 2 | **un-thread the four props** from the grid `MediaPlayer` mount in `ExhibitView` | the legend never renders | all three FAIL on `toBeVisible`. **3 failed** |
+| 3 | **remove `{#if onhiddenchange}`** from `ReadingLegend` | only the withholding assertion | `no Hide-all` FAIL, expected 0 received 1; the other two PASS. **1 failed / 2 passed** |
+| 4 | **remove the cue's inline reading colour** | only the colour assertion | FAIL, expected `rgb(76, 93, 138)` received `rgba(0, 0, 0, 0)`; the other two PASS. **1 failed / 2 passed** |
+| 5 | **re-float `.cite-trigger` to its pre-dock box** (`position: fixed; left: 20px; top: 556px; z-index: 40` — the exact rect d37d measured) | the new per-chip hit-test | FAIL: `#cadence is covered by SPAN.lbl — a mouse cannot reach it` |
+
+Probe 5 is worth more than a red-green. `SPAN.lbl` is the **same element the ticket recorded**
+(`elementFromPoint at its centre = SPAN.lbl ← OCCLUDED`), reproduced from the geometry alone. So it
+independently confirms two things the closure rests on: d37d's original measurement was right, and
+the chrome dock — not anything in this branch — is what removed it.
+
+Probes 3 and 4 also matter for a reason the reds do not show: each turned **exactly one** assertion
+red and left the other two green. An injection that reddens everything cannot tell you an assertion
+is aimed at the thing it names.
+
+Probe 1 dirties the committed published tree as a side effect (`gen-published` is `prebuild`, so
+every e2e run regenerates it). `pnpm --filter @archie/viewer run gen` was re-run after the restore —
+543 files, 7 exhibits — and `git status` confirmed clean before continuing.
 
 ### Repeat runs
 
-See below.
+**20 independent `playwright test` processes, 20/20 clean, 16/16 each time**, run times 6.6–7.5s.
+Not one process with a `--repeat-each` flag: twenty separate invocations, so a per-process ordering
+or state effect would show.
+
+```
+RUN 1 ok :: 16 passed (6.8s)   …   RUN 20 ok :: 16 passed (7.0s)
+REPEAT TOTAL: 20/20 clean, 0/20 with failures
+```
+
+**Port ownership was established, not assumed.** The 20 runs reuse one `astro preview` rather than
+rebuilding 20 times, which is the exact condition `.claude/rules/viewer-e2e-shared-port.md` calls
+unverified unless you check. So: the bundle was built from this worktree
+(`SITE_BASE=/viewer/ pnpm build`, exit 0), the server was started from this worktree, and
+`ss -ltnp | grep 4361` → pid 2796536 → `ls -l /proc/2796536/cwd` →
+`…/worktrees/agent-a9323e6be9824caaf/apps/viewer`. It was **killed** before anything else ran.
+
+That kill is also the coordinator's live hazard: `apps/viewer`'s `pretypecheck` runs `astro sync`,
+which re-optimises `node_modules/.vite/deps` and wedges a live preview server into 504ing on
+`/.vite/deps/*`. Every typecheck in this slice ran either before the server existed or after it was
+killed, and the port was confirmed free first.
+
+### Found, not fixed
+
+- **`readingCount`'s base figure and the transcript's line count differ by design, and nothing says
+  so in the UI.** The legend reads `General notes 5` beside a 4-line transcript, because the count is
+  over NOTES and the spine renders the TIME-RANGED ones (o12 also carries a whole-track note, which
+  has its own band above the transcript). It is correct and it is defensible, but a reader could
+  reasonably read the count as a promise about the list under it. Not touched: changing what
+  `readingCount` counts would change it for the image reader too, which is out of this slice.
+- **The reading colour on a cue row is a colour-only channel.** That is exact parity with the image
+  note list (`Reader.svelte:540`), so it is not new debt — but it is debt, and the AV case is
+  slightly sharper because the row APPEARS when its layer is picked, which is itself the strongest
+  signal and may be why nobody has felt it.
+- **`notesHidden` is exhibit-level state that the AV surface ignores.** Hide notes on an image, step
+  to the recording, and the flag stays true with no effect. Correct (there is nothing to hide) and
+  invisible, but it means the exhibit carries one piece of reader state that one of its two reader
+  surfaces does not honour.
+- **`mcp__context__get_docs("wavesurfer.js", …)` returns `Package not found`** although the library
+  is listed in `.claude/rules/deps-index.md`. The index has an entry with nothing behind it; a
+  `context add` is needed before V50's mandated docs check is available.
