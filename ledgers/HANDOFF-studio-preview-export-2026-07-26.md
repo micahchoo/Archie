@@ -313,11 +313,29 @@ exhibits survive a relaunch with media and thumbnails intact.**
   sniffing cross-engine DOMExceptions is "a guess wearing the costume of a diagnosis"). Here it told
   the user to free space on a disk with ~1 TB free. Worth deciding whether a scope/permission
   rejection, which IS knowable on desktop, should be distinguished.
-- **The capability gate cannot see this class.** `check-tauri-capabilities.mjs` derives required
-  PERMISSIONS from the `TauriFsBridge` interface and would have caught the `fs:allow-rename` P0. It
-  says nothing about SCOPE — `fs:allow-exists` *was* granted; the path was out of scope. A scope-side
-  check is derivable (scan for dot-path literals handed to `getFile`/`getDirectory`, assert the
-  manifest carries matching dot-globs) and is **not written**.
+- ~~**The capability gate cannot see this class.**~~ **CLOSED — the gate now audits SCOPE too.**
+  `check-tauri-capabilities.mjs` used to derive required PERMISSIONS from the `TauriFsBridge`
+  interface and nothing else, so it would have caught the `fs:allow-rename` P0 and was structurally
+  blind to this one (`fs:allow-exists` *was* granted; the PATH was refused). It now runs a second,
+  independent audit: dot-segments are **derived** from the app's own `getFile`/`getDirectory` call
+  sites — following one level of const indirection, which is how `.bake-schema` is written — and
+  every wildcarded scope root must admit both a hidden file (`<root>/**/.*`) and a hidden directory's
+  contents (`<root>/**/.*/**`). It currently finds three segments: `.archie-cache`,
+  `.archie-mirror.json`, `.bake-schema`.
+
+  Red-greened twice: at the lib level against the real manifest with the dot-globs stripped (a test
+  that reproduces the shipped defect and names all four missing globs), and at the CLI level —
+  stripped manifest → exit 1 with 4 MISSING lines, restored → exit 0.
+
+  **One bug in the gate itself, worth carrying.** The first version read `$APPDATA/**/.*/**` as a
+  wildcard *root* (it also ends in `/**`) and demanded `$APPDATA/**/.*/**/.*`, regressing forever. A
+  root must be a **literal** prefix. It surfaced as the gate failing against a manifest that was
+  already correct — the good direction for a new gate to fail in, and the reason to always run a new
+  gate against known-good input before trusting a red.
+
+  File EXTENSIONS (`.json`) and the temp-write SUFFIX (`.tmp-`) are deliberately NOT flagged: they
+  are dot-strings, not leading-dot path components, and the leading-dot rule is about a component's
+  first character. Pinned by a test so nobody "fixes" the derivation into noise.
 
 Original report, kept because the contradiction is what made it findable:
 
