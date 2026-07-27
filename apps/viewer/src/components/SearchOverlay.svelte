@@ -160,8 +160,17 @@
     font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.4;
   }
 
-  /* Tag facets — quiet mono chips; the active facets fill with the rationed connector accent. */
-  .finder-facets { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  /* Tag facets — quiet mono chips; the active facets fill with the rationed connector accent.
+     THE CAP IS LOAD-BEARING. `allTags` is the exhibit's WHOLE tag vocabulary, and the seed narrative
+     carries 132 of them: measured on the built app at a 1280x720 viewport, this block rendered 668px
+     tall inside a panel capped at 76vh (547px). Being an `overflow: visible` flex item, its
+     `min-height: auto` resolved to its content height, so it refused to shrink and took the panel
+     whole — `.finder-results` collapsed to clientHeight 0 with 9930px of scroll content, and the
+     first result sat at y=883 in a 720px viewport. Every result was off-screen and unclickable. That
+     predates the locus line (measured both with it and with it display:none'd — identical geometry),
+     but it is what made the locus unprovable, so it is fixed here: cap the facets and let THEM
+     scroll, so the results always get the remaining height. */
+  .finder-facets { display: flex; flex-wrap: wrap; gap: var(--space-2); flex: 0 1 auto; max-height: 20vh; overflow-y: auto; }
   .facet {
     font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
     color: var(--ink-paper-secondary); background: var(--surface-paper-hover);
@@ -171,7 +180,11 @@
   .facet:hover { color: var(--ink-paper-primary); border-color: var(--border-canvas-emphasis); }
   .facet.on { color: var(--ink-on-accent, var(--ink)); background: var(--accent-2); border-color: var(--accent-2); }
 
-  .finder-results { list-style: none; margin: 0; padding: 0; overflow-y: auto; }
+  /* Takes whatever height the head/input/facets leave. `overflow-y: auto` already resolves its flex
+     `min-height: auto` to 0, so it CAN shrink — the bug above was never here; it was the sibling
+     that would not yield. `flex: 1 1 auto` is what makes it claim the remainder rather than sit at
+     its own zero minimum. */
+  .finder-results { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1 1 auto; }
   .finder-results li { margin-bottom: var(--space-2); }
   .result {
     display: block; width: 100%; text-align: left; cursor: pointer;
