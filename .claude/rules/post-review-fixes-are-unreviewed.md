@@ -106,6 +106,29 @@ An ambiguous anchor plus "replace the first" is a coin toss that looks like a pa
 `sed -i`, to `Edit` with a short `old_string`, and to any codemod. The general form applies to
 `grep` over a line window, to `find` in one directory, and to a `head -n` you drew a conclusion from.
 
+**1a. The subject can be EMPTY, and the probe still prints a verdict.** Habit 1's probes answered a
+narrower question than intended. These answered a question about *nothing at all* — and still emitted
+a confident sentence. Three in one session (2026-07-26, the dock slice):
+
+| the probe | what it printed | what it had actually examined |
+| --- | --- | --- |
+| diff two `getBoundingClientRect` heights to see if the canvas resized | **"the image does NOT move"** | one side was `.openseadragon-canvas`, which is `null` on the offline `voynich` route — `0 − 0 = 0` |
+| click the remembered centre of a mark to see if it still hits | `0/20` on BOTH trees | a note whose halo-BBOX centre isn't on its geometry; the real suite scored 17/20 on the same tree |
+| `pkill -f "port 4477"` before relaunching a server on that port | nothing — then an `until` loop waited 10 minutes | the pattern matched **its own command line**, killing the launch it was chained to |
+
+The third is the sharpest: the check destroyed the thing it was checking for, and a ten-minute wait
+reads as patience rather than as a bug. The second is the useful tell — *a new instrument that
+disagrees with the existing one by that margin is the broken one.* Prefer re-running the suite that
+already exists over building a second probe; that is where all three of these came from.
+
+> **Before concluding from a probe: did it examine a non-empty subject?** A difference computed from
+> two nulls is `0`. A `pkill -f` pattern matches the process running it. An `until` loop with no
+> timeout cannot distinguish "not ready yet" from "will never be ready". **Print the subject, not only
+> the verdict** — a probe that cannot say *what it measured* has not measured anything.
+
+`[[a-green-run-is-one-sample]]` is the false-RED mirror of this: there, one sample was mistaken for a
+result; here, no sample was. Both print something that looks like an answer.
+
 **1b. The probe can be correct and still not be read.** A fourth instance, and the most humbling,
 because nothing about the command was wrong. A reviewer established that a corpus library "has no
 note-media feature" by grepping one variable name (`thumbnail`), getting two hits, and concluding the
