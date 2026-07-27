@@ -167,6 +167,66 @@ test.describe("the selection ring means something (V43)", () => {
     //
     // Asserted as RELATIONSHIPS, not as 141/416/557, so a viewport or token change does not make this
     // a maintenance tax. The literals above are the record of what was measured, not the contract.
+    //
+    // RED-GREEN, and the injection is recorded because it took six attempts to find one that works.
+    // Add a flex sibling BELOW the canvas inside the stage column, in `NarrativeReader.svelte` (see
+    // the note on which component below), with a class no locator here names:
+    //
+    //     </main>
+    //     <div class="probe-eater" style="flex:1 1 auto"></div>
+    //
+    // The freed height then splits between the canvas and the spacer instead of all going to the
+    // canvas: "the canvas grew by 71px but the note row was 141px", 3/3. Do not raise the grow factor
+    // — at `flex:1000` the canvas is starved to nothing and the run dies on "the deep-zoom canvas
+    // never painted", which fails the fixture's precondition rather than this assertion.
+    //
+    // THE COMPONENT MATTERS, and it is what five earlier attempts got wrong: `screenshots` is a
+    // NARRATIVE exhibit, so `openPaintedNote` drives `NarrativeReader.svelte`, not `Reader.svelte`.
+    // Injections into `Reader.svelte` compile, ship in the bundle, and never enter the DOM — the tell
+    // is `document.querySelector(".reader main")` returning null on this route while
+    // `.narrative main` is present. Attacking the CANVAS also does not work (pin its height, add a
+    // duplicate row): the assertion is that the canvas ABSORBS the freed space, so the falsification
+    // has to make something else absorb it.
+    //
+    // RED-GREEN, and the injection is recorded because it took six attempts to find one that works.
+    // Add a flex sibling BELOW the canvas inside the stage column, in `NarrativeReader.svelte` (see
+    // the note on which component below), with a class no locator here names:
+    //
+    //     </main>
+    //     <div class="probe-eater" style="flex:1 1 auto"></div>
+    //
+    // The freed height then splits between the canvas and the spacer instead of all going to the
+    // canvas: "the canvas grew by 71px but the note row was 141px", 3/3. Do not raise the grow factor
+    // — at `flex:1000` the canvas is starved to nothing and the run dies on "the deep-zoom canvas
+    // never painted", which fails the fixture's precondition rather than this assertion.
+    //
+    // THE COMPONENT MATTERS, and it is what five earlier attempts got wrong: `screenshots` is a
+    // NARRATIVE exhibit, so `openPaintedNote` drives `NarrativeReader.svelte`, not `Reader.svelte`.
+    // Injections into `Reader.svelte` compile, ship in the bundle, and never enter the DOM — the tell
+    // is `document.querySelector(".reader main")` returning null on this route while
+    // `.narrative main` is present. Attacking the CANVAS also does not work (pin its height, add a
+    // duplicate row): the assertion is that the canvas ABSORBS the freed space, so the falsification
+    // has to make something else absorb it.
+    //
+    // RED-GREEN, and the injection is recorded because it took six attempts to find one that works.
+    // Add a flex sibling BELOW the canvas inside the stage column, in `NarrativeReader.svelte` (see
+    // the note on which component below), with a class no locator here names:
+    //
+    //     </main>
+    //     <div class="probe-eater" style="flex:1 1 auto"></div>
+    //
+    // The freed height then splits between the canvas and the spacer instead of all going to the
+    // canvas: "the canvas grew by 71px but the note row was 141px", 3/3. Do not raise the grow factor
+    // — at `flex:1000` the canvas is starved to nothing and the run dies on "the deep-zoom canvas
+    // never painted", which fails the fixture's precondition rather than this assertion.
+    //
+    // THE COMPONENT MATTERS, and it is what five earlier attempts got wrong: `screenshots` is a
+    // NARRATIVE exhibit, so `openPaintedNote` drives `NarrativeReader.svelte`, not `Reader.svelte`.
+    // Injections into `Reader.svelte` compile, ship in the bundle, and never enter the DOM — the tell
+    // is `document.querySelector(".reader main")` returning null on this route while
+    // `.narrative main` is present. Attacking the CANVAS also does not work (pin its height, add a
+    // duplicate row): the assertion is that the canvas ABSORBS the freed space, so the falsification
+    // has to make something else absorb it.
     const note = await aHaloNote(baseURL!);
     await goOffline(page);
     await openPaintedNote(page, note.ulid);
