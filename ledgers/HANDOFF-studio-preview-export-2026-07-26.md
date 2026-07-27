@@ -235,6 +235,29 @@ branch cannot clobber them — but they need committing from there, by whoever o
    both blocking questions are answered in the spec, and L5/R6 are withdrawn. Six decisions remain
    (L1–L4, L6, L7); L4/L6/L7 are mine and still contestable.
 
+## Session 6 — backlog reconciled, and the dead share link
+
+**The backlog was lying.** `Archie-91e7` sat **open at P0** while fixed and on `origin/main`; same
+for `Archie-ce7a` and `Archie-7b48`. Closed all three with measured resolutions. `Archie-9ece` and
+`Archie-a09d` updated rather than closed (both only partly satisfied). Open P0s: 2 → 1.
+
+`Archie-a09d` turned out to have **no description at all** — its whole content was in the title. The
+read-modify-write guard refused the append (correctly, since it read length 0), which is what surfaced
+it; it now has a body. Keep that guard on every `sd update`.
+
+**`Archie-4f7c` FIXED — every share link Studio emitted was dead.** `Publish.svelte:212` minted
+`${CANONICAL_VIEWER}?src=<url>`, a real query param. The viewer reads `location.hash` and nothing else
+(`ViewerShell.svelte:55,136`; `location.search` appears nowhere in `apps/viewer/src`), so the pointer
+was dropped and every shared link opened the bare Library Gallery. The iframe snippet derives from the
+same value, so embeds were dead too. The grammar was never ambiguous — `url/route.ts:8-11` and ADR-0009
+both specify `#/?src=`.
+
+Minted by the new `apps/studio/src/share-link.ts` rather than patched in place, because a `$derived.by`
+inside a component **cannot be tested**: vitest doesn't render it and svelte-check cannot tell a working
+URL grammar from a broken one. The test **round-trips through the viewer's own `parseRoute`** — mint a
+link, parse its hash, assert the src returns. Red-greened: the shipped form fails 4 of 9. Swept for other
+mint sites; that was the only one (every remaining `?src=` in the tree is prose or a test name).
+
 ## Session 5 — the CI desktop gate, and two stale blockers
 
 **Rank 3 SHIPPED (`0a7e9e4`).** `.github/workflows/desktop.yml` builds the packaged binary, boots it
