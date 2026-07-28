@@ -80,13 +80,13 @@ export interface ZipSink {
 }
 
 /**
- * Classic (non-Zip64) .zip WRITER ceilings — what fflate 0.8.2 can emit CORRECTLY on its own. Its
+ * Classic (non-Zip64) .zip WRITER ceilings — what fflate 0.8.2/0.8.3 can emit CORRECTLY on its own. Its
  * end-of-central-directory writer (`wzf`) stores the entry count in a 2-byte field and every offset in
- * a 4-byte field with NO overflow check (verified against the pinned 0.8.2 source: the only Zip64 code
- * anywhere in the bundle is `z64e`, a READ-side helper — there is no write-side Zip64 emission at all),
- * so an archive with more than 65 535 entries or data past 4 GiB isn't refused by fflate itself — it's
- * emitted with silently wrapped/truncated headers that readers then mis-parse (fflate's own `unzipSync`
- * reads the 2-byte count back, so a 70k-entry export would reopen as ~4.5k files: silent data loss).
+ * a 4-byte field with NO overflow check (verified against the pinned source: the only Zip64 CODE anywhere
+ * in the bundle is on the READ side — `z64hs`/`zh` — there is no write-side Zip64 emission at all), so an
+ * archive with more than 65 535 entries or data past 4 GiB isn't refused by fflate itself — it's emitted
+ * with silently wrapped/truncated headers that readers then mis-parse (fflate's own `unzipSync` reads the
+ * 2-byte count back, so a 70k-entry export would reopen as ~4.5k files: silent data loss).
  *
  * `ZipFilesystem.toZip` (eager) enforces the ENTRIES ceiling and throws an ACTIONABLE error — it is the
  * non-Chromium fallback (memory-bounded separately, see `ZipStore`/`EAGER_ZIP_CEILING_BYTES`), and
@@ -94,18 +94,22 @@ export interface ZipSink {
  * central-directory offset/size independently of `zipSync`'s single-shot output (the same corruption
  * `ZipStreamFilesystem` routes around) — deferred as out of scope for Archie-1cf0's low-priority pass;
  * `libraryToZip`'s own doc calls this path "the non-Chromium fallback", not the one that matters at scale.
+ * It has NO bytes handling either (was never exercised — its store is separately capped well under 4 GiB)
+ * — this remains true after Archie-1cf0's byte-dimension pass below, which is streaming-only by the same
+ * scoping the ticket already applied to the entries dimension.
  *
- * `ZipStreamFilesystem` (Archie-1cf0) no longer refuses on the ENTRIES ceiling: past `maxEntries` it
- * rebuilds its own trailing block with a Zip64 EOCD Record + Locator (`buildEocdTail` in
- * `zip-stream.ts`) instead of trusting fflate's unchecked count write. Proven against fflate 0.8.2's
- * `unzipSync`, Info-ZIP `unzip`, AND Python's `zipfile` (independent of fflate) for a real 66,001-entry
- * archive — see `zip-stream.test.ts`.
- *
- * The BYTES ceiling (4 GiB) is UNCHANGED for both serializers and is NOT part of this pass: going past
- * it needs a PER-ENTRY Zip64 extra field on every local/central-directory header whose offset would
- * overflow — materially more surface than the EOCD-only fix above, and not exercised (a >4 GiB in-CI
- * archive isn't buildable cheaply). `ZipStreamFilesystem.commit` still throws `zipFormatError("bytes",
- * ...)` the moment emitted bytes cross this ceiling.
+ * `ZipStreamFilesystem` (Archie-1cf0) refuses on NEITHER ceiling. It doesn't use fflate's `Zip`/
+ * `ZipPassThrough` writer at all — every local header, central-directory entry, and the trailing EOCD
+ * block is hand-written in `zip-stream.ts` from offset/size/crc values it tracks itself. Past
+ * `maxEntries` (entries dimension) and/or past `maxBytes` (bytes dimension — an entry's own size, or its
+ * local-header offset, or the central directory's own size/offset) it switches the affected field(s) to
+ * Zip64 (sentinel + extra field) instead of trusting a 4-byte write that fflate's own writer would
+ * silently truncate. See `zip-stream.ts`'s module doc for the full fflate trace (why patching only the
+ * trailing block, as the entries-only fix originally did, is NOT sufficient once bytes are in play) and
+ * `zip-stream.test.ts` for the round-trip proofs (fflate's `unzipSync`, `ZipFilesystem.fromZip`, Info-ZIP
+ * `unzip -t`, and Python's `zipfile` — the last two are load-bearing past 4 GiB: fflate's own zip64
+ * EOCD-record lookup does a 32-bit offset read, so IT cannot correctly reopen an archive whose central
+ * directory starts past 4 GiB, independent of whether this writer produced it correctly).
  *
  * Injectable only so tests can trip the guard cheaply (a tiny ceiling) — production always uses this
  * default. NOTE: distinct from `ZIP_LIMITS`, the READ-side zip-bomb caps.
@@ -113,7 +117,8 @@ export interface ZipSink {
 export interface ZipFormatLimits {
   /** Max central-directory entries a 2-byte EOCD count can index. */
   readonly maxEntries: number;
-  /** Max archive bytes before a 4-byte local-header/central-directory offset overflows. */
+  /** Max bytes (an entry's size, an offset, the central directory's own size/offset) a 4-byte zip
+   *  format field can hold before `ZipStreamFilesystem` switches that field to Zip64. */
   readonly maxBytes: number;
 }
 export const ZIP_FORMAT_LIMITS: ZipFormatLimits = {
@@ -121,16 +126,14 @@ export const ZIP_FORMAT_LIMITS: ZipFormatLimits = {
   maxBytes: 0xffff_ffff,
 };
 
-/** The actionable refusal both zip serializers throw at a `ZIP_FORMAT_LIMITS` breach. */
-export function zipFormatError(kind: "entries" | "bytes", limits: ZipFormatLimits): Error {
-  const what =
-    kind === "entries"
-      ? `more than ${limits.maxEntries.toLocaleString()} files`
-      : `more than ${(limits.maxBytes / (1024 * 1024 * 1024)).toFixed(0)} GB of data`;
+/** The actionable refusal `ZipFilesystem.toZip` (eager) throws at its entries ceiling — the only
+ *  `ZIP_FORMAT_LIMITS` breach anything still refuses on (see the doc above: the streaming writer
+ *  no longer refuses on either dimension, so it never calls this). */
+export function zipFormatError(_kind: "entries", limits: ZipFormatLimits): Error {
   return new Error(
-    `This library doesn't fit in a .archie.zip: it has ${what}, which is past what the classic ` +
-      `.zip format can index — the archive would be silently corrupt. Publish to a folder instead ` +
-      `(it has no such limit), or export a subset of exhibits.`,
+    `This library doesn't fit in a .archie.zip: it has more than ${limits.maxEntries.toLocaleString()} ` +
+      `files, which is past what the classic .zip format can index — the archive would be silently ` +
+      `corrupt. Publish to a folder instead (it has no such limit), or export a subset of exhibits.`,
   );
 }
 
