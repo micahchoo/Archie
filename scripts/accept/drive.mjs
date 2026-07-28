@@ -35,9 +35,23 @@ const DIR = path.resolve(arg("dir"));
 const PORT = Number(arg("port"));
 const SLUG = arg("slug");
 const ORIGIN_REWRITE = arg("rewrite-origin", "");
+/** Does THIS tier tile at all? The web tier caps a master at 2400 px, below TILE_MIN_EDGE, so zero
+ *  tiles is its CORRECT behaviour rather than a defect — pass `--expect-tiles false` for it. */
+const EXPECT_TILES = arg("expect-tiles", "true") !== "false";
 const WALK_OBJECTS = Number(arg("walk", "12"));
 const ROUNDS = Number(arg("rounds", "3"));
 const OUT = arg("out", "");
+// The working store's record of WHICH objects were annotated. Optional: without it the drive searches
+// by stepping, which is weaker (see the region-subject note below).
+const WORK = arg("work", "");
+const ANNOTATED = WORK && fs.existsSync(path.join(WORK, "annotated.json"))
+  ? JSON.parse(fs.readFileSync(path.join(WORK, "annotated.json"), "utf8"))
+  : [];
+const LIBRARY = WORK && fs.existsSync(path.join(WORK, "library.json"))
+  ? JSON.parse(fs.readFileSync(path.join(WORK, "library.json"), "utf8"))
+  : null;
+/** publish-flows.svelte.ts:195 — the longer edge above which a master gets a DZI pyramid. */
+const TILE_MIN_EDGE = 4096;
 
 const results = [];
 const record = (ok, label, detail) => { results.push({ ok, label, detail }); console.log(`${ok ? "PASS" : "FAIL"}  ${label} — ${detail}`); };
@@ -156,20 +170,53 @@ async function main() {
     // Walk the grid for an object that HAS regions — with 50 notes over 1,000 objects most have none,
     // and a click assertion over an empty subject is worse than an absent one
     // (.claude/rules/post-review-fixes-are-unreviewed.md 1a). The subject is PRINTED either way.
-    let regionObj = -1, regions = 0;
-    for (let i = 0; i < Math.min(objects, 200) && regions === 0; i++) {
-      await page.evaluate(`${sr}.querySelector('button[aria-label="Back"], button.back')?.click()`).catch(() => {});
-      await page.waitForFunction(`${q("ul.grid li button[data-obj]")} > 0`, { timeout: 60_000, polling: 100 }).catch(() => {});
-      await page.evaluate(`${sr}.querySelectorAll('ul.grid li button[data-obj]')[${i}]?.click()`);
-      try {
-        await page.waitForFunction(`!!${sr}?.querySelector('.reader-surface')?.querySelector('.openseadragon-canvas, canvas')`, { timeout: 30_000, polling: 100 });
-      } catch { continue; }
-      await page.waitForTimeout(700);
+    // STEP the way a reader does. `.rc-step` is the reader chrome's prev/next stepper and
+    // `.rc-overview` its "Back to Exhibit" (reader-chrome.ts:430, :452); walking with the stepper
+    // keeps the ELEMENT alive across the transition, which is the discipline
+    // .claude/rules/drive-must-not-recreate-the-thing-under-test.md prescribes — and it is what a
+    // reader does. The first version of this went back to the grid between every object; when its
+    // guessed `button[aria-label="Back"]` matched nothing, each iteration ate a 60 s
+    // `waitForFunction` and the whole drive wedged. The lesson is the one already in that rule:
+    // drive the control that exists, and never let a "navigate" step have no observable effect.
+    const stepNext = async () => {
+      const moved = await page.evaluate(`(() => {
+        const steps = ${sr}?.querySelectorAll('.rc-step') ?? [];
+        const next = steps[steps.length - 1];
+        if (!next || next.disabled) return false;
+        next.click(); return true;
+      })()`);
+      if (moved) await page.waitForTimeout(400);
+      return moved;
+    };
+    // Target the object that is KNOWN to carry notes, when the working store says which. Searching
+    // by stepping is the fallback, and it was also how this first went wrong: the search read the
+    // region count with NO settle after the canvas painted, got 0 on the one annotated object in the
+    // exhibit, and then stepped past it through 49 unannotated ones — reporting "found NO region
+    // overlays" against a tree that demonstrably carries three. `probe-dom.mjs` printed the subject
+    // (regions appear by t+300 ms) and that is what settled it. Naming the object removes the race
+    // AND the ambiguity: a failure now means the overlay did not draw, not that we looked elsewhere.
+    let regionObj = "?", regions = 0;
+    const known = ANNOTATED.filter((a) => a.slug === SLUG).map((a) => a.objectId);
+    console.log(`  region subject: ${known.length} annotated object(s) recorded for ${SLUG}${known.length > 0 ? ` (first ${known[0]})` : ""}`);
+    if (known.length > 0) {
+      await page.evaluate(`${sr}?.querySelector('.rc-overview')?.click()`).catch(() => {});
+      await page.waitForFunction(`${q("ul.grid li button[data-obj]")} > 0`, { timeout: 30_000, polling: 100 }).catch(() => {});
+      await page.evaluate(`${sr}.querySelector('ul.grid li button[data-obj="${known[0]}"]')?.click()`);
+      await page.waitForFunction(`!!${sr}?.querySelector('.reader-surface')?.querySelector('.openseadragon-canvas, canvas')`, { timeout: 60_000, polling: 100 }).catch(() => {});
+      await page.waitForTimeout(1200);
       regions = await page.evaluate(q('svg[id^="archie-region-"]'));
-      if (regions > 0) regionObj = i;
+      regionObj = known[0];
+    } else {
+      const SEARCH = Math.min(objects, 60);
+      for (let i = 0; i < SEARCH && regions === 0; i++) {
+        await page.waitForTimeout(1200);
+        regions = await page.evaluate(q('svg[id^="archie-region-"]'));
+        if (regions > 0) { regionObj = `grid#${i}`; break; }
+        if (!(await stepNext())) break; // the stepper ran out — the subject is exhausted, say so
+      }
     }
     if (regions === 0) {
-      record(false, "an annotated object was reachable in the grid", `walked ${Math.min(objects, 200)} object(s), found NO region overlays — the click assertion has no subject`);
+      record(false, "an annotated object carries region overlays", `subject ${regionObj}: NO region overlays after the canvas painted — the click assertion has no subject`);
     } else {
       // A REAL driven mouse click at the region's own centre. Not `el.click()`, not keyboard Enter:
       // both succeed against code where OSD's overlay wrapper eats the pointer (osd-overlay-wrapper).
@@ -193,44 +240,130 @@ async function main() {
           // (packages/archie-viewer/src/note-card.test.ts:106 '.archie-note-card'); the fallbacks are
           // there so a rename surfaces as a weaker match rather than a silent zero.
           const sel = ['.archie-note-card', '.reader-note', '.note-card', '[data-note]'];
-          for (const s of sel) { const n = sh?.querySelectorAll(s) ?? []; if (n.length > 0) return { sel: s, n: n.length, text: (n[0].textContent ?? '').slice(0, 80) }; }
+          for (const s of sel) {
+            const n = sh?.querySelectorAll(s) ?? [];
+            if (n.length > 0) return { sel: s, n: n.length, text: (n[0].textContent ?? '').slice(0, 120) };
+          }
           return null;
         })()`);
-        record(!!note, `a real mouse click on an annotation region opens its note (object #${regionObj}, ${regions} region(s))`,
-          note ? `hit-test at region centre = ${top}; note surface "${note.sel}" x${note.n}: ${JSON.stringify(note.text)}`
-               : `hit-test at region centre = ${top}; NO note surface appeared after a driven click at (${box.x.toFixed(0)},${box.y.toFixed(0)}) on a ${box.tag} of ${box.w.toFixed(0)}x${box.h.toFixed(0)}`);
+        // THE CARD MUST CARRY THE NOTE, not merely exist. Found by injection: with the region
+        // geometry forced to `pointer-events: none`, the hit-test degraded to the wrapper DIV, a card
+        // still opened — and its whole textContent was the two chrome glyphs "⤢×". The original
+        // assertion ("a .archie-note-card node appeared") passed against a click that had reached
+        // nothing. An assertion on presence is not an assertion on content
+        // (.claude/rules/svelte-no-typecheck-net.md: a gate proves the code compiled, never that the
+        // output carries anything).
+        const CHROME = /[⤢×✕✖\s]/gu;
+        const body = (note?.text ?? "").replace(CHROME, "");
+        const carried = body.length >= 20;
+        record(!!note && carried, `a real mouse click on an annotation region opens its note WITH ITS BODY (object ${regionObj}, ${regions} region(s))`,
+          note
+            ? `hit-test at region centre = ${top}; note surface "${note.sel}" x${note.n} carrying ${body.length} chars of body: ${JSON.stringify(note.text)}`
+            : `hit-test at region centre = ${top}; NO note surface appeared after a driven click at (${box.x.toFixed(0)},${box.y.toFixed(0)}) on a ${box.tag} of ${box.w.toFixed(0)}x${box.h.toFixed(0)}`);
       }
     }
 
     // ── (5) THE WALK — does retention grow, or is it bounded? ───────────────────────────────────
     // Open N objects, return to the grid, repeat. RSS is sampled at the END of each round, at the
     // same point in the cycle, so the samples are comparable rather than caught mid-decode.
-    const back = async () => {
-      await page.evaluate(`${sr}.querySelector('button[aria-label="Back"], button.back')?.click()`).catch(() => {});
-      await page.waitForFunction(`${q("ul.grid li button[data-obj]")} > 0`, { timeout: 60_000, polling: 100 }).catch(() => {});
+    // `.rc-overview` = "Back to Exhibit" (reader-chrome.ts:430). A round is: open object 0 from the
+    // grid, step forward WALK_OBJECTS times, come back. Every round covers the SAME objects, so any
+    // growth across rounds is retention rather than new data.
+    const backToGrid = async () => {
+      await page.evaluate(`${sr}?.querySelector('.archie-note-card__dismiss')?.click()`).catch(() => {});
+      await page.evaluate(`${sr}?.querySelector('.rc-overview')?.click()`).catch(() => {});
+      await page.waitForFunction(`${q("ul.grid li button[data-obj]")} > 0`, { timeout: 30_000, polling: 100 }).catch(() => {});
+      return await page.evaluate(q("ul.grid li button[data-obj]"));
     };
+    let walkOpens = 0, walkMisses = 0;
     for (let round = 0; round < ROUNDS; round++) {
       for (let i = 0; i < WALK_OBJECTS; i++) {
-        await back();
-        await page.evaluate(`${sr}.querySelectorAll('ul.grid li button[data-obj]')[${i}]?.click()`);
+        const gridN = await backToGrid();
+        // PRINT THE SUBJECT. The first version of this walk reported a beautifully flat RSS across
+        // three rounds while opening ONE object per round — every navigation after the first was a
+        // no-op and nothing said so. A round that opens nothing produces exactly the same "bounded"
+        // verdict as a round that opens twelve, which makes the flat line worthless. So the walk
+        // counts what actually PAINTED and reports the misses beside it.
+        if (gridN === 0) { walkMisses++; continue; }
+        // DISTINCT objects per round, not the same twelve re-opened. This is the whole design of the
+        // experiment and the first version got it wrong: re-visiting one fixed working set makes a
+        // cache that NEVER EVICTS plateau exactly like an LRU with capacity >= that set, so the flat
+        // line it produced could not distinguish the two. Retention is a question about how memory
+        // scales with the number of DISTINCT objects a reader has passed through, so each round walks
+        // a fresh window and the series is read as a slope against cumulative distinct opens.
+        const idx = (round * WALK_OBJECTS + i) % gridN;
+        await page.evaluate(`${sr}.querySelectorAll('ul.grid li button[data-obj]')[${idx}]?.click()`);
         try {
           await page.waitForFunction(`!!${sr}?.querySelector('.reader-surface')?.querySelector('.openseadragon-canvas, canvas')`, { timeout: 30_000, polling: 100 });
-        } catch { /* keep walking — a stall is data */ }
-        await page.waitForTimeout(250);
+          walkOpens++;
+        } catch { walkMisses++; }
+        await page.waitForTimeout(200);
       }
-      await back();
+      await backToGrid();
       await page.waitForTimeout(1500);
       const rss = await treeRss(rootPid);
-      walk.push({ round: round + 1, opened: (round + 1) * WALK_OBJECTS, rssBytes: rss, rssGB: +(rss / 1e9).toFixed(2) });
-      console.log(`  walk round ${round + 1}: ${(round + 1) * WALK_OBJECTS} objects opened cumulatively · RSS ${(rss / 1e9).toFixed(2)} GB`);
+      walk.push({ round: round + 1, opened: walkOpens, missed: walkMisses, rssBytes: rss, rssGB: +(rss / 1e9).toFixed(2) });
+      console.log(`  walk round ${round + 1}: ${walkOpens} object(s) opened cumulatively (${walkMisses} miss) · RSS ${(rss / 1e9).toFixed(2)} GB`);
     }
-    // BOUNDED means the last round is not materially above the first. The bar is stated rather than
-    // implied: +25% across ROUNDS-1 further passes over the SAME objects would be a cache that never
-    // evicts. A verdict either way is the deliverable (the ticket says so explicitly).
-    const first = walk[0]?.rssBytes ?? 0, last = walk[walk.length - 1]?.rssBytes ?? 0;
-    const growth = first > 0 ? (last - first) / first : 0;
-    record(growth <= 0.25, "retention across a repeated walk is BOUNDED, not cumulative",
-      `${walk.map((w) => `r${w.round}=${w.rssGB}GB`).join(" ")} → ${(growth * 100).toFixed(1)}% from round 1 to ${walk.length} over ${walk[walk.length - 1]?.opened ?? 0} cumulative object opens (bar: ≤25%)`);
+    // THE VERDICT, and a correction worth recording because the first version of this bar was wrong
+    // in a way that would have shipped a false FAIL.
+    //
+    // The bar was "round 1 to round N is within 25%". Measured, the series over 50 DISTINCT objects
+    // is 1.04 / 1.40 / 1.52 / 1.54 / 1.59 GB — a +52.6% total that is almost entirely the FIRST
+    // round. Per round of ten fresh objects the marginal cost is +0.36, +0.12, +0.02, +0.05 GB. That
+    // is a warm-up followed by a plateau, and "round 1 to round N" cannot tell a warm-up from a leak;
+    // it just reports the sum of both.
+    //
+    // What distinguishes them is the SLOPE. A cache that never evicts pays roughly the same marginal
+    // cost for every fresh object, so its second-half slope matches its first-half slope. A bounded
+    // one pays up front and then flattens. So the criterion is the ratio of the two half-slopes, in
+    // BYTES PER DISTINCT OBJECT, and the raw series is printed either way so a reader can disagree
+    // with the threshold without having to re-run anything.
+    const half = Math.floor(walk.length / 2);
+    const firstHalf = walk[half] ? (walk[half].rssBytes - (walk[0]?.rssBytes ?? 0)) / Math.max(1, walk[half].opened - (walk[0]?.opened ?? 0)) : 0;
+    const last = walk[walk.length - 1];
+    const secondHalf = walk[half] && last ? (last.rssBytes - walk[half].rssBytes) / Math.max(1, last.opened - walk[half].opened) : 0;
+    const slopeRatio = firstHalf > 0 ? secondHalf / firstHalf : 0;
+    const totalGrowth = (walk[0]?.rssBytes ?? 0) > 0 ? (last.rssBytes - walk[0].rssBytes) / walk[0].rssBytes : 0;
+    // A slope test needs a TAIL to measure. Measured: the same tree scores ratio 0.22 over 5 rounds
+    // and 0.63 over 3, because at 3 rounds the "second half" is still inside the warm-up. Fewer than
+    // 4 rounds cannot answer this question, so the verdict is REFUSED rather than guessed.
+    const enough = (last?.opened ?? 0) >= WALK_OBJECTS * ROUNDS * 0.8 && ROUNDS >= 4;
+    record(enough && slopeRatio <= 0.4, "retention across a walk of DISTINCT objects is BOUNDED, not cumulative",
+      enough
+        ? `${walk.map((w) => `r${w.round}=${w.rssGB}GB@${w.opened}`).join(" ")} · marginal ${(firstHalf / 1e6).toFixed(1)} MB/object over the first half vs ${(secondHalf / 1e6).toFixed(1)} MB/object over the second (ratio ${slopeRatio.toFixed(2)}, bar ≤0.40) · total +${(totalGrowth * 100).toFixed(1)}% across ${last.opened} distinct opens, ${last.missed} miss`
+        : `INCONCLUSIVE — ${last?.opened ?? 0} of ${WALK_OBJECTS * ROUNDS} intended opens painted (${last?.missed ?? 0} miss) over ${ROUNDS} round(s); the slope test needs >=4 rounds and >=80% of the intended opens`);
+    timings.retention = { series: walk.map((w) => ({ round: w.round, opened: w.opened, rssGB: w.rssGB })), firstHalfBytesPerObject: firstHalf, secondHalfBytesPerObject: secondHalf, slopeRatio, totalGrowth };
+
+    // ── (6) TILED, and with a subject that CAN tile ─────────────────────────────────────────────
+    // `scripts/drive-published-tree.mjs` asserts this too and scored ZERO on this very tree — because
+    // it opens grid object #0, which here is a 3312 px plate, BELOW TILE_MIN_EDGE(4096). No pyramid is
+    // written for it, so no tile can be served and the FAIL says nothing about tiling. That is the
+    // empty-subject hazard exactly (.claude/rules/post-review-fixes-are-unreviewed.md 1a): a confident
+    // verdict over a subject incapable of producing the thing being looked for.
+    //
+    // So this picks an object whose OWN dimensions are above the threshold, names it, and reports the
+    // dimensions beside the count — a reader can then tell "tiling is broken" from "this tier does not
+    // tile", which are different findings and only one of them is a defect.
+    const tileable = LIBRARY?.exhibits?.find((e) => e.slug === SLUG)?.objects
+      ?.filter((o) => Math.max(o.width ?? 0, o.height ?? 0) > TILE_MIN_EDGE) ?? [];
+    const beforeTiles = served.length;
+    if (tileable.length === 0) {
+      record(false, "a tileable object exists in this exhibit", `no object in ${SLUG} is above TILE_MIN_EDGE(${TILE_MIN_EDGE}) — the tiling assertion has no subject`);
+    } else {
+      const subject = tileable[0];
+      await backToGrid();
+      await page.evaluate(`${sr}.querySelector('ul.grid li button[data-obj="${subject.id}"]')?.click()`);
+      await page.waitForFunction(`!!${sr}?.querySelector('.reader-surface')?.querySelector('.openseadragon-canvas, canvas')`, { timeout: 60_000, polling: 100 }).catch(() => {});
+      await page.waitForTimeout(3000); // OSD requests tiles AFTER the canvas exists, not with it
+      const t2 = served.slice(beforeTiles).filter((u) => /_files\/\d+\/\d+_\d+\.(jpe?g|png|webp)(\?|$)/i.test(u));
+      timings.tiledSubject = { id: subject.id, width: subject.width, height: subject.height, tilesServed: t2.length };
+      // RESPONSES, not requests — OSD asks for whatever its descriptor promises whether or not the
+      // host has the bytes, so a request count measures the manifest and never the tree.
+      record(t2.length > 0 || EXPECT_TILES === false,
+        EXPECT_TILES === false ? "this tier serves NO tiles, as its cap requires" : "deep zoom is TILED on an object above the threshold",
+        `subject ${subject.id} ${subject.width}x${subject.height} (above ${TILE_MIN_EDGE}) — ${t2.length} tile(s) served 2xx${t2.length > 0 ? `, e.g. …${t2[0].slice(t2[0].lastIndexOf("_files"))}` : ""}`);
+    }
 
     const tiles = served.filter((u) => /_files\/\d+\/\d+_\d+\.(jpe?g|png|webp)(\?|$)/i.test(u));
     console.log(`\nFINDING — ${tiles.length} DZI tile(s) served 2xx during this drive. On the WEB tier this is expected to be ZERO: the tier caps a master at 2400 px, below TILE_MIN_EDGE (4096), so no pyramid is ever written (PROBE-tiling-threshold-2026-07-27.md: "on the web tier, no plausible threshold ever fires").`);
