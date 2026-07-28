@@ -993,11 +993,10 @@
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
     border: none; border-left: 2px solid transparent;
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low);
-    transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    transition: background 160ms ease, border-color 160ms ease;
   }
-  .sections button:hover { background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-mid); }
-  .sections button.active { border-left-color: var(--accent); background: var(--accent-muted); box-shadow: var(--shadow-lift-mid); }
+  .sections button:hover { background: var(--surface-paper-hover); }
+  .sections button.active { border-left-color: var(--accent); background: var(--accent-muted); }
   /* Per-beat position (V85) — the quietest thing on the card: tabular mono, muted, on its own line
      above the title. It locates; it must never compete with the prose it labels. The ACTIVE beat's
      lifts to connector-blue, the same "you are here" register `.spine-pos` uses in the eyebrow. */
@@ -1038,7 +1037,6 @@
     display: inline-flex; align-items: center; gap: var(--space-2);
     padding: var(--space-1) var(--space-2);
     background: var(--surface-canvas-raised); border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low);
   }
   .cn-step {
     display: inline-flex; align-items: center; justify-content: center;
@@ -1065,7 +1063,7 @@
     padding: var(--space-2) var(--space-3);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
     border: none; border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low); cursor: pointer;
+    cursor: pointer;
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm);
     letter-spacing: 0.04em; transition: color 160ms ease;
   }
@@ -1097,12 +1095,11 @@
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
     border: none; border-left: 3px solid transparent;
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low);
     font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45;
-    transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    transition: background 160ms ease, border-color 160ms ease;
   }
-  .notes-list li > button:hover { background: var(--surface-paper-hover); border-left-color: var(--accent); box-shadow: var(--shadow-lift-mid); }
-  .notes-list li > button.active { background: var(--accent-muted); box-shadow: var(--shadow-lift-mid); }
+  .notes-list li > button:hover { background: var(--surface-paper-hover); border-left-color: var(--accent); }
+  .notes-list li > button.active { background: var(--accent-muted); }
   .card-preview { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   /* The open entry's position mark (Archie-dbbc / V60) — the index's chrome voice, not body prose. */
   .card-open { display: block; font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-paper-secondary); }
