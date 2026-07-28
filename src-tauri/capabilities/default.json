@@ -8,7 +8,8 @@
     "dialog:default",
     {
       "identifier": "http:default",
-      "allow": [{ "url": "https://**" }, { "url": "http://**" }]
+      "comment": "Archie-be3a (decided 2026-07-27): `http://**` REMOVED — cleartext is not granted. Every caller of the native-http bridge (apps/studio/src/tauri-fs.ts fetchRemoteAsBlobUrl / fetchRemoteJson) is a remote IIIF image, an info.json, or remote AV, and all of them are https in practice. NOTE the failure mode is clean, which is why this is safe to tighten: the plugin refuses, tauriFetch throws, and the caller falls back to the webview path — whose CSP allows `https:` only on img-src/media-src/connect-src, so a cleartext URL surfaces the ordinary 'couldn't load this media item' rather than hanging. If a plain-http institutional IIIF host ever has to be supported, the escape hatch is a NARROW per-host entry here, never restoring the wildcard. Tauri's internal http://asset.localhost and http://ipc.localhost are unaffected: they are webview protocols, not this plugin's scope.",
+      "allow": [{ "url": "https://**" }]
     },
     "fs:default",
     "fs:allow-read-file",
