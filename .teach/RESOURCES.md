@@ -16,7 +16,8 @@ implements them.
   three-layer split), ADR-0003 (annotation spine), ADR-0015 (map medium), ADR-0019 (embed
   element) are the load-bearing four.
 - [`docs/decisions/`](../docs/decisions/) — Q-N decision records, finer-grained than ADRs.
-- [`docs/architecture/`](../docs/architecture/) — subsystem maps.
+- [`hubs/`](../hubs/) — question-named territory maps (maintained; replaced the retired
+  `docs/architecture/` snapshot, which was a 2026-05-25 tool dump — retrievable from git history).
 - [`.claude/rules/*.md`](../.claude/rules/) — **the best material in the repo for this mission.**
   Each file is a bug that actually shipped, written up with the mechanism and the gate that now
   catches it. Use for: hazard-class lessons.

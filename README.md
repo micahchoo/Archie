@@ -327,7 +327,7 @@ graph TD
 - **How it wires together:** `packages/render-core/src/index.ts` (barrel export), `fs/seam.ts` (three storage backends, one interface), `apps/studio/src/binding.ts` (the three-config persistence system), `publish/site.ts` (the publishing engine).
 - **The map medium (geo-annotation, [ADR-0015](docs/adr/0015-map-medium-bounded-extent.md)):** `geometry/geo.ts` (lng/lat ↔ world-pixel, bounded extent), `iiif/resolve.ts` (XYZ tile source), with the `archie:geo` anchor threaded through the spine and the IIIF manifest; `apps/studio/src/AddMapModal.svelte` is the add-map flow.
 
-**Additional maps:** [`docs/architecture/`](docs/architecture/), [`docs/adr/`](docs/adr/) (ADRs 0001–0026), and [`docs/decisions/`](docs/decisions/) (Q-N decision records).
+**Additional maps:** [`hubs/`](hubs/) (question-named territory pages, [`hubs/INDEX.md`](hubs/INDEX.md)), [`docs/adr/`](docs/adr/) (ADRs 0001–0026), and [`docs/decisions/`](docs/decisions/) (Q-N decision records).
 
 ## Status & roadmap
 
@@ -363,8 +363,7 @@ Tests live alongside source (`*.test.ts`), not in a separate directory. For new 
 |---|---|
 | [`docs/guide/`](docs/guide/) | **Users** — a screenshot walkthrough from library to published site |
 | [`CONTEXT.md`](CONTEXT.md) | Domain language, locked design frames, full glossary |
-| [`docs/README.md`](docs/README.md) | Index to all design & architecture docs |
-| [`docs/architecture/overview.md`](docs/architecture/overview.md) | Architecture map (start here as a developer) |
+| [`hubs/INDEX.md`](hubs/INDEX.md) | Territory hubs — maintained maps per subsystem (start here as a developer) |
 | [`docs/adr/`](docs/adr/) | Architecture Decision Records (0001–0026) |
 | [`docs/decisions/`](docs/decisions/) | Citable decision records (Q-N) |
 | [`docs/geo-annotation/`](docs/geo-annotation/) | The geo-annotation extension — design + phasing (Map medium, geo-truth) |
@@ -379,7 +378,7 @@ Pull requests are welcome. Before opening one:
 3. Keep `@render/core` pure TypeScript with no DOM dependencies — browser APIs belong in `@render/mount` or the apps.
 4. Architecture decisions go in [`docs/adr/`](docs/adr/) (new) or [`docs/decisions/`](docs/decisions/) (Q-N citation). Discuss in an issue before a PR.
 
-See [`docs/architecture/overview.md`](docs/architecture/overview.md) for the subsystem map and [`CONTEXT.md`](CONTEXT.md) for the domain language used throughout the codebase.
+See [`hubs/`](hubs/) for the subsystem maps and [`CONTEXT.md`](CONTEXT.md) for the domain language used throughout the codebase.
 
 ## License
 
