@@ -90,6 +90,41 @@ the same empty `git log -- <path>`. Only the author's memory settles it, so ask 
   not wait behind unfinished work, and if it is a *dependency* of the other's gate it belongs
   underneath it anyway.
 
+## `.seeds/issues.jsonl` is ONE file, so explicit paths do not save you (added 2026-07-27)
+
+The advice above — *explicit paths on every `add`* — assumes your change and a sibling's change land in
+different files. The issue tracker breaks that assumption: **every ticket in the project lives in a
+single `.seeds/issues.jsonl`**, so any `sd create` / `sd close` / `sd update` by any agent in the
+checkout writes the same file you are about to stage. `git add .seeds/` is precise about the path and
+still sweeps a stranger's work.
+
+Measured 2026-07-27: a commit whose message was *"docs(1244): record the dead-token slice"* also
+carried `Archie-7e6f`, a video-transcode feature ticket created by another agent, graduated out of a
+map's Fog. Nothing was lost and the ticket is legitimate — but it entered history under a message that
+does not mention it, which is exactly how a ticket becomes unattributable later.
+
+**The tell is a count that will not reconcile.** Closing one ticket left the open total unchanged at
+62. `sd stats` agreed with the enumeration, so neither number was wrong — the set had changed
+underneath. The diagnostic is a set difference against your own last commit, not a recount:
+
+```sh
+python3 - <<'PY'
+import json, subprocess
+def ids(ref=None):
+    raw = (subprocess.run(["git","show",f"{ref}:.seeds/issues.jsonl"],capture_output=True,text=True).stdout
+           if ref else open(".seeds/issues.jsonl").read())
+    return {json.loads(l)["id"]: json.loads(l)["status"] for l in raw.splitlines() if l.strip()}
+then, now = ids("<your last seeds commit>"), ids()
+print("ADDED:", set(now) - set(then))
+print("CHANGED:", [(k, then[k], now[k]) for k in then if k in now and then[k] != now[k]])
+PY
+```
+
+**How to apply:** before reporting a backlog count, reconcile the *set*, not the total — two changes in
+opposite directions cancel and look like nothing happened. And when you commit `.seeds/`, say in the
+message that the tracker file is shared, or check the diff for ids you did not touch. Do not rewrite
+the commit afterwards; another agent is live in the tree (see below).
+
 ## The general form
 
 Every hazard here is a command that is correct in the environment it was written for. `-A` is fine in
