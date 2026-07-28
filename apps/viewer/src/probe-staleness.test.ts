@@ -23,14 +23,55 @@ function stub(handler: Handler): string[] {
 
 describe("hosted schema gate — loadGallery reads archie.json (READPOLICY rp2)", () => {
   const emptyExhibits = { library: { id: "L", title: "L" }, exhibits: [], presentation: {} };
-  it("PRESENT wrong-version marker → rejects cleanly (no garbage render) [rp2]", async () => {
+  it("PRESENT NEWER-version marker → rejects cleanly, advising the READER [rp2]", async () => {
     stub((u) => {
       if (u.includes("archie.json")) return { status: 200, body: { format: "archie-library", version: 999 } };
       if (u.includes("exhibits.json")) return { status: 200, body: emptyExhibits };
       return { status: 404 };
     });
-    await expect(loadGallery()).rejects.toThrow(/different version/i);
+    // Archie-69f9 split the old catch-all "different version" into direction-specific advice. Nothing
+    // the author can do to the FILE fixes a newer-than-reader tree, so the message must point at Archie.
+    await expect(loadGallery()).rejects.toThrow(/newer version of Archie.*Update Archie/is);
   });
+
+  it("PRESENT OLDER-version marker → still rejects while no migration covers it [rp2, Archie-69f9]", async () => {
+    // The direction this suite never covered, and the one 69f9 changed. An older tree is now the
+    // MIGRATABLE direction — but only where the registry reaches, and it is empty, so this must still
+    // refuse. If someone appends a migration and forgets this reader, this test is what notices.
+    stub((u) => {
+      if (u.includes("archie.json")) return { status: 200, body: { format: "archie-library", version: 0 } };
+      if (u.includes("exhibits.json")) return { status: 200, body: emptyExhibits };
+      return { status: 404 };
+    });
+    await expect(loadGallery()).rejects.toThrow(/no migration for schema v1/i);
+  });
+  it("an OLDER tree the registry DOES cover migrates on read — the wiring, not just the gate [Archie-5c8d]", async () => {
+    // The whole point of 5c8d: this reader's content reads do not all go through `httpSource`
+    // (loadGallery called `fetchJson` directly), so a wrap at the gate's call site would have covered
+    // two of four readers and silently missed the rest. Red-green: reverting the `hostedSource()` call
+    // in loadGallery back to `fetchJson` turns this red while every other test here stays green.
+    const { TREE_MIGRATIONS } = await import("@render/core");
+    TREE_MIGRATIONS.push({
+      to: 1,
+      description: "test",
+      scope: "doc",
+      path: (p: string) => p === "exhibits.json",
+      up: (d: unknown) => ({ ...(d as object), exhibits: [{ id: "E", slug: "e", title: "Migrated", order: 0 }] }),
+    });
+    try {
+      stub((u) => {
+        if (u.includes("archie.json")) return { status: 200, body: { format: "archie-library", version: 0 } };
+        if (u.includes("exhibits.json")) return { status: 200, body: emptyExhibits };
+        return { status: 404 };
+      });
+      const gallery = await loadGallery();
+      expect(gallery.exhibits.map((e) => e.title)).toEqual(["Migrated"]); // fixture ships [] — so this
+      // cannot pass by accident of the stub, and an unwired reader returns [] instead.
+    } finally {
+      TREE_MIGRATIONS.length = 0;
+    }
+  });
+
   it("ABSENT marker (404) → lenient-accept when exhibits.json parses [rp2]", async () => {
     stub((u) => {
       if (u.includes("archie.json")) return { status: 404 };

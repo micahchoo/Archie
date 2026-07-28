@@ -12,6 +12,7 @@ import {
   // ADR-0020-marker-validate + capped-fetch logic used to be copy-pasted here and in
   // packages/archie-viewer/src/load.ts — both now compose these instead of redefining them.
   openArchieLibrary, openArchieLibraryFromUrl, looksLikeZip, SRC_MAX_BYTES, fsJsonSource, FailedReadError, assertArchieTreeMarker,
+  migratingJsonSource,
   // V7/V11: ONE rule for resolving a tree-relative asset ref against its library base.
   assetUrlAgainst,
   type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit, type ImageIndex, type NoteTransform,
@@ -337,8 +338,8 @@ async function openHostedTree(base: string): Promise<void> {
   closePortableLibrary();
   setHostedTreeBase(base);
   try {
-    await assertArchieTreeMarker(httpSource);
-    await httpSource.get<ExhibitsJson>("exhibits.json");
+    rememberHostedSchema(await assertArchieTreeMarker(httpSource));
+    await hostedSource().get<ExhibitsJson>("exhibits.json");
   } catch (e) {
     setHostedTreeBase(previous === OWN_TREE ? null : previous); // don't strand the viewer on a dead tree
     throw e;
@@ -396,11 +397,12 @@ export async function loadGallery(): Promise<ExhibitsJson> {
   // that read — and every subsequent content fetch this session — is keyed `?g=<generation>`; a republish
   // caught here (refreshLive re-invokes loadGallery) clears the stale session cache.
   const marker = await assertArchieTreeMarker(httpSource);
+  rememberHostedSchema(marker); // Archie-5c8d: reads below go through hostedSource(), which migrates
   syncHostedGeneration(marker?.generation ?? null);
   let hosted: ExhibitsJson | null = null;
   let hostedErr: unknown = null;
   try {
-    hosted = await fetchJson<ExhibitsJson>("exhibits.json");
+    hosted = await hostedSource().get<ExhibitsJson>("exhibits.json");
   } catch (e) {
     hostedErr = e; // only fatal when there's no live source to carry the hall
   }
@@ -422,7 +424,7 @@ export async function loadImageIndex(): Promise<ImageIndex | null> {
     // FAILED read (5xx / torn body) throws `FailedReadError` → the outer catch degrades the wall to null
     // (a broken index safely hides the wall, cards still work). Don't use fetchJson (it error-logs a
     // user-facing message for every old tree that legitimately has no images.json).
-    const hosted = await fetchJsonOptional<ImageIndex>("images.json");
+    const hosted = await hostedSource().getOptional<ImageIndex>("images.json");
     // STALENESS st3: front the LIVE working-store wall over the hosted one, dropping hosted entries for a
     // slug the live source FRONTS (so a colliding-slug wall tile can't route to the live exhibit with a
     // stale hosted object id — the dead-link mergeGalleries left open). The live projection wrote its own
@@ -532,6 +534,24 @@ export function publishedAssetUrl(ref: string | undefined | null): string | unde
 /** HTTP byte source for the shared reader — GETs tree-relative paths under `${PUBLISHED}`. */
 const httpSource: JsonSource = { get: fetchJson, getOptional: fetchJsonOptional };
 
+// Archie-5c8d / Archie-69f9: the schema version the hosted tree declared, learned by the ADR-0020 gate
+// and remembered so every subsequent read migrates. `null` = not yet gated (or no marker), which reads
+// as "nothing to migrate".
+//
+// Why a module-level accessor and not a wrap at the gate's call site: the hosted content reads do NOT
+// all go through `httpSource` — `loadGallery` calls `fetchJson` directly and `loadImageIndex` calls
+// `fetchJsonOptional`, so wrapping the object one call site holds would have covered two of four
+// readers and silently missed the other two, including `readExhibitTree` (every manifest and
+// annotation page). One accessor is the only shape where a new reader can't forget.
+let hostedSchemaFrom: number | null = null;
+function hostedSource(): JsonSource {
+  return hostedSchemaFrom === null ? httpSource : migratingJsonSource(httpSource, hostedSchemaFrom);
+}
+/** Remember what the gate found, so reads after it migrate. Absent/malformed marker → no migration. */
+function rememberHostedSchema(marker: { version?: number } | null): void {
+  hostedSchemaFrom = typeof marker?.version === "number" && Number.isFinite(marker.version) ? marker.version : null;
+}
+
 export async function loadPublishedExhibit(slug: string): Promise<PublishedExhibit> {
   // Portable: read the opened zip via the core seam; free the previous exhibit's blob URLs before
   // minting the next (the revoke lifecycle — browser-verify owed for RAM peak, ADR-0010).
@@ -561,7 +581,7 @@ export async function loadPublishedExhibit(slug: string): Promise<PublishedExhib
   // Served from the session cache on revisit (the published tree is immutable until a reload).
   const cached = hostedCache.get(slug);
   if (cached) return cached;
-  const exhibit = await readExhibitTree(httpSource, slug, hostedRebase);
+  const exhibit = await readExhibitTree(hostedSource(), slug, hostedRebase); // Archie-5c8d
   hostedCache.set(slug, exhibit);
   return exhibit;
 }
