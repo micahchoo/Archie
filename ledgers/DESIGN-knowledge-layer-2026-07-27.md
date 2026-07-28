@@ -157,3 +157,72 @@ silently, a `ticket/sha` pointer fails loudly under doclint).
 
 Stop at any failed gate. Steps 0–1 are worth doing even if nothing else ships: they
 protect and verify what already exists.
+
+## 8. Shipped (same day, evening)
+
+Steps 0–5 executed 2026-07-27; §5's gates held or were deferred with tickets:
+
+- Step 0 custody: `.teach/` + this doc + prior-art corpus (`docs/research/prior-art/`)
+  tracked; `.agents/skills` is now the symlink (direction was INVERTED from what the
+  sweep reported — `.claude` linked into `.agents`; canon restored into `.claude`);
+  two stale loop generations untracked AND un-committed (they were swept into a8e228a);
+  root CANON pointer. Worktree drift → Archie-1a47 (fleet was live; no surgery).
+- Step 1: `scripts/doclint.mjs`, 10 checks, ALL proven red-green (7 by injection,
+  3 on real standing findings). CI job `doclint` (fetch-depth 0).
+- Step 2: 9 hubs + generated INDEX; 64 ticket/sha citations machine-verified.
+- Step 3: CLAUDE.md digest (closure convention, rung discipline).
+- Step 4: `hubs/prior-art/` — 8 library pages, verified-citations-only.
+- Step 5: `docs/TRACKERS.md` (4 honest UNMAPPED rows), ISSUES.md frozen,
+  standing ledgers allowlisted-with-why → migration is Archie-e149;
+  svelte rule rewrite is Archie-1f60.
+
+Deviations from §5 as written: ledger migration deferred (live fleet + 18 files with
+inbound refs), coverage satisfied partly via `coverageIgnore` (rationale in the allow
+file). Step 6 (semantic residue pass) intentionally not started — earliest after a
+month of doclint green.
+
+## 8. Shipped (same day, evening)
+
+Steps 0–5 executed 2026-07-27; §5's gates held or were deferred with tickets:
+
+- Step 0 custody: `.teach/` + this doc + prior-art corpus (`docs/research/prior-art/`)
+  tracked; `.agents/skills` is now the symlink (direction was INVERTED from what the
+  sweep reported — `.claude` linked into `.agents`; canon restored into `.claude`);
+  two stale loop generations untracked AND un-committed (they were swept into a8e228a);
+  root CANON pointer. Worktree drift → Archie-1a47 (fleet was live; no surgery).
+- Step 1: `scripts/doclint.mjs`, 10 checks, ALL proven red-green (7 by injection,
+  3 on real standing findings). CI job `doclint` (fetch-depth 0).
+- Step 2: 9 hubs + generated INDEX; 64 ticket/sha citations machine-verified.
+- Step 3: CLAUDE.md digest (closure convention, rung discipline).
+- Step 4: `hubs/prior-art/` — 8 library pages, verified-citations-only.
+- Step 5: `docs/TRACKERS.md` (4 honest UNMAPPED rows), ISSUES.md frozen,
+  standing ledgers allowlisted-with-why → migration is Archie-e149;
+  svelte rule rewrite is Archie-1f60.
+
+Deviations from §5 as written: ledger migration deferred (live fleet + 18 files with
+inbound refs), coverage satisfied partly via `coverageIgnore` (rationale in the allow
+file). Step 6 (semantic residue pass) intentionally not started — earliest after a
+month of doclint green.
+
+## 8. Shipped (same day, evening)
+
+Steps 0–5 executed 2026-07-27; §5's gates held or were deferred with tickets:
+
+- Step 0 custody: `.teach/` + this doc + prior-art corpus (`docs/research/prior-art/`)
+  tracked; `.agents/skills` is now the symlink (direction was INVERTED from what the
+  sweep reported — `.claude` linked into `.agents`; canon restored into `.claude`);
+  two stale loop generations untracked AND un-committed (they were swept into a8e228a);
+  root CANON pointer. Worktree drift → Archie-1a47 (fleet was live; no surgery).
+- Step 1: `scripts/doclint.mjs`, 10 checks, ALL proven red-green (7 by injection,
+  3 on real standing findings). CI job `doclint` (fetch-depth 0).
+- Step 2: 9 hubs + generated INDEX; 64 ticket/sha citations machine-verified.
+- Step 3: CLAUDE.md digest (closure convention, rung discipline).
+- Step 4: `hubs/prior-art/` — 8 library pages, verified-citations-only.
+- Step 5: `docs/TRACKERS.md` (4 honest UNMAPPED rows), ISSUES.md frozen,
+  standing ledgers allowlisted-with-why → migration is Archie-e149;
+  svelte rule rewrite is Archie-1f60.
+
+Deviations from §5 as written: ledger migration deferred (live fleet + 18 files with
+inbound refs), coverage satisfied partly via `coverageIgnore` (rationale in the allow
+file). Step 6 (semantic residue pass) intentionally not started — earliest after a
+month of doclint green.
