@@ -17,15 +17,20 @@ discipline; three habits from it, condensed:
    file anyway. (Caught live during this pass: a same-day edit claimed clover-iiif/mirador/
    universalviewer had "no local clone" — false, all three are on disk with hundreds of files; see
    each page's corrected note. Run `ls`/`find` before writing an absence claim, always.)
+4. **A correction can itself be wrong, and lasts longer than the error it replaced.** The
+   2026-07-28 deep pass refuted one of this repo's own standing corrections — *"universalviewer's
+   suite never touches the network"* — against the clone: it is puppeteer-driven and loads live
+   remote manifests. See [[universalviewer]]. That sentence still stands uncorrected in
+   [[prior-art-citation-discipline]]'s catalogue and is flagged, not yet edited.
 
 ## Pages
 
 | library | verdict headline |
 | --- | --- |
 | [[tropy]] | ships overlay toolbars ON by default — cited backwards in ADR-0019, corrected |
-| [[clover-iiif]] | has a note-media analog (`Item.tsx`/`Image.tsx`); one ADR citation of its sibling structure was wrong |
-| [[universalviewer]] | docks by CSS grid + JS remainder-math ≥768px; its test suite never touches the network |
-| [[mirador]] | split verdict — structural panels dock, the canvas's own control bar overlays |
+| [[clover-iiif]] | read-only; has a note-media analog and a reusable selector parser, but no bundle gate, no lazy canvas, and an inert `retry` |
+| [[universalviewer]] | two-level lazy loading is its one enviable property; **its suite DOES touch the network** — this repo's long-standing claim to the contrary is refuted on the page |
+| [[mirador]] | never calls `addOverlay` — one portalled `<canvas>` + hand-rolled hit-testing; split chrome verdict (panels dock, canvas controls overlay) |
 | [[annomea]] | no docked mode at all, full-bleed overlay chrome; proposes no mutation gate |
 | [[quire]] | demonstrates the scroll two-directions hazard rather than solving it (inverted citation) |
 | [[anvil]] | chrome-reservation math coheres with its floating sidebar; donor for Studio's editor shell |

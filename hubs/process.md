@@ -5,7 +5,7 @@ scope:
   - ".seeds/**"
   - "ledgers/**"
   - "docs/agents/**"
-updated: 2026-07-27
+updated: 2026-07-28
 ---
 # process
 > *how do agents work in this repo?*
@@ -28,6 +28,7 @@ the mechanical check over the knowledge layer itself (see `ledgers/DESIGN-knowle
 ## Decisions
 - Archie-1f60 — first exercise of the accretion rewrite: svelte-no-typecheck-net cut ~110→61 lines, evidence kept, correction-narrative dropped; the doclint accretion exemption list is empty again.
 - Archie-1a47 — worktree "drift" was a measurement artifact (diffed against a stale ref); 11 merged checkouts pruned, prune criterion recorded in `ledgers/AUDIT-worktrees-2026-07-27.md`.
+- (prior-art deep pass, no ticket) / 4b5b8db — clover-iiif/mirador/universalviewer promoted from three chrome-placement rows to full clone-verified pages; **a standing correction of ours was itself refuted** ("universalviewer's suite never touches the network" — it is puppeteer-driven against live remote manifests). A correction outlives the error it replaced and nobody re-opens it: re-verify corrections on the same terms as claims.
 - Archie-e149 / 4f7636f — ledgers/ is dated-only by predicate; standing docs moved to docs/state/; dated ledgers + .seeds bodies keep historical paths (immutable evidence).
 - Archie-098f — toolchain & docs pipeline tend epic closed; its children are the process-tooling ratchets below.
 - Archie-9140 / 7a07cd9 — harness consolidation: two rotted drive-and-shoot verifiers deleted with coverage proof (behavior moved to unit + e2e), one shared driver.mjs kept.
