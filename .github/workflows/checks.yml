@@ -201,6 +201,27 @@ jobs:
       - name: App bundle size ratchet
         run: pnpm bundle:check
 
+      # A --check must not leave its own baseline modified (a gate's reference point must
+      # not be writable by the thing it gates — .claude/rules/post-review-fixes-are-unreviewed.md).
+      # This also catches a hand-edited baseline riding in a PR: the ratchet compares against
+      # the committed file, so a quiet baseline bump is invisible to it — but not to this diff.
+      - name: Baseline untouched by the check
+        run: git diff --exit-code docs/bundle-size.json
+
+      # A --check must not leave its own baseline modified (a gate's reference point must
+      # not be writable by the thing it gates — .claude/rules/post-review-fixes-are-unreviewed.md).
+      # This also catches a hand-edited baseline riding in a PR: the ratchet compares against
+      # the committed file, so a quiet baseline bump is invisible to it — but not to this diff.
+      - name: Baseline untouched by the check
+        run: git diff --exit-code docs/bundle-size.json
+
+      # A --check must not leave its own baseline modified (a gate's reference point must
+      # not be writable by the thing it gates — .claude/rules/post-review-fixes-are-unreviewed.md).
+      # This also catches a hand-edited baseline riding in a PR: the ratchet compares against
+      # the committed file, so a quiet baseline bump is invisible to it — but not to this diff.
+      - name: Baseline untouched by the check
+        run: git diff --exit-code docs/bundle-size.json
+
       # Accessibility ratchet (Archie-ea57): axe-core, WCAG 2.1 A+AA, over the COMMITTED published
       # static pages — the artifact a no-JS reader, a crawler and a depositing institution actually
       # get. Same discipline as the bundle budgets: baseline in scripts/a11y-baseline.json, per-page
@@ -244,6 +265,21 @@ jobs:
       # --check diffs working-tree listings, and .gitignore's bare `dist/` hides local strays.
       - name: Root dist/ mirrors the package dist/
         run: pnpm sync-dist:check
+
+      # Same discipline as the root ratchet: the embed's eagerGzKB baseline must come out
+      # of the job byte-identical — the c314 incident was this file silently rewritten.
+      - name: Embed baseline untouched
+        run: git diff --exit-code packages/archie-viewer/bundle-size.json
+
+      # Same discipline as the root ratchet: the embed's eagerGzKB baseline must come out
+      # of the job byte-identical — the c314 incident was this file silently rewritten.
+      - name: Embed baseline untouched
+        run: git diff --exit-code packages/archie-viewer/bundle-size.json
+
+      # Same discipline as the root ratchet: the embed's eagerGzKB baseline must come out
+      # of the job byte-identical — the c314 incident was this file silently rewritten.
+      - name: Embed baseline untouched
+        run: git diff --exit-code packages/archie-viewer/bundle-size.json
 
       # Size ratchet on the embeddable bundle. Builds to a temp dir, so it does not touch the
       # committed artifact.

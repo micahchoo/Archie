@@ -17,7 +17,7 @@ built on open standards — notes are W3C Web Annotations, exhibits are IIIF Pre
 manifests — so the published site is a plain file tree with no server and no lock-in. `README.md`
 is the spine (start there); `docs/GOAL.md` is the north-star the `/goal` autonomous loop re-reads
 every cycle; `PRFAQ.md` + `DIVERGENCES.md` are the graft-discovery pipeline that turns observed
-friction into specced features; `docs/adr/0001-0026` are ratified architecture decisions;
+friction into specced features; `docs/adr/` (0001–0026) are ratified architecture decisions;
 `docs/decisions/` holds citable Q-N records. The one gate that matters for any product-shape
 change: `docs/GOAL.md` §3's dual gate — Family A regressions (typecheck/tests/build/bundle/a11y/
 console/screenshots) must ALL stay green, and ≥1 Family B improvement scalar must move, or the
@@ -52,9 +52,9 @@ cycle reverts. Architecture changes additionally require a same-commit ADR or de
 - DIVERGENCES.md divergence 5 (embed-autogrow) — built `e3766bc`; kill-criterion finding
   recorded: script-stripping hosts strip the parent listener too, fixed-height stays the answer
   for that class
-- `docs/adr/0003` — append-only version-DAG spine, called "keystone" (Q-3); `docs/adr/0016` —
+- `docs/adr/0003-annotation-spine-append-only-version-dag.md` — append-only version-DAG spine, called "keystone" (Q-3); `docs/adr/0016-narrative-as-emergent-reading-mode.md` —
   narrative is emergent from content (sections present), never a picked template
-- `docs/adr/0019`/`0021` — embed's public surface is 3 frozen attributes (`src`/`target`/
+- `docs/adr/0019-embeddable-read-only-archie-viewer.md`/`0021` — embed's public surface is 3 frozen attributes (`src`/`target`/
   `offline`); Archie-f90d gave it a capability contract enforced by `recipes/smoke.mjs`
 
 ## Open & hazards

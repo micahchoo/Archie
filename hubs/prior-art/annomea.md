@@ -4,7 +4,7 @@ updated: 2026-07-27
 # annomea
 > *Does annomea dock its canvas chrome, propose a mutation gate, and what does its Svelte convention look like?*
 
-Adopted read-side donor (narrative pane + popup/drawer, `docs/adr/0002:14`). Sources:
+Adopted read-side donor (narrative pane + popup/drawer, `docs/adr/0002-rendering-and-framework.md:14`). Sources:
 `ledgers/PRIORART-chrome-placement-2026-07-26.md`, `.claude/rules/prior-art-citation-discipline.md`,
 `ledgers/MAP-READINESS-studio-ux-overhaul-2026-07-20.md`, `docs/adr/0021-archie-viewer-target-contract.md`.
 
