@@ -28,3 +28,9 @@ Source: `ledgers/PRIORART-chrome-placement-2026-07-26.md`, `.claude/rules/prior-
 ## What citations of it may NOT support
 - "universalviewer's suite covers this" — **false**; its suite never touches the network
   ([[prior-art-citation-discipline]]). Don't cite UV's test suite as a network-behavior donor.
+- **Correction (verified 2026-07-28): the clone IS present.** A same-day edit to this page claimed
+  "no local clone... not present anywhere under `/mnt/Ghar/2TA/DevStuff/Annotators/Image/`." That is
+  false — `IIIF/universalviewer/` exists (692 files, its own `.git/`), including
+  `src/content-handlers/iiif/modules/uv-shared-module/Shell.ts`, the exact file this page already
+  cites at `:96-105`. Don't trust a "no local clone" claim without running `ls`/`find` yourself —
+  this one didn't.

@@ -54,7 +54,8 @@ end-to-end wall-clock over a real library (`scripts/perf/publishrun.mjs`), not a
   REAL render-core readers) / `7fbd87d`. Not present on this branch's tree — merged via `main`.
 
 ## Evidence
-- `ledgers/PERF-image-pipeline-2026-07-24.md` — DZI tiling per-image 19x (worker pool ×4 best); the
+- `ledgers/PERF-image-pipeline-2026-07-24.md` — DZI tiling per-image 19x at shipped concurrency=48
+  (a separate worker-pool path measures 37.8x, but concurrency is what ships); the
   dominant cost was the serial `await`, not CPU; end-to-end library figure is the one to report.
 - `scripts/perf/worker-smoke.mjs` — proves the BUILT `dzi-tile-worker`/`bake-worker` boot in real
   Chromium; the bench's `@render/core` shim can't see the barrel's module-load-time DOMPurify hang.
@@ -65,8 +66,9 @@ end-to-end wall-clock over a real library (`scripts/perf/publishrun.mjs`), not a
 ## Open & hazards
 - Archie-69f9 (open) — an OLDER published tree (schema version behind) currently refuses to open;
   ADR-0020 sanctions only the newer-tree-refuses direction, older-tree-migrates is the deferred fix.
-- Archie-c367 (open) — the export surface's final option set (folder/zip/GH Pages/object-storage/
-  BagIt) is not yet closed; new sinks should land behind this ticket, not ad hoc.
+- Archie-c367 — CLOSED mid-review: the one-flow export surface (probe recommendation,
+  greyed-with-reason sinks, tier control, deposit bag) shipped and merged to main @ f63a90f.
 - Archie-c74e (open) — the 1,000-image acceptance harness (`scripts/accept/*`, commit `8007e80`)
-  measured both-tier publish + GitHub-limits fit at real scale; its scripts are not on this branch's
-  tree (merged via `main`) — check there before re-deriving scale numbers.
+  measured both-tier publish + GitHub-limits fit at real scale; its scripts live ONLY on branch
+  `accept/thousand-images` (never merged to main — verified `git branch --all --contains 8007e80`);
+  check that branch before re-deriving scale numbers.

@@ -32,3 +32,8 @@ written and corrected on re-read. Sources: `.claude/rules/prior-art-citation-dis
   `ViewerContent`. The actual sibling-maker is `Wrapper` (`Viewer.styled.tsx:125-127`, `:138-141`).
 - There are **two** `Header.styled.ts` files in this repo (the other at
   `src/components/Slider/Header/`) — always disambiguate the path before citing.
+- **Correction (verified 2026-07-28): the clone IS present.** A same-day edit to this page claimed
+  "no local clone... not present anywhere under `/mnt/Ghar/2TA/DevStuff/Annotators/Image/`." That is
+  false — `IIIF/clover-iiif/` exists (516 files, `ls -la` dated May 24), including
+  `src/components/Viewer/Viewer/Viewer.tsx`, the exact file this page already cites at `:180-184`.
+  Don't trust a "no local clone" claim without running `ls`/`find` yourself — this one didn't.
