@@ -199,6 +199,17 @@ async function readRemoteTree(api: string, headers: Record<string, string>, comm
  * `pagesUrlFor`, `enablePages`, and `ensureRepo` are reused by the desktop path, but the upload sequence
  * below is not.
  *
+ * DESKTOP PARITY GAP (Archie-53e3, stated rather than fixed). The incremental push below does NOT
+ * reach the desktop deploy, and the desktop deploy has a different-shaped version of the same problem.
+ * `src-tauri/src/github.rs:339-341` stages the projected tree into a **throwaway** `Repository::init`
+ * and writes **one root commit** (`:392`, no parents) before force-pushing. A fresh repo holds none of
+ * the remote's objects, so push negotiation can mark nothing as already-present and the pack carries
+ * every blob on every deploy — O(tiles) in BYTES. What it is not is O(tiles) in REQUESTS, and requests
+ * are what this ticket is about: one pack push meets no ~80-content-writes/min secondary limit, so the
+ * ~52-minute floor that motivated this change simply does not exist there. Closing the desktop half
+ * means fetching the remote branch into the staging repo and committing on top of it, so negotiation
+ * has a base — a separate change in Rust, not reachable from here.
+ *
  * Push a published file tree to a GitHub Pages branch via the git-trees API: read what the branch
  * already holds, upload only the files GitHub cannot already name (bounded concurrency → sha),
  * create tree → commit → update ref, then best-effort enable Pages. Every network step ok-checks and

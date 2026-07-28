@@ -15,6 +15,18 @@ import type { FileContent } from "./ghpages.js";
 //      toUpload. The dangerous direction is a wrong REFERENCE (skipping an upload the tree needed);
 //      the truncation cases below are the ones that guard it.
 
+// WHY THE `git hash-object` TEST BELOW IS NOT REDUNDANT, measured by injection 2026-07-27. Breaking
+// the blob framing (`enc.encode("")` instead of `blob <len>\0`) turns THAT test red and leaves every
+// other test in this file and in ghpages.test.ts green — because the transport tests build their mock
+// remote tree with `localBlobShas`, the same function under test, so they stay self-consistent under
+// any sha scheme at all. This one test is the only thing tying the sha to git's real object id.
+// Delete it and a wrong sha ships green, matching nothing on GitHub and silently doing nothing.
+//
+// What NOTHING here proves, because no test touches GitHub: that GitHub stores the identical blob for
+// a tree entry sent as inline `content`. If it normalized anything, our next publish's sha would not
+// match and that file would re-upload forever — the incremental win would quietly shrink to the binary
+// half. That is a performance failure, not a correctness one, which is why it is a note and not a gate.
+
 /** The authority for a git blob id is git. Ask it. */
 function gitHashObject(bytes: Uint8Array): string {
   const dir = mkdtempSync(join(tmpdir(), "archie-blobsha-"));
