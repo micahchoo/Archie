@@ -23,7 +23,7 @@
   //     `PrimaryWindow.jsx:46-70`, on the canvas alone.
   // So the note surface, the sheet, the lightbox and the rich prose renderer are shared components
   // here, not re-implementations: ONE note renderer (Archie-c982/dbbc), reached from a temporal spine.
-  import { parseMediaFragment, activeNoteIndex, transcriptTextOf, splitNoteMedia, metadataRows, stripMarkdown, tagsOfAnnotation as tagsOf, geoOf, geoCenter, formatLngLat, type NoteMediaItem, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
+  import { parseMediaFragment, activeNoteIndex, transcriptTextOf, splitNoteMedia, metadataRows, stripMarkdown, tagsOfAnnotation as tagsOf, readingIdOf, geoOf, geoCenter, formatLngLat, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
   import ResizeDivider from "@render/svelte/ResizeDivider.svelte";
   import { clampSeekStart } from "../av-landing.js";
   import { loadAsideWidth, saveAside, type AsideState } from "../aside-persistence.js";
@@ -31,6 +31,7 @@
   import MetadataRun from "./MetadataRun.svelte";
   import NoteLightbox from "./NoteLightbox.svelte";
   import NotePopup from "./NotePopup.svelte";
+  import ReadingLegend from "./ReadingLegend.svelte";
   import ReadingSheet from "./ReadingSheet.svelte";
   import SidebarObjectNav from "./SidebarObjectNav.svelte";
 
@@ -47,6 +48,10 @@
     onstep,
     onoverview,
     onopenfinder,
+    readings = [],
+    activeReading = null,
+    onreading,
+    readingCount,
   }: {
     object: { source: string; label: string; mediaType?: "image" | "sound" | "video"; duration?: number };
     annotations?: W3CAnnotation[];
@@ -85,6 +90,30 @@
      *  are honestly absent rather than dishonestly inert. (No fixture AV note carries tags today, so
      *  this path is currently unexercised either way — recorded rather than inferred.) */
     onopenfinder?: (tag: string) => void;
+    /** THE READING LEGEND (Archie-4524, V53's last enumerated-not-built drop).
+     *
+     *  A recording can be read several ways too — the seed's sounded folio carries an `abjad` note
+     *  arguing that a stretch of it is speech rather than an artefact of the encoding
+     *  (`apps/viewer/fixtures/voynich.ts:363`) — and until this prop set existed there was no control
+     *  on this surface that could reach it. The note was in the published tree and structurally
+     *  unreachable, which is why the fixture landed first (`5252f69`) and the control second: a legend
+     *  over a corpus with no reading-bearing AV note lists nothing and any assertion over it cannot
+     *  fail (Archie-0cc6's shape).
+     *
+     *  ALL FOUR ARE OPTIONAL WITH INERT DEFAULTS, so an unwired host renders no legend rather than an
+     *  empty one — `ReadingLegend` itself returns nothing for `readings.length === 0`, and `onreading`
+     *  being absent is the second gate at the mount below.
+     *
+     *  `styleOf` — the fifth prop the ticket named — is DELIBERATELY NOT TAKEN, and its absence is a
+     *  finding rather than an omission. It returns a `MarkerStyle` for OpenSeadragon marks; this
+     *  surface has no marker canvas to apply one to. The layer's colour still reaches the reader, by
+     *  the route the image reader's own note LIST uses rather than its canvas: `readingIdOf(note)`
+     *  against the `readings` registry (`Reader.svelte:172-176`), which needs no extra prop. */
+    readings?: Reading[];
+    activeReading?: string | null;
+    onreading?: (id: string | null) => void;
+    /** Per-layer note count on THIS recording (null = base/General). Omitted ⇒ no counts render. */
+    readingCount?: (id: string | null) => number;
   } = $props();
 
   // The EXHIBIT-level metadata run, shown beside the credit stack (Archie-36e6).
@@ -114,7 +143,13 @@
   // the next surface to render a cue would have to remember. One field, and every consumer gets the same
   // string. `text` stays on the interface because the NOTE CARD needs the markup live (that is the whole
   // point of ProseCites); only chrome — a line, a tooltip, an accessible name — wants it flattened.
-  interface Cue { id: string; text: string; preview: string; range: TimeRange; box?: { x: number; y: number; w: number; h: number }; }
+  interface Cue { id: string; text: string; preview: string; range: TimeRange; box?: { x: number; y: number; w: number; h: number }; colour?: string; }
+  /** A note's Reading colour from the registry — the image note list's own route (`Reader.svelte:172-176`),
+   *  not a canvas `styleOf`. Undefined for a base note, which keeps its existing border treatment. */
+  const readingColourOf = (a: W3CAnnotation): string | undefined => {
+    const rid = readingIdOf(a);
+    return rid !== undefined ? readings.find((r) => r.id === rid)?.colour : undefined;
+  };
   // Notes carrying a temporal selector, sorted by start — the transcript spine. A video note may also carry
   // a spatial box (`t=…&xywh=percent:…`, ADR-0006) read via parseMediaFragment.
   const cues = $derived.by<Cue[]>(() => {
@@ -124,7 +159,8 @@
       const f = v ? parseMediaFragment(v) : {};
       if (f.time) {
         const text = transcriptTextOf(a);
-        out.push({ id: a.id, text, preview: stripMarkdown(text), range: f.time, ...(f.box ? { box: f.box } : {}) });
+        const colour = readingColourOf(a);
+        out.push({ id: a.id, text, preview: stripMarkdown(text), range: f.time, ...(f.box ? { box: f.box } : {}), ...(colour ? { colour } : {}) });
       }
     }
     return out.sort((x, y) => x.range.start - y.range.start);
@@ -366,6 +402,32 @@
   {/if}
 
   <main>
+    <!-- THE READING LEGEND (Archie-4524) — the media column's leading ROW, which is the same seat the
+         image reader gives it (`Reader.svelte:386-389`, `.canvas-dock`). Deliberately in `main` and not
+         in the aside: the ticket's Watch says a legend must not push the transcript toward collapse,
+         and this aside cannot collapse at all (`collapsible={false}` — it holds the object nav), so
+         anything added to it comes straight out of the reading measure. A row above the media takes its
+         height from the stage instead, exactly as docking took the image reader's.
+
+         Gated on `onreading` as well as on there being readings: `ReadingLegend`'s radios call
+         `onselect` unconditionally (it is required there), so mounting it unwired would throw rather
+         than merely do nothing. Two gates, one control, no dead door.
+
+         PRIOR ART, and the corpus is unanimous that this belongs on an AV surface: clover-iiif hands
+         `<Painting … isMedia={isAudioVideo}>` the media flag and hands `<InformationPanel …>` seven
+         props of which NOT ONE is that flag (`Viewer/Viewer/Content.tsx:133-138` / `:178-186`) — the
+         painting engine swaps by media type, the annotation reading surface does not. mirador is the
+         same shape from the other side (`WindowSideBarAnnotationsPanel.jsx:14-42` takes
+         `{annotationCount, canvasIds, windowId, id}`; the media branch lives in `PrimaryWindow.jsx`).
+         Neither ships a rival-interpretation legend to copy — Archie's readings have no corpus
+         analogue — so what is borrowed is the RULE (the note apparatus does not thin out for AV), and
+         the legend's own layout is the one this app already shipped. -->
+    {#if onreading && readings.length > 0}
+      <div class="media-dock">
+        <ReadingLegend {readings} active={activeReading} onselect={onreading} count={readingCount} />
+      </div>
+    {/if}
+
     <div class="media-region">
       <!-- Loading veil (#10): until metadata arrives a heavy recording is an indistinguishable-from-broken
            dead box — show the shell's breathing-dot idiom so it reads as "loading", not "failed". -->
@@ -507,8 +569,18 @@
       <ol class="cues">
         {#each cues as c, i (c.id)}
           <li>
+            <!-- The reading's own colour on the left edge (Archie-4524), inline so it wins over the
+                 `.active` rule — the exact arrangement the image note list uses
+                 (`Reader.svelte:540`: `style="border-left-color: {readingColourOf(it) ?? 'transparent'}"`).
+                 Set ONLY when the cue belongs to a reading, which is the one difference and it is
+                 deliberate: `Reader`'s list has no playhead, this spine does, and `.cues button.active`
+                 spends the same border on "the line being spoken". Leaving a base cue's border alone
+                 keeps that signal intact; a reading cue trades it for identity and keeps the spoken
+                 state on the fill (`--accent-muted`), which is immarkus's split the file already
+                 cites — category owns hue, state owns the other channel. -->
             <button class:active={i === activeIdx} class:open={c.id === selected}
               aria-current={c.id === selected ? "true" : undefined}
+              style={c.colour ? `border-left-color: ${c.colour}` : undefined}
               onclick={() => { seekTo(c.range.start); openNote(c.id); }}>
               <span class="t">{fmt(c.range.start)}</span>
               <span class="line">{c.preview}</span>
@@ -605,6 +677,14 @@
   .to-index:hover { color: var(--accent-2); }
   .to-index .back-mark { font-size: 1.05rem; line-height: 1; }
   main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--surface-canvas); }
+  /* The reading legend's row (Archie-4524) — the AV twin of `Reader.svelte`'s `.canvas-dock`, same
+     numbers, so a reader who has met the legend over an image meets it in the same place over a
+     recording. `flex: none` so it takes its own height rather than any of the media's. */
+  .media-dock {
+    flex: none; display: flex; align-items: center;
+    gap: var(--space-4); padding: var(--space-2) var(--space-5);
+    background: var(--surface-canvas); border-bottom: 1px solid var(--border-canvas);
+  }
   .media-region { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: var(--space-6) var(--space-8) var(--space-8); }
   /* Loading veil (#10) — the shell's breathing-dot idiom over the dark stage until metadata arrives. */
   .media-loading { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center; gap: var(--space-3); background: var(--surface-canvas); color: var(--ink-canvas-secondary); font-family: var(--font-ui), sans-serif; font-size: 0.8125rem; letter-spacing: 0.16em; text-transform: uppercase; }

@@ -361,25 +361,62 @@ test.describe("V53 · an AV note's tags are a real door into the finder", () => 
     const chips = card(page).locator("button.tag-btn");
     await expect(chips).toHaveText(["#cadence", "#transcript"]);
 
-    // DRIVING THE SECOND CHIP, AND NOT THE FIRST — this is a routed-around DEFECT, not a style choice,
-    // so it is written down rather than quietly accommodated. `Archie-d37d`: the cite trigger sits on
-    // top of the first chip. Measured here at 1280x720 the moment this test first ran —
-    //   `.cite-trigger`  x 20-100,  y 556-588
-    //   `#cadence`       x 38-122,  y 560-572  → elementFromPoint at its centre = SPAN.lbl  ← OCCLUDED
-    //   `#transcript`    x 134-245, y 560-572  → elementFromPoint at its centre = BUTTON.tag
-    // 62px of overlap. `#transcript` clears the trigger only because it happens to start at x=134, so
-    // which tags are reachable depends on the length of the tag text before them — a layering fault,
-    // not one unlucky fixture. WHEN d37d IS FIXED: drive `chips.first()` and assert BOTH are hittable;
-    // do not simply delete this comment. The subject of THIS test is the `onopenfinder` wire, which the
-    // second chip proves exactly as well as the first.
-    await chips.nth(1).click();
+    // EVERY CHIP IS HIT-TESTED, AND THE FIRST ONE IS DRIVEN — `Archie-d37d` CLOSED, OBVIATED BY THE
+    // DOCK. This block used to drive the SECOND chip and say why, because the cite trigger sat on top
+    // of the first one and a real `click()` on it timed out with
+    // `<button class="cite-trigger"> subtree intercepts pointer events`. The two measurements, same
+    // route, same viewport (1280x720), same fixture note:
+    //
+    //   BEFORE (floating chrome, the state d37d was filed against)
+    //     `.cite-trigger`  x 20-100,  y 556-588
+    //     `#cadence`       x 38-122,  y 560-572  → elementFromPoint at its centre = SPAN.lbl ← OCCLUDED
+    //     `#transcript`    x 134-245, y 560-572  → elementFromPoint at its centre = BUTTON.tag
+    //   AFTER (docked chrome, measured 2026-07-27 on a clean tree at origin/main `0c0b121`)
+    //     `.note-pop`      y 479-592     `.chrome-dock`   y 592-720
+    //     `.cite-trigger`  x 20-100,  y 641-673
+    //     `#cadence`       x 22-106,  y 564-576  → elementFromPoint at its centre = BUTTON.tag
+    //     `#transcript`    x 118-229, y 564-576  → elementFromPoint at its centre = BUTTON.tag
+    //
+    // The 62px of HORIZONTAL overlap is still there (78px, now) and it no longer means anything: the
+    // note card and the chrome bar are flow siblings in the same column, so the card ends at y 592 and
+    // the bar begins at y 592, and no amount of x-overlap can make one cover the other. That is the
+    // ticket's second reading confirmed — the trigger was canvas chrome after all, and it left the
+    // canvas with the rest of it — so d37d needed no fix of its own. What remains is this assertion,
+    // which is the thing that would have caught it and now keeps it caught.
+    const hits = await chips.evaluateAll((els) =>
+      els.map((el) => {
+        const r = el.getBoundingClientRect();
+        const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        return { tag: el.textContent ?? "", ok: top === el || !!top?.closest("button.tag-btn"), at: `${top?.tagName ?? "none"}.${top?.className ?? ""}` };
+      }),
+    );
+    expect(hits.length, "no tag chips — this assertion would be vacuous").toBe(2);
+    for (const h of hits) expect(h.ok, `${h.tag} is covered by ${h.at} — a mouse cannot reach it`).toBe(true);
+
+    // The FIRST chip, driven for real. `Locator.click()` hit-tests and is what timed out before;
+    // a `dispatchEvent(new MouseEvent("click"))` passed against the broken code and proves nothing
+    // (`.claude/rules/osd-overlay-wrapper.md`).
+    await chips.first().click();
     const finder = page.locator(".finder[role='dialog']");
     await expect(finder).toBeVisible();
 
-    // The load-bearing assertion: `transcript` arrived and is ACTIVE, and its neighbour is not.
+    // The load-bearing assertion: `cadence` arrived and is ACTIVE, and its neighbour is not.
     // `onopenfinder={() => openFinder()}` — the tag dropped on the floor — would open the finder just
     // as well and satisfy a `[role=dialog]` check; only the facet state can tell the two apart. The
     // second half also proves the facet was SEEDED from the chip rather than every facet defaulting on.
+    await expect(finder.locator("button.facet", { hasText: "cadence" })).toHaveAttribute("aria-pressed", "true");
+    await expect(finder.locator("button.facet", { hasText: "transcript" })).toHaveAttribute("aria-pressed", "false");
+
+    // BOTH chips, as the ticket asks — a fresh mount rather than closing the overlay, because the
+    // finder and this surface both bind Escape and which one wins is a different contract than the one
+    // under test here.
+    await page.goto("./#/sampler");
+    await page.reload();
+    await audio.click();
+    await rows.nth(3).click();
+    await expect(card(page)).toBeVisible();
+    await card(page).locator("button.tag-btn").nth(1).click();
+    await expect(finder).toBeVisible();
     await expect(finder.locator("button.facet", { hasText: "transcript" })).toHaveAttribute("aria-pressed", "true");
     await expect(finder.locator("button.facet", { hasText: "cadence" })).toHaveAttribute("aria-pressed", "false");
   });
@@ -412,7 +449,12 @@ test.describe("V53 · the Escape ladder this surface did not have", () => {
 test.describe("V53 · the transcript aside resizes (and deliberately does not collapse)", () => {
   test("dragging the divider narrows the transcript, and it survives a reload", async ({ page }) => {
     await openAudioObject(page);
-    const aside = page.locator(".player aside");
+    // `> aside`, not a descendant match: `ReadingLegend`'s own root is an `<aside class="legend">`
+    // (its complementary-landmark rule), so since Archie-4524 mounted the legend inside `main` there
+    // are TWO asides under `.player` and a descendant selector is a strict-mode violation. The
+    // transcript aside is the direct child, and naming it that way is more precise than the selector
+    // this replaced rather than a workaround for it.
+    const aside = page.locator(".player > aside");
     const divider = page.locator(".resize-divider[aria-label='Resize transcript']");
     await expect(divider).toBeVisible();
 
@@ -570,6 +612,98 @@ test.describe("V49 · the temporal map clears the item strip (Archie-b135)", () 
     // element and asserting half of it invites the other half to drift.
     expect(Math.round(map.y), "the temporal map's top edge is above the fold").toBeGreaterThanOrEqual(0);
     expect(Math.round(map.y + map.height), `the temporal map's bottom edge is off-screen (viewport ${vh}px)`).toBeLessThanOrEqual(vh);
+  });
+});
+
+test.describe("Archie-4524 · the reading legend the AV surface did not have", () => {
+  // FIXTURE FIRST, CONTROL SECOND — and the order is the whole ticket. `Archie-4524` refused to build
+  // this legend while no fixture AV note carried a `reading`, because a legend over such a corpus lists
+  // only "General notes", and an assertion over it passes whether the control works or not. That is
+  // `Archie-0cc6`'s shape: a correct guard on a route no fixture can reach, where reverting it leaves
+  // the suite green.
+  //
+  // The fixture landed on its own in `5252f69` — `apps/viewer/fixtures/voynich.ts:363`, a fifth AV note
+  // on the sounded folio carrying `reading: "abjad"`, deliberately unasserted at the time and saying so
+  // at the fixture. This is the other half. The red-green the ticket asks for is therefore available and
+  // was run: delete that fixture note, and `the abjad layer adds its line` fails at 4 cues instead of 5.
+  //
+  // WHAT THIS ASSERTS THAT "THE LEGEND RENDERS" WOULD NOT. `ReadingLegend` emits nothing at all for
+  // `readings.length === 0`, so `toBeVisible()` on the aside is a real check that SOMETHING arrived —
+  // and it is satisfied by a legend listing only the base layer, which is exactly the empty control the
+  // ticket was filed to prevent. So the radios are asserted BY NAME, and the layer is asserted to change
+  // what the transcript contains. A legend with zero reading entries fails the first; a legend whose
+  // radios do not reach `annotationsOf` fails the second.
+  const legend = (page: Page): Locator => page.locator(".player aside.legend[aria-label='Readings']");
+
+  test("the legend lists the exhibit's readings, with per-layer counts on THIS recording", async ({ page }) => {
+    await openAudioObject(page);
+    await expect(legend(page)).toBeVisible();
+
+    // By name, in order. `voynichReadings` (fixtures/voynich.ts:254-258) is cipher · hoax · abjad, and
+    // the base radio leads. Renaming a reading without updating this reddens it, which is the point:
+    // the names are what prove the registry reached the control rather than a hard-coded stub.
+    //
+    // The base count is 5 and the transcript is 4 lines, which is not a discrepancy: `readingCount`
+    // counts NOTES on the recording and the spine renders the TIME-RANGED ones, and o12 also carries a
+    // whole-track note (the band above the transcript — `the whole-track note opens too` drives it).
+    // Measured, not assumed; the first draft of this assertion said 4 and went red, which is the count
+    // doing its job.
+    await expect(legend(page).locator("[role='radio']")).toHaveText([
+      "General notes5",
+      "Cipher reading0",
+      "Hoax reading0",
+      "Natural-language reading1",
+    ]);
+    // Base-only on arrival (ADR-0007 / Q16 — no camp privileged).
+    await expect(legend(page).locator("[role='radio'][aria-checked='true']")).toHaveText("General notes5");
+  });
+
+  test("the abjad layer adds its line to the transcript, in its own colour", async ({ page }) => {
+    await openAudioObject(page); // asserts 4 cues — the base state
+    await legend(page).locator("[role='radio']", { hasText: "Natural-language reading" }).click();
+
+    // THE LOAD-BEARING ASSERTION. The reading-bearing AV note was in the published tree and structurally
+    // unreachable before this control existed; this is the first thing that can see it.
+    await expect(page.locator(".cues li")).toHaveCount(5);
+    // Matched on the abjad note's OPENING clause, not on "root-and-pattern morphology" — the base
+    // cue at 45,80 uses that phrase too ("Under the abjad reading this resembles a root-and-pattern
+    // morphology (Bax)"), so the first draft of this line matched TWO rows and went red. Worth
+    // recording rather than quietly fixing: a `hasText` that matches a neighbour would have made the
+    // colour assertion below ambiguous instead of failing, on a fixture written to argue about the
+    // very phrase being matched.
+    const added = page.locator(".cues li button", { hasText: "Listen to this stretch for word length" });
+    await expect(added).toHaveCount(1);
+    // 165,205 sorts fourth of five (0,30 · 45,80 · 120,160 · 165,205 · 250,296) — asserted so a note
+    // appearing at the wrong moment in the recording is a failure rather than a silent reorder.
+    await expect(added.locator(".t")).toHaveText("2:45");
+
+    // The layer's COLOUR reached the spine, not only the legend. `#4c5d8a` is abjad's own
+    // (fixtures/voynich.ts:257), taken by `readingIdOf` against the registry — the image note list's
+    // route (`Reader.svelte:172-176`), not a canvas `styleOf`, which this surface has no canvas for.
+    await expect(added).toHaveCSS("border-left-color", "rgb(76, 93, 138)");
+    // And a base cue is untouched: it keeps the border the playhead signal spends.
+    await expect(page.locator(".cues li button").first()).not.toHaveCSS("border-left-color", "rgb(76, 93, 138)");
+
+    // Reversible — picking the base layer back puts the transcript where it was.
+    await legend(page).locator("[role='radio']", { hasText: "General notes" }).click();
+    await expect(page.locator(".cues li")).toHaveCount(4);
+  });
+
+  test("there is no Hide-all on this legend — the notes here ARE the transcript", async ({ page }) => {
+    // WITHHELD, not forgotten, and asserted so that a later edit shipping it inert reddens rather than
+    // passing. `hidden`/`onhiddenchange` mean "the canvas draws no markers" on the image reader; this
+    // surface has no marker canvas, and the thing a reader would be hiding is the transcript they are
+    // reading along with. `ReadingLegend` now gates the toggle on the handler being wired, which is the
+    // same idiom `MediaPlayer` already uses for `onopenfinder` — a control with no handler is a dead
+    // door, and this codebase has filed that defect enough times to prefer an honest absence.
+    await openAudioObject(page);
+    await expect(legend(page)).toBeVisible();
+    await expect(legend(page).locator("button.hide-toggle")).toHaveCount(0);
+    // The image reader still has it — so this is a per-surface decision, not a deletion.
+    await page.goto("./#/voynich");
+    await page.reload();
+    await page.locator("button.object", { hasText: "f1r" }).first().click();
+    await expect(page.locator(".canvas-dock button.hide-toggle")).toHaveCount(1);
   });
 });
 

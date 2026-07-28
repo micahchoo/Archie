@@ -1004,7 +1004,245 @@ async function main() {
         }, { timeout: 20000, polling: 200 }).then((h) => h.jsonValue()).catch(() => -1);
       }
 
-      return { controls, posText, secondLabel, afterNext, truth, list, rowOpens, legend, marks, stepped, lifetime, av, tokens, narrative, narrativeTruth };
+
+      // ---- Archie-1820: note MEDIA and the READING SHEET, driven --------------------------------
+      //
+      // Both are DOM the unit suite can already inspect; what only a browser can say is that the
+      // controls are HITTABLE and that the sheet actually covers the element. So the click below is a
+      // real driven pointer sequence, per .claude/rules/osd-overlay-wrapper.md — a synthetic .click()
+      // succeeds against code where a real mouse click lands on something else entirely.
+      const noteSurface = await (async () => {
+        if (!(await open("voynich"))) return { skipped: "no voynich card in this tree" };
+
+        // TRUTH, from the same published tree the embed reads. The media-bearing note is a
+        // WHOLE-OBJECT note on ex-voynich.o5 (fixtures/voynich.ts `voynichMediaNotes`). Derive the
+        // expected url + description from the annotation's OWN body rather than restating them here:
+        // a literal would keep passing against a fixture that had stopped carrying media, which is
+        // exactly how the shell's sheet-media route went ungated for so long.
+        const want = await page.evaluate(async (b) => {
+          const r = await fetch(`${b}/apps/viewer/public/published/voynich/canvas/ex-voynich.o5/annotations.json`);
+          if (!r.ok) return null;
+          for (const a of (await r.json()).items ?? []) {
+            // The PUBLISHED body is an array of TextualBody resources (the in-memory model's single
+            // object is not what lands on disk) — read both shapes rather than assuming either.
+            const b = a.body;
+            const v = (Array.isArray(b) ? b : [b]).map((x) => x?.value ?? "").join(" ");
+            const m = /!\[([^\]]*)\]\(([^)\s]+)\)/.exec(v);
+            if (m) return { alt: m[1], url: m[2], lead: v.slice(0, 24).trim() };
+          }
+          return null;
+        }, base);
+        if (!want) return { skipped: "no media-bearing note on ex-voynich.o5 in this tree" };
+
+        const onGrid = await page.waitForFunction(() => !!document.querySelector("archie-viewer")
+          .shadowRoot.querySelector('button[data-obj="ex-voynich.o5"]'), { timeout: 15000, polling: 300 })
+          .then(() => true).catch(() => false);
+        if (!onGrid) return { skipped: "ex-voynich.o5 is not in this exhibit's grid" };
+        await page.evaluate(() => document.querySelector("archie-viewer").shadowRoot
+          .querySelector('button[data-obj="ex-voynich.o5"]').click());
+        const paneUp = await page.waitForFunction(() => document.querySelector("archie-viewer")
+          .shadowRoot.querySelectorAll(".rc-notes button").length > 0, { timeout: 20000, polling: 250 })
+          .then(() => true).catch(() => false);
+        if (!paneUp) return { skipped: "the note list never mounted on ex-voynich.o5" };
+
+        // Open the media note through its own list row.
+        const opened = await page.evaluate((lead) => {
+          const s = document.querySelector("archie-viewer").shadowRoot;
+          const row = [...s.querySelectorAll(".rc-notes button")]
+            .find((b) => b.textContent.includes(lead.slice(0, 18)));
+          if (!row) return false;
+          row.click();
+          return true;
+        }, want.lead);
+        if (!opened) return { skipped: "no list row carries the media note's words" };
+        await page.waitForTimeout(400);
+
+        const card = await page.evaluate(() => {
+          const s = document.querySelector("archie-viewer").shadowRoot;
+          const c = s.querySelector(".archie-note-card");
+          const tiles = [...s.querySelectorAll(".archie-note-media button.tile")];
+          return {
+            open: c ? !c.hasAttribute("hidden") : false,
+            // The regression this whole row exists for: a raw <img> left INSIDE the prose.
+            imgInProse: !!s.querySelector(".archie-note-card__prose img"),
+            proseChars: s.querySelector(".archie-note-card__prose")?.textContent.trim().length ?? 0,
+            tiles: tiles.length,
+            tileLabel: tiles[0]?.getAttribute("aria-label") ?? null,
+            tileSrc: tiles[0]?.querySelector("img")?.getAttribute("src") ?? null,
+            // NoteMedia.svelte:33 — the button owns the name, so the child image stays decorative.
+            tileImgAlt: tiles[0]?.querySelector("img")?.getAttribute("alt"),
+            expandVisible: !s.querySelector(".archie-note-card__expand")?.hidden,
+          };
+        });
+
+        // --- driven click on the expand control ---
+        const expandBox = await page.evaluate(() => {
+          const b = document.querySelector("archie-viewer").shadowRoot
+            .querySelector(".archie-note-card__expand");
+          if (!b) return null;
+          const r = b.getBoundingClientRect();
+          return r.width > 2 && r.height > 2 ? [Math.round(r.x + r.width / 2), Math.round(r.y + r.height / 2)] : null;
+        });
+        if (!expandBox) return { ...card, want, sheet: { skipped: "the expand control has no hittable box" } };
+        // What is actually AT that point. A control that renders but is covered is the failure this
+        // catches; the bare-DIV signature in the overlay-wrapper rule is the same shape.
+        const hitTarget = await page.evaluate(([x, y]) => {
+          const el = document.querySelector("archie-viewer").shadowRoot.elementFromPoint(x, y);
+          return el ? `${el.tagName.toLowerCase()}.${el.className || "(none)"}` : "null";
+        }, expandBox);
+        await page.mouse.click(expandBox[0], expandBox[1]);
+        await page.waitForTimeout(500);
+
+        const sheet = await page.evaluate(() => {
+          const s = document.querySelector("archie-viewer").shadowRoot;
+          const layer = s.querySelector(".archie-note-sheet-layer");
+          const sh = s.querySelector(".archie-note-sheet");
+          const c = s.querySelector(".archie-note-card");
+          const host = document.querySelector("archie-viewer").getBoundingClientRect();
+          const box = sh?.getBoundingClientRect();
+          return {
+            visible: layer ? !layer.hasAttribute("hidden") : false,
+            role: sh?.getAttribute("role") ?? null,
+            modal: sh?.getAttribute("aria-modal") ?? null,
+            proseChars: sh?.querySelector(".archie-note-card__prose")?.textContent.trim().length ?? 0,
+            figureSrc: sh?.querySelector("figure img")?.getAttribute("src") ?? null,
+            caption: sh?.querySelector("figure figcaption")?.textContent.trim() ?? null,
+            // hidden-not-unmounted: BOTH halves are separate claims and both must hold.
+            cardStillMounted: !!c,
+            cardHidden: c ? c.hasAttribute("hidden") : null,
+            // Exactly one modal, ever — the embed collapses enlarge into the sheet, so the shell's
+            // "a modal REPLACES the sheet, never stacks" rule has nothing to arbitrate.
+            modalCount: s.querySelectorAll("[aria-modal='true']").length,
+            // The sheet must actually sit ON the element, not off in a corner of it.
+            coversHost: !!(box && host.width > 0 && box.width / host.width > 0.4),
+          };
+        });
+
+        // Escape returns to the card, with focus back on the control that opened the sheet.
+        await page.keyboard.press("Escape");
+        await page.waitForTimeout(350);
+        const afterEscape = await page.evaluate(() => {
+          const s = document.querySelector("archie-viewer").shadowRoot;
+          const layer = s.querySelector(".archie-note-sheet-layer");
+          const c = s.querySelector(".archie-note-card");
+          return {
+            sheetClosed: layer ? layer.hasAttribute("hidden") : true,
+            // "Read less", not "dismiss the note" — the note stays open (Reader.svelte:551-556).
+            cardBack: c ? !c.hasAttribute("hidden") : false,
+            focusOnExpand: s.activeElement?.classList.contains("archie-note-card__expand") ?? false,
+          };
+        });
+
+        return { ...card, want, hitTarget, sheet, afterEscape };
+      })();
+
+      // ---- Archie-1820: the finder --------------------------------------------------------------
+      //
+      // The claim that matters is NOT "search returns something" — it is that a hit says WHERE it is
+      // and that activating it goes there. Archie-9eeb is open against the shell's finder for failing
+      // the first half, so a smoke test that only counted rows would pass against the very defect this
+      // row exists to avoid.
+      const finder = await (async () => {
+        if (!(await open("voynich"))) return { skipped: "no voynich card in this tree" };
+        await page.waitForFunction(() => document.querySelector("archie-viewer").shadowRoot
+          .querySelectorAll("ul.grid li button[data-obj]").length > 0, { timeout: 15000, polling: 300 });
+
+        // TRUTH from the published tree: every note in the exhibit whose words contain the query, and
+        // the objects they sit on. Computed over the SAME canvas annotation pages the embed reads, so
+        // the expectation moves with the fixture instead of being a literal that outlives it.
+        const QUERY = "herbal";
+        const want = await page.evaluate(async ([b, q]) => {
+          const m = await (await fetch(`${b}/apps/viewer/public/published/voynich/manifest.json`)).json();
+          const ids = new Set(), objs = new Set();
+          for (const canvas of m.items ?? []) {
+            const oid = canvas.id.split("/canvas/")[1];
+            for (const pg of canvas.annotations ?? []) {
+              const url = `${b}/apps/viewer/public/published/voynich${pg.id.split("/voynich")[1]}`;
+              const r = await fetch(url).catch(() => null);
+              if (!r || !r.ok) continue;
+              for (const a of (await r.json()).items ?? []) {
+                const body = Array.isArray(a.body) ? a.body : [a.body];
+                const raw = body.map((x) => x?.value ?? "").join(" ");
+                // Strip markdown link/image URLs: a hit must be on words the reader SEES, so a query
+                // matching only an href must not count on either side of the comparison.
+                const text = raw.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1");
+                if (text.toLowerCase().includes(q) && a.id && !ids.has(a.id)) { ids.add(a.id); objs.add(oid); }
+              }
+            }
+          }
+          return { notes: ids.size, objects: [...objs].length };
+        }, [base, QUERY]);
+
+        await page.evaluate(() => document.querySelector("archie-viewer").shadowRoot
+          .querySelector("ul.grid li button[data-obj]").click());
+        const up = await page.waitForFunction(() => !!document.querySelector("archie-viewer")
+          .shadowRoot.querySelector(".rc-find"), { timeout: 20000, polling: 250 })
+          .then(() => true).catch(() => false);
+        if (!up) return { skipped: "the finder input never mounted in the reading pane" };
+
+        const openLabel = await page.evaluate(() => document.querySelector("archie-viewer")
+          .shadowRoot.querySelector(".topbar .title")?.textContent.trim() ?? "");
+        const before = await page.evaluate(() => document.querySelector("archie-viewer")
+          .shadowRoot.querySelectorAll(".rc-notes button").length);
+
+        // Type it the way a reader would, so the input's own listener is what runs.
+        await page.evaluate((q) => {
+          const el = document.querySelector("archie-viewer").shadowRoot.querySelector(".rc-find");
+          el.value = q;
+          el.dispatchEvent(new Event("input"));
+        }, QUERY);
+        await page.waitForTimeout(300);
+
+        const got = await page.evaluate(() => {
+          const s = document.querySelector("archie-viewer").shadowRoot;
+          const rows = [...s.querySelectorAll(".rc-notes button")];
+          return {
+            hits: rows.length,
+            // EVERY row must carry a locus — one row without it is the defect, so count the misses.
+            missingLocus: rows.filter((r) => !r.querySelector(".rc-where")?.textContent.trim()).length,
+            labels: rows.map((r) => r.querySelector(".rc-where")?.textContent.trim() ?? null),
+          };
+        });
+
+        // Activate a hit that lives on ANOTHER object — the travel case.
+        const target = await page.evaluate((here) => {
+          const s = document.querySelector("archie-viewer").shadowRoot;
+          const rows = [...s.querySelectorAll(".rc-notes button")];
+          // Read the locus ONCE and carry it. Dereferencing `.rc-where` a second time threw when a
+          // red-green probe removed the locus line, which aborted the whole drive — 34 later
+          // assertions never ran and the suite reported 19/20 rather than a clean FAIL here. A probe
+          // that CRASHES the harness still exits 1, so it looks caught; it is not the same thing as
+          // the assertion failing, and the difference is invisible unless you read the totals.
+          const locusOf = (r) => r.querySelector(".rc-where")?.textContent.trim() ?? "";
+          const i = rows.findIndex((r) => locusOf(r) !== here);
+          if (i < 0) return null;
+          const r = rows[i].getBoundingClientRect();
+          return { i, label: locusOf(rows[i]),
+                   at: [Math.round(r.x + r.width / 2), Math.round(r.y + r.height / 2)] };
+        }, openLabel);
+        if (!target) return { want, openLabel, before, ...got, travel: { skipped: "every hit is on the open object" } };
+
+        // A REAL driven click, per .claude/rules/osd-overlay-wrapper.md.
+        await page.mouse.click(target.at[0], target.at[1]);
+        const arrived = await page.waitForFunction((w) => {
+          const t = document.querySelector("archie-viewer").shadowRoot.querySelector(".topbar .title");
+          return t && t.textContent.trim() === w ? true : false;
+        }, target.label, { timeout: 20000, polling: 250 }).then(() => true).catch(() => false);
+        await page.waitForTimeout(900);
+        const landed = await page.evaluate(() => {
+          const s = document.querySelector("archie-viewer").shadowRoot;
+          const c = s.querySelector(".archie-note-card");
+          return {
+            title: s.querySelector(".topbar .title")?.textContent.trim() ?? "",
+            // Landing on the OBJECT is not landing on the NOTE. The open card is what says the
+            // journey ended at the cited note rather than at the object's top.
+            noteOpen: c ? !c.hasAttribute("hidden") : false,
+            noteChars: c?.querySelector(".archie-note-card__body")?.textContent.trim().length ?? 0,
+          };
+        });
+        return { want, openLabel, before, ...got, travel: { arrived, to: target.label, ...landed } };
+      })();
+      return { controls, posText, secondLabel, afterNext, truth, list, rowOpens, legend, marks, stepped, lifetime, av, tokens, narrative, narrativeTruth, noteSurface, finder };
     })();
 
     if (contract.skipped) {
@@ -1150,6 +1388,75 @@ async function main() {
       record(n.activeIndex === 0 && n.afterNext === 1,
         "ADR-0019 MUST · the section stepper advances the spine (V88)",
         `active section ${n.activeIndex} → ${n.afterNext} after Next`);
+
+      // --- note media + the reading sheet (Archie-1820) ---
+      const ns = contract.noteSurface ?? {};
+      if (ns.skipped) {
+        record(false, "ADR-0019 MUST · a note's media renders as a tile, not raw in the prose (Archie-1820)", ns.skipped);
+        record(false, "ADR-0019 MUST · the tile carries the author's description (Archie-ff79/V66)", ns.skipped);
+        record(false, "ADR-0019 MUST · the expand control opens the reading sheet on a REAL click (Archie-1820)", ns.skipped);
+        record(false, "ADR-0019 MUST · the sheet carries the note's prose AND its media (V60)", ns.skipped);
+        record(false, "ADR-0019 MUST · the card is hidden, NOT unmounted, behind the sheet (V62/V63)", ns.skipped);
+        record(false, "ADR-0019 MUST · Escape closes the sheet and restores focus to the expander (V63)", ns.skipped);
+      } else {
+        record(ns.open === true && ns.tiles === 1 && ns.imgInProse === false,
+          "ADR-0019 MUST · a note's media renders as a tile, not raw in the prose (Archie-1820)",
+          `card open=${ns.open}, ${ns.tiles} tile(s), raw <img> left in the prose=${ns.imgInProse}` +
+          ` (true = the shipped defect: renderMarkdown passing the image through to DOMPurify), ` +
+          `${ns.proseChars} chars of prose survive beside it`);
+        record(!!ns.tileLabel && !!ns.want?.alt && ns.tileLabel.includes(ns.want.alt) && ns.tileImgAlt === "",
+          "ADR-0019 MUST · the tile carries the author's description (Archie-ff79/V66)",
+          `tile aria-label ${JSON.stringify(ns.tileLabel)} vs the annotation body's own description ` +
+          `${JSON.stringify(ns.want?.alt ?? null)}; inner <img> alt=${JSON.stringify(ns.tileImgAlt)} ` +
+          `(must be "" — the button owns the name, NoteMedia.svelte:33)`);
+        const sh = ns.sheet ?? {};
+        record(sh.visible === true && sh.role === "dialog" && sh.modal === "true" && sh.coversHost === true,
+          "ADR-0019 MUST · the expand control opens the reading sheet on a REAL click (Archie-1820)",
+          sh.skipped ? sh.skipped
+            : `driven mouse click at the expander landed on <${ns.hitTarget}>; sheet visible=${sh.visible} ` +
+              `role=${sh.role} aria-modal=${sh.modal} coversHost=${sh.coversHost}, ` +
+              `${sh.modalCount} modal(s) open (must be 1 — the embed has ONE overlay)`);
+        record(sh.proseChars > 40 && !!sh.figureSrc && sh.figureSrc === ns.want?.url && sh.caption === ns.want?.alt,
+          "ADR-0019 MUST · the sheet carries the note's prose AND its media (V60)",
+          `${sh.proseChars} chars of prose; figure src ${JSON.stringify(sh.figureSrc)} vs the body's own ` +
+          `${JSON.stringify(ns.want?.url ?? null)}; visible caption ${JSON.stringify(sh.caption)} ` +
+          `(V60 was a sheet that rendered prose ONLY, so media vanished on expand)`);
+        record(sh.cardStillMounted === true && sh.cardHidden === true,
+          "ADR-0019 MUST · the card is hidden, NOT unmounted, behind the sheet (V62/V63)",
+          `card still in the DOM=${sh.cardStillMounted} (focus must have somewhere to return to), ` +
+          `hidden=${sh.cardHidden} (a second legible copy behind the scrim was V60's other half)`);
+        const ae = ns.afterEscape ?? {};
+        record(ae.sheetClosed === true && ae.cardBack === true && ae.focusOnExpand === true,
+          "ADR-0019 MUST · Escape closes the sheet and restores focus to the expander (V63)",
+          `sheet closed=${ae.sheetClosed}, card back=${ae.cardBack} (closing the sheet is read-less, ` +
+          `not dismiss-the-note), focus returned to the expander=${ae.focusOnExpand}`);
+      }
+
+      // --- the finder (Archie-1820) ---
+      const fd = contract.finder ?? {};
+      if (fd.skipped) {
+        record(false, "ADR-0019 MUST · search finds notes across the whole exhibit (Archie-1820)", fd.skipped);
+        record(false, "ADR-0019 MUST · every search hit names WHERE it is (Archie-9eeb, not ported)", fd.skipped);
+        record(false, "ADR-0019 MUST · activating a hit elsewhere travels to that note (Archie-1820)", fd.skipped);
+      } else {
+        record(fd.want?.notes > 0 && fd.hits === fd.want.notes && fd.want.objects > 1,
+          "ADR-0019 MUST · search finds notes across the whole exhibit (Archie-1820)",
+          `"herbal" → ${fd.hits} row(s) vs ${fd.want?.notes} note(s) carrying the word in the published ` +
+          `tree, spread over ${fd.want?.objects} object(s); the pane held ${fd.before} before the query ` +
+          `(the OPEN object's own notes), so a per-object list could not have produced this`);
+        record(fd.hits > 0 && fd.missingLocus === 0 && new Set(fd.labels ?? []).size > 1,
+          "ADR-0019 MUST · every search hit names WHERE it is (Archie-9eeb, not ported)",
+          `${fd.missingLocus} of ${fd.hits} row(s) missing a locus (must be 0 — a hit that cannot say ` +
+          `where it lives is the open defect against the shell's finder); ` +
+          `${new Set(fd.labels ?? []).size} distinct object(s) named: ${JSON.stringify(fd.labels ?? [])}`);
+        const tv = fd.travel ?? {};
+        record(tv.arrived === true && tv.title === tv.to && tv.noteOpen === true && tv.noteChars > 0,
+          "ADR-0019 MUST · activating a hit elsewhere travels to that note (Archie-1820)",
+          tv.skipped ? tv.skipped
+            : `driven click on a hit in "${tv.to}" → reader title "${tv.title}" (from "${fd.openLabel}"), ` +
+              `note card open=${tv.noteOpen} with ${tv.noteChars} chars — landing on the OBJECT is not ` +
+              `landing on the NOTE, so the open card is the half that matters`);
+      }
     }
 
     // ---- ADR-0019 DROP-justified row, driven: the canvas engine is not on the gallery path ----
@@ -1253,6 +1560,17 @@ async function main() {
       "ADR-0019 MUST · every section in the manifest's Ranges renders (V88)",
       "ADR-0019 MUST · the active section renders its PROSE (V88)",
       "ADR-0019 MUST · the section stepper advances the spine (V88)",
+      // note media + the reading sheet (Archie-1820) — the two DEFER-tracked rows this ticket landed
+      "ADR-0019 MUST · a note's media renders as a tile, not raw in the prose (Archie-1820)",
+      "ADR-0019 MUST · the tile carries the author's description (Archie-ff79/V66)",
+      "ADR-0019 MUST · the expand control opens the reading sheet on a REAL click (Archie-1820)",
+      "ADR-0019 MUST · the sheet carries the note's prose AND its media (V60)",
+      "ADR-0019 MUST · the card is hidden, NOT unmounted, behind the sheet (V62/V63)",
+      "ADR-0019 MUST · Escape closes the sheet and restores focus to the expander (V63)",
+      // full-text search (Archie-1820) — resolved as PRESENT, not DROP: the embed needs no index
+      "ADR-0019 MUST · search finds notes across the whole exhibit (Archie-1820)",
+      "ADR-0019 MUST · every search hit names WHERE it is (Archie-9eeb, not ported)",
+      "ADR-0019 MUST · activating a hit elsewhere travels to that note (Archie-1820)",
       "ADR-0019 DROP-justified · the canvas engine is NOT on the gallery path",
       "ADR-0019 DROP-justified · the gallery path stays under its wire budget",
       "no same-origin 404s during the drive (V11)",
