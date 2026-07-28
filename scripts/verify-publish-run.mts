@@ -20,6 +20,9 @@ import {
   fsJsonSource,
   FailedReadError,
   isNotFound,
+  FIXITY_MANIFEST_NAME,
+  parseFixityManifest,
+  sha256Hex,
   type JsonSource,
   type Filesystem,
   type ExhibitsJson,
@@ -287,13 +290,30 @@ check(true, "library: total annotation heads across all exhibits", String(librar
 }
 
 // ---------------------------------------------------------------------------
-// 7. No occurrence of the authoring namespace (`archie.demo`, WORKING_IRI_BASE) anywhere in the
-//    served HTML/JSON — the regression net for the base-URL fix (Archie-3504/19c5). Archie-3504's
+// 7. No occurrence of the authoring namespace (`archie.demo`, WORKING_IRI_BASE) on the FOUR
+//    ABSOLUTE-URL SURFACES — the regression net for the base-URL fix (Archie-3504/19c5). Archie-3504's
 //    DECIDED note names exactly four fields that carry an ABSOLUTE url in a relative-first tree:
 //    og:url, JSON-LD url, IIIF canvas ids, and the canonical link. Every one of those lives in either
-//    a slug's manifest.json (canvas ids) or an index.html (og:url / JSON-LD / canonical) — so this
-//    scans the marker, the gallery, every exhibit's manifest + static page, and the library landing
-//    page: exactly the served surfaces where a leaked WORKING_IRI_BASE would show up.
+//    a slug's manifest.json (canvas ids) or an index.html (og:url / JSON-LD / canonical), so that is
+//    what this scans: the marker, the gallery, every exhibit's manifest + static page, and the
+//    library landing page.
+//
+//    THE LABEL SAYS THAT, AND USED NOT TO (Archie-fde8, corrected 2026-07-27). It read "no
+//    occurrences anywhere in the served tree" while the detail beside it admitted a 5-file scan of a
+//    438-file tree — a check whose name claimed the whole artifact and whose measurement covered
+//    1%. The `8d3d` agent then measured **4 real `archie.demo` occurrences** the scan never saw, in
+//    an annotation page: a TOMBSTONE's `target.source`, which `rebaseCanvasId` deliberately does not
+//    re-mint (its contract is a provable match against this exhibit's own canvases, never a fuzzy
+//    one). See ledgers/PUBLISH-test-republish-2026-07-27.md.
+//
+//    So the label is narrowed rather than the scan widened, and that is the substantive choice:
+//    widening it would report those tombstones as leaks, which they are not — they are authored
+//    history, correctly preserved verbatim. A wider scan therefore needs an allowlist for
+//    `target.source` on tombstoned records before it means anything, and an allowlist is a claim
+//    about which absolute URLs are legitimate that nobody has made yet. Until someone does, a check
+//    that states its real scope is worth more than one that overstates it: see
+//    .claude/rules/post-review-fixes-are-unreviewed.md on a probe answering a narrower question than
+//    its name implies, and reporting the narrow answer with the confidence of the broad one.
 // ---------------------------------------------------------------------------
 const NEEDLE = "archie.demo";
 let demoHits = 0;
@@ -309,14 +329,73 @@ for (const path of demoScanFiles) {
   const n = countOccurrences(textRead.text, NEEDLE);
   if (n > 0) {
     demoHits += n;
-    check(false, `archie.demo scan: ${path}`, `${n} occurrence(s) of "${NEEDLE}" — the authoring namespace leaked into the published tree`);
+    check(false, `archie.demo scan: ${path}`, `${n} occurrence(s) of "${NEEDLE}" — the authoring namespace leaked into an absolute-URL surface`);
   }
 }
 check(
   demoHits === 0,
-  "archie.demo scan: no occurrences anywhere in the served tree",
-  `scanned ${demoScanFiles.length} file(s), ${demoHits} total occurrence(s)`,
+  "archie.demo scan: the authoring namespace is absent from the four ABSOLUTE-URL surfaces (canonical, og:url, JSON-LD url, IIIF canvas ids)",
+  `scanned ${demoScanFiles.length} file(s) — the marker, the gallery, and each exhibit's manifest.json + index.html plus the landing page; ${demoHits} total occurrence(s). NOT a whole-tree scan: annotation pages are deliberately out of scope (a tombstone's target.source keeps its authored origin verbatim)`,
 );
+
+// ---------------------------------------------------------------------------
+// 8. FIXITY (Archie-039e) — re-hash every file `manifest-sha256.txt` lists and compare. This is the
+//    one check here that reads the tree's BYTES rather than its structure, and it is the reason the
+//    manifest exists: "publish wrote these bytes" and "these bytes are still here" are different
+//    claims, and only a re-hash settles the second. Absent manifest = the tree was published without
+//    PublishOptions.fixity; reported as a SKIP with the reason, never as a pass.
+//
+//    Per-file tolerant like everything above: a missing or mismatched file is one FAIL line naming
+//    that path, and the sweep continues, so one truncated tile does not hide a second.
+// ---------------------------------------------------------------------------
+{
+  const manifestRead = await tryReadText(FIXITY_MANIFEST_NAME);
+  if (!manifestRead.ok) {
+    check(false, `fixity: ${FIXITY_MANIFEST_NAME} reads cleanly`, String(manifestRead.error instanceof Error ? manifestRead.error.message : manifestRead.error));
+  } else if (manifestRead.text === null) {
+    console.log(`SKIP  fixity: no ${FIXITY_MANIFEST_NAME} — this tree was published without PublishOptions.fixity, so there is nothing to verify`);
+  } else {
+    const entries = parseFixityManifest(manifestRead.text);
+    const lines = manifestRead.text.split("\n").filter((l) => l.trim() !== "").length;
+    // Reconcile the parsed count against the raw line count: a manifest whose lines silently failed
+    // to parse would otherwise verify a SUBSET and report a clean pass over it.
+    check(
+      entries.length === lines,
+      `fixity: every line of ${FIXITY_MANIFEST_NAME} parsed`,
+      `${entries.length} entr(ies) parsed from ${lines} non-blank line(s)`,
+    );
+
+    let verified = 0;
+    const bad: string[] = [];
+    for (const entry of entries) {
+      let bytes: Uint8Array | null;
+      try {
+        bytes = await readRaw(entry.path);
+      } catch (e) {
+        bad.push(entry.path);
+        check(false, `fixity: ${entry.path}`, `read FAILED — ${String(e instanceof Error ? e.message : e)}`);
+        continue;
+      }
+      if (bytes === null) {
+        bad.push(entry.path);
+        check(false, `fixity: ${entry.path}`, "listed in the manifest but ABSENT from the tree");
+        continue;
+      }
+      const actual = await sha256Hex(bytes as Uint8Array<ArrayBuffer>);
+      if (actual !== entry.sha256) {
+        bad.push(entry.path);
+        check(false, `fixity: ${entry.path}`, `sha256 MISMATCH — manifest ${entry.sha256}, served bytes ${actual} (${bytes.byteLength} bytes)`);
+        continue;
+      }
+      verified++;
+    }
+    check(
+      bad.length === 0 && entries.length > 0,
+      "fixity: every listed file re-hashes to its manifest checksum",
+      `${verified}/${entries.length} verified, ${bad.length} bad${bad.length > 0 ? `: ${bad.join(", ")}` : ""}`,
+    );
+  }
+}
 
 // ---------------------------------------------------------------------------
 function escHtml(s: string): string {

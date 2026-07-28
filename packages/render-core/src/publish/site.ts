@@ -37,6 +37,8 @@ import { headsPageFromRecords, headsPagesByReading, citationIdMap, targetSource,
 import { stamp } from "../migrate/migrate.js";
 import { ARCHIE_LIBRARY_MARKER } from "./marker.js";
 import { mapLimit, PUBLISH_CONCURRENCY } from "../concurrency.js";
+import { HashingFilesystem, type FixityRecord } from "../fs/hashing.js";
+import { FIXITY_MANIFEST_NAME, formatFixityManifest, mergeFixity, parseFixityManifest, type FixityEntry } from "./fixity.js";
 
 export interface PublishOptions {
   /** Absolute base for ids, e.g. `https://user.github.io/lib/`. */
@@ -165,6 +167,23 @@ export interface PublishOptions {
    * viewer page it did not write.
    */
   getViewerBundle?: () => Promise<ViewerBundleFiles | null>;
+  /**
+   * FIXITY MANIFEST (Archie-039e) — write `manifest-sha256.txt` at the tree root, listing a SHA-256
+   * for every payload file, in BagIt RFC 8493 line format. Written SECOND-TO-LAST: after all content,
+   * immediately BEFORE `archie.json`, so the marker stays the sole commit point
+   * (render-core-data-integrity rule 1) and a torn publish leaves a tree that reads as stale, never
+   * as complete-and-verified.
+   *
+   * OPT-IN, like every other tree-shaping option here: absent = byte-identical output to before, no
+   * extra file, no hashing cost. See `publish/fixity.ts` for why a separate manifest agrees with
+   * ADR-0020's rejection of a hash on the marker rather than reversing it.
+   *
+   * The manifest covers everything except itself and `archie.json` (which is written after it and so
+   * cannot be in it). Under {@link PublishOptions.incremental} the manifest is still complete: hashes
+   * for files this pass did not rewrite are carried forward from the prior manifest — see
+   * `mergeFixity` for why that is sound.
+   */
+  fixity?: boolean;
 }
 
 /** The embed bundle's files for {@link PublishOptions.getViewerBundle}, keyed by flat filename. */
@@ -229,6 +248,21 @@ export interface PublishResult {
   brokenLinks: BrokenLink[];
   incompleteCanvases: IncompleteCanvas[];
   missingAssets: MissingAsset[];
+  /**
+   * The fixity manifest this publish wrote, as records — present only when
+   * {@link PublishOptions.fixity} was set. Exactly the lines of `manifest-sha256.txt`, plus each
+   * file's byte length, which the manifest FORMAT does not carry: a BagIt `Payload-Oxum` needs the
+   * octet count, and re-reading the tree to get it would defeat the point of hashing in the write
+   * pass. `bytes` is `null` for a line CARRIED FORWARD from a prior manifest on an incremental
+   * publish — that pass never saw those bytes and the prior manifest recorded no size.
+   */
+  fixity?: PublishedFixity[];
+}
+
+/** One line of the written `manifest-sha256.txt`; `bytes` is null for a carried-forward entry
+ *  (see {@link PublishResult.fixity}). */
+export interface PublishedFixity extends FixityEntry {
+  bytes: number | null;
 }
 
 interface LinkRewrite {
@@ -374,11 +408,21 @@ function isRemoteTileable(o: AObject): boolean {
  * exact paths the Manifest's `canvas.annotations[].id` reference (the Phase-2 interop gate);
  * history is exhibit-level (per-logicalId). Pure idempotent projection of the Library + its logs.
  */
-export async function publishLibrary(fs: Filesystem, library: Library, getLog: LogLookup, opts: PublishOptions = {}): Promise<PublishResult> {
+export async function publishLibrary(sink: Filesystem, library: Library, getLog: LogLookup, opts: PublishOptions = {}): Promise<PublishResult> {
   const baseUrl = opts.baseUrl ?? "";
   const inc = opts.incremental; // spike-0002: present = incremental (dirty-set) publish; absent = full
+  // FIXITY (Archie-039e). The decorator goes on HERE, around the sink, so every write below — every
+  // write site in this file, plus writeStructure's in another module — is hashed without knowing it.
+  // With `fixity` unset this is `null` and `fs` IS the sink: zero wrapper, zero cost, byte-identical.
+  const hashing = opts.fixity === true ? new HashingFilesystem(sink) : null;
+  const fs: Filesystem = hashing ?? sink;
   const src = fsJsonSource(fs); // for the incremental recover-from-existing-manifest path
   const root = await fs.root();
+  // Read the PRIOR manifest before the write pass overwrites it — the carry-forward source for an
+  // incremental publish (mergeFixity). Absent (a first publish, a fresh zip sink) reads as no prior
+  // entries; a torn/unreadable one degrades to the same, which is safe in the only direction that
+  // matters: this pass then lists what it actually wrote and nothing it did not verify.
+  const priorFixity: FixityEntry[] = hashing ? await readPriorFixity(root) : [];
   // ADR-0020 marker (archie.json) is written LAST, not here — see the end of this function. Issue 25b: a
   // marker written FIRST validates a tree that a crash mid-publish left torn; writing it last makes it the
   // COMMIT POINT — a partial tree has no current marker, so a consumer rejects it instead of rendering it.
@@ -776,8 +820,40 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
   // contract), folding in `publishedAt` so each real timestamped publish is unique (busts caches on any
   // republish, note-only included). The Viewer keys hosted fetches on `?g=<generation>`.
   const generation = opts.generation ?? generationHash(JSON.stringify(exhibitsJson) + "\u0000" + JSON.stringify(imageIndex) + "\u0000" + (opts.publishedAt ?? ""));
+
+  // FIXITY MANIFEST — SECOND-TO-LAST (Archie-039e). Every payload byte is on disk by this point; the
+  // marker below is still the commit point. The two orderings this sits between are both load-bearing:
+  //   • AFTER all content — a manifest cannot list a file that has not been written;
+  //   • BEFORE archie.json — the marker is the commit point (render-core-data-integrity rule 1), so a
+  //     tree torn between the two reads as HAVING NO MARKER and is refused, rather than presenting a
+  //     complete-looking tree whose manifest is short.
+  // The marker itself is therefore NOT in the manifest, and neither is the manifest. That is a
+  // deliberate consequence of the ordering, not an oversight: the alternative is hashing the marker,
+  // which is exactly the L2 seal ADR-0020 rejected.
+  let fixity: PublishedFixity[] | undefined;
+  if (hashing) {
+    const written = hashing.written();
+    const sizeOf = new Map(written.map((r: FixityRecord) => [r.path, r.bytes]));
+    const entries = mergeFixity(priorFixity, written, hashing.removedPrefixes(), [FIXITY_MANIFEST_NAME, "archie.json"]);
+    await writeText(root, FIXITY_MANIFEST_NAME, formatFixityManifest(entries));
+    fixity = entries.map((e) => ({ ...e, bytes: sizeOf.get(e.path) ?? null }));
+  }
+
   await writeJson(root, "archie.json", { ...ARCHIE_LIBRARY_MARKER, generation });
-  return { brokenLinks, incompleteCanvases, missingAssets };
+  return { brokenLinks, incompleteCanvases, missingAssets, ...(fixity !== undefined ? { fixity } : {}) };
+}
+
+/** Read the tree's existing `manifest-sha256.txt`, or `[]` when there is none / it cannot be read.
+ *  Absence is the normal case (a first publish, a fresh zip sink) and needs no ceremony; a read
+ *  FAULT degrades to the same empty result on purpose — see the call site for why that direction is
+ *  the safe one. */
+async function readPriorFixity(root: FsDirectory): Promise<FixityEntry[]> {
+  try {
+    const file = await root.getFile(FIXITY_MANIFEST_NAME);
+    return parseFixityManifest(new TextDecoder().decode(await file.readable()));
+  } catch {
+    return [];
+  }
 }
 
 /** A tiny, dependency-free stable string hash (djb2) → base36 — the default publish-generation id when

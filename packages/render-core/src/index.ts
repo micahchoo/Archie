@@ -46,6 +46,11 @@ export * from "./publish/working.js";
 export * from "./publish/merge.js";
 // The library landing page builder (ADR-0014) — the merge regen rebuilds it over the merged card set.
 export { libraryPageHtml } from "./publish/static-pages.js";
+// Fixity (Archie-039e): the BagIt RFC 8493 `manifest-sha256.txt` format publishLibrary writes when
+// PublishOptions.fixity is set, and the incremental carry-forward merge that keeps it complete.
+export * from "./publish/fixity.js";
+// "Deposit a copy" (Archie-039e): the same published bytes arranged as a BagIt bag, payload under data/.
+export * from "./publish/bag.js";
 
 // AV transcript adapter (CONTEXT AV): WebVTT/SRT <-> supplementing time-range Notes (import + the Archie-bd0a export inverse).
 export * from "./av/transcript.js";
@@ -144,6 +149,9 @@ export * from "./fs/tauri.js";
 // copy-tree (backend-agnostic recursive Filesystem→Filesystem copy). Content-first, bounded-memory;
 // the primitive under the OPFS→folder desktop migration (Archie-623e).
 export * from "./fs/copy-tree.js";
+// hashing (HashingFilesystem — a write-through SHA-256 recorder over the seam). The completeness
+// mechanism behind PublishOptions.fixity: hashed at the seam, so a new write site is covered by default.
+export * from "./fs/hashing.js";
 // http (HttpFilesystem, READ-ONLY published-tree-over-HTTP backend — the fourth backend). Absent
 // vs failed per data-integrity contract #2; capped by SRC_MAX_BYTES; name-contained URL joins.
 export * from "./fs/http.js";
