@@ -214,35 +214,55 @@ describe("every asset path the published manifest cites RESOLVES to a file in th
 
 describe("the TIER is part of the projection cache key (Archie-4b0a, the sibling of Archie-19c5's base key)", () => {
   const TARGET: GitHubTarget = { owner: "o", repo: "r", branch: "gh-pages", token: "t" };
+  // `pagesUrlFor("o", "r")`. The library is set up as one that HAS ALREADY DEPLOYED, so the warm
+  // projection and the push run at the SAME base.
+  //
+  // That setup is the whole test, and the first version of it did not have it. With a never-deployed
+  // library the warm tree is relative and the push's is the Pages URL, so `cachedSiteBase === base`
+  // is already false and the push re-projects whatever the tier does. The assertion passed with the
+  // tier deleted from the cache key — a green that measured the base key, not this one. Holding the
+  // base fixed is what leaves the tier as the only thing that can decide reuse.
+  const DEPLOYED = "https://o.github.io/r/";
+
+  /** Wait until `openPublish`'s fire-and-forget projection has actually POPULATED the cache.
+   *
+   *  `h.bases.length === 1` is not that signal: the mock records the base when `publishLibrary` is
+   *  ENTERED, while the cache is assigned in the `.then()` after it resolves. Pushing on that signal
+   *  raced, found no cache, and re-projected — which reads exactly like the cache key doing its job.
+   *  `tierRescaled` is set on the same line as the cache assignment, so it is the honest edge. */
+  const warmCache = async (flows: { tierRescaled: unknown[] }) => {
+    await vi.waitFor(() => expect(h.bases.length).toBe(1));
+    await vi.waitFor(() => expect(flows.tierRescaled.length).toBe(1));
+  };
 
   it("a tree projected at WEB is not reused for an ARCHIVAL publish — it re-projects", async () => {
     let tier: QualityTier = "web";
-    const flows = createPublishFlows(deps(() => tier));
+    const flows = createPublishFlows({ ...deps(() => tier), publishBase: () => DEPLOYED });
 
     // Warm the cache exactly the way the dialog does, and wait for the background projection.
     expect(await flows.openPublish()).toBe(true);
-    await vi.waitFor(() => expect(h.bases.length).toBe(1));
+    await warmCache(flows);
+    expect(h.bases[0], "the warm projection did not run at the deployed base").toBe(DEPLOYED);
 
     // The author changes the tier on the surface AFTER the warm projection — the ordering that makes
     // this a cache-key question rather than a parameter-passing one.
     tier = "archival";
     await flows.publish(TARGET);
 
-    expect(h.bases.length, "the push reused the web-tier tree instead of re-projecting").toBe(2);
+    expect(h.bases, "the push reused the web-tier tree instead of re-projecting").toEqual([DEPLOYED, DEPLOYED]);
     const pushed = h.pushed!;
     expect(Object.keys(pushed)).toContain(`${SLUG}/assets/folio.tif`);
     expect(Object.keys(pushed), "a WEB-tier file reached an ARCHIVAL publish").not.toContain(`${SLUG}/assets/folio.webp`);
   });
 
   it("an UNCHANGED tier still reuses the warm tree — the key discriminates, it does not just disable the cache", async () => {
-    const flows = createPublishFlows(deps(() => "web"));
+    const flows = createPublishFlows({ ...deps(() => "web"), publishBase: () => DEPLOYED });
     expect(await flows.openPublish()).toBe(true);
-    await vi.waitFor(() => expect(h.bases.length).toBe(1));
+    await warmCache(flows);
 
     await flows.publish(TARGET);
-    expect(h.bases.length, "the cache stopped working").toBe(2); // the base changed (relative → pages URL)
-    await flows.publish(TARGET);
-    expect(h.bases.length, "a second identical push re-projected").toBe(2);
+    expect(h.bases, "the warm tree was not reused even though base AND tier were unchanged").toEqual([DEPLOYED]);
+    expect(Object.keys(h.pushed!)).toContain(`${SLUG}/assets/folio.webp`);
   });
 });
 
