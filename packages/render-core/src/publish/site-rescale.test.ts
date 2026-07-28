@@ -40,7 +40,7 @@ const library: Library = {
     objects: [
       { id: asObjectId("o1"), source: "https://img/one.webp", label: "One", width: 2400, height: 1600 },
       { id: asObjectId("o2"), source: "https://img/two.webp", label: "Two", width: 800, height: 600 },
-      { id: asObjectId("o3"), source: "https://img/three.opus", label: "Three", mediaType: "audio" },
+      { id: asObjectId("o3"), source: "https://img/three.opus", label: "Three", mediaType: "sound", duration: 60 },
     ],
     sections: [
       { id: "s1", title: "Open", objectId: "o1", start: "xywh=pixel:1200,800,600,400" },
