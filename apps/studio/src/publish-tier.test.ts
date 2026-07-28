@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { asExhibitId, asLibraryId, asObjectId, type Library } from "@render/core";
 import { WEB_TIER } from "./archive-probe.js";
-import { WEB_TIER_H264 } from "./video-transcode.js";
+import { WEB_TIER_H264, videoSkipCount, resetVideoSkipCount } from "./video-transcode.js";
 import {
   DEFAULT_TIER, applyTier, assetMime, capsFor, projectLibraryForTier, renameForTier, resetTierFallbacks,
   tierDecision, tierFallbackCount, tierFallbacksByReason, tierNameMap,
@@ -108,7 +108,10 @@ describe("a platform that cannot encode degrades CLEANLY — the name and the MI
   it("but the degradation is FLAGGED on the decision, so it can be counted rather than shrugged off", () => {
     expect(tierDecision("image/jpeg", "web", NONE).degraded).toBe("no-image-encoder");
     expect(tierDecision("audio/wav", "web", NONE).degraded).toBe("no-audio-encoder");
-    // A passthrough the tier CHOSE carries no degradation — video and SVG are policy, not shortfall.
+    // A decision that is NOT a forced passthrough carries no degradation. SVG is a chosen policy
+    // exemption; video under FULL caps is now a real transcode (Archie-7e6f) — different routes to
+    // the same "nothing was given up here" answer, which is why both are still listed.
+    expect(tierDecision("video/mp4", "web", FULL).action).toBe("video-transcode");
     expect(tierDecision("video/mp4", "web", FULL).degraded).toBeUndefined();
     expect(tierDecision("image/svg+xml", "web", FULL).degraded).toBeUndefined();
     expect(tierDecision("image/jpeg", "archival", FULL).degraded).toBeUndefined();
@@ -254,6 +257,56 @@ describe("applyTier: the encode is injected, and every fallback is COUNTED", () 
     const out = await applyTier(blob("wav", "audio/wav"), AUD, {}, "audio/wav");
     expect(out.fellBack).toBe(true);
     expect(tierFallbacksByReason()).toMatchObject({ "no-audio-encoder": 1, "no-image-encoder": 0 });
+  });
+
+  // VIDEO's two fallbacks, and the SECOND counter they must also move. `applyTier` is the caller that
+  // decides to publish an original after a refusal, and `videoSkipCount()`'s stated contract is that
+  // such a caller says so. A tally that reads zero while gigabytes of originals ship is exactly the
+  // invisibility that counter exists to prevent — so both routes are pinned, not just the local one.
+  it("no video encoder ⇒ archival bytes, counted under its own reason AND in videoSkipCount", async () => {
+    resetVideoSkipCount();
+    const src = blob("mov", "video/quicktime");
+    const decision = tierDecision("video/quicktime", "web", { image: true, audio: true, video: null });
+    const out = await applyTier(src, decision, {}, "video/quicktime");
+    expect(out.bytes).toBe(src);
+    expect(out.fellBack).toBe(true);
+    expect(tierFallbacksByReason()["no-video-encoder"]).toBe(1);
+    expect(videoSkipCount()).toBe(1);
+  });
+
+  it("a video encoder that THROWS falls back under `video-encode-failed`, and also counts as a skip", async () => {
+    resetVideoSkipCount();
+    const src = blob("mov", "video/quicktime");
+    const decision = tierDecision("video/quicktime", "web", FULL);
+    const out = await applyTier(
+      src,
+      decision,
+      { encodeVideo: async () => { throw new Error("no decoder for h264"); }, videoTarget: WEB_TIER_H264 },
+      "video/quicktime",
+    );
+    expect(out.bytes).toBe(src);
+    // The SOURCE's mime, not the decision's — a publish that fell back must not claim video/mp4.
+    expect(out.mime).toBe("video/quicktime");
+    expect(tierFallbacksByReason()["video-encode-failed"]).toBe(1);
+    expect(videoSkipCount()).toBe(1);
+  });
+
+  it("a video encode that SUCCEEDS moves neither counter", async () => {
+    // The other direction. Without this, a fallback counter stuck at 1 would pass both tests above.
+    resetVideoSkipCount();
+    const encoded = blob("mp4bytes", "video/mp4");
+    const decision = tierDecision("video/quicktime", "web", FULL);
+    const out = await applyTier(
+      blob("mov", "video/quicktime"),
+      decision,
+      { encodeVideo: async () => encoded, videoTarget: WEB_TIER_H264 },
+      "video/quicktime",
+    );
+    expect(out.bytes).toBe(encoded);
+    expect(out.mime).toBe("video/mp4");
+    expect(out.fellBack).toBe(false);
+    expect(tierFallbackCount()).toBe(0);
+    expect(videoSkipCount()).toBe(0);
   });
 
   it("an encoder that THROWS never fails the publish — it falls back, under a distinct reason", async () => {
