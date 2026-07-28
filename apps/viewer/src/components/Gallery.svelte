@@ -173,7 +173,7 @@
 
   /* Toolbar — quiet: a view toggle, one search field, an optional density switch. Matches the landing voice. */
   .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-bottom: var(--space-8); }
-  .views, .density { display: inline-flex; border-radius: var(--radius-sm); overflow: hidden; box-shadow: var(--shadow-lift-low); }
+  .views, .density { display: inline-flex; border-radius: var(--radius-sm); overflow: hidden; }
   .views button, .density button {
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
     border: none; padding: var(--space-2) var(--space-4); cursor: pointer;
@@ -198,8 +198,8 @@
 
   .grid { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-6); }
   .cards { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
-  .card { display: flex; flex-direction: column; text-decoration: none; background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-lift-low); transition: transform 200ms ease, box-shadow 200ms ease; }
-  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift-mid); }
+  .card { display: flex; flex-direction: column; text-decoration: none; background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-md); overflow: hidden; transition: transform 200ms ease; }
+  .card:hover { transform: translateY(-3px); }
   /* Group headings in search mode — same quiet uppercase rubric as Studio's LibraryHome results. */
   .group-head { margin: 0 0 var(--space-4); font-family: var(--font-ui), sans-serif; font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-secondary); }
   .results .group-head:not(:first-child) { margin-top: var(--space-8); }
@@ -219,8 +219,8 @@
      each <li>'s aspect-ratio (from the index's width/height) reserves space so the lazy <img> can't shift
      layout. --grid-min / --grid-intrinsic come from the density switch (tracks the virtualization estimate). */
   .wallgrid { grid-template-columns: repeat(auto-fill, minmax(var(--grid-min, 280px), 1fr)); }
-  .wallgrid > li { content-visibility: auto; contain-intrinsic-size: auto var(--grid-intrinsic, 360px); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-lift-low); background: var(--surface-canvas-raised); transition: transform 200ms ease, box-shadow 200ms ease; }
-  .wallgrid > li:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift-mid); }
+  .wallgrid > li { content-visibility: auto; contain-intrinsic-size: auto var(--grid-intrinsic, 360px); border-radius: var(--radius-md); overflow: hidden; background: var(--surface-canvas-raised); transition: transform 200ms ease; }
+  .wallgrid > li:hover { transform: translateY(-3px); }
   .tile { display: block; width: 100%; height: 100%; }
   .tile img { display: block; width: 100%; height: 100%; object-fit: cover; background-color: var(--surface-canvas); }
   .tile-fallback { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; box-sizing: border-box; padding: var(--space-4); text-align: center; font-family: var(--font-display); font-size: 1.2rem; line-height: 1.2; color: var(--ink-canvas-secondary); background: var(--surface-canvas); }

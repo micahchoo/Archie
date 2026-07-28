@@ -102,6 +102,10 @@
     font-family: var(--font-ui), monospace; font-size: var(--text-ui-xs); font-weight: 500;
     letter-spacing: 0.12em; text-transform: uppercase;
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
+    /* KEPT (Archie-1244): this badge is absolutely positioned OVER image pixels it cannot
+       predict, so its solid fill can coincide with the photo's own tones. Same category as
+       App.svelte's sticky .rail-pos and ExhibitOverview's .selection-tray — the lift survives
+       where a surface sits over content it does not control, not merely because it is a card. */
     box-shadow: var(--shadow-lift-low);
   }
   .badge .glyph { font-size: 0.85rem; letter-spacing: 0; color: var(--accent-3); }
