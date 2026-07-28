@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { AnnotationSession } from "./session.js";
 import { AnnotationUndoManager } from "./undo.js";
+import { MemoryFilesystem } from "../fs/memory.js";
 import { asClientId } from "../wadm/brand.js";
 import type { W3CSpecificResource } from "../wadm/types.js";
 
@@ -157,6 +158,45 @@ describe("AnnotationUndoManager — the log is append-only, whatever the project
     expect(session.entries.map((r) => bodyText(r))).toEqual(["v1", "v2", "v3"]);
     // …and v3 is still the log's head throughout, whatever the surface was showing.
     expect(bodyText(session.notes()[0]!)).toBe("v3");
+  });
+
+  it("an outstanding undo survives a colleague's merge, and the merged notes come through", () => {
+    // The property that decides Archie-0f72: the overlay is keyed PER logicalId, so a wholesale log
+    // replacement (importChanges → setLog → a rebuilt HeadIndex) flows through untouched except for
+    // the ids the author actually undid. A whole-projection snapshot — freecut's shape — would be a
+    // stale array here and would hide every note the merge brought in.
+    const session = new AnnotationSession(alice);
+    const undo = new AnnotationUndoManager(session);
+    undo.createNote({ target: rect(0, 0, 10, 10), body: text("mine-undone") });
+    undo.undo();
+    expect(undo.notes()).toHaveLength(0);
+
+    const colleague = new AnnotationSession(asClientId("bob"));
+    colleague.createNote({ target: rect(50, 50, 10, 10), body: text("theirs") });
+    session.importChanges(colleague.entries);
+
+    expect(session.notes()).toHaveLength(2); // the log projects both
+    expect(undo.notes().map((n) => bodyText(n))).toEqual(["theirs"]); // the surface still hides the undone one
+  });
+
+  it("THE BOUNDARY: an undo does NOT survive save+reload — the note comes back", async () => {
+    // Recorded, not fixed. The overlay is in-memory and the log is the only durable thing, so
+    // reopening the exhibit re-projects every head — including the one the author had undone. This
+    // is the deciding constraint for Archie-0f72: it is a property of PROJECTION-ONLY undo on an
+    // append-only log, and it holds for the freecut whole-snapshot shape exactly as it does here.
+    const fs = new MemoryFilesystem();
+    const dir = await fs.root();
+    const session = new AnnotationSession(alice);
+    const undo = new AnnotationUndoManager(session);
+    undo.createNote({ target: rect(0, 0, 10, 10), body: text("undone") });
+    undo.undo();
+    expect(undo.notes()).toHaveLength(0);
+
+    await session.save(dir);
+    const reloaded = await AnnotationSession.load(dir, alice);
+    const reloadedUndo = new AnnotationUndoManager(reloaded);
+    expect(reloadedUndo.notes()).toHaveLength(1);
+    expect(bodyText(reloadedUndo.notes()[0]!)).toBe("undone");
   });
 
   it("an undone create is invisible to the surface and present in the log", () => {
