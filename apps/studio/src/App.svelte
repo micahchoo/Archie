@@ -2897,9 +2897,9 @@
     padding: var(--space-1) var(--space-3);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
     border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); cursor: pointer;
-    transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    transition: color 160ms ease, background 160ms ease;
   }
-  header > button:hover { color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
+  header > button:hover { color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); }
   header > button:disabled { color: var(--ink-canvas-muted); border-color: var(--border-canvas); background: var(--surface-canvas-raised); box-shadow: none; cursor: default; }
   /* The ONE rationed signal on the editor surface: Publish & Share. */
   header > button.publish-signal { background: var(--accent); color: var(--ink-on-accent); border: none; box-shadow: var(--shadow-signal-glow); }
@@ -2911,22 +2911,21 @@
 
   /* Playground banner — honest ephemerality (§115). Warm clay-tinted card; the keep action stays a
      quiet .soft-btn (signal-orange is rationed to Publish, not spent here). */
-  .playground-banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5); margin: var(--space-3) var(--space-5) 0; background: var(--accent-3-muted); border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); }
+  .playground-banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5); margin: var(--space-3) var(--space-5) 0; background: var(--accent-3-muted); border: none; border-radius: var(--radius-md); }
 
   /* ⑧ collaboration summary — warm transient card (the playground banner's tone, library scale). */
   .collab-note {
     display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
     margin: var(--space-4) var(--space-8) 0; padding: var(--space-3) var(--space-4);
     background: var(--accent-3-muted); border: none; border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low);
   }
   .cn-msg { font-family: var(--font-body); font-size: var(--text-ui-sm); line-height: 1.6; color: var(--ink-canvas-primary); }
   .cn-x { background: none; border: none; cursor: pointer; padding: 6px var(--space-2); font-size: 1rem; color: var(--ink-canvas-secondary); }
   .cn-x:hover { color: var(--ink-canvas-primary); }
   .pg-tag { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 400; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-canvas-muted); }
   .pg-msg { flex: 1; font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-canvas-secondary); }
-  .pg-keep { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.06em; padding: var(--space-2) var(--space-4); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: background 160ms ease, box-shadow 160ms ease; }
-  .pg-keep:hover { background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
+  .pg-keep { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.06em; padding: var(--space-2) var(--space-4); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: background 160ms ease; }
+  .pg-keep:hover { background: var(--surface-canvas-overlay); }
   .pg-keep:disabled { opacity: 0.6; cursor: default; box-shadow: none; }
 
   /* Breadcrumb crumb — the object level of "Exhibit › Object" (the spine is exhibit-level, notes object-level). */
@@ -2943,14 +2942,14 @@
      here. Amber (secondary accent), NOT emerald: the emerald signal stays rationed to Publish. TEXT is ink,
      not amber (the amber lives in the border + tint fill) — the same ink-text-on-amber idiom the .layer chip
      uses to pass AA: ink-on-tint ≈10:1, vs amber-on-tint's 3.3:1 which fails at this size. */
-  .tool-strip .ts-tool { display: inline-flex; align-items: center; gap: var(--space-1); font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; letter-spacing: 0.04em; padding: var(--space-2) var(--space-3); background: var(--accent-2-muted); color: var(--ink-canvas-primary); border: 1px solid var(--accent-2); border-radius: var(--radius-sm); cursor: pointer; transition: background 160ms ease, box-shadow 160ms ease, border-color 160ms ease; }
-  .tool-strip .ts-tool:hover { border-color: var(--accent-2-hover); box-shadow: var(--shadow-lift-mid); }
+  .tool-strip .ts-tool { display: inline-flex; align-items: center; gap: var(--space-1); font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; letter-spacing: 0.04em; padding: var(--space-2) var(--space-3); background: var(--accent-2-muted); color: var(--ink-canvas-primary); border: 1px solid var(--accent-2); border-radius: var(--radius-sm); cursor: pointer; transition: background 160ms ease, border-color 160ms ease; }
+  .tool-strip .ts-tool:hover { border-color: var(--accent-2-hover); }
   .tool-strip .ts-tool:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
   /* Armed (Box/Outline mid-draw) — a filled amber state, clearly distinct from the outlined resting look, so
      "I'm drawing this shape" reads at a glance. The DARKER amber (--accent-2-paper-hover) carries the parchment
      text at AA (≈5:1; the base --accent-2 fill only reached 3.6:1). Reinforces the status strip's mode banner. */
-  .tool-strip .ts-tool.armed { background: var(--accent-2-paper-hover); color: var(--ink-on-accent); border-color: var(--accent-2-paper-hover); box-shadow: var(--shadow-lift-low); }
-  .tool-strip .ts-tool.armed:hover { box-shadow: var(--shadow-lift-mid); }
+  .tool-strip .ts-tool.armed { background: var(--accent-2-paper-hover); color: var(--ink-on-accent); border-color: var(--accent-2-paper-hover); }
+  .tool-strip .ts-tool.armed:hover { border-color: var(--accent-2); }
   /* Filing-into echo (read-only) — the destination reading, right-aligned; the pen itself is in the Readings panel. */
   /* Right-aligned group (review Archie-93fd): the filing-into echo AND the scale cue share the strip's
      trailing edge — one auto-margin group instead of two competing ones. */
@@ -2982,8 +2981,8 @@
   .status-strip .ss-into { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; color: var(--ink-canvas-secondary); }
   .status-strip .ss-rd { font-weight: 500; letter-spacing: 0; color: var(--ink-canvas-primary); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); padding: 1px var(--space-2); }
   .status-strip .ss-rd .ss-rd-num { font-family: var(--font-mono); color: var(--ink-canvas-secondary); }
-  .status-strip .ss-cancel { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.04em; padding: var(--space-1) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: var(--space-2); transition: box-shadow 160ms ease; }
-  .status-strip .ss-cancel:hover { box-shadow: var(--shadow-lift-low); }
+  .status-strip .ss-cancel { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.04em; padding: var(--space-1) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: var(--space-2); transition: background 160ms ease; }
+  .status-strip .ss-cancel:hover { background: var(--surface-canvas-overlay); }
   .status-strip .ss-cancel kbd { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-canvas-muted); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); padding: 0 var(--space-1); }
   .status-strip .ss-import { display: inline-flex; align-items: center; gap: var(--space-2); margin-left: auto; overflow-wrap: anywhere; }
   .status-strip .ss-note { display: inline-flex; align-items: center; gap: var(--space-2); margin-left: auto; overflow-wrap: anywhere; }
@@ -3003,7 +3002,7 @@
   .zone-name { font-family: var(--font-display); font-size: 1.15rem; font-weight: 400; line-height: 1.2; color: var(--ink-paper-primary); overflow-wrap: anywhere; }
   .zone-name-edit { flex: 1 1 auto; min-width: 0; margin: 0; font-family: var(--font-display); font-size: 1.15rem; font-weight: 400; line-height: 1.2; color: var(--ink-paper-primary); background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm); padding: 0 var(--space-1); text-overflow: ellipsis; transition: background 160ms ease, box-shadow 160ms ease; }
   .zone-name-edit:hover { background: var(--surface-paper-hover); }
-  .zone-name-edit:focus { outline: none; background: var(--surface-paper-card); box-shadow: var(--shadow-lift-low); }
+  .zone-name-edit:focus { outline: none; background: var(--surface-paper-card); box-shadow: 0 0 0 2px var(--accent); }
   .zone-name-pen { align-self: center; font-size: 0.8rem; color: var(--ink-paper-muted); opacity: 0.55; transition: color 120ms ease, opacity 120ms ease; }
   .zone-header:hover .zone-name-pen, .zone-header:focus-within .zone-name-pen { color: var(--accent-2); opacity: 1; }
   .zone-body { padding: var(--space-3) var(--space-5) var(--space-4); }
@@ -3058,7 +3057,7 @@
   /* KEYSTONE matched-pair cue — a quiet teaching note on warm paper, attached above the spine card. Forest
      green reads here (paper, not grey), used only on the accent left-rule; the body stays ink. Non-blocking,
      never a modal. (Sidebar is the paper surface — paper tokens throughout.) */
-  .narrative-cue { display: flex; flex-direction: column; gap: var(--space-2); margin: 0 0 var(--space-3); padding: var(--space-3); background: var(--surface-paper-card); border-left: 3px solid var(--accent); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); }
+  .narrative-cue { display: flex; flex-direction: column; gap: var(--space-2); margin: 0 0 var(--space-3); padding: var(--space-3); background: var(--surface-paper-card); border-left: 3px solid var(--accent); border-radius: var(--radius-md); }
   .narrative-cue .nc-msg { margin: 0; font-family: var(--font-body); font-size: 0.9rem; line-height: 1.6; color: var(--ink-paper-primary); }
   .narrative-cue .nc-aside { color: var(--ink-paper-secondary); }
   .narrative-cue .nc-actions { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
@@ -3079,8 +3078,8 @@
   /* Filmstrip rail region (Archie-5e96) — the nav-only band: a collapse control + the scrolling object
      strip. Collapsing (viewPrefs.railCollapsed) shrinks the tiles to slim ticks so the canvas gets the room. */
   .rail-region { display: flex; align-items: stretch; gap: var(--space-2); padding: var(--space-2) var(--space-5); background: var(--surface-canvas-raised); border-bottom: 1px solid var(--border-canvas); }
-  .rail-collapse { flex: none; display: flex; align-items: center; justify-content: center; width: 26px; cursor: pointer; background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: color 160ms ease, box-shadow 160ms ease; }
-  .rail-collapse:hover { color: var(--ink-canvas-primary); box-shadow: var(--shadow-lift-low); }
+  .rail-collapse { flex: none; display: flex; align-items: center; justify-content: center; width: 26px; cursor: pointer; background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: color 160ms ease; }
+  .rail-collapse:hover { color: var(--ink-canvas-primary); }
   .rail-collapse .chev { display: inline-block; transition: transform 160ms ease; }
   .rail-region.collapsed .rail-collapse .chev { transform: rotate(180deg); }
   /* Object rail — the exhibit's works laid along the table edge; the active one marked by a quiet
@@ -3108,12 +3107,12 @@
     padding: var(--space-2);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
     border: none; border-radius: var(--radius-sm);
-    transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    transition: color 160ms ease, background 160ms ease;
   }
-  .obj:hover { color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
+  .obj:hover { color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); }
   /* Keyboard focus ring for the roving rail (Archie-f260 §2) — arrows move focus between tiles; make it visible. */
   .obj:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
-  .obj.on { background: var(--accent-muted); color: var(--ink-canvas-primary); box-shadow: var(--shadow-lift-low); }
+  .obj.on { background: var(--accent-muted); color: var(--ink-canvas-primary); }
   /* The IMAGE is the tile's identity (you choose visually, P2-6): thumb leads, caption recedes. */
   .obj-thumb { flex-shrink: 0; width: 72px; height: 54px; border-radius: var(--radius-sm); background-color: var(--surface-canvas); background-size: cover; background-position: center; box-shadow: var(--shadow-inset-fog); }
   .obj-meta { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
@@ -3183,7 +3182,7 @@
   /* The edit form / review gate revealed below the expanded note button (Archie-d48e disclosure): a quiet
      paper card tucked under its header, tied to it by the same accent left-edge, so header + form read as one
      open unit. The WADM form sheds its own top margin/border (the region IS the frame). */
-  .note-editor-region { margin: 0; padding: var(--space-3) var(--space-4); background: var(--surface-paper-card); border-left: 2px solid var(--accent); border-radius: 0 0 var(--radius-md) var(--radius-md); box-shadow: var(--shadow-lift-low); }
+  .note-editor-region { margin: 0; padding: var(--space-3) var(--space-4); background: var(--surface-paper-card); border-left: 2px solid var(--accent); border-radius: 0 0 var(--radius-md) var(--radius-md); }
   .note-editor-region :global(.wadm) { margin-top: 0; border-top: none; padding-top: 0; }
   /* Per-note edit gate card (Archie-90f1) — the conflicted selected note expands to a review prompt, not a form. */
   .note-editor-region.conflict { color: var(--ink-paper-muted); }
@@ -3192,9 +3191,9 @@
   .note-editor-region .de-review {
     margin-top: var(--space-4); cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.04em;
     padding: var(--space-2) var(--space-4); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: box-shadow 160ms ease;
+    border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: background 160ms ease;
   }
-  .note-editor-region .de-review:hover { box-shadow: var(--shadow-lift-low); }
+  .note-editor-region .de-review:hover { background: var(--surface-canvas-overlay); }
 
   /* Sidebar — the two-zone notebook (warm paper) */
   .sidebar {
@@ -3223,10 +3222,9 @@
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
     border: none; border-left: 2px solid transparent;
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low);
-    transition: background 160ms ease, box-shadow 160ms ease;
+    transition: background 160ms ease;
   }
-  .note-opt:hover { background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-mid); }
+  .note-opt:hover { background: var(--surface-paper-hover); }
   /* The disclosure button's focus ring (native button focus — a real tab stop). */
   .note-opt:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
   /* Selected = a quiet signal: a soft accent left-edge + faint tint, never a loud fill. When expanded, the
