@@ -169,6 +169,30 @@ if (hubFiles.length) {
   bad.length ? err("pointers", bad.join("\n    ")) : ok("pointers", `${checked} ticket/sha citations verified`);
 }
 
+// ---------- 5b. TRACKERS drift ----------
+if (existsSync(join(ROOT, "docs/TRACKERS.md"))) {
+  const regen = execSync("node scripts/trackers-gen.mjs --stdout", { cwd: ROOT, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
+  regen === readFileSync(join(ROOT, "docs/TRACKERS.md"), "utf8")
+    ? ok("trackers", "docs/TRACKERS.md matches regeneration")
+    : err("trackers", "docs/TRACKERS.md drifted — run `node scripts/trackers-gen.mjs`");
+}
+
+// ---------- 5c. evidence paths exist ----------
+{
+  const bad = [];
+  let checked = 0;
+  for (const f of [...hubFiles, ...priorArtFiles]) {
+    const text = readFileSync(join(ROOT, f), "utf8");
+    for (const m of text.matchAll(/`((?:docs|ledgers|apps|packages|scripts|recipes|src-tauri|hubs|\.github|\.claude|\.seeds)\/[A-Za-z0-9_\-./]+?)(?::\d[\d-]*)?`/g)) {
+      const p = m[1];
+      if (p.includes("*") || p.endsWith("/")) continue;
+      checked++;
+      if (!existsSync(join(ROOT, p))) bad.push(`${f} → \`${p}\` does not exist`);
+    }
+  }
+  bad.length ? err("evidence-paths", bad.join("\n    ")) : ok("evidence-paths", `${checked} cited paths exist`);
+}
+
 // ---------- 6. untracked doc files ----------
 {
   const bad = [];
