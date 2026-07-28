@@ -5,6 +5,7 @@
 // Filesystem seam. The Svelte editor is a thin shell binding to this; the logic is here, tested.
 
 import { newRecord, editRecord, deleteRecord } from "../spine/log.js";
+import { atom, computed, type Atom, type Computed } from "../state/index.js";
 import { isDegenerateTarget } from "../geometry/selector.js";
 import { HeadIndex } from "../spine/head-index.js";
 import { recordToAnnotation } from "../spine/serialize.js";
@@ -112,6 +113,24 @@ export class AnnotationSession {
    *  (which would orphan the unreadable pages permanently — Issue 19). Public, read-only for callers. */
   loadCorruption: CorruptAnnotationPage[] = [];
 
+  /**
+   * The log's REVISION, as a signal — the one reactive root of this class.
+   *
+   * A counter rather than the log itself, and that is forced rather than chosen: `records` is
+   * appended IN PLACE (see the field comment above), so its identity never changes on a write
+   * and an atom holding it would compare equal forever. The counter is what a mutation actually
+   * moves.
+   *
+   * Public and read-only so a UI can subscribe without the session growing a callback API —
+   * `onEpochChange` in `state/` is the push edge; this is what it means. Bumped by `advance`
+   * and `setLog`, which are the only two paths that may change the log (that invariant already
+   * existed for `index`; this rides on it rather than adding a second one to maintain).
+   */
+  readonly revision: Atom<number>;
+
+  /** `workingAnnotations()` as a lazy memo. See the method for what this buys and what it does not. */
+  private readonly working: Computed<W3CAnnotation[]>;
+
   constructor(
     editor: ClientId | (() => ClientId),
     log: AnnotationLog = [],
@@ -119,6 +138,19 @@ export class AnnotationSession {
     this.editorSource = editor;
     this.records = [...log];
     this.index = HeadIndex.from(this.records);
+    this.revision = atom("session.revision", 0);
+    this.working = computed("session.workingAnnotations", () => {
+      this.revision.get(); // the dependency — everything below is read untracked, by design
+      return this.projectWorkingAnnotations();
+    });
+  }
+
+  /** Bump the revision. Called from `advance` (per append) and `setLog` (merge / resolve).
+   *  MUST stay O(1): this is the spine's per-EDIT hot path
+   *  (`.claude/rules/perf-measure-the-flow.md` §3). `atom.set` is an equality check, a counter
+   *  increment and — only if somebody has subscribed — one listener pass. */
+  private bumpRevision(): void {
+    this.revision.update((n) => n + 1);
   }
 
   /** The identity every append stamps as `lastEditor`. A plain ClientId is captured for the session's
@@ -142,6 +174,7 @@ export class AnnotationSession {
     this.records = [...log];
     this.frozen = null;
     this.index = HeadIndex.from(this.records);
+    this.bumpRevision();
   }
 
   /** Append one freshly-minted record: push it and fold it into the projection. O(1), no log copy. */
@@ -150,6 +183,7 @@ export class AnnotationSession {
     this.frozen = null;
     this.index.append(record);
     this.dirty.add(record.logicalId);
+    this.bumpRevision();
   }
 
   /** Load a session from a persisted annotations directory (the reload/open path). */
@@ -285,6 +319,28 @@ export class AnnotationSession {
    * projection (toHeadsPage) instead.
    */
   workingAnnotations(): W3CAnnotation[] {
+    return this.working.get();
+  }
+
+  /**
+   * WHAT THE `computed` BUYS, stated narrowly so nobody reads more into it.
+   *
+   * It removes REPEATED work, not first work. The projection below is O(heads) and allocates a
+   * fresh W3CAnnotation per head; before this it ran on EVERY call, and App.svelte's derivation
+   * chain (`objAnnotations` -> `annotations` -> `canvasAnnotations`, plus `annById`) calls it
+   * whenever anything upstream re-evaluates, including edits to state that has nothing to do
+   * with annotations. Now N calls between two mutations cost one projection.
+   *
+   * The second, quieter win is REFERENCE STABILITY: an unchanged read returns the same array,
+   * so a `$derived` chained off it stops cascading. That is what makes `state/`'s coarse
+   * epoch tick affordable at the UI (see `state/index.ts`).
+   *
+   * What it does NOT buy: anything per-EDIT. A mutation still costs exactly one atom bump, and
+   * the projection is deferred to the next read — the same total work as before for a
+   * mutate-then-read cycle. That is deliberate; `head-index.perf.test.ts` is the gate that says
+   * so, and its bound is a single pass over the log.
+   */
+  private projectWorkingAnnotations(): W3CAnnotation[] {
     return this.heads().map((record) => {
       const ann = recordToAnnotation(record, record.logicalId);
       if (record.reading !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_READING] = record.reading;
