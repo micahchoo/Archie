@@ -19,6 +19,7 @@ import {
 // bake.ts, so `vi.mock("./bake.js")` still intercepts the image path transitively.
 import { bakeDisplayMasterAsync, downscaleIfNeededAsync, bakeThumbnailAsync } from "./bake-async.js";
 import { isTiffMime, transcodeTiff } from "./tiff-transcode.js";
+import { probeAvFile } from "./av-probe.js";
 import {
   openExhibitAnnotationsDir, openExhibitStructureDir, saveAssetFile, saveOriginalFile, saveThumbFile, clearExhibitAnnotations,
   migrateResidentStoreIds, resetIdSchemeState, loadLibraryMeta,
@@ -456,7 +457,7 @@ export function createIngestFlows(ctx: IngestContext) {
       batch ? (batch.add(obj, blobUrl), Promise.resolve()) : appendObject(obj, blobUrl, targetSlug);
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
 
-    // AV INGEST (§152 gate lifted 2026-05-26, user): store an audio/video file as an OPFS asset — no EXIF/dims.
+    // AV INGEST (§152 gate lifted 2026-05-26, user): store an audio/video file as an OPFS asset.
     // It renders in AvEditor (WaveSurfer waveform for audio · <video> for video). Local blob → no CORS on decode.
     if (file.type.startsWith("audio/") || file.type.startsWith("video/")) {
       const mediaType: "sound" | "video" = file.type.startsWith("video/") ? "video" : "sound";
@@ -464,7 +465,26 @@ export function createIngestFlows(ctx: IngestContext) {
       // Bytes THROUGH the queue, then the object (reference-after-bytes): a failed write is now visible
       // in saveStatus AND aborts the add, so library.json never references bytes that didn't land.
       if (!(await persistAsset(slug, () => saveAssetFile(slug, avName, file)))) return { added: false, reason: "storage" };
-      await place({ id, source: `${ASSET_PREFIX}${avName}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", mediaType }, URL.createObjectURL(file));
+      // Archie-0c7f: pull a poster frame + duration/dimensions (docs/thumbnail-mitigations.md gap 1 —
+      // video plates rendered BLACK because nothing was ever extracted here). Same posture as the image
+      // thumbnail below: through persistAsset for VISIBILITY in saveStatus, but never blocking — an AV
+      // file whose codec this engine lacks still imports, just without a plate. probeAvFile resolves
+      // rather than throwing and bounds its own waits, so a bad file cannot wedge the import queue.
+      let avThumb: string | undefined;
+      const probe = await probeAvFile(file, mediaType === "video" ? "video" : "audio");
+      if (probe.poster && (await persistAsset(slug, () => saveThumbFile(slug, avName, probe.poster!)))) {
+        avThumb = `${ASSET_THUMB_PREFIX}${avName}`;
+        ctx.setPlate(id, URL.createObjectURL(probe.poster));
+      }
+      await place({
+        id,
+        source: `${ASSET_PREFIX}${avName}`,
+        label: file.name.replace(/\.[^.]+$/, "") || "Untitled object",
+        mediaType,
+        ...(probe.duration !== undefined ? { duration: probe.duration } : {}),
+        ...(probe.width !== undefined && probe.height !== undefined ? { width: probe.width, height: probe.height } : {}),
+        ...(avThumb ? { thumbnail: avThumb } : {}),
+      }, URL.createObjectURL(file));
       return file.size > LARGE_MEDIA_BYTES
         ? { added: true, note: `“${file.name}” is large (${Math.round(file.size / (1024 * 1024))} MB). For very large recordings, paste a link instead — it keeps your library small.` }
         : { added: true };
