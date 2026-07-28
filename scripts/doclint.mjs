@@ -178,10 +178,12 @@ if (existsSync(join(ROOT, "docs/TRACKERS.md"))) {
 }
 
 // ---------- 5c. evidence paths exist ----------
+// Territory hubs only: prior-art pages cite file:line inside CORPUS clones
+// (e.g. quire's packages/11ty/...), which are not paths in this repo.
 {
   const bad = [];
   let checked = 0;
-  for (const f of [...hubFiles, ...priorArtFiles]) {
+  for (const f of hubFiles) {
     const text = readFileSync(join(ROOT, f), "utf8");
     for (const m of text.matchAll(/`((?:docs|ledgers|apps|packages|scripts|recipes|src-tauri|hubs|\.github|\.claude|\.seeds)\/[A-Za-z0-9_\-./]+?)(?::\d[\d-]*)?`/g)) {
       const p = m[1];
