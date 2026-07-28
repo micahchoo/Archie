@@ -20,6 +20,9 @@ import {
   fsJsonSource,
   FailedReadError,
   isNotFound,
+  FIXITY_MANIFEST_NAME,
+  parseFixityManifest,
+  sha256Hex,
   type JsonSource,
   type Filesystem,
   type ExhibitsJson,
@@ -317,6 +320,65 @@ check(
   "archie.demo scan: no occurrences anywhere in the served tree",
   `scanned ${demoScanFiles.length} file(s), ${demoHits} total occurrence(s)`,
 );
+
+// ---------------------------------------------------------------------------
+// 8. FIXITY (Archie-039e) — re-hash every file `manifest-sha256.txt` lists and compare. This is the
+//    one check here that reads the tree's BYTES rather than its structure, and it is the reason the
+//    manifest exists: "publish wrote these bytes" and "these bytes are still here" are different
+//    claims, and only a re-hash settles the second. Absent manifest = the tree was published without
+//    PublishOptions.fixity; reported as a SKIP with the reason, never as a pass.
+//
+//    Per-file tolerant like everything above: a missing or mismatched file is one FAIL line naming
+//    that path, and the sweep continues, so one truncated tile does not hide a second.
+// ---------------------------------------------------------------------------
+{
+  const manifestRead = await tryReadText(FIXITY_MANIFEST_NAME);
+  if (!manifestRead.ok) {
+    check(false, `fixity: ${FIXITY_MANIFEST_NAME} reads cleanly`, String(manifestRead.error instanceof Error ? manifestRead.error.message : manifestRead.error));
+  } else if (manifestRead.text === null) {
+    console.log(`SKIP  fixity: no ${FIXITY_MANIFEST_NAME} — this tree was published without PublishOptions.fixity, so there is nothing to verify`);
+  } else {
+    const entries = parseFixityManifest(manifestRead.text);
+    const lines = manifestRead.text.split("\n").filter((l) => l.trim() !== "").length;
+    // Reconcile the parsed count against the raw line count: a manifest whose lines silently failed
+    // to parse would otherwise verify a SUBSET and report a clean pass over it.
+    check(
+      entries.length === lines,
+      `fixity: every line of ${FIXITY_MANIFEST_NAME} parsed`,
+      `${entries.length} entr(ies) parsed from ${lines} non-blank line(s)`,
+    );
+
+    let verified = 0;
+    const bad: string[] = [];
+    for (const entry of entries) {
+      let bytes: Uint8Array | null;
+      try {
+        bytes = await readRaw(entry.path);
+      } catch (e) {
+        bad.push(entry.path);
+        check(false, `fixity: ${entry.path}`, `read FAILED — ${String(e instanceof Error ? e.message : e)}`);
+        continue;
+      }
+      if (bytes === null) {
+        bad.push(entry.path);
+        check(false, `fixity: ${entry.path}`, "listed in the manifest but ABSENT from the tree");
+        continue;
+      }
+      const actual = await sha256Hex(bytes as Uint8Array<ArrayBuffer>);
+      if (actual !== entry.sha256) {
+        bad.push(entry.path);
+        check(false, `fixity: ${entry.path}`, `sha256 MISMATCH — manifest ${entry.sha256}, served bytes ${actual} (${bytes.byteLength} bytes)`);
+        continue;
+      }
+      verified++;
+    }
+    check(
+      bad.length === 0 && entries.length > 0,
+      "fixity: every listed file re-hashes to its manifest checksum",
+      `${verified}/${entries.length} verified, ${bad.length} bad${bad.length > 0 ? `: ${bad.join(", ")}` : ""}`,
+    );
+  }
+}
 
 // ---------------------------------------------------------------------------
 function escHtml(s: string): string {
