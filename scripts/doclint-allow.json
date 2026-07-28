@@ -1,0 +1,10 @@
+{
+  "_comment": "Hand-maintained reference for scripts/doclint.mjs. Editing this file is a deliberate act — same review weight as a test assertion (design §2 Q6). Each allowlist entry should say why in a sibling *_why key or be self-evident.",
+  "danglingLinks": [],
+  "untracked": [],
+  "mirrors": { ".agents/skills": ".claude/skills" },
+  "standingLedgers": [],
+  "standingLedgers_why": "empty = ledgers/ is dated-only after the §2 migration; a new standing entry needs a reason here",
+  "accretionExempt": [],
+  "coverageIgnore": []
+}
