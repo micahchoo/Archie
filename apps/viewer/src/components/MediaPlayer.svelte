@@ -712,7 +712,7 @@
   .waveform { width: 100%; min-height: 96px; }
   .waveform.pending { opacity: 0; }
   /* Broken-media fallback (empty/error gate): a missing/undecodable recording, on warm paper. */
-  .media-failed { max-width: 32rem; font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-canvas-secondary); text-align: center; padding: var(--space-6); background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); }
+  .media-failed { max-width: 32rem; font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-canvas-secondary); text-align: center; padding: var(--space-6); background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-md); }
   /* V29: a notice, not a failure — the recording still plays, it just has no picture. Sits above the
      plate rather than replacing it, so the controls stay exactly where the reader expects them. */
   .media-notice { margin: 0 0 var(--space-3); max-width: 32rem; font-family: var(--font-body); font-size: 0.9375rem; line-height: 1.5; color: var(--ink-canvas-secondary); text-align: center; }
@@ -750,13 +750,18 @@
     border-radius: var(--radius-sm);
     transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
   }
-  .cues button:hover { background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-low); }
+  .cues button:hover { background: var(--surface-paper-hover); }
   .cues button.active { border-left-color: var(--accent); background: var(--accent-muted); }
   /* The OPENED note (a different state from the spoken line — see the markup). Signalled on a different
      channel from `.active` so the two can coexist rather than fight: playback owns the left accent edge
      and the fill; selection owns a lift. immarkus's discipline, ported — "category owns hue, state owns
      stroke width" (`src/pages/annotate/WorkspaceSection/useDrawingStyles.ts:11-33`, where `strokeWidth`
      is state and `fill` is identity) — which is what lets a mark carry two facts without either winning. */
+  /* KEPT through Archie-1244's lift-shadow restriction, deliberately. 5c1d's Option C removes lifts
+     from non-floating surfaces, and a cue row is not floating — but its Category 2 carve-out is the
+     one that applies here: "the spec's restriction is on elevation, not on signal indicators". This
+     shadow is not saying "this row is raised", it is saying "this note is open", on a channel the
+     playback state above does not use. Strip it and the two facts collapse into one. */
   .cues button.open { box-shadow: var(--shadow-lift-mid); }
   .t { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.1em; color: var(--ink-paper-muted); }
   .cues button.active .t { color: var(--accent); }

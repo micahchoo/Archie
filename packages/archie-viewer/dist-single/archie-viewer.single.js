@@ -1420,7 +1420,7 @@ void main(void)\r
   .empty .err { color: var(--semantic-error); margin-top: var(--space-3); }
   .empty .cold, .intro .cold { background: var(--accent-2-muted); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); font-size: .85rem; }
   .grid { list-style: none; margin: 0; padding: var(--space-8); display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-5); }
-  .grid button, .grid a { display: flex; flex-direction: column; text-align: left; width: 100%; padding: 0; border: none; border-radius: var(--radius-md); overflow: hidden; background: var(--surface-canvas-raised); box-shadow: var(--shadow-lift-low); cursor: pointer; text-decoration: none; color: inherit; }
+  .grid button, .grid a { display: flex; flex-direction: column; text-align: left; width: 100%; padding: 0; border: none; border-radius: var(--radius-md); overflow: hidden; background: var(--surface-canvas-raised); cursor: pointer; text-decoration: none; color: inherit; }
   .grid .cover { width: 100%; aspect-ratio: 3/2; object-fit: cover; background: var(--surface-canvas-overlay); display: grid; place-items: center; color: var(--ink-canvas-muted); }
   .grid .cover .glyph { font-size: 1.8rem; line-height: 1; align-self: end; }
   .grid .cover .kind { align-self: start; font-size: .85rem; }

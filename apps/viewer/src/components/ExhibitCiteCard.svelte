@@ -28,10 +28,10 @@
     display: flex; gap: var(--space-4); align-items: stretch; text-decoration: none;
     margin: var(--space-3) 0; padding: var(--space-3);
     background: var(--surface-canvas-raised); color: var(--ink-paper-primary);
-    border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low);
-    transition: transform 160ms ease, box-shadow 160ms ease;
+    border-radius: var(--radius-md);
+    transition: transform 160ms ease;
   }
-  .cite-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
+  .cite-card:hover { transform: translateY(-2px); }
   .cc-cover {
     flex: 0 0 auto; width: 84px; align-self: stretch; min-height: 60px;
     background-color: var(--surface-canvas); background-size: cover; background-position: center;

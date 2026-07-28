@@ -481,27 +481,27 @@
   .vt-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); pointer-events: none; }
   .vt-empty { display: block; margin-top: var(--space-1); font-family: var(--font-ui); font-size: var(--text-ui-xs); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-canvas-muted); }
 
-  .wave { width: min(48rem, 92%); margin-top: var(--space-2); min-height: 96px; padding: var(--space-2); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); }
+  .wave { width: min(48rem, 92%); margin-top: var(--space-2); min-height: 96px; padding: var(--space-2); background: var(--surface-canvas-raised); border-radius: var(--radius-md); }
   .transport { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; justify-content: center; }
-  .transport .play { cursor: pointer; font-family: var(--font-ui); font-weight: 500; font-size: var(--text-ui-sm); letter-spacing: 0.02em; padding: var(--space-2) var(--space-4); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); box-shadow: var(--shadow-lift-low); transition: background 0.18s ease, border-color 0.18s ease; }
+  .transport .play { cursor: pointer; font-family: var(--font-ui); font-weight: 500; font-size: var(--text-ui-sm); letter-spacing: 0.02em; padding: var(--space-2) var(--space-4); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: background 0.18s ease, border-color 0.18s ease; }
   .transport .play:hover { background: var(--surface-canvas-overlay); border-color: var(--border-canvas-emphasis); }
   .transport .wave-hint { font-family: var(--font-ui); font-size: var(--text-ui-xs); letter-spacing: 0.04em; color: var(--ink-canvas-secondary); }
 
   .markbar {
     display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
     padding: var(--space-3) var(--space-5);
-    background: var(--surface-canvas-raised); box-shadow: var(--shadow-lift-low);
+    background: var(--surface-canvas-raised);
   }
   .now-lbl { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-canvas-muted); }
   .clock { font-family: var(--font-mono); font-size: var(--text-ui-sm); color: var(--ink-canvas-primary); min-width: 3.5rem; }
   .chip { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-mono); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-2); background: var(--accent-2-muted); border-radius: var(--radius-sm); padding: 2px var(--space-2) 2px var(--space-3); }
   .chip .x { background: none; border: none; cursor: pointer; color: var(--accent-2); font-size: 0.7rem; padding: 0; }
   .markbar button { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease; }
-  .markbar .mark { background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); font-family: var(--font-ui); letter-spacing: 0.02em; border: 1px solid var(--border-canvas); box-shadow: var(--shadow-lift-low); }
+  .markbar .mark { background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); font-family: var(--font-ui); letter-spacing: 0.02em; border: 1px solid var(--border-canvas); }
   .markbar .mark:hover { background: var(--surface-canvas-overlay); border-color: var(--border-canvas-emphasis); }
   .markbar .add { background: var(--accent); color: var(--ink-on-accent); font-family: var(--font-ui); font-weight: 500; letter-spacing: 0.02em; border: none; box-shadow: var(--shadow-signal-glow); }
   .markbar .add:hover { background: var(--accent-hover); }
-  .markbar .import { display: inline-flex; align-items: center; cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.02em; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); box-shadow: var(--shadow-lift-low); transition: border-color 0.18s ease, color 0.18s ease; }
+  .markbar .import { display: inline-flex; align-items: center; cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.02em; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); transition: border-color 0.18s ease, color 0.18s ease; }
   .markbar .import:hover { color: var(--accent-2); border-color: var(--accent-2); }
   .markbar .import input { display: none; }
   .markbar .active { font-family: var(--font-body); font-size: 0.9rem; line-height: 1.6; color: var(--ink-canvas-secondary); margin-left: auto; max-width: 40%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

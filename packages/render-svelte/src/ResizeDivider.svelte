@@ -169,7 +169,7 @@
     font-family: var(--font-ui), sans-serif; font-size: 0.85rem; line-height: 1;
     color: var(--ink-canvas-secondary);
     background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas);
-    border-radius: 999px; box-shadow: var(--shadow-lift-low);
+    border-radius: 999px;
     cursor: pointer; opacity: 0; transition: opacity 160ms ease, color 160ms ease;
   }
   .resize-divider:hover .collapse,

@@ -242,9 +242,8 @@
     padding: var(--space-2) var(--space-3); cursor: pointer; width: 100%;
     background: var(--surface-paper-card); color: var(--semantic-error);
     border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-lift-low);
-    transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    transition: background 160ms ease, color 160ms ease;
   }
   .remove:hover { background: var(--semantic-error); color: var(--ink-on-accent); border-color: transparent; }
-  .remove.confirming { background: var(--semantic-error); color: var(--ink-on-accent); border-color: transparent; font-weight: 600; box-shadow: var(--shadow-lift-mid); }
+  .remove.confirming { background: var(--semantic-error); color: var(--ink-on-accent); border-color: transparent; font-weight: 600; }
 </style>

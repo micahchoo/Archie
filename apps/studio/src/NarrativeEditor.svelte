@@ -256,7 +256,7 @@
 <style>
   /* The spine reads as an EXHIBIT-level region inside the object-local paper notebook: a warm paper card
      lifted by a soft shadow, distinct from the per-object note list below it (Soft Static paper side). */
-  .spine { display: flex; flex-direction: column; gap: var(--space-3); margin: 0 0 var(--space-4); padding: var(--space-3); background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-lg); box-shadow: var(--shadow-lift-low); }
+  .spine { display: flex; flex-direction: column; gap: var(--space-3); margin: 0 0 var(--space-4); padding: var(--space-3); background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-lg); }
   /* Recessed (empty) spine: NOT a lifted card — a quiet hairline strip with tighter padding + a smaller CTA,
      so a not-yet-started narrative stays subordinate to the object Notes list below (staging spec §2). */
   .spine.recessed { background: transparent; box-shadow: none; border: 1px solid var(--border-paper); padding: var(--space-2) var(--space-3); gap: var(--space-2); }
@@ -283,13 +283,13 @@
   .cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); max-height: 50vh; overflow-y: auto; }
   /* A beat dims when it targets another object; lights when it targets the one you're viewing (scale cue).
      The lit state is a quiet signal: a subtle accent left-rule + full opacity, not a loud fill. */
-  .card { display: flex; gap: var(--space-2); padding: var(--space-2); background: var(--surface-paper); border: none; border-left: 2px solid transparent; border-radius: var(--radius-md); opacity: 0.55; transition: opacity 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
-  .card.here { opacity: 1; border-left-color: var(--accent); box-shadow: var(--shadow-lift-low); }
+  .card { display: flex; gap: var(--space-2); padding: var(--space-2); background: var(--surface-paper); border: none; border-left: 2px solid transparent; border-radius: var(--radius-md); opacity: 0.55; transition: opacity 160ms ease, border-color 160ms ease; }
+  .card.here { opacity: 1; border-left-color: var(--accent); }
   /* Active = the card whose frame is CURRENTLY shown on the canvas (App.focusSectionId). The connector-blue
      rule (matching the nav glyph) marks the ONE navigated-to section apart from its object-siblings, which
      also light via .here (orange). Source-ordered after .here so it wins the left-rule colour when both apply. */
-  .card.active { opacity: 1; border-left-color: var(--accent-2); box-shadow: var(--shadow-lift-mid); }
-  .card.framing { opacity: 1; border-left-color: var(--accent); box-shadow: var(--shadow-lift-mid); }
+  .card.active { opacity: 1; border-left-color: var(--accent-2); }
+  .card.framing { opacity: 1; border-left-color: var(--accent); }
   /* A one-shot arrival pulse (Archie-696d): an expanding-then-fading outline RING on top of the persistent
      .active left-rule — geometry (offset growing, width shrinking), not just color, per the "not color
      alone" requirement. Never persisted; cleared 1.2s after landing (see NarrativeEditor's pulseId effect). */
