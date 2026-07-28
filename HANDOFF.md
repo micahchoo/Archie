@@ -188,3 +188,72 @@ what a cache budget governs. A small number is evidence about JS retention only.
   carries nothing is this repo's most-repeated failure. Archie-36e6's gate drives the built site for
   exactly that reason, and Archie-5a15 shipped because a test asserted `typeof contentUrl ===
   "string"` — which the broken value satisfied.
+
+---
+
+## 2026-07-27 (late) — backlog session on `fix/flaky-gates`
+
+**Shipped**
+- `1474` viewer narrative header — sticky pane toggle + metadata fold (`9db0dec`). Closed.
+- `be3a` dropped the cleartext `http://**` grant — it was the `http:default` CAPABILITY, not the CSP (`baa86a7`). Closed.
+- `fc75` version-stamp — already existed; shipped the message split for the two version directions (`d265282`). Closed; real gap filed as `69f9`.
+- `7eae` closed as superseded (items 1/2/5 built, 3/4 are `69f9`).
+- `1244` partial — 14 dead 8-Bit Orbit tokens removed (`468f138`). Bulk still gated on `05e4`.
+- `0c7f` AV poster/duration/dims at ingest (`c592c4e`). **Open** — needs a browser drive.
+- All 12 grills decided and recorded on their tickets.
+
+**Next, in order of readiness**
+1. `0c7f` — one step left: drive Studio e2e (port 5198) with a real video, assert non-black poster.
+2. `19c5`+`3504` — ONE change now, both fully analysed on-ticket. Studio wiring (`App.svelte:203/294/1956`) + the projection-ordering bug (`openPublish` caches before the repo name exists). `fix/publish-base-wiring` is an EMPTY branch at main — nobody is on it.
+3. `69f9` — needs a tree-level migration shape designed; `migrate()` is per-doc and has no production caller.
+
+**Watch out**
+- This checkout is SHARED and busy. `main` has advanced ONTO this session's commits and another agent added `b240a0e` on top. `.seeds/issues.jsonl` is one file, so `git add .seeds/` sweeps others' ticket writes — one of mine (`5436ddb`) carries `Archie-7e6f`, created by someone else.
+- `sd list` silently truncates at `--limit 50`. Reconcile against `sd stats`.
+- Three tickets picked up today were substantially stale. Read the code before trusting a ticket's premise.
+
+---
+
+## 2026-07-27 (late) — backlog session on `fix/flaky-gates`
+
+**Shipped**
+- `1474` viewer narrative header — sticky pane toggle + metadata fold (`9db0dec`). Closed.
+- `be3a` dropped the cleartext `http://**` grant — it was the `http:default` CAPABILITY, not the CSP (`baa86a7`). Closed.
+- `fc75` version-stamp — already existed; shipped the message split for the two version directions (`d265282`). Closed; real gap filed as `69f9`.
+- `7eae` closed as superseded (items 1/2/5 built, 3/4 are `69f9`).
+- `1244` partial — 14 dead 8-Bit Orbit tokens removed (`468f138`). Bulk still gated on `05e4`.
+- `0c7f` AV poster/duration/dims at ingest (`c592c4e`). **Open** — needs a browser drive.
+- All 12 grills decided and recorded on their tickets.
+
+**Next, in order of readiness**
+1. `0c7f` — one step left: drive Studio e2e (port 5198) with a real video, assert non-black poster.
+2. `19c5`+`3504` — ONE change now, both fully analysed on-ticket. Studio wiring (`App.svelte:203/294/1956`) + the projection-ordering bug (`openPublish` caches before the repo name exists). `fix/publish-base-wiring` is an EMPTY branch at main — nobody is on it.
+3. `69f9` — needs a tree-level migration shape designed; `migrate()` is per-doc and has no production caller.
+
+**Watch out**
+- This checkout is SHARED and busy. `main` has advanced ONTO this session's commits and another agent added `b240a0e` on top. `.seeds/issues.jsonl` is one file, so `git add .seeds/` sweeps others' ticket writes — one of mine (`5436ddb`) carries `Archie-7e6f`, created by someone else.
+- `sd list` silently truncates at `--limit 50`. Reconcile against `sd stats`.
+- Three tickets picked up today were substantially stale. Read the code before trusting a ticket's premise.
+
+---
+
+## 2026-07-27 (late) — backlog session on `fix/flaky-gates`
+
+**Shipped**
+- `1474` viewer narrative header — sticky pane toggle + metadata fold (`9db0dec`). Closed.
+- `be3a` dropped the cleartext `http://**` grant — it was the `http:default` CAPABILITY, not the CSP (`baa86a7`). Closed.
+- `fc75` version-stamp — already existed; shipped the message split for the two version directions (`d265282`). Closed; real gap filed as `69f9`.
+- `7eae` closed as superseded (items 1/2/5 built, 3/4 are `69f9`).
+- `1244` partial — 14 dead 8-Bit Orbit tokens removed (`468f138`). Bulk still gated on `05e4`.
+- `0c7f` AV poster/duration/dims at ingest (`c592c4e`). **Open** — needs a browser drive.
+- All 12 grills decided and recorded on their tickets.
+
+**Next, in order of readiness**
+1. `0c7f` — one step left: drive Studio e2e (port 5198) with a real video, assert non-black poster.
+2. `19c5`+`3504` — ONE change now, both fully analysed on-ticket. Studio wiring (`App.svelte:203/294/1956`) + the projection-ordering bug (`openPublish` caches before the repo name exists). `fix/publish-base-wiring` is an EMPTY branch at main — nobody is on it.
+3. `69f9` — needs a tree-level migration shape designed; `migrate()` is per-doc and has no production caller.
+
+**Watch out**
+- This checkout is SHARED and busy. `main` has advanced ONTO this session's commits and another agent added `b240a0e` on top. `.seeds/issues.jsonl` is one file, so `git add .seeds/` sweeps others' ticket writes — one of mine (`5436ddb`) carries `Archie-7e6f`, created by someone else.
+- `sd list` silently truncates at `--limit 50`. Reconcile against `sd stats`.
+- Three tickets picked up today were substantially stale. Read the code before trusting a ticket's premise.
