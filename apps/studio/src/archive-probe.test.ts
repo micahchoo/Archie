@@ -185,7 +185,7 @@ describe("inventory 1 — a 300-file photo folder", () => {
   it("prices object storage as free at this size — under R2's 10 GB tier", () => {
     const os = verdict(p, "object-storage", "archival");
     expect(os.estimatedMonthlyCostUsd).toBe(0);
-    expect(os.reason).toContain("free");
+    expect(os.reason).toContain("free — under the 10 GB free tier");
   });
 });
 
@@ -223,23 +223,39 @@ describe("inventory 2 — a 10,000-file, 20 GB TIFF archive", () => {
     expect(WEB_TIER.maxDim).toBeLessThan(MAX_MASTER_DIM);
   });
 
-  it("recommends the folder at WEB quality — archival fits there but costs 148x the files", () => {
-    // 6.4 GB at web quality is already over the 1 GB Pages ceiling, so the folder is the next free
-    // route. Archival FITS a folder (a folder has no size cap) and is still the wrong answer: DZI
-    // slicing takes it from ~40k files to ~5.9M, which is a different publishing problem, not a
-    // better version of the same one. ARCHIVAL_FILE_RATIO_CEILING is what encodes that.
+  it("recommends object storage at WEB quality — archival fits there but costs ~198x the files", () => {
+    // 5.9 GB at web quality is already over the 1 GB Pages ceiling, so object storage is the next
+    // route. Archival FITS it (object storage has no cap) and is still the wrong answer: DZI slicing
+    // takes it from ~30k files to ~5.96M, which is a different publishing problem, not a better
+    // version of the same one. ARCHIVAL_FILE_RATIO_CEILING is what encodes that.
     expect(verdict(p, "github-pages", "web").fits).toBe(false);
-    expect(verdict(p, "folder", "archival").fits).toBe(true);
+    expect(verdict(p, "object-storage", "archival").fits).toBe(true);
     expect(p.tiers.archival.publishedFiles / p.tiers.web.publishedFiles).toBeGreaterThan(ARCHIVAL_FILE_RATIO_CEILING);
-    expect(p.recommendation?.destination).toBe("folder");
+    expect(p.recommendation?.destination).toBe("object-storage");
     expect(p.recommendation?.tier).toBe("web");
     expect(p.recommendation?.why).toContain("deep-zoom tiles");
   });
 
   it("prefers ARCHIVAL again once Archie-53e3 removes the tile tax — the ceiling is not a permanent veto", () => {
-    const after = probeArchive(BIG_TIFF_ARCHIVE, { exhibitCount: 12, tileThresholdPx: MAX_MASTER_DIM });
+    // Priced so BOTH tiers are free, isolating the file-ratio rule from the free-vs-paid one. Under
+    // real R2 pricing archival still loses here, on cost — pinned separately in the next test.
+    const freeHost = { label: "a host of your own", usdPerGbMonth: 0, freeGbMonth: 0 };
+    const before = probeArchive(BIG_TIFF_ARCHIVE, { exhibitCount: 12, storagePricing: freeHost });
+    expect(before.recommendation?.tier).toBe("web");
+
+    const after = probeArchive(BIG_TIFF_ARCHIVE, { exhibitCount: 12, tileThresholdPx: MAX_MASTER_DIM, storagePricing: freeHost });
     expect(after.tiers.archival.publishedFiles / after.tiers.web.publishedFiles).toBeLessThan(ARCHIVAL_FILE_RATIO_CEILING);
     expect(after.recommendation?.tier).toBe("archival");
+  });
+
+  it("prefers WEB on cost alone when archival would turn a free route into a paid one", () => {
+    // Tile tax removed, so the file-ratio rule cannot be what decides here: ~100 GB archival at
+    // $0.015/GB is real money where 5.9 GB at web quality sits inside R2's free tier.
+    const noTiles = probeArchive(BIG_TIFF_ARCHIVE, { exhibitCount: 12, tileThresholdPx: MAX_MASTER_DIM });
+    expect(noTiles.tiers.archival.publishedFiles / noTiles.tiers.web.publishedFiles).toBeLessThan(ARCHIVAL_FILE_RATIO_CEILING);
+    expect(noTiles.recommendation?.tier).toBe("web");
+    expect(noTiles.recommendation?.why).toContain("/month to host");
+    expect(noTiles.recommendation?.why).toContain("is free");
   });
 
   it("falls through to object storage when the platform has no folder sink (Firefox/Safari)", () => {
@@ -301,12 +317,15 @@ describe("inventory 3 — an AV-heavy folder (Opus is the difference between bor
     expect(tiny.tiers.web.bytesByMedia.audio).toBe(1000);
   });
 
-  it("recommends a route that fits, and names audio as the driver", () => {
+  it("recommends object storage at web quality, and names audio as the driver", () => {
     expect(p.tiers.web.driver).toBe("audio");
-    expect(p.recommendation).not.toBeNull();
-    // 2.9 GB of Opus is past the 1 GB Pages ceiling; the folder is the free route that remains.
+    // 2.7 GB of Opus is past the 1 GB Pages ceiling, so object storage is next — and there the
+    // 118 GB of WAV would cost real money while 2.7 GB of Opus is free, which is the
+    // "free and good, or paid and archival?" question answered in the user's favour.
     expect(verdict(p, "github-pages", "web").fits).toBe(false);
-    expect(p.recommendation?.destination).toBe("folder");
+    expect(p.recommendation?.destination).toBe("object-storage");
+    expect(p.recommendation?.tier).toBe("web");
+    expect(p.recommendation?.why).toContain("is free");
   });
 });
 

@@ -548,9 +548,15 @@ function estimateTier(
 // Destination verdicts
 // ---------------------------------------------------------------------------------------------
 
-/** Preference order, best-first: free-and-hosted, then free-and-yours, then paid, then the capped
- *  convenience artifact. The recommendation walks this list and takes the first pair that fits. */
-const DESTINATION_ORDER: readonly DestinationId[] = ["github-pages", "folder", "object-storage", "zip"];
+/** Preference order, best-first. The recommendation walks this list and takes the first pair that fits.
+ *
+ *  Object storage sits ABOVE the folder deliberately: the goal Archie-34a2 states is "a viewable
+ *  website", and a folder on your own disk is not one — it is a staging step (decision 11: Archie
+ *  writes the folder and hands over an `rclone sync` command) or a route for someone who already has
+ *  a web server. Leading with the folder would answer a question the user did not ask. This ordering
+ *  is what reproduces the ticket's own worked example, where a video-carrying archive lands on
+ *  "needs object storage (~$1.10/month)" rather than on a local folder. */
+const DESTINATION_ORDER: readonly DestinationId[] = ["github-pages", "object-storage", "folder", "zip"];
 
 /** How many times more FILES the archival tier may cost before the recommendation stops preferring it
  *  at a destination where both fit.
@@ -619,11 +625,9 @@ function folderVerdict(t: TierEstimate, supported: boolean): DestinationVerdict 
 }
 
 function objectStorageVerdict(t: TierEstimate, pricing: StoragePricing, folderSink: boolean): DestinationVerdict {
-  const gb = t.publishedBytes / GIB;
   // R2 rounds usage UP to the next GB-month; the free allowance comes off the top.
-  const billable = Math.max(0, Math.ceil(gb) - pricing.freeGbMonth);
-  const cost = billable * pricing.usdPerGbMonth;
-  const price = cost === 0 ? `free — under ${pricing.label}'s ${pricing.freeGbMonth} GB free tier` : `about $${cost.toFixed(2)}/month`;
+  const cost = monthlyCost(t.publishedBytes, pricing);
+  const price = cost === 0 ? `free — under the ${pricing.freeGbMonth} GB free tier` : `about $${cost.toFixed(2)}/month`;
   const base = {
     destination: "object-storage" as const,
     tier: t.tier,
@@ -641,7 +645,14 @@ function objectStorageVerdict(t: TierEstimate, pricing: StoragePricing, folderSi
       reason: "not available in this browser — Archie writes the files to a folder for you to upload, and that needs the desktop app or Chrome",
     };
   }
-  return { ...base, fits: true, reason: `${humanBytes(t.publishedBytes)} on ${pricing.label} — ${price}, uploaded with a command Archie writes for you` };
+  return { ...base, fits: true, reason: `${price} on ${pricing.label} for ${humanBytes(t.publishedBytes)}, uploaded with a command Archie writes for you` };
+}
+
+/** What a tree of this size costs per month at the given pricing — the free tier taken off the top,
+ *  usage rounded up as R2 bills it. Shared by the verdict and by the recommendation's free-vs-paid
+ *  test, so the two can never disagree about whether a tier is free. */
+function monthlyCost(bytes: number, pricing: StoragePricing): number {
+  return Math.max(0, Math.ceil(bytes / GIB) - pricing.freeGbMonth) * pricing.usdPerGbMonth;
 }
 
 function zipVerdict(t: TierEstimate, limits: ZipFormatLimits): DestinationVerdict {
@@ -718,7 +729,7 @@ export function probeArchive(files: ProbedFile[], opts: ProbeOptions = {}): Arch
     }
   }
 
-  const recommendation = recommend(destinations, tiers, folder);
+  const recommendation = recommend(destinations, tiers, folder, pricing);
   const blockers = destinations.some((v) => v.fits)
     ? []
     : [
@@ -746,8 +757,12 @@ export function probeArchive(files: ProbedFile[], opts: ProbeOptions = {}): Arch
  * paid and archival?"):
  *   1. Walk destinations best-first (`DESTINATION_ORDER`).
  *   2. At the first destination where ANY tier fits, prefer ARCHIVAL if it fits there — losing
- *      fidelity buys nothing once the destination is already free — UNLESS archival costs more than
- *      `ARCHIVAL_FILE_RATIO_CEILING` times the files (see that constant); otherwise take web.
+ *      fidelity buys nothing once the destination is already free — UNLESS archival costs either
+ *      more than `ARCHIVAL_FILE_RATIO_CEILING` times the files (see that constant) or REAL MONEY
+ *      where web is free. That second test is the user's own question, in their own words: "free and
+ *      good, or paid and archival?" — so a probe that silently answers "paid" when "free" was on the
+ *      table has answered the wrong one. Where BOTH tiers cost the same (video, which no tier
+ *      shrinks), the test does not fire and archival is preferred, which is correct.
  * So a small photo archive gets (GitHub Pages, archival); the map's 1,000-scan reference gets
  * (GitHub Pages, web), because archival's 19 GB has no free home; a 10,000-master TIFF archive gets
  * (folder, web), because archival's DZI pyramids cost 148x the files; and a video archive gets
@@ -757,13 +772,17 @@ function recommend(
   destinations: DestinationVerdict[],
   tiers: Record<QualityTier, TierEstimate>,
   folder: FolderShape,
+  pricing: StoragePricing,
 ): ProbeRecommendation | null {
+  const fileBlowup =
+    tiers.web.publishedFiles > 0 && tiers.archival.publishedFiles / tiers.web.publishedFiles > ARCHIVAL_FILE_RATIO_CEILING;
+  const costsMoney = monthlyCost(tiers.archival.publishedBytes, pricing) > 0 && monthlyCost(tiers.web.publishedBytes, pricing) === 0;
+
   for (const d of DESTINATION_ORDER) {
     const archival = destinations.find((v) => v.destination === d && v.tier === "archival");
     const web = destinations.find((v) => v.destination === d && v.tier === "web");
-    const fileBlowup =
-      tiers.web.publishedFiles > 0 && tiers.archival.publishedFiles / tiers.web.publishedFiles > ARCHIVAL_FILE_RATIO_CEILING;
-    const chosen = archival?.fits && !fileBlowup ? archival : web?.fits ? web : archival?.fits ? archival : null;
+    const preferWeb = fileBlowup || costsMoney;
+    const chosen = archival?.fits && !preferWeb ? archival : web?.fits ? web : archival?.fits ? archival : null;
     if (!chosen) continue;
 
     const other = chosen.tier === "archival" ? web : archival;
@@ -774,6 +793,11 @@ function recommend(
       why =
         `Full fidelity would fit here, but it slices every image into deep-zoom tiles — ` +
         `${plural(tiers.archival.publishedFiles, "file")} against ${plural(tiers.web.publishedFiles, "file")} at web quality. ` +
+        `Your originals stay on your disk either way.`;
+    } else if (costsMoney && archival?.fits) {
+      why =
+        `Full fidelity would fit here, but ${humanBytes(tiers.archival.publishedBytes)} costs about ` +
+        `$${monthlyCost(tiers.archival.publishedBytes, pricing).toFixed(2)}/month to host, where ${humanBytes(tiers.web.publishedBytes)} at web quality is free. ` +
         `Your originals stay on your disk either way.`;
     } else {
       const archivalBytes = tiers.archival.publishedBytes;
