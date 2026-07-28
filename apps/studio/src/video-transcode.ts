@@ -6,11 +6,13 @@
 // failure surfaces as a typed `VideoTranscodeError` for the caller's refusal copy. What it must never
 // do is quietly ship the original bytes as if they had been converted.
 //
-// ── WHY A NATIVE SIDECAR AND NOT WebCodecs (Archie-4b0a's video fork) ────────────────────────────
-// WebKitGTK ships no WebCodecs, so the desktop webview cannot transcode at all. On Chromium web
-// WebCodecs exists but provides NO demuxer and NO muxer, so it is not a drop-in either — see
-// `webCodecsVideoAssessment()` at the foot of this file and scripts/probe/webcodecs-video.mjs.
-// Firefox and Safari get neither, and keep the measure-and-tell hand-off (`videoTierTell`).
+// ── WHY A NATIVE SIDECAR ON DESKTOP, AND WHERE THE BROWSER PATH LIVES ────────────────────────────
+// WebKitGTK ships no WebCodecs, so the desktop webview cannot transcode at all — hence this sidecar.
+// Chromium HAS WebCodecs but no demuxer and no muxer, which is why the browser path is not simply
+// this module without Tauri: it needs a container library. That path is now BUILT and lives in
+// `video-transcode-web.ts` (mediabunny; user-approved dependency, ticket DECIDED 2026-07-27).
+// Firefox and Safari get neither and keep the measure-and-tell hand-off (`videoTierTell`) — the
+// evidence is in scripts/probe/webcodecs-video.mjs and video-transcode-web.ts's header.
 //
 // ── SILENT FALLBACK IS THE HAZARD, SO THERE IS A COUNTER ─────────────────────────────────────────
 // .claude/rules/perf-measure-the-flow.md §2: `dzi-slice-pool` and `bake-async` both degrade silently
@@ -39,8 +41,20 @@ export interface VideoTargetParams {
   /** Downscale-only cap on the long-ish edge (height). A smaller source is left alone. */
   maxHeight: number;
   /** Constant-quality knob. The scales are NOT comparable between codecs: 23 is a normal H.264
-   *  value, 33 a normal VP9 one. */
+   *  value, 33 a normal VP9 one. Used by the ffmpeg sidecar ONLY. */
   crf: number;
+  /** Video bitrate for the BROWSER path, in kbit/s. A second knob rather than a conversion of `crf`
+   *  because the two encoders take genuinely different instructions: ffmpeg does constant QUALITY
+   *  (rate varies, quality pinned), while WebCodecs' `VideoEncoder` is configured with a bitrate
+   *  (rate pinned, quality varies). There is no exchange rate between them — a CRF-to-bitrate formula
+   *  would be a fabricated number dressed as a derivation, so both are stated instead.
+   *
+   *  The H.264 figure is not free-chosen: it is `WEB_TIER_VIDEO_KBPS` minus this profile's audio, so
+   *  the bitrate the browser actually encodes at and the bitrate `estimateWebTierVideoBytes` predicts
+   *  are THE SAME NUMBER. Before this path existed the estimate answered for nobody; now a size
+   *  estimate that misses is a bug with one cause instead of two. VP9 is set lower at the same
+   *  perceived quality, which is the codec's whole point. */
+  webBitrateKbps: number;
   audioKbps: number;
 }
 
@@ -55,6 +69,7 @@ export const WEB_TIER_H264: VideoTargetParams = {
   mime: 'video/mp4; codecs="avc1.640028, mp4a.40.2"',
   maxHeight: 720,
   crf: 23,
+  webBitrateKbps: 2000,
   audioKbps: 128,
 };
 
@@ -68,6 +83,7 @@ export const WEB_TIER_VP9: VideoTargetParams = {
   mime: 'video/webm; codecs="vp9, opus"',
   maxHeight: 720,
   crf: 33,
+  webBitrateKbps: 1400,
   audioKbps: 96,
 };
 
@@ -404,54 +420,19 @@ export function videoTierTell(inv: VideoInventory, reason: string): string {
 }
 
 // ---------------------------------------------------------------------------------------------------
-// H3 — the Chromium/WebCodecs path: ASSESSED, NOT BUILT
+// H3 — the Chromium/WebCodecs path: BUILT, in video-transcode-web.ts
 // ---------------------------------------------------------------------------------------------------
-
-export interface WebCodecsAssessment {
-  /** `VideoEncoder` exists in this realm. */
-  encoderPresent: boolean;
-  /** Even where it exists, WebCodecs supplies neither a demuxer nor a muxer. */
-  muxGap: true;
-  /** Why this path is not wired up yet. */
-  note: string;
-}
-
-/** What a Chromium browser can actually offer today, and what it still cannot.
- *
- *  `VideoEncoder` is only half a transcoder. **WebCodecs specifies no container handling at all** —
- *  no demuxer to get coded chunks OUT of the author's .mov/.mp4, and no muxer to put encoded chunks
- *  INTO a playable file. MDN classes `VideoEncoder` as "Limited availability … not Baseline because
- *  it does not work in some of the most widely-used browsers" (fetched 2026-07-27), which is the
- *  platform half; the container gap is the harder half and it does not go away on Chromium.
- *
- *  MEASURED 2026-07-27 by scripts/probe/webcodecs-video.mjs against headless Chromium 148, in a
- *  localhost secure context — two findings, and the second is the one that matters:
- *
- *   1. Video encode is genuinely there: H.264 High, VP9, VP8 and AV1 all produced a real chunk (not
- *      merely `isConfigSupported`, which freecut documents as unreliable — see the probe's header).
- *      No demux or mux surface exists: `MediaContainerDecoder`, `MediaContainerEncoder`, `VideoMuxer`
- *      and `VideoDemuxer` are all absent, and `MediaRecorder` only muxes a LIVE stream in real time.
- *   2. **AAC-LC encode is NOT available** — the only audio codec offered was Opus. So even handed a
- *      muxer, that browser could not produce this seam's `WEB_TIER_H264` target; it could only emit
- *      VP9+Opus/WebM, a DIFFERENT artifact from the desktop sidecar's. Archie-7e6f requires the two
- *      implementations to produce compatible output, so H3 is not merely a dependency decision.
- *
- *  The dependency, if H3 is ever built, is precedented rather than speculative: freecut carries
- *  `mediabunny` 1.50.3 for BOTH halves (demux `new Input({ formats: ALL_FORMATS, source })`,
- *  canvas-render-orchestrator.ts:300; mux `new Output({ format, target })`, client-renderer.ts:267-297)
- *  and carries no other muxer at all — no mp4box.js, no webm-muxer, no mp4-muxer, none hand-rolled.
- *  Adding a runtime dependency is the user's call in this repo, so H3 is DESIGNED AND NOT BUILT.
- *
- *  Note this is a probe of the CURRENT realm and is therefore honest on the studio's own page; it
- *  says nothing about the author's other browsers. */
-export function webCodecsVideoAssessment(): WebCodecsAssessment {
-  const encoderPresent = typeof globalThis !== "undefined" && "VideoEncoder" in globalThis;
-  return {
-    encoderPresent,
-    muxGap: true,
-    note: encoderPresent
-      ? "This browser can encode video frames, but not read or write video FILES — WebCodecs has no " +
-        "demuxer or muxer. Archie would need an extra library for that."
-      : "This browser has no WebCodecs video encoder.",
-  };
-}
+//
+// This file used to end in a `webCodecsVideoAssessment()` reporting an unconditional `muxGap: true`
+// and the note "Archie would need an extra library for that". Both were true when written and are
+// now false: the user approved the dependency (ticket, DECIDED 2026-07-27) and `mediabunny` closes
+// exactly that gap. The function is DELETED rather than left returning a stale claim — a probe that
+// reports a capability the codebase no longer lacks is worse than no probe, because it reads as
+// current.
+//
+// The live browser equivalents are `probeBrowserVideoCaps()` / `pickBrowserTarget()` in
+// `video-transcode-web.ts`, which answer the same question this seam's `probeVideoEncoders()` /
+// `pickTarget()` answer for the desktop sidecar — deliberately the same shape against a different
+// oracle, so both platforms choose between the SAME two declared profiles above and no third artifact
+// shape can enter a published tree. The measured Chromium 148 findings that shaped the choice (H.264
+// encode yes, AAC encode NO) are recorded in that file's header.
