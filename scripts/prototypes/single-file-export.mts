@@ -323,9 +323,36 @@ async function main(): Promise<void> {
     const nonLocal = requests.filter((u) => !u.startsWith("file://") && !u.startsWith("data:") && !u.startsWith("blob:"));
     record(nonLocal.length === 0, "ZERO network requests — nothing outside the document was contacted",
       `${requests.length} request(s) total, ${nonLocal.length} non-local, ${blocked.length} aborted at the route`);
+
+    // (5) SELF-CONTAINED IS STRONGER THAN OFFLINE, and (4) alone cannot tell them apart. A reference
+    //     to a SIBLING FILE ON DISK makes no network request and still means the artifact is not one
+    //     file — it just fails quietly instead of loudly. So every `file://` request other than the
+    //     document itself is a dangling reference, and this is the assertion that names it.
+    //
+    //     It currently FAILS, and the failure is the prototype's one real defect rather than a flaw
+    //     in the check. Measured: `exhibits.json` carries `cover: "screenshots/assets/o1-e1-embed.png"`
+    //     and the bytes ARE in the zip at exactly that path — so this is a REWRITE gap, not missing
+    //     data. `loadPortableGallery` (render-core publish/portable.ts:195) reads `exhibits.json`
+    //     straight through, under the comment "No media, so no blob lifecycle" — but `ExhibitCard.cover`
+    //     IS media. The zip path has no analogue of the TREE path's `rebaseGallery`
+    //     (archie-viewer load.ts:281), so the card's `<img>` resolves against the HOST PAGE.
+    //     That makes it a PRE-EXISTING defect of the zip vector generally — a `.archie.zip` dropped
+    //     into the CDN embed on any page has the same broken cover — and the same class as V11 /
+    //     Archie-84e0, which fixed exactly this for the tree path. Fixing it means editing a surface
+    //     the CDN embed shares, so it is reported rather than patched here.
+    const docUrl = pathToFileURL(file).href;
+    const strayFiles = requests.filter((u) => u.startsWith("file://") && u !== docUrl);
+    record(strayFiles.length === 0, "SELF-CONTAINED — no reference resolves to a sibling file on disk",
+      strayFiles.length === 0 ? "every reference resolved inside the document" : `${strayFiles.length} dangling: ${strayFiles.map((u) => u.replace("file://", "")).join(", ").slice(0, 200)}`);
+    // PRINT THE SUBJECT, not only the verdict. A bare "0 non-local" is consistent with a page that
+    // made no requests because it never booted. Enumerating every URL is what lets a reader see WHAT
+    // the browser asked for — including Chromium's own unprompted `favicon.ico` probe beside the
+    // document, which is a file:// miss (net::ERR_FILE_NOT_FOUND in the console) and is why the
+    // total reads 2 rather than 1 on some runs. It is the browser's, not the artifact's.
     const schemes = [...new Set(requests.map((u) => u.split(":")[0]))];
     console.log(`\nREQUEST FINDING — schemes seen: ${schemes.join(", ") || "none"}. file:// = the document itself; blob:/data: never leave the process.`);
-    for (const u of nonLocal.slice(0, 5)) console.log(`  non-local: ${u.slice(0, 160)}`);
+    for (const u of requests) console.log(`  request: ${u.slice(0, 200)}`);
+    for (const u of nonLocal.slice(0, 5)) console.log(`  NON-LOCAL: ${u.slice(0, 200)}`);
 
     if (consoleErrors.length > 0) {
       console.log(`\nconsole/page errors (${consoleErrors.length}):`);
