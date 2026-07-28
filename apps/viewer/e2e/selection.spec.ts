@@ -115,10 +115,41 @@ test.describe("the selection ring means something (V43)", () => {
     // mark's post-dismissal position instead of asserting the old one.
     //
     // The reference is `#archie-object-frame`: a DOM overlay anchored to the IMAGE that survives
-    // deselection, so the shift it undergoes is the shift the mark undergoes. Measured 2026-07-26 at
-    // 1280x720 — canvas 416 → 557px, frame [35,272,1841,1151] → [35,343,1841,1151]: same width, same
-    // height, y +71. A pure TRANSLATION, no rescale, which is why a single offset is a sound
-    // correction rather than an approximation. The reflow itself is pinned by its own test below.
+    // deselection, so the shift it undergoes is the shift the mark undergoes.
+    //
+    // ARCHIE-06FB, 2026-07-27 — THE TWO PARAGRAPHS THAT USED TO BE HERE WERE BOTH WRONG, and this
+    // test was red-in-suite for months because of the first one. Measured over 6 trials against
+    // `main` @ 10c82ab, at 1280x720, printing the subject rather than a verdict:
+    //
+    //   canvas h  399.2 -> 557.0  at the read instant, in 6 trials of 6 (the DOM resize is DONE)
+    //   frame     1150.7 -> 1243.6 and y 263.7 -> 338.7, but only in 3 trials of 6 AT THE READ
+    //
+    // 1. THE OLD PREMISE "A PURE TRANSLATION, NO RESCALE" IS FALSE. The frame does not merely shift
+    //    by y +71 — it RESCALES by 1.0808x (h 1150.7 -> 1243.6) and its x moves 34.8 -> 2.9. A single
+    //    offset is therefore not a sound correction: applied to this mark it lands 31.9px off in x,
+    //    and survives only because the halo happens to be 747.8px wide. A narrower mark fails it.
+    //    So the correction is now a FRACTION of the frame box, not a delta. Both the halo
+    //    (`selection-halo.ts:176`, imageToViewportRectangle) and the frame (`frame-overlay.ts:165`,
+    //    item.getBounds()) are OSD overlays positioned by the SAME viewport transform every frame,
+    //    so the mark's position expressed as a fraction of the frame is invariant under pan, zoom,
+    //    resize and re-centre alike — exactly right at every instant, rather than right for one
+    //    modelled kind of movement.
+    //
+    // 2. `.note-dock` REACHING COUNT 0 DOES NOT MEAN THE MARK HAS ARRIVED. That was the actual bug.
+    //    The canvas has always finished resizing by then (6/6 above), but OSD re-renders its overlays
+    //    on its own update loop and is late 3 times in 6. A stale read is not itself fatal — when the
+    //    frame is stale the MARK is stale too, so an uncorrected click still hits, which is why this
+    //    passed as often as it did. It is fatal when OSD's re-render lands in the ~1ms window BETWEEN
+    //    the frame read and the mouse click: the correction is then computed for the old layout and
+    //    dispatched into the new one, ~75px away from a mark 62.9px tall. That window widens under
+    //    load, which is why this failed only in the full suite and why two diagnostic round trips
+    //    made it green — they let the re-render finish before the read.
+    //
+    // The wait below is an ARRIVAL, not a settle-timer, per
+    // `.claude/rules/wall-clock-quiet-is-a-load-sensitive-gate.md`: it asks whether OSD has produced
+    // a frame box that reflects the resize, which a stalled rendering frame cannot fake. Do NOT
+    // replace it with "poll until the box stops changing" — that is the quiet-detection this repo has
+    // a rule against, on a defect whose whole character is load sensitivity.
     const note = await aHaloNote(baseURL!);
     await goOffline(page);
     await openPaintedNote(page, note.ulid);
@@ -128,17 +159,30 @@ test.describe("the selection ring means something (V43)", () => {
     // carrying a whole-object note on this object must not silently degrade the assertion.
     await expect(page.locator(FRAME), "no object frame to re-derive the mark's position from").toHaveCount(1);
     const anchorOpen = (await boxOf(page, FRAME))!;
+    // Where the mark sits inside the object, as a fraction. Captured while both boxes are readable
+    // in the same layout, so the pair is self-consistent whatever happens next.
+    const fx = (box.x + box.width / 2 - anchorOpen.x) / anchorOpen.width;
+    const fy = (box.y + box.height / 2 - anchorOpen.y) / anchorOpen.height;
 
     await page.keyboard.press("Escape"); // rung one: dismiss, which now also reflows the canvas
     await expect(page.locator(HALO)).toHaveCount(0);
     await expect(page.locator(".note-pop")).toHaveCount(0);
     await expect(page.locator(".note-dock")).toHaveCount(0); // the row is gone; the canvas has grown
 
+    // ARRIVAL: OSD has re-rendered the frame against the grown canvas. Measured above, the frame's
+    // height always ends up different (1150.7 -> 1243.6) because the canvas always grows by the
+    // dock's height (157.8px), so this is a discrete event and not a tolerance. If a future layout
+    // change ever makes the dock zero-height this poll will time out with the message below — which
+    // is the correct outcome, because the premise this test corrects for would no longer hold.
+    await expect
+      .poll(async () => (await boxOf(page, FRAME))?.height ?? -1, {
+        message: "OSD never re-rendered the object frame after the canvas grew — the mark's position is unknown",
+      })
+      .not.toBe(anchorOpen.height);
+
     const anchorClosed = (await boxOf(page, FRAME))!;
-    const dx = anchorClosed.x - anchorOpen.x;
-    const dy = anchorClosed.y - anchorOpen.y;
-    const cx = box.x + box.width / 2 + dx;
-    const cy = box.y + box.height / 2 + dy;
+    const cx = anchorClosed.x + fx * anchorClosed.width;
+    const cy = anchorClosed.y + fy * anchorClosed.height;
 
     await page.mouse.click(cx, cy);
 
