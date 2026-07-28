@@ -257,3 +257,99 @@ what a cache budget governs. A small number is evidence about JS retention only.
 - This checkout is SHARED and busy. `main` has advanced ONTO this session's commits and another agent added `b240a0e` on top. `.seeds/issues.jsonl` is one file, so `git add .seeds/` sweeps others' ticket writes — one of mine (`5436ddb`) carries `Archie-7e6f`, created by someone else.
 - `sd list` silently truncates at `--limit 50`. Reconcile against `sd stats`.
 - Three tickets picked up today were substantially stale. Read the code before trusting a ticket's premise.
+
+### 2026-07-27 (late) — grilling round: four decisions, nine more closes
+
+**Decisions made by the maintainer.** All recorded on their tickets.
+
+1. **PARKED tickets → close when the revive trigger has not fired.** Closed `ac4c`, `f1e2`, `e2db`,
+   `b60c`, `f366`, `5ae6` (descriptions preserved, triggers intact). **`96e6` UNPARKED** — the user
+   reads `34a2` decision 12 as its trigger; I argued the opposite and was overruled, both readings on
+   the ticket. It is now downstream of `3754` and they must share one column-mapping component.
+2. **`b9c4` folded into `c74e`.** `heaprun.mjs` measures the V8 heap, which excludes decoded image
+   surfaces / OSD textures / GPU memory — the very things a cache budget is about. `c74e`'s acceptance
+   now carries peak memory (CDP `Memory`, not `getHeapUsage`), retention across a walk, and an LRU
+   verdict from OUR numbers, not freecut's.
+3. **`05e4`: token VALUES are stable.** So **`1244` is UNBLOCKED** — the ~50-selector shadow
+   recalibration is safe to do now. **This is the best next task: decided, no unknowns, no pending
+   input.** Six dead legacy colour aliases (`--void`, `--deep-navy`, `--neon-*`, `--soft-lavender`,
+   all zero uses) can go with it.
+4. **No lane.** Take anything; collisions accepted. Check `git log --all --not HEAD` on the target
+   file before starting.
+
+**`ebe7` closed free** — `0c7f` shipped its Option A decision the same day.
+
+**`84af` is BUILT, MEASURED, and stuck on one fork.** WIP refreshed at
+`ledgers/probes/2026-07-27-84af-overflow-menu-WIP.svelte.txt`. Won: chips 790→572px; and the flex
+pairing (`.legend {flex:1 1 auto}` + `.opts {flex:1 1 auto}` → 468px/2 chips; any other pairing gives
+173–306px/1 chip). **Correction: the feedback loop IS real — my earlier "not a feedback loop" note on
+that ticket was wrong.** Stuck because rigid chips make the menu work but overflow at 1024px, while
+shrinkable chips fix 1024px and stop the menu ever firing — two strategies that cannot both be on.
+Below ~1100px `.opts` measures 82px then **0px**; the legend is crushed by the bar, which is the
+allocation question deliberately left closed. Needs a breakpoint decision.
+
+**Count: 42 open, 33 non-map.**
+
+### 2026-07-27 (late) — grilling round: four decisions, nine more closes
+
+**Decisions made by the maintainer.** All recorded on their tickets.
+
+1. **PARKED tickets → close when the revive trigger has not fired.** Closed `ac4c`, `f1e2`, `e2db`,
+   `b60c`, `f366`, `5ae6` (descriptions preserved, triggers intact). **`96e6` UNPARKED** — the user
+   reads `34a2` decision 12 as its trigger; I argued the opposite and was overruled, both readings on
+   the ticket. It is now downstream of `3754` and they must share one column-mapping component.
+2. **`b9c4` folded into `c74e`.** `heaprun.mjs` measures the V8 heap, which excludes decoded image
+   surfaces / OSD textures / GPU memory — the very things a cache budget is about. `c74e`'s acceptance
+   now carries peak memory (CDP `Memory`, not `getHeapUsage`), retention across a walk, and an LRU
+   verdict from OUR numbers, not freecut's.
+3. **`05e4`: token VALUES are stable.** So **`1244` is UNBLOCKED** — the ~50-selector shadow
+   recalibration is safe to do now. **This is the best next task: decided, no unknowns, no pending
+   input.** Six dead legacy colour aliases (`--void`, `--deep-navy`, `--neon-*`, `--soft-lavender`,
+   all zero uses) can go with it.
+4. **No lane.** Take anything; collisions accepted. Check `git log --all --not HEAD` on the target
+   file before starting.
+
+**`ebe7` closed free** — `0c7f` shipped its Option A decision the same day.
+
+**`84af` is BUILT, MEASURED, and stuck on one fork.** WIP refreshed at
+`ledgers/probes/2026-07-27-84af-overflow-menu-WIP.svelte.txt`. Won: chips 790→572px; and the flex
+pairing (`.legend {flex:1 1 auto}` + `.opts {flex:1 1 auto}` → 468px/2 chips; any other pairing gives
+173–306px/1 chip). **Correction: the feedback loop IS real — my earlier "not a feedback loop" note on
+that ticket was wrong.** Stuck because rigid chips make the menu work but overflow at 1024px, while
+shrinkable chips fix 1024px and stop the menu ever firing — two strategies that cannot both be on.
+Below ~1100px `.opts` measures 82px then **0px**; the legend is crushed by the bar, which is the
+allocation question deliberately left closed. Needs a breakpoint decision.
+
+**Count: 42 open, 33 non-map.**
+
+### 2026-07-27 (late) — grilling round: four decisions, nine more closes
+
+**Decisions made by the maintainer.** All recorded on their tickets.
+
+1. **PARKED tickets → close when the revive trigger has not fired.** Closed `ac4c`, `f1e2`, `e2db`,
+   `b60c`, `f366`, `5ae6` (descriptions preserved, triggers intact). **`96e6` UNPARKED** — the user
+   reads `34a2` decision 12 as its trigger; I argued the opposite and was overruled, both readings on
+   the ticket. It is now downstream of `3754` and they must share one column-mapping component.
+2. **`b9c4` folded into `c74e`.** `heaprun.mjs` measures the V8 heap, which excludes decoded image
+   surfaces / OSD textures / GPU memory — the very things a cache budget is about. `c74e`'s acceptance
+   now carries peak memory (CDP `Memory`, not `getHeapUsage`), retention across a walk, and an LRU
+   verdict from OUR numbers, not freecut's.
+3. **`05e4`: token VALUES are stable.** So **`1244` is UNBLOCKED** — the ~50-selector shadow
+   recalibration is safe to do now. **This is the best next task: decided, no unknowns, no pending
+   input.** Six dead legacy colour aliases (`--void`, `--deep-navy`, `--neon-*`, `--soft-lavender`,
+   all zero uses) can go with it.
+4. **No lane.** Take anything; collisions accepted. Check `git log --all --not HEAD` on the target
+   file before starting.
+
+**`ebe7` closed free** — `0c7f` shipped its Option A decision the same day.
+
+**`84af` is BUILT, MEASURED, and stuck on one fork.** WIP refreshed at
+`ledgers/probes/2026-07-27-84af-overflow-menu-WIP.svelte.txt`. Won: chips 790→572px; and the flex
+pairing (`.legend {flex:1 1 auto}` + `.opts {flex:1 1 auto}` → 468px/2 chips; any other pairing gives
+173–306px/1 chip). **Correction: the feedback loop IS real — my earlier "not a feedback loop" note on
+that ticket was wrong.** Stuck because rigid chips make the menu work but overflow at 1024px, while
+shrinkable chips fix 1024px and stop the menu ever firing — two strategies that cannot both be on.
+Below ~1100px `.opts` measures 82px then **0px**; the legend is crushed by the bar, which is the
+allocation question deliberately left closed. Needs a breakpoint decision.
+
+**Count: 42 open, 33 non-map.**
