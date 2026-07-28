@@ -23,7 +23,7 @@ the mechanical check over the knowledge layer itself (see `ledgers/DESIGN-knowle
 - [[shared-worktree-agent-collisions]] — two agents in one checkout turns safe git habits (`add -A`, `commit -a`, `restore --source=HEAD`, remembering your own branch) into destructive ones; pass `isolation: "worktree"` and verify with `git worktree list`.
 - [[post-review-fixes-are-unreviewed]] — a fix written after sign-off is unreviewed by default; red-green it like anything else, and reconcile every reported count against one you actually read (a gate's own reference point must not be writable by the thing it gates).
 - [[a-green-run-is-one-sample]] — a red-green proves an assertion CAN fail; it says nothing about whether it passes reliably — run order-sensitive assertions N times before trusting them.
-- [[prior-art-citation-discipline]] — a citation that reads plausibly and is never re-opened is wrong more often than not; open the file, grep where a thing is USED not just defined, cite to the line.
+- [[prior-art-citation-discipline]] — a citation that reads plausibly and is never re-opened is the recurring failure (7 bad ones caught in one session); open the file, grep where a thing is USED not just defined, cite to the line.
 
 ## Decisions
 - Archie-1f60 — first exercise of the accretion rewrite: svelte-no-typecheck-net cut ~110→61 lines, evidence kept, correction-narrative dropped; the doclint accretion exemption list is empty again.
@@ -43,5 +43,4 @@ the mechanical check over the knowledge layer itself (see `ledgers/DESIGN-knowle
 - `sd list` silently truncates at 50 and prints no notice — a backlog count taken from it undercounts; use `sd stats` to reconcile, or `sd list --limit 500 --json` to enumerate. Two independent people derived a wrong count from the default limit in one session before the tell (`sd stats` disagreeing) was noticed.
 - `.seeds/issues.jsonl` is ONE shared file — `git add .seeds/` is a precise path and still sweeps every other agent's concurrent ticket edit into your commit. Diff the set of ids, not the line count, before committing it.
 - Ledger files recur with embedded NUL bytes (hit `docs/state/CANON.md`, `ledgers/ANTIPATTERN-SWEEP-2026-07-19.md`, this design doc itself, among others) — plain `grep` silently reports zero matches; use `grep -a` or `fff`/`file(1)` to confirm before trusting a no-match result.
-- `hubs/**` cannot yet be a self-referential scope glob for any hub: doclint's scope check (like constraint 1 above) runs over `git ls-files`, and hub files are untracked until a commit adds them — this file's own scope list omits `hubs/**` for that reason; revisit once the ten-hub rollout is committed.
 - The stale-hub closure convention (`ledgers/DESIGN-knowledge-layer-2026-07-27.md` §3, row 1) is live in CI as of 2026-07-27: a diff touching a hub's scope without moving the hub is a red build, not a silent gap.

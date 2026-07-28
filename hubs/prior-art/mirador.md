@@ -32,3 +32,8 @@ Source: `ledgers/PRIORART-chrome-placement-2026-07-26.md`, `docs/adr/0007-readin
 - "Mirador docks its chrome" as one unqualified sentence — the verdict is **SPLIT**: structural
   panels dock, the canvas's own control bar overlays. Citing one half as if it covers the whole
   component tree misrepresents the system.
+- **Correction (verified 2026-07-28): the clone IS present.** A same-day edit to this page claimed
+  "no local clone... not present anywhere under `/mnt/Ghar/2TA/DevStuff/Annotators/Image/`." That is
+  false — `IIIF/mirador/` exists (717 files, its own `.git/`), including `src/components/Window.jsx`,
+  the exact file this page already cites at `:96-131`. Don't trust a "no local clone" claim without
+  running `ls`/`find` yourself — this one didn't.

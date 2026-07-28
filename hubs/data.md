@@ -49,7 +49,7 @@ gate that matters is that suite plus `fs/conformance.ts` run against every backe
 ## Evidence
 - `ledgers/PERF-annotation-spine-2026-07-24.md` — per-edit cost was O(log): 20k records = 17.75ms
   (past the 16ms bar) for ONE edit; `HeadIndex` (incremental projection) makes it O(versions-of-note),
-  130-314x measured. Save's `toZip` was the real freeze (5.7s at 272MB, not Open, which cost 155ms) —
+  23-314x measured (23x at small logs, 130x+ at 2k-20k). Save's `toZip` was the real freeze (5.7s at 272MB, not Open, which cost 155ms) —
   per-entry STORE-for-media fixed it to 0.6s (9x, end-to-end validated, not just micro-benched).
 - `docs/state/CANON.md` — the untrusted-archive seam's canonicalization: zero remaining call sites of
   `ZipFilesystem.fromZip` outside `open.ts`; caps rescaled 2026-07-19 (`SRC_MAX_BYTES` 256MB→1GiB,

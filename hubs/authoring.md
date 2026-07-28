@@ -9,8 +9,9 @@ updated: 2026-07-27
 
 `apps/studio` is the authoring SPA (ADR-0002/Q-2): Library → Exhibit → draw regions → notes/media →
 merge → publish. It depends on `@render/svelte → @render/mount → @render/core` and shares no code
-with `@archie/viewer` beyond the published contract. Entry points: `src/App.svelte` (shell), `src/lib/`
-(LibraryHome, Canvas, AvEditor, CmdK, MergeReview, Publish). The one gate that matters for `.ts` edits
+with `@archie/viewer` beyond the published contract. Entry points: `src/App.svelte` (shell) plus flat top-level components
+(`LibraryHome.svelte`, `AvEditor.svelte`, `CmdK.svelte`, `MergeReview.svelte`, `Publish.svelte`);
+`Canvas.svelte` is lazy-loaded from the shared `@render/svelte` package, not local to studio. The one gate that matters for `.ts` edits
 is `pnpm typecheck` (not svelte-check); for `.svelte` edits it's `pnpm --filter @archie/studio run
 check`. Neither alone is sufficient — see below.
 
@@ -20,7 +21,7 @@ check`. Neither alone is sufficient — see below.
 - [[svelte-no-typecheck-net]] — a typed-but-undestructured prop (`oncancel`) shipped a dead button through svelte-check at 0/0; a gate proves compiled, never that a prop is wired — assert in a browser drive.
 - [[two-typescript-compilers]] — never call bare `tsc`; the workspace `typecheck` script must invoke `typescript-native`'s binary by explicit path, TS 5.9 stays for svelte-check/astro check.
 - [[tauri-csp]] — `worker-src 'self' blob:` is load-bearing for the DZI-tile and bake workers, not just PixiJS; both call sites fall back silently on failure, so a CSP break shows as slow, not broken.
-- [[perf-measure-the-flow]] — tiling/bake worker wins are real per-image (19–38x) but the worker pool is process-wide, not per-call; a per-call pool self-destructs silently at library scale (see Evidence).
+- [[perf-measure-the-flow]] — tiling/bake worker wins are real per-image (19–37x) but the worker pool is process-wide, not per-call; a per-call pool self-destructs silently at library scale (see Evidence).
 - [[tauri-fs-seam]] — desktop fs backend needs atomic temp+rename writes and name containment that plugin-fs doesn't give for free; both are studio write paths (autosave, resident store).
 
 ## Decisions
@@ -29,7 +30,7 @@ check`. Neither alone is sufficient — see below.
 - Archie-a5b1 — partially this territory: the fix landed on the archival-page RENDER side, not studio write-back; RightsEditor's keyed-patch contract (Archie-5a9b) was already correct and untouched / `58f1cc3`
 
 ## Evidence
-- `ledgers/PERF-image-pipeline-2026-07-24.md` — DZI tiling worker pool 37x on one image, but at 70-object library scale the per-call pool asked for ~25GB at once and every pool died; fixed with a process-wide gate (`withPoolGate`), end-to-end win is 1.26–4.7x, not 19x.
+- `ledgers/PERF-image-pipeline-2026-07-24.md` — DZI tiling worker pool 37x on one image, but at 70-object library scale the per-call pool asked for ~25GB at once and every pool died; fixed with a process-wide gate (`withPoolGate`), end-to-end win is 1.9–4.7x, not 37x (a narrower 70-object serial→inline comparison is 1.26x).
 - `ledgers/FIX-a5b1-rights-metadata-2026-07-26.md` — the read-side rights/metadata ladder is 3 surfaces (SPA/embed/archival page) in 3 different states; only the archival page (publish output, not studio) had a real gap.
 - `ledgers/EXPLORE-studio-folder-export-settings-2026-07-26.md` — no settings surface exists today; ~20 loose `localStorage` keys with no UI; storage/diagnostics readout is the one genuinely new thing a panel should add (worker-pool fallback + retained-OPFS bloat are both currently invisible to the author).
 

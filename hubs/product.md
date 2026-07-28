@@ -60,8 +60,9 @@ cycle reverts. Architecture changes additionally require a same-commit ADR or de
 ## Open & hazards
 - DIVERGENCES.md 2–4 (studio-preview, remix-from-viewer, headless-publish) are still **queued** —
   read the divergence's kill criterion before building; don't re-probe a killed assumption
-- `CONTEXT.md`'s locked frames (OSD+Annotorious, Studio/Viewer split, WADM, IIIF,
-  static-publishable, no server) are non-negotiable per GOAL.md §6 — a cycle that relitigates one
-  is out of scope, not a bug fix
+- GOAL.md §6's locked frames (OSD+Annotorious, Studio/Viewer split, WADM, IIIF,
+  static-publishable, no server) are non-negotiable — a cycle that relitigates one is out of
+  scope, not a bug fix. (GOAL.md attributes the list to CONTEXT.md, but CONTEXT.md is a pure
+  glossary and doesn't contain it — §6 itself is the real source.)
 - GOAL.md §4a: after 3 consecutive dry `/goal` cycles the run stops and defers to seeds — a
   report of "no improvement found" is the loop working as designed, not a failure to diagnose
