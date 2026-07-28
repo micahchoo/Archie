@@ -5,56 +5,41 @@ priority: high
 source: hand-written
 ---
 
-# `.svelte` type errors: svelte-check is the gate — run it after edits
+# `.svelte` type errors: svelte-check is the gate — necessary, not sufficient
 
-**Updated 2026-07-17.** This rule originally documented that the repo had NO svelte-check
-(`tsc --noEmit` skips `.svelte`; an undefined identifier became a runtime ReferenceError — proven
-by the 2026-07-06 `orderedIds()` bite in App.svelte). That gap is closed: ISSUES.md Issue 12
-(merged `6bf45ef`) added `svelte-check` to apps/studio (`pnpm --filter @archie/studio run check`,
-tsconfig `tsconfig.svelte-check.json`) and wired it into CI's checks.yml.
+svelte-check is the only gate in this repo that reads `.svelte` script/template code; `tsc`/`vite
+build` can't parse `.svelte` at all (an undefined identifier there is a runtime ReferenceError, not a
+compile error — proven by the 2026-07-06 `orderedIds()` bite in App.svelte). `astro check` doesn't
+cover it either: a planted `const probe: number = notADefinedThing;` in a viewer `.svelte` island
+passed `astro check` at 0 errors / 0 warnings / 0 hints (the identical statement in a `.astro` page
+was caught immediately) — `astro check` diagnoses `.astro` files only, not the islands that hold
+nearly all of the viewer's UI.
 
-**Corrected 2026-07-20 (Archie-b50f): apps/viewer is NOT covered.** This rule used to claim
-`astro check` covers the viewer's `.svelte` islands. Measured, it does not. A deliberate
-`const probe: number = notADefinedThing;` planted in `apps/viewer/src/components/MetadataRun.svelte`
-passed `pnpm exec astro check` at **0 errors / 0 warnings / 0 hints** AND `pnpm exec tsc --noEmit`
-clean; the same statement planted in `src/pages/index.astro` was caught immediately (1 error).
-`astro check` diagnoses `.astro` files only — the viewer's 23 Svelte islands, which hold nearly all
-of its UI, have no type gate in `check`, `typecheck`, or CI.
+Run after every `.svelte` edit:
+- studio: `pnpm --filter @archie/studio run check`
+- viewer: `pnpm --filter @archie/viewer run check:svelte` (`svelte-check --workspace . --fail-on-warnings`)
 
-**Closed 2026-07-20 (same day, later):** apps/viewer now has the gate — `pnpm --filter @archie/viewer
-run check:svelte` (`svelte-check --workspace . --fail-on-warnings`, own devDep), wired into checks.yml's
-svelte-check job beside studio's. The old baseline (1 error, 10 warnings in 5 files) was burned to
-**zero**: the error was a real unguarded indexed access in `Reader.svelte` `stepObject`; the 10
-warnings were 9 intentional initial-capture sites (props named `initial*`, once-per-open builds,
-prev-value trackers) converted to declared intent via `// svelte-ignore state_referenced_locally`
-with a WHY on each, plus one dead CSS selector. `--fail-on-warnings` means the viewer's baseline is
-**0/0 and a new warning fails CI** — same regression discipline as studio. When silencing
-`state_referenced_locally`, never paste a bare ignore: the comment must say why initial-capture is
-the contract at that site (see the five components for the idiom).
+Both baselines are **0 errors / 0 warnings**; a new warning is a regression, not noise. The viewer's
+warnings, before it hit zero, were mostly intentional initial-capture sites (props named `initial*`,
+once-per-open builds, prev-value trackers). When silencing `state_referenced_locally` for one of
+those, never paste a bare `// svelte-ignore` — the comment must say why initial-capture is the
+contract at that specific site.
 
-**Necessary, and NOT sufficient — svelte-check is blind to prop WIRING (added 2026-07-25, Archie-4635).**
-Two real defects passed this gate at 0 errors / 0 warnings in one session:
+## Necessary, not sufficient: svelte-check is blind to prop WIRING
 
-1. **An unbound identifier in a template.** `oncancel` was added to `EmptyHall`'s `$props()` TYPE
-   annotation but omitted from the destructuring pattern beside it. `{#if oncancel}` then referenced a
-   name that didn't exist, so the Cancel button silently never rendered — svelte-check: 1464 files,
-   0/0. It looked fine because the sibling Escape handler (shell code) worked.
-2. **A `{@const}` in an invalid position** (inside `<a>` rather than as the immediate child of a
-   block). This one svelte-check DOES catch — but only when you actually run it; it sat undetected
-   through several edits because the language server's noise in a fresh worktree was being ignored.
+`oncancel` was added to a component's `$props()` TYPE annotation but omitted from the destructuring
+pattern beside it. `{#if oncancel}` then referenced a name that didn't exist, so the Cancel button
+silently never rendered — svelte-check: 1464 files, 0 errors, 0 warnings (Archie-4635, 2026-07-25).
+**A prop can be typed and not bound, and nothing static complains.**
 
-The first is the load-bearing case: **a prop can be typed and not bound, and nothing static complains.**
-The only thing that caught it was driving the running app and asserting the control existed. So:
+After wiring a new prop through a component boundary, drive the running app and assert the control
+renders and the handler fires — a green gate alone doesn't prove it. When a control "should be there"
+and isn't, suspect the destructuring pattern before suspecting reactivity: dump the rendered DOM and
+look for an `{#if}` that emitted a bare `<!---->` while the parent's value was truthy.
 
-- After wiring a NEW prop through a component boundary, assert it in a browser drive — that the control
-  renders, that the handler fires — not just that the gate is green.
-- When a control "should be there" and isn't, suspect the destructuring pattern before suspecting
-  reactivity. Dump the rendered DOM: an `{#if}` that emitted a bare `<!---->` placeholder while the
-  parent's value was truthy is this bug exactly.
+## The general form: a gate proves the code COMPILED, never that the output CARRIES anything
 
-**The general form: a gate proves the code COMPILED, never that the output CARRIES anything
-(added 2026-07-25).** The unbound prop is one instance of a wider pattern that bit four times in two
-sessions, each time with every gate green:
+Four defects shipped with every gate reporting green:
 
 | what was green | what was actually shipping |
 | --- | --- |
@@ -63,27 +48,14 @@ sessions, each time with every gate green:
 | `static-pages.test.ts` passing | `exhibitPageHtml` emits sections when handed them; the published tree had **zero** — nobody regenerated it |
 | render-mount unit suite 159 pass | every embed annotation region was **unclickable** — OSD's injected overlay wrapper ate the click |
 
-Each gate answered a real question correctly, and none of them was the question that mattered. So:
+Each gate answered a real question correctly, and none of them was the question that mattered.
 
 - **After a fix, measure the ARTIFACT, not the exit code.** `grep -c` the built HTML for the string
-  the fix adds; count the elements the list should contain; diff the shipped bundle. "The test
-  passes" and "the output contains it" are different claims, and only the second is the deliverable.
+  the fix adds; count the elements the list should contain; diff the shipped bundle. "The test passes"
+  and "the output contains it" are different claims — only the second is the deliverable.
 - **A generated/committed artifact does not update itself.** If a fix changes a generator, the
   checked-in output is stale until someone regenerates it — and every unit test still passes.
 - **Prefer a gate that drives the real thing.** `recipes/smoke.mjs` and `apps/viewer/e2e` exist
   because hit-testing, prop wiring, and build-time output are all invisible to jsdom and to `tsc`.
-  See [[osd-overlay-wrapper]] for the sharpest case: keyboard Enter and a synthetic `click()` BOTH
+  See [[osd-overlay-wrapper]] for the sharpest case: keyboard Enter and a synthetic `click()` both
   succeed against code where a real mouse click does nothing.
-
-**How to apply now:**
-- After editing any `.svelte` file, run the app's check locally — `pnpm --filter @archie/studio run
-  check` for studio, the svelte-check command above for viewer. `astro check` is still worth running
-  for viewer (it gates the `.astro` pages), but it proves nothing about an island. Never rely on
-  `tsc`/`vite build`, which can't see `.svelte` scripts at all.
-- Treat check errors on changed lines as blocking. The studio baseline is **0 errors / 0
-  warnings** (as of 2026-07-19: the once-standing 11 a11y warnings were cleared by the a11y
-  interaction-pattern merges `9d33b29`/`32ed159` (Archie-f260) and the glyph-label merges
-  `c063f36`/`ca1eda8`) — keep it at zero; a new warning is a regression, not noise.
-- The old manual discipline (grep every renamed identifier's definition AND call sites, both
-  sides of cross-component prop renames) remains the fastest mid-edit pre-check, but the gate is
-  what guarantees it.
