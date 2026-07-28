@@ -2,7 +2,7 @@
 /**
  * @surface {dialog}
  * @composes {Spinner, ZipExportFields, publish-machine, modality helper}
- * @variants {step 1 chooser (choose/zip-options/local/working/done-folder/done-zip/done-download/error), wizard}
+ * @variants {step 1 one-flow chooser (choose/zip-options/working/done-folder/done-object/done-download/done-deposit/error), wizard}
  * @constraint {single-scrim invariant; surface is mounted for app lifetime, machine state survives close; in-surface "← Back" for nested flow}
  */
   // Publish & Share — the ONE merged surface (Archie-1921, decision Archie-7d9b) for every "Library → the
@@ -31,7 +31,16 @@
   // publish that finishes while the surface is closed lands on success/manual-pages/error and is reflected
   // the moment the surface reopens (requirement 3).
   import { viewerShareLink, viewerEmbedSnippet } from "./share-link.js";
-  import type { GitHubTarget, BrokenLink, IncompleteCanvas, MissingAsset, GitHubPublishResult, PublishProgress } from "@render/core";
+  import type { GitHubTarget, BrokenLink, IncompleteCanvas, MissingAsset, GitHubPublishResult, PublishProgress, UnscaledSelector } from "@render/core";
+  // The export surface's option set (Archie-c367): ONE FLOW with the probe's recommendation
+  // pre-selected, and an unavailable destination GREYED WITH ITS REASON rather than silently swapped.
+  // The decision layer is `export-surface.ts` so it can be driven headlessly; this file draws it.
+  import type { ArchiveProbe, DestinationId, QualityTier } from "./archive-probe.js";
+  import { humanBytes } from "./archive-probe.js";
+  import {
+    BUCKET_CORS_NOTE, RCLONE_REMOTE_PLACEHOLDER, TIER_BLURB, TIER_LABEL,
+    chooseInitial, isPublishable, rcloneCommands, rowsFor,
+  } from "./export-surface.js";
   import type { CorruptLogFinding } from "./publish-warnings.js";
   import { blocksPublish, REPO_SIZE_SOFT_LIMIT_BYTES, type PreflightFinding } from "@render/core";
   import type { DeploySession, DeployTarget, DeployProgress } from "./deploy/types.js";
@@ -54,15 +63,19 @@
 
   let {
     open = false,
-    canFolder = false,
-    viewerTree = "apps/viewer/public/published/",
     onclose,
     onfolder,
-    onzip,
     ondownload,
     onenterweb,
     previewtree,
     onexportselfcontained,
+    ondeposit,
+    probe = null,
+    probing = false,
+    onprobe,
+    tier = "archival",
+    ontier,
+    unscaledSelectors = [],
     exhibits = [],
     suggestedZipName = "",
     // --- desktop device-flow seams (App.svelte wires these from deploy-flows in Task 13) ---
@@ -86,12 +99,8 @@
     preflight = [],
   }: {
     open?: boolean;
-    canFolder?: boolean;
-    /** The single fixed path the Viewer serves from — the set target for folder-pick / zip-extract. */
-    viewerTree?: string;
     onclose: () => void;
     onfolder: () => Promise<string | null>;
-    onzip: (opts?: { name?: string; slugs?: string[] }) => Promise<string>;
     /** Save the library as a portable .archie.zip — a copy to keep, re-open, or hand to someone.
      *  `opts` from the working-copy chooser: a custom file name and/or the exhibit subset to include.
      *  Resolves true only if a save actually happened (false = size-guard declined / picker cancelled). */
@@ -106,6 +115,26 @@
     /** Write the self-contained single-file export (publish-flows' exportSelfContained). Optional for
      *  the same reason previewtree is: a host that can't build one offers no card, never a broken one. */
     onexportselfcontained?: () => Promise<{ ok: true } | { ok: false; reason: "too-large"; mb: number }>;
+    /** Write the library as a BagIt deposit bag (publish-flows' `depositBag`, Archie-039e). Optional
+     *  for the same reason the two above are: a host that cannot build one offers no action. */
+    ondeposit?: () => Promise<{ saved: boolean; name?: string; oxum?: string; payloadFiles?: number }>;
+    /** The archive probe (Archie-7280) — what the library weighs, which destinations it fits, and the
+     *  (destination, tier) pair to pre-select. Null until the first probe lands. */
+    probe?: ArchiveProbe | null;
+    /** True while the inventory pass is walking the library's assets. */
+    probing?: boolean;
+    /** Run a probe, reporting inventory progress. Called once per open; absent ⇒ no recommendation and
+     *  the surface says so, which is a stated absence and never a silent swap. */
+    onprobe?: (onProgress: (done: number, total: number) => void) => Promise<ArchiveProbe | null>;
+    /** The quality tier the next publish will run at — read from the engine (`publish-flows.tier`), so
+     *  the pre-checked control cannot disagree with the bytes that ship. */
+    tier?: QualityTier;
+    /** Move the tier. Archie-4b0a made this a publish-time choice and the projection cache is keyed on
+     *  it, so switching re-projects by construction. */
+    ontier?: (t: QualityTier) => void;
+    /** Selectors the last projection could NOT rescale exactly — the residual correctness finding of a
+     *  web-tier publish (Archie-4b0a). Shown when non-empty; empty is the normal case and says nothing. */
+    unscaledSelectors?: UnscaledSelector[];
     /** The exportable (non-template) exhibits, for the working-copy chooser's include list. */
     exhibits?: { slug: string; title: string }[];
     /** The name the export starts from — the bound zip's name, else derived from the library title. */
@@ -193,17 +222,70 @@
   // rule (see this file's header): opening one surface from inside another replaces it, with an
   // in-surface back affordance. A preview overlay on top of the dialog would break the single-scrim
   // invariant.
-  type MenuPhase = "choose" | "zip-options" | "local" | "working" | "done-folder" | "done-zip" | "done-download" | "error" | "wizard" | "preview";
+  //
+  // `local` is GONE (Archie-c367). It was the screen that, on a browser with no folder picker, quietly
+  // turned "to a local folder" into a .zip download — the fallback collision that made two buttons
+  // produce the identical file on Firefox and Safari, and the thing this ticket exists to kill. The
+  // folder row is now greyed with its reason instead, and nothing anywhere swaps a destination.
+  type MenuPhase = "choose" | "zip-options" | "working" | "done-folder" | "done-object" | "done-download" | "done-deposit" | "error" | "wizard" | "preview";
   let menuPhase = $state<MenuPhase>("choose");
   let folderName = $state("");
-  let zipName = $state("");
   let destErrorMsg = $state("");
+  let depositName = $state("");
+  let depositFiles = $state(0);
+
+  // === the one-flow option set (Archie-c367) ===========================================================
+  /** The destination the author has selected. Null until the probe lands and pre-selects one. */
+  let destination = $state<DestinationId | null>(null);
+  /** Inventory progress, so a big library shows a number rather than an indeterminate spinner. */
+  let probeDone = $state(0);
+  let probeTotal = $state(0);
+  /** The author's `remote:bucket` for the rclone hand-off. Placeholder until they type their own. */
+  let rcloneRemote = $state("");
+  let copiedRclone = $state(false);
+
+  const rows = $derived(probe ? rowsFor(probe, tier) : []);
+  const chosenRow = $derived(rows.find((r) => r.id === destination) ?? null);
+  /** Publish is live only on an AVAILABLE destination. A refusal, never a redirect — the greyed row's
+   *  own reason is already on screen saying why. */
+  const canPublishHere = $derived(!!probe && !!destination && isPublishable(probe, destination, tier) && !blocksPublish(preflight));
+  /** Non-empty exactly when NO (destination, tier) pair fits — the honest dead end, shown instead of a
+   *  menu of four things that all refuse. */
+  const deadEnd = $derived(probe !== null && probe.blockers.length > 0);
+
+  /** Pre-select the probe's recommendation — the surface CONFIRMS a decision rather than posing a fresh
+   *  one. Also pushes the tier into the ENGINE: a pre-checked control the engine cannot see would
+   *  publish at a tier the surface never showed. */
+  function applyRecommendation(p: ArchiveProbe): void {
+    const initial = chooseInitial(p);
+    if (!initial) { destination = null; return; }
+    destination = initial.destination;
+    if (initial.tier !== tier) ontier?.(initial.tier);
+  }
+  function selectDestination(id: DestinationId): void {
+    destination = id;
+    destErrorMsg = "";
+  }
+  /** Switching quality re-states every number on every row AND re-projects the next publish (the cache
+   *  is keyed on the tier). A destination that stops fitting at the new tier is DESELECTED rather than
+   *  silently carried — pressing Publish on a row whose own text says it does not fit is the swap in
+   *  miniature. */
+  function selectTier(t: QualityTier): void {
+    ontier?.(t);
+    if (probe && destination && !isPublishable(probe, destination, t)) destination = null;
+  }
+
+  const rcloneLines = $derived(rcloneCommands(folderName || "./my-library", rcloneRemote));
+  function copyRclone() {
+    navigator.clipboard.writeText(rcloneLines.join("\n"))
+      .then(() => { copiedRclone = true; setTimeout(() => (copiedRclone = false), 1500); })
+      .catch(() => { copiedRclone = false; });
+  }
 
   // Feature flag (Task 13): when the build offers the one-motion desktop deploy, "Publish to the web" LEADS
   // the chooser (durability-first, Q-3). Off (a fork with no deploy infra) → today's quieter "To GitHub
   // Pages" card as the escape hatch; both route into the same wizard (the machine self-degrades honestly —
   // web-intro on the web, the token form via "I already use GitHub").
-  const deployToPages = archieConfig.deployToPages === true;
   const CANONICAL_VIEWER = `${archieConfig.canonicalOrigin}${archieConfig.viewerPath}`;
   const CANONICAL_HOST = new URL(CANONICAL_VIEWER).host;
   let zipUrl = $state("");
@@ -262,6 +344,16 @@
       destErrorMsg = ""; zipUrl = ""; copied = false; copiedWc = false; copiedEmbed = false;
       machine.open();
       menuPhase = isResumableState(machine.state) ? "wizard" : "choose";
+      // Probe the library on every open (Archie-c367). Not once-ever: the author edits between opens,
+      // and a recommendation computed against a library three imports ago is worse than none. The pass
+      // is chunked and yields (archive-inventory.ts), so this cannot wedge the surface while it opens.
+      probeDone = 0; probeTotal = 0;
+      void onprobe?.((done, total) => { probeDone = done; probeTotal = total; }).then((p) => { if (p) applyRecommendation(p); }).catch((e) => {
+        // A failed probe degrades to "no recommendation" — every destination then draws as available
+        // and the author picks. Logged rather than swallowed; a surface that silently shows a menu
+        // where it promised a recommendation should say so somewhere.
+        console.error("Publish: archive probe failed", e);
+      });
     });
   });
   // Tick the device-code countdown once a second while it's showing AND the surface is open — no point
@@ -272,19 +364,47 @@
     return () => clearInterval(id);
   });
 
-  async function chooseFolder() {
+  /** The folder sink, shared by the `folder` and `object-storage` destinations — object storage IS a
+   *  folder plus an upload command (Archie-c85f decided Archie never handles credentials), so there is
+   *  one writer and two success panels. `then` says which panel. A cancelled picker returns to the
+   *  chooser rather than to a folder-specific screen; there is no folder-specific screen any more. */
+  async function chooseFolder(then: "done-folder" | "done-object") {
     menuPhase = "working"; destErrorMsg = "";
     try {
       const name = await onfolder();
-      if (name === null) { menuPhase = "local"; return; } // cancelled the picker
+      if (name === null) { menuPhase = "choose"; return; } // cancelled the picker
       folderName = name;
-      menuPhase = "done-folder";
+      menuPhase = then;
     } catch (e) { destErrorMsg = e instanceof Error ? e.message : "Couldn't write to the folder."; menuPhase = "error"; }
   }
-  async function saveZip() {
-    menuPhase = "working"; destErrorMsg = "";
-    try { zipName = await onzip(exportOpts(exportBase, exportSel, exhibits)); menuPhase = "done-zip"; }
-    catch (e) { destErrorMsg = e instanceof Error ? e.message : "Couldn't download the zip."; menuPhase = "error"; }
+  /** The single Publish button's dispatch. Every branch here goes to the destination the author
+   *  SELECTED — there is deliberately no `else` that falls back to another one. An unavailable
+   *  destination cannot be selected (its radio is disabled and `canPublishHere` is false), so this is
+   *  never reached with one. */
+  function publishChosen() {
+    if (!canPublishHere || !destination) return;
+    if (destination === "github-pages") { void enterWizard(); return; }
+    if (destination === "folder") { void chooseFolder("done-folder"); return; }
+    if (destination === "object-storage") { void chooseFolder("done-object"); return; }
+    openZipOptions();
+  }
+  /** "Deposit a copy" (Archie-039e) — an additional export action, not a destination row, exactly as
+   *  this ticket's charting placed it. It answers a different question ("give me something a repository
+   *  will accept") rather than a different where. */
+  let depositing = $state(false);
+  async function deposit() {
+    if (!ondeposit) return;
+    depositing = true; destErrorMsg = "";
+    try {
+      const r = await ondeposit();
+      if (!r.saved) return; // guard declined / picker cancelled — say nothing, they already know
+      depositName = r.name ?? "";
+      depositFiles = r.payloadFiles ?? 0;
+      menuPhase = "done-deposit";
+    } catch (e) {
+      destErrorMsg = e instanceof Error ? e.message : "Couldn't build the deposit copy.";
+      menuPhase = "error";
+    } finally { depositing = false; }
   }
   /** Step 1 → the GitHub wizard: run the size-guard + cache the projection, then enter — the guard's own
    *  confirm dialog is the feedback, so declining it just leaves the author on the chooser. */
@@ -327,10 +447,6 @@
     armExportFields();
     menuPhase = "zip-options";
   }
-  function openLocal() {
-    if (!canFolder) armExportFields(); // the fallback downloads a zip — same fields, local flavor
-    menuPhase = "local";
-  }
   /** Save via the OS picker. Stay on the panel when nothing was saved (guard declined / picker
    *  cancelled) — done-download must never claim a save that didn't happen. */
   async function saveWorkingCopy() {
@@ -368,6 +484,18 @@
   const updateHost = $derived(machine.updateUrl.replace(/^https?:\/\//, "").replace(/\/$/, ""));
   let showDetails = $state(false);
   let showDomain = $state(false); // success: the collapsed "Use your own domain" guidance (copy only)
+  // The embed snippet for the LIVE SITE (Archie-c367 decided 2026-07-27: it moves onto the success
+  // panel, because it is only meaningful once a URL exists). A published tree is self-contained and
+  // served from its own origin, so the iframe points at the site itself — no `?src=` hop through the
+  // canonical viewer, which is what the done-download panel's snippet is for (a zip has no address).
+  let showEmbed = $state(false);
+  let copiedSiteEmbed = $state(false);
+  const sitEmbedSnippet = $derived(viewerEmbedSnippet(machine.result?.url ?? ""));
+  function copySiteEmbed() {
+    navigator.clipboard.writeText(sitEmbedSnippet)
+      .then(() => { copiedSiteEmbed = true; setTimeout(() => (copiedSiteEmbed = false), 1500); })
+      .catch(() => { copiedSiteEmbed = false; });
+  }
   // GitHub's own custom-domain walkthrough — we point at it rather than automating CNAME (PRFAQ item 5).
   const CUSTOM_DOMAIN_DOCS = "https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/about-custom-domains-and-github-pages";
 
@@ -474,51 +602,123 @@
       </div>
 
     {:else if menuPhase === "choose"}
+      <!-- ONE FLOW (Archie-c367). Four destinations, always all four, in a fixed order; the probe's
+           recommendation arrives pre-selected; an unavailable one is greyed and carries its own reason.
+           The old three-cards chooser is gone with its `local` sub-screen — three buttons that produced
+           the same artifact read as three features, which is what caused the confusion this closes. -->
       <header>
         <p class="eyebrow">Publish</p>
-        <h2>Where should this go?</h2>
-        <p class="lede">Archie builds the same finished site each way — pick where to put it.</p>
+        <h2>Publish your library</h2>
+        {#if probe}
+          <p class="lede">{probe.folder.mediaFiles.toLocaleString()} {probe.folder.mediaFiles === 1 ? "item" : "items"} across {exhibits.length} {exhibits.length === 1 ? "exhibit" : "exhibits"}. Archie builds the same finished site whichever you pick — the differences are below.</p>
+        {:else}
+          <p class="lede">Archie builds the same finished site whichever you pick.</p>
+        {/if}
       </header>
-      <div class="choices">
-        {#if deployToPages}
-          <!-- The leading, durability-first path (Q-3). Enters the GitHub wizard below, which handles
-               desktop sign-in + one-button deploy, or degrades honestly on the web. -->
-          <button class="choice lead" onclick={enterWizard}>
-            <span class="c-eyebrow">Recommended</span>
-            <span class="c-title">Publish to the web</span>
-            <span class="c-desc">A free, permanent website that's yours — Archie builds it and puts it online in one motion. Best when you want a real address to share or cite.</span>
-          </button>
+
+      {#if !probe && probing}
+        <p class="note probe-status" role="status">
+          <Spinner size={16} />
+          Sizing your library{#if probeTotal > 0} — {probeDone.toLocaleString()} of {probeTotal.toLocaleString()} items{/if}…
+        </p>
+      {:else if deadEnd && probe}
+        <!-- Nothing fits anywhere. A menu of four refusals is worse than one honest sentence, so the
+             probe's own blockers replace the list. Every one of them names a number. -->
+        <div class="broken blocker" role="alert">
+          <p class="b-head">There's no route out for a library this size yet</p>
+          {#each probe.blockers as b}<p class="b-sub">{b}</p>{/each}
+        </div>
+      {:else if probe}
+        <fieldset class="dests">
+          <legend>{probe.recommendation ? "Recommended for your archive" : "Where should this go?"}</legend>
+          {#if probe.recommendation}<p class="rec-why">{probe.recommendation.why}</p>{/if}
+          {#each rows as row (row.id)}
+            <!-- The greyed row is a real, visible row with its real reason. It is NEVER dropped and
+                 NEVER replaced by another destination — see export-surface.ts's header for the
+                 defect that decided it. -->
+            <label class="dest" class:unavailable={!row.available} class:chosen={destination === row.id}
+              data-destination={row.id} data-available={row.available}>
+              <input type="radio" name="destination" value={row.id} checked={destination === row.id}
+                disabled={!row.available} onchange={() => selectDestination(row.id)} />
+              <span class="d-main">
+                <span class="d-title">
+                  {row.label}
+                  {#if row.recommended}<span class="d-rec">Recommended</span>{/if}
+                </span>
+                <span class="d-reason" class:refusal={!row.available}>{row.reason}</span>
+                <span class="d-blurb">{row.blurb}</span>
+                {#if row.available}<span class="d-facts">{row.facts}</span>{/if}
+              </span>
+            </label>
+          {/each}
+        </fieldset>
+
+        <fieldset class="tiers">
+          <legend>Quality</legend>
+          {#each ["archival", "web"] as const as t}
+            <label class="tier" class:chosen={tier === t}>
+              <input type="radio" name="quality" value={t} checked={tier === t} onchange={() => selectTier(t)} />
+              <span class="d-main">
+                <span class="d-title">{TIER_LABEL[t]}{#if probe}<span class="t-size">{humanBytes(probe.tiers[t].publishedBytes)}</span>{/if}</span>
+                <span class="d-blurb">{TIER_BLURB[t]}</span>
+              </span>
+            </label>
+          {/each}
+        </fieldset>
+
+        {#if unscaledSelectors.length > 0}
+          <!-- The web tier's residual correctness finding (Archie-4b0a): a selector the scaler refused
+               to move rather than mangle. Rare, specific, and the author can act on it — so it is said
+               here, before they publish, rather than only in the console. -->
+          <div class="broken" role="status">
+            <p class="b-head">{unscaledSelectors.length} {unscaledSelectors.length === 1 ? "note lands" : "notes land"} in the wrong place at Web quality</p>
+            <p class="b-sub">These were drawn with a shape Archie can't resize exactly, so on a resized image they'll sit off their subject. Publishing at Archival quality places them correctly.</p>
+            <ul>
+              {#each unscaledSelectors.slice(0, 5) as u}<li><code>/{u.exhibitSlug}</code> · {u.reason}</li>{/each}
+              {#if unscaledSelectors.length > 5}<li class="more">…and {unscaledSelectors.length - 5} more</li>{/if}
+            </ul>
+          </div>
         {/if}
-        <button class="choice" onclick={openLocal}>
-          <span class="c-title">Locally</span>
-          <span class="c-desc">Write the site to the Viewer's folder and preview it. No account.</span>
-        </button>
-        <button class="choice" onclick={openZipOptions}>
-          <span class="c-title">Share a working copy</span>
-          <span class="c-desc">A copy of your library a colleague can open, annotate, and send back to you — or keep as your own backup, or share as a link. One <code>.archie.zip</code> file. Good for a work in progress, not a permanent citation.</span>
-        </button>
-        {#if onexportselfcontained}
-          <button class="choice" onclick={exportSelfContained}>
-            <span class="c-title">A deposit copy</span>
-            <span class="c-desc">One <code>.html</code> file holding the library <em>and</em> a reader. Opens by double-click — no server, no account, no internet — and will still open in ten years. Shows your objects, images, notes and narrative readings. <strong>Search isn't in it</strong> — that needs the full Viewer. Best for a USB stick, an attachment, or an archival deposit.</span>
-          </button>
-        {/if}
-        {#if !deployToPages}
-          <!-- Flag off (no deploy infra): the quieter escape hatch — same wizard. -->
-          <button class="choice" onclick={enterWizard}>
-            <span class="c-title">To GitHub Pages</span>
-            <span class="c-desc">Publish to the web on a GitHub Pages branch — standalone, no server.</span>
-          </button>
-        {/if}
-      </div>
+      {:else}
+        <!-- No probe seam at all (a host that did not wire one). A stated absence, not a fake menu. -->
+        <p class="note">Archie couldn't size your library, so there's no recommendation this time. Pick a destination and it will tell you if it doesn't fit.</p>
+        <div class="choices">
+          <button class="choice" onclick={enterWizard}><span class="c-title">GitHub Pages</span></button>
+          <button class="choice" onclick={openZipOptions}><span class="c-title">One .zip file</span></button>
+        </div>
+      {/if}
+
       <div class="actions">
         {#if previewtree}
-          <!-- Not a destination, so not a `.choice` — a secondary action beside Cancel. Reads as
-               "see it before you decide where it goes." -->
+          <!-- Not a destination — a secondary action. Reads as "see it before you decide." -->
           <button type="button" class="ghost" onclick={() => (menuPhase = "preview")}>Preview as reader</button>
         {/if}
         <button type="button" class="ghost" onclick={close}>Cancel</button>
+        {#if probe && !deadEnd}
+          <button class="primary" disabled={!canPublishHere} onclick={publishChosen}>Publish</button>
+        {/if}
       </div>
+
+      {#if probe && !deadEnd && (ondeposit || onexportselfcontained)}
+        <!-- ADDITIONAL EXPORT ACTIONS, deliberately not destination rows (this ticket's charting).
+             They answer "give me a file of a particular shape", not "where does the site go" — folding
+             them into the radio list would put four wheres and two whats in one column. -->
+        <div class="extras">
+          <p class="x-head">Also, whenever you need one:</p>
+          {#if ondeposit}
+            <button type="button" class="x-btn" disabled={depositing} onclick={deposit}>
+              <span class="x-title">{depositing ? "Building the deposit copy…" : "Deposit a copy"}</span>
+              <span class="x-desc">Every published file with a checksum beside it, in the BagIt layout repositories ask for. What you hand an archive when they need to prove nothing changed.</span>
+            </button>
+          {/if}
+          {#if onexportselfcontained}
+            <button type="button" class="x-btn" onclick={exportSelfContained}>
+              <span class="x-title">One <code>.html</code> file</span>
+              <span class="x-desc">The library <em>and</em> a reader in a single file that opens by double-click — no server, no account, no internet. Search isn't in it. Best for a USB stick or an attachment.</span>
+            </button>
+          {/if}
+        </div>
+      {/if}
 
     {:else if menuPhase === "preview" && previewtree}
       <ViewerPreview {previewtree} onback={backToChooser} />
@@ -592,30 +792,69 @@
     {:else if menuPhase === "done-folder"}
       <header>
         <p class="eyebrow">Publish</p>
-        <h2>Publish locally</h2>
-        <p class="lede">Put the site in the one folder the Viewer reads, then open it — no GitHub.</p>
+        <h2>Your site is in <code>{folderName}</code>.</h2>
+        <p class="lede">A finished website — every page, image and note, no server needed to build it.</p>
       </header>
       <div class="result">
-        <p class="ok">Published locally.</p>
-        <p class="line">Wrote the site into <code>{folderName}</code>. Start the Viewer and open it:</p>
+        <p class="ok">Written.</p>
+        <p class="line">Upload the whole folder to any web host and it works as it is. Re-publish here any time — Archie replaces what's there and clears out what you deleted.</p>
+        <p class="line">To look at it first, serve the folder locally:</p>
         <pre class="cmd"><code>pnpm --filter @archie/viewer dev</code></pre>
-        <p class="line muted">Then visit <code>http://localhost:4321</code>. Re-publish any time — it safely replaces what's there.</p>
+        <p class="line muted">Then open <code>http://localhost:4321</code>.</p>
+        {#if missingAssets.length > 0}
+          <div class="broken" role="status">
+            <p class="b-head">{missingAssets.length} {missingAssets.length === 1 ? "image isn't" : "images aren't"} in the folder</p>
+            <p class="b-sub">Their files weren't in this library's storage, so those images will be broken for anyone reading the site. Re-add the originals, then publish again.</p>
+          </div>
+        {/if}
         <div class="actions"><button class="primary" onclick={close}>Done</button></div>
       </div>
 
-    {:else if menuPhase === "done-zip"}
+    {:else if menuPhase === "done-object"}
+      <!-- OBJECT STORAGE (Archie-c85f): Archie writes the folder and hands over the command. It never
+           holds a credential on any platform — no S3 client, no keyring, not even on desktop where
+           Tauri's native HTTP would have made it easy. That was decided, and this panel is the whole
+           of what Archie does about it. -->
       <header>
         <p class="eyebrow">Publish</p>
-        <h2>Publish locally</h2>
-        <p class="lede">Put the site in the one folder the Viewer reads, then open it — no GitHub.</p>
+        <h2>Your site is ready to upload.</h2>
+        <p class="lede">Archie wrote it into <code>{folderName}</code>. Two commands send it to your bucket — Archie never sees your keys.</p>
       </header>
       <div class="result">
-        <p class="ok">Downloaded <code>{zipName}</code>.</p>
-        <p class="line">Unzip its contents into the one folder the Viewer reads, replacing what's there:</p>
-        <pre class="cmd"><code>{viewerTree}</code></pre>
-        <p class="line">Then start the Viewer:</p>
-        <pre class="cmd"><code>pnpm --filter @archie/viewer dev</code></pre>
-        <p class="line muted">Open <code>http://localhost:4321</code>.</p>
+        <label class="field remote-field">Your bucket
+          <input class="filter" bind:value={rcloneRemote} placeholder={RCLONE_REMOTE_PLACEHOLDER}
+            autocomplete="off" spellcheck="false" aria-label="Your rclone remote and bucket" />
+        </label>
+        <p class="line">That's the remote name you set up in rclone, then a colon, then your bucket.</p>
+        <!-- TWO passes, and the order is the point: `archie.json` is the marker that says the tree is
+             complete, so it must land LAST. A plain `rclone sync` transfers concurrently with no
+             ordering guarantee and was measured putting the marker FIRST — a reader mid-sync then sees
+             a valid-looking marker over half a library. -->
+        <pre class="cmd"><code>{rcloneLines[0]}
+{rcloneLines[1]}</code></pre>
+        <p class="line muted">The second line is not optional. It sends the one small file that tells a reader the library is complete, and it has to arrive after everything else.</p>
+        {#if canCopy}
+          <div class="actions share-actions">
+            <button type="button" class="ghost" onclick={copyRclone}>{copiedRclone ? "Copied" : "Copy both commands"}</button>
+          </div>
+        {/if}
+        <p class="line"><strong>One setting on the bucket.</strong> {BUCKET_CORS_NOTE}</p>
+        <p class="line muted">Changed something later? Publish into the same folder and run the two commands again — rclone works out what actually moved and sends only that.</p>
+        <p class="line muted">New to rclone? It's a free command-line tool for copying files to storage buckets. Its own docs walk through connecting a bucket once, after which these two lines are all you ever run.</p>
+        <div class="actions"><button class="primary" onclick={close}>Done</button></div>
+      </div>
+
+    {:else if menuPhase === "done-deposit"}
+      <header>
+        <p class="eyebrow">Publish</p>
+        <h2>Your deposit copy is saved.</h2>
+        <p class="lede">The whole library, with a checksum recorded for every file in it.</p>
+      </header>
+      <div class="result">
+        <p class="ok">Saved {depositName || "the deposit copy"}.</p>
+        {#if depositFiles > 0}<p class="line">{depositFiles.toLocaleString()} files, each with its own SHA-256.</p>{/if}
+        <p class="line">It's a <strong>BagIt bag</strong> — the layout most repositories ask for. Whoever receives it can check every file against its checksum and prove nothing changed on the way, years later.</p>
+        <p class="line muted">Your files are under <code>data/</code>. <code>manifest-sha256.txt</code> holds the checksums and <code>bag-info.txt</code> says where it came from.</p>
         <div class="actions"><button class="primary" onclick={close}>Done</button></div>
       </div>
 
@@ -815,7 +1054,26 @@
             <button type="button" class="ghost" onclick={() => machine.copyLink()}>Copy link</button>
           </div>
           <p class="note">GitHub may take a minute to finish the first build — if it's blank, refresh in a moment.</p>
-          <p class="note">Made changes? Just hit <strong>Publish to the web</strong> again — it updates the same site.</p>
+          <p class="note">Made changes? Just hit <strong>Publish</strong> again — it updates the same site.</p>
+          <!-- THE EMBED SNIPPET LIVES HERE (Archie-c367, decided 2026-07-27), and only here: it is
+               meaningless until a URL exists, so the chooser was the wrong home for it. The site's own
+               address is what goes in the iframe, so this is the first moment it can be written. -->
+          {#if machine.result?.url}
+            <div class="details">
+              <button type="button" class="text-link linkish" onclick={() => (showEmbed = !showEmbed)}>{showEmbed ? "▾" : "▸"} Put an exhibit inside another page</button>
+              {#if showEmbed}
+                <p class="note">Paste this into a blog post, a course page, or your own site — readers get the exhibit without leaving the page.</p>
+                <pre class="cmd"><code>{sitEmbedSnippet}</code></pre>
+                {#if canCopy}
+                  <div class="actions share-actions">
+                    <button type="button" class="ghost" onclick={copySiteEmbed}>{copiedSiteEmbed ? "Copied" : "Copy embed code"}</button>
+                  </div>
+                {:else}
+                  <p class="note muted">Select the code above to copy it.</p>
+                {/if}
+              {/if}
+            </div>
+          {/if}
           {#if machine.persistFailed}
             <p class="note muted">We couldn't keep you signed in on this computer — you'll sign in again next time.</p>
           {/if}
@@ -1046,31 +1304,22 @@
       {/if}
 
     {:else}
-      <!-- menuPhase: local | working | error -->
+      <!-- menuPhase: working | error. The old `local` screen — the one that quietly downloaded a .zip
+           when the browser could not pick a folder — is gone; the folder row states that refusal on the
+           chooser instead, where the author can still see the destinations they DO have. -->
       <header>
         <p class="eyebrow">Publish</p>
-        <h2>Publish locally</h2>
-        <p class="lede">Put the site in the one folder the Viewer reads, then open it — no GitHub.</p>
+        <h2>{menuPhase === "working" ? "Building your site…" : "That didn't work."}</h2>
       </header>
       <div class="body">
-        {#if canFolder}
-          <p class="line">Choose the folder the Viewer reads from:</p>
-          <pre class="cmd"><code>{viewerTree}</code></pre>
-          <p class="line muted">Pick it once, then re-publish any time — Archie clears out old files for you.</p>
+        {#if menuPhase === "working"}
+          <p class="note" role="status"><Spinner size={16} /> Writing the files. You can leave this open.</p>
         {:else}
-          <p class="line">Your browser can't pick a folder, so this downloads a <code>.archie.zip</code> instead. You'll then unzip it into the folder the Viewer reads from — instructions next.</p>
-          <ZipExportFields {exhibits} bind:name={exportBase} bind:selected={exportSel}
-            subsetWarning="The local site will hold only the exhibits you pick — anything unzipped there from an earlier full copy stays behind." />
+          <p class="err">⚠ {destErrorMsg}</p>
+          <div class="actions">
+            <button type="button" class="ghost" onclick={() => (menuPhase = "choose")}>← Back</button>
+          </div>
         {/if}
-        {#if menuPhase === "error"}<p class="err">⚠ {destErrorMsg}</p>{/if}
-        <div class="actions">
-          <button type="button" class="ghost" onclick={() => (menuPhase = "choose")}>← Back</button>
-          {#if canFolder}
-            <button class="primary" disabled={menuPhase === "working"} onclick={chooseFolder}>{menuPhase === "working" ? "Writing…" : "Choose folder…"}</button>
-          {:else}
-            <button class="primary" disabled={menuPhase === "working" || !canExportNow} onclick={saveZip}>{menuPhase === "working" ? "Downloading…" : "Download .archie.zip"}</button>
-          {/if}
-        </div>
       </div>
     {/if}
   </div>
@@ -1110,6 +1359,51 @@
     border: 1px solid var(--border-paper); border-radius: var(--radius-lg);
     background: var(--surface-paper-hover);
   }
+  /* The one-flow option set (Archie-c367): four destination rows, always all four. */
+  .dests, .tiers {
+    display: flex; flex-direction: column; gap: var(--space-2);
+    border: none; margin: 0 0 var(--space-4); padding: 0; min-width: 0;
+  }
+  .dests legend, .tiers legend {
+    font-family: var(--font-ui); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-paper-muted); padding: 0; margin-bottom: var(--space-2);
+  }
+  .rec-why { font-family: var(--font-body); font-size: 0.875rem; line-height: 1.55; color: var(--ink-paper-secondary); margin: 0 0 var(--space-2); }
+  .dest, .tier {
+    display: flex; gap: var(--space-3); align-items: flex-start; cursor: pointer;
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-paper-card); border: 1px solid transparent; border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lift-low);
+    transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  }
+  .dest:hover:not(.unavailable), .tier:hover { background: var(--surface-paper-hover); }
+  .dest.chosen, .tier.chosen { border-color: var(--accent-2); box-shadow: var(--shadow-lift-mid); }
+  /* GREYED WITH ITS REASON. Dimmed and not selectable — but still drawn, still legible, and its
+     reason line keeps full contrast, because the reason is the entire point of leaving it on screen. */
+  .dest.unavailable { cursor: not-allowed; opacity: 0.62; box-shadow: none; background: transparent; }
+  .dest input, .tier input { margin-top: 0.28rem; flex: none; accent-color: var(--accent-2); }
+  .d-main { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+  .d-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 400; color: var(--ink-paper-primary); display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+  .d-rec { font-family: var(--font-ui); font-size: 0.62rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-2); }
+  .t-size { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-paper-muted); }
+  .d-reason { font-family: var(--font-body); font-size: 0.9rem; line-height: 1.5; color: var(--ink-paper-primary); }
+  /* The refusal keeps FULL opacity against the dimmed row — the author must be able to read why. */
+  .d-reason.refusal { color: var(--semantic-error); opacity: 1; }
+  .d-blurb { font-family: var(--font-body); font-size: 0.82rem; line-height: 1.5; color: var(--ink-paper-secondary); }
+  .d-facts { font-family: var(--font-mono); font-size: 0.76rem; color: var(--ink-paper-muted); }
+  .probe-status { display: flex; align-items: center; gap: var(--space-2); }
+  .remote-field { text-transform: none; letter-spacing: normal; font-size: 0.8rem; }
+
+  /* The additional export actions — deliberately quieter than a destination row, because they answer a
+     different question ("a file of this shape") rather than a different where. */
+  .extras { margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--border-paper); display: flex; flex-direction: column; gap: var(--space-2); }
+  .x-head { font-family: var(--font-ui); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); margin: 0; }
+  .x-btn { display: flex; flex-direction: column; gap: var(--space-1); text-align: left; cursor: pointer; padding: var(--space-3) var(--space-4); background: transparent; border: 1px solid var(--border-paper); border-radius: var(--radius-md); }
+  .x-btn:hover:not(:disabled) { background: var(--surface-paper-hover); }
+  .x-btn:disabled { cursor: progress; opacity: 0.7; }
+  .x-title { font-family: var(--font-display); font-size: 1rem; color: var(--ink-paper-primary); }
+  .x-desc { font-family: var(--font-body); font-size: 0.82rem; line-height: 1.5; color: var(--ink-paper-secondary); }
+
   .choices { display: flex; flex-direction: column; gap: var(--space-3); }
   .choice {
     display: flex; flex-direction: column; gap: var(--space-1); text-align: left; cursor: pointer;

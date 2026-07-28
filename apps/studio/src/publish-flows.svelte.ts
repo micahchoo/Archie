@@ -7,10 +7,13 @@
 // library-meta.svelte.ts): the $state container is never reassigned, getters stay live.
 import {
   MemoryFilesystem, ZipFilesystem, publishLibrary, collectFiles, publishToGitHub, pagesUrlFor, renderMarkdown, readStructureReport, asExhibitId,
-  preflightTree, rightsCoverageFinding, blocksPublish, type PreflightFinding,
+  preflightTree, rightsCoverageFinding, blocksPublish, writeBag, type PreflightFinding,
   type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type MissingAsset, type GitHubTarget, type PublishProgress, type IncrementalScope, type SectionLog, type PublishResult,
   type SelectorScale, type UnscaledSelector,
 } from "@render/core";
+import { probeArchive, type ArchiveProbe } from "./archive-probe.js";
+import { libraryInventory } from "./archive-inventory.js";
+import { folderSinkSupported } from "./folder-backend.js";
 import { supportsStreamingZipSave, openStreamingZipSave, saveZipToDisk, downloadHtml } from "./binding.js";
 import type { CorruptLogFinding } from "./publish-warnings.js";
 import { pickFolderBinding } from "./folder-backend.js";
@@ -114,7 +117,7 @@ export function createPublishFlows(deps: PublishDeps) {
   // ONE open flag (Archie-1921 — PublishDialog + the Publish wizard merged into one scrimmed surface):
   // the old `dialogOpen`/`publishOpen` pair (one per dialog, toggled in lockstep by the chooser's
   // "Publish to the web" card) is gone now that there's only one surface to show or hide.
-  const s = $state<{ open: boolean; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; corruptLogs: CorruptLogFinding[]; missingAssets: MissingAsset[]; preflight: PreflightFinding[]; tierRescaled: TierRescale[]; unscaledSelectors: UnscaledSelector[]; tierFallbacks: number }>({
+  const s = $state<{ open: boolean; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; corruptLogs: CorruptLogFinding[]; missingAssets: MissingAsset[]; preflight: PreflightFinding[]; tierRescaled: TierRescale[]; unscaledSelectors: UnscaledSelector[]; tierFallbacks: number; tier: QualityTier | null; probe: ArchiveProbe | null; probing: boolean }>({
     open: false, // the merged Publish & Share surface
     brokenLinks: [], // intra-Library links that degrade to plain text on publish (dialog advisory)
     incompleteCanvases: [], // Image objects publishing with no width/height (IIIF Pres 3 §5.3; dialog advisory)
@@ -135,6 +138,15 @@ export function createPublishFlows(deps: PublishDeps) {
     tierRescaled: [],
     unscaledSelectors: [],
     tierFallbacks: 0,
+    // The author's quality choice on the publish surface (Archie-c367). `null` = they have not chosen,
+    // so `tierFor` falls through to the host dep / DEFAULT_TIER. Set by `setTier` when the surface's
+    // control moves, INCLUDING when it is pre-set from the probe's recommendation — a pre-selected
+    // control that the engine cannot see would publish at a tier the surface never showed.
+    tier: null,
+    // The last archive probe (Archie-7280), and whether one is running. The surface reads both; a
+    // second `probe()` while one is in flight is refused rather than queued (see `probe`).
+    probe: null,
+    probing: false,
   });
   let cachedSiteFs: MemoryFilesystem | null = null; // the no-originals projection from openPublish, reused by publish
   // The base `cachedSiteFs` was projected AT (Archie-19c5 / Archie-3504). The cache is only sound for
@@ -302,8 +314,14 @@ export function createPublishFlows(deps: PublishDeps) {
    *  first-deploy case (the URL is known from owner+repo before we stage). */
   const baseFor = (override?: string) => override ?? deps.publishBase();
   /** The same, for the quality tier — one resolution point so no sink can publish at a tier the
-   *  cache key was not computed from. Absent dep = `DEFAULT_TIER` ("archival"). */
-  const tierFor = (override?: QualityTier) => override ?? deps.tier?.() ?? DEFAULT_TIER;
+   *  cache key was not computed from.
+   *
+   *  THREE sources, narrowest first: an explicit per-call override; the author's choice on the publish
+   *  surface (`setTier`, Archie-c367 — the tier control the engine deliberately shipped no opinion
+   *  about); the host's dep. Absent all three = `DEFAULT_TIER` ("archival"), i.e. today's behaviour.
+   *  No cache invalidation is needed on a change: `collectSiteFiles` already compares `cachedSiteTier`
+   *  against this, so a tier switch re-projects by construction (Archie-4b0a). */
+  const tierFor = (override?: QualityTier) => override ?? s.tier ?? deps.tier?.() ?? DEFAULT_TIER;
 
   /** The browser-side WebP re-encode the web tier needs, reusing the ingest bake's worker pool rather
    *  than opening a second one — `bakeDisplayMasterAsync` already owns a process-wide pool with a
@@ -533,6 +551,75 @@ export function createPublishFlows(deps: PublishDeps) {
     /** The tier the next projection will run at — one read for the surface, so it can never disagree
      *  with what the engine resolves. */
     get tier(): QualityTier { return tierFor(); },
+    /** The author's quality choice (Archie-c367). Every sink resolves through `tierFor`, so this one
+     *  call re-tiers the folder, zip, deposit and GitHub paths alike; the projection cache is keyed on
+     *  the tier, so the next publish re-projects rather than shipping the old bytes. */
+    setTier(t: QualityTier) { s.tier = t; },
+    /** The last archive probe, or null before one has run. */
+    get probe(): ArchiveProbe | null { return s.probe; },
+    /** True while an inventory pass is walking the library's assets. */
+    get probing(): boolean { return s.probing; },
+    /**
+     * Probe the OPEN LIBRARY: what it weighs, which destinations it fits, and which (destination, tier)
+     * pair to pre-select (Archie-7280 / Archie-c367).
+     *
+     * The expensive half is the inventory — one OPFS stat per stored asset — so it runs chunked with a
+     * yield between chunks (`archive-inventory.ts`) and reports progress. `probeArchive` itself is
+     * arithmetic and runs in one go.
+     *
+     * A second call while one is in flight is REFUSED (returns the probe in hand, or null): the surface
+     * re-probes on open and on nothing else, so a concurrent pass would only be a double-open, and two
+     * inventory walks racing over the same OPFS handles is a cost with no upside.
+     */
+    async probeLibrary(onProgress?: (done: number, total: number) => void): Promise<ArchiveProbe | null> {
+      if (s.probing) return s.probe;
+      s.probing = true;
+      try {
+        const exhibits = deps.exhibits();
+        const files = await libraryInventory(exhibits, onProgress);
+        const probe = probeArchive(files, {
+          // `folderSinkSupported()` is the ONE definition of "can this platform write a folder"
+          // (`folder-backend.ts`) — read here rather than re-derived, so the greyed folder and
+          // object-storage rows carry the same answer the sink itself would give. Firefox/Safari get
+          // `false` and both rows come back unavailable WITH their reason (Archie-c85f / Archie-c367).
+          capabilities: { folderSink: folderSinkSupported() },
+          exhibitCount: Math.max(1, exhibits.length),
+        });
+        s.probe = probe;
+        return probe;
+      } finally {
+        s.probing = false;
+      }
+    },
+    /**
+     * "Deposit a copy" (Archie-039e): the same published bytes arranged as a BagIt bag — payload under
+     * `data/`, a SHA-256 for every file, and the `bag-info.txt` a repository's ingest workflow reads.
+     *
+     * EAGER, not streamed, and that is structural rather than lazy: `writeBag` re-reads two files it
+     * just wrote (the fixity manifest and `archie.json`) in order to hash them, and a streaming zip
+     * target is write-only. So it builds in memory under the same ceiling the eager zip path uses, with
+     * the same size guard in front of it.
+     *
+     * Returns whether a save happened — a cancelled picker or a declined guard is not a deposit.
+     */
+    async depositBag(opts: ZipExportOpts = {}): Promise<{ saved: boolean; name?: string; oxum?: string; payloadFiles?: number }> {
+      if (!(await zipSizeOk(opts.slugs))) return { saved: false };
+      await deps.flushExhibit();
+      const logs = await deps.loadAllLogs();
+      const run = tierRun(tierFor(), libraryForZip(opts.slugs));
+      const fs = new ZipFilesystem({ maxUncompressedBytes: EAGER_ZIP_CEILING_BYTES });
+      const result = await writeBag(fs, run.library, (id: string) => logs[id] ?? [], zipPublishOpts(run), {
+        // RFC 8493 §2.2.2 wants YYYY-MM-DD. Injected here rather than defaulted inside `bag.ts` so the
+        // bag's bytes stay a pure function of the library in tests; product code is the one place that
+        // is allowed to read the clock.
+        baggingDate: new Date().toISOString().slice(0, 10),
+      });
+      warnTier(run.rescaled, result.unscaledSelectors);
+      const base = (opts.name?.trim() || deps.currentZipName()).replace(/\.archie\.zip$/, "") || "library";
+      const res = await saveZipToDisk(fs, `${base}-bag.zip`);
+      if (res.kind === "cancelled") return { saved: false };
+      return { saved: true, name: res.name, oxum: result.oxum, payloadFiles: result.payloadFiles };
+    },
     openMenu() { s.open = true; },
     close() { s.open = false; },
 
