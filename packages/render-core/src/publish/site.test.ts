@@ -703,3 +703,127 @@ describe("publishLibrary — annotations survive a change of base", () => {
     expect(await inlineCount(fs, "w")).toBe(0);
   });
 });
+
+// SELF-REPLICATING PUBLISH (Archie-e09d) — the tree carries its own viewer.
+//
+// The property under test is not "some files got written". It is that a tree handed the embed bundle
+// stops pointing at an origin it does not control: every page's viewer link becomes tree-relative, so
+// the artifact keeps working when it is moved, mirrored, renamed, or served from a subpath.
+//
+// The compatibility pin is the FIRST test and matters most: with no `getViewerBundle` the output must
+// be byte-identical to before, because every existing caller (the zip export, the GH-Pages adapter,
+// gen-published, the folder sink) omits it.
+describe("publishLibrary — the tree carries its own viewer (Archie-e09d)", () => {
+  const HOSTED = "https://archie.example/viewer/";
+  const BASE = "https://u.gh.io/lib/";
+  // Stand-in for packages/archie-viewer/dist: a flat entry plus one sibling chunk, exactly the shape
+  // esbuild emits (`splitting: true` + an outdir → `archie-viewer.js` + `chunk-*.js`).
+  const bundle = (): Map<string, string | ArrayBuffer | Blob> =>
+    new Map<string, string | ArrayBuffer | Blob>([
+      ["archie-viewer.js", 'import"./chunk-XY.js";customElements.define("archie-viewer",class extends HTMLElement{});'],
+      ["chunk-XY.js", "export const osd=1;"],
+    ]);
+
+  const read = async (fs: MemoryFilesystem, ...path: string[]): Promise<string> => {
+    let dir = await fs.root();
+    for (const seg of path.slice(0, -1)) dir = await dir.getDirectory(seg);
+    return new TextDecoder().decode(await (await dir.getFile(path[path.length - 1]!)).readable());
+  };
+  const names = async (dir: FsDirectory): Promise<string[]> => {
+    const out: string[] = [];
+    for await (const e of dir.entries()) out.push(`${e.kind}:${e.name}`);
+    return out;
+  };
+
+  it("WITHOUT getViewerBundle the tree is unchanged — no _viewer, no viewer.html, no .nojekyll", async () => {
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, library, getLog, { baseUrl: BASE, viewerBase: HOSTED });
+    const root = await names(await fs.root());
+    expect(root).not.toContain("directory:_viewer");
+    expect(root).not.toContain("file:viewer.html");
+    expect(root).not.toContain("file:.nojekyll");
+    // and the pages still link OUT to the canonical hosted instance, exactly as before.
+    expect(await read(fs, "index.html")).toContain(`href="${HOSTED}"`);
+    expect(await read(fs, "a", "index.html")).toContain(`href="${HOSTED}#/a"`);
+  });
+
+  it("writes the bundle under _viewer/, a viewer.html shell that loads it, and .nojekyll", async () => {
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, library, getLog, { baseUrl: BASE, getViewerBundle: async () => bundle() });
+    // every file the app handed over, under the one flat directory
+    expect(await names(await (await fs.root()).getDirectory("_viewer"))).toEqual(
+      expect.arrayContaining(["file:archie-viewer.js", "file:chunk-XY.js"]),
+    );
+    expect(await read(fs, "_viewer", "chunk-XY.js")).toBe("export const osd=1;");
+    // the shell loads the entry RELATIVE to itself — the chunk then resolves beside it
+    const shell = await read(fs, "viewer.html");
+    expect(shell).toContain('<script type="module" src="./_viewer/archie-viewer.js">');
+    expect(shell).toContain("<archie-viewer></archie-viewer>");
+    // GitHub Pages runs Jekyll by default, and Jekyll drops `_`-prefixed directories. Without this
+    // file the bundle 404s on Pages ONLY — green everywhere else, which is the worst shape of bug.
+    expect(await names(await fs.root())).toContain("file:.nojekyll");
+  });
+
+  it("re-points every page at the TREE's viewer, overriding a hosted viewerBase", async () => {
+    const fs = new MemoryFilesystem();
+    // Both supplied: the tree's own copy wins, because a self-contained tree that still links out is
+    // not self-contained.
+    await publishLibrary(fs, library, getLog, { baseUrl: BASE, viewerBase: HOSTED, getViewerBundle: async () => bundle() });
+    const lib = await read(fs, "index.html");
+    expect(lib).toContain('href="viewer.html"');
+    expect(lib).not.toContain(HOSTED);
+    // an exhibit page is ONE directory down, so its link climbs
+    const ex = await read(fs, "a", "index.html");
+    expect(ex).toContain('href="../viewer.html#/a"');
+    expect(ex).not.toContain(HOSTED);
+  });
+
+  it("a callback that cannot produce the bundle degrades to viewerBase — never a link to a page it did not write", async () => {
+    for (const empty of [async () => null, async () => new Map<string, string>()]) {
+      const fs = new MemoryFilesystem();
+      await publishLibrary(fs, library, getLog, { baseUrl: BASE, viewerBase: HOSTED, getViewerBundle: empty });
+      expect(await names(await fs.root())).not.toContain("file:viewer.html");
+      expect(await read(fs, "a", "index.html")).toContain(`href="${HOSTED}#/a"`);
+    }
+  });
+
+  it("refuses a bundle that cannot be laid out flat, or that omits the entry viewer.html loads", async () => {
+    const nested = new Map<string, string>([["archie-viewer.js", "x"], ["assets/chunk.js", "y"]]);
+    await expect(publishLibrary(new MemoryFilesystem(), library, getLog, { baseUrl: BASE, getViewerBundle: async () => nested }))
+      .rejects.toThrow(/flat file name/);
+    const noEntry = new Map<string, string>([["viewer.js", "x"]]);
+    await expect(publishLibrary(new MemoryFilesystem(), library, getLog, { baseUrl: BASE, getViewerBundle: async () => noEntry }))
+      .rejects.toThrow(/must include "archie-viewer.js"/);
+  });
+
+  it("an INCREMENTAL republish leaves the ~1MB bundle alone but refreshes the shell", async () => {
+    // The folder-autosave hot path republishes on every save. Re-writing the whole embed each time is
+    // pure cost, and the bundle cannot have changed between two saves of the same session.
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, library, getLog, { baseUrl: BASE, getViewerBundle: async () => bundle() });
+    const changed = new Map<string, string | ArrayBuffer | Blob>([["archie-viewer.js", "REWRITTEN"]]);
+    await publishLibrary(fs, library, getLog, {
+      baseUrl: BASE,
+      getViewerBundle: async () => changed,
+      incremental: { exhibits: new Set(["a"]), reassets: new Set() },
+    });
+    expect(await read(fs, "_viewer", "archie-viewer.js")).not.toBe("REWRITTEN");
+    expect(await read(fs, "viewer.html")).toContain("./_viewer/archie-viewer.js");
+    // A FULL republish is how the bundle gets refreshed — otherwise a viewer upgrade could never land.
+    await publishLibrary(fs, library, getLog, { baseUrl: BASE, getViewerBundle: async () => changed });
+    expect(await read(fs, "_viewer", "archie-viewer.js")).toBe("REWRITTEN");
+  });
+
+  it("commits the viewer BEFORE archie.json — the marker stays the commit point (Issue 25b)", async () => {
+    const { fs, order } = recordingFs();
+    await publishLibrary(fs, library, getLog, { baseUrl: BASE, getViewerBundle: async () => bundle() });
+    const marker = order.indexOf("archie.json");
+    expect(marker).toBe(order.length - 1);
+    for (const p of ["_viewer/archie-viewer.js", "_viewer/chunk-XY.js", "viewer.html", ".nojekyll"]) {
+      expect(order).toContain(p);
+      expect(order.indexOf(p)).toBeLessThan(marker);
+    }
+    // and viewer.html cannot outlive the bundle it loads: the bytes land first.
+    expect(order.indexOf("_viewer/archie-viewer.js")).toBeLessThan(order.indexOf("viewer.html"));
+  });
+});

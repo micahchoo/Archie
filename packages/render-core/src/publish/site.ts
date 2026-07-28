@@ -25,7 +25,7 @@ import type { Exhibit, AObject, Section, Reading, RightsFields } from "../model/
 import type { DziTileSource } from "../iiif/resolve.js";
 import type { PortableExhibit } from "./portable.js"; // type-only (erased) — the readings superset; type-cycle is harmless
 import { readExhibitTree, fsJsonSource } from "./read.js";
-import { libraryPageHtml, exhibitPageHtml, sitemapTxt, sitemapXml } from "./static-pages.js";
+import { libraryPageHtml, exhibitPageHtml, sitemapTxt, sitemapXml, viewerShellHtml, treeViewerBase, TREE_VIEWER_DIR, TREE_VIEWER_ENTRY, TREE_VIEWER_PAGE } from "./static-pages.js";
 import { citationCff } from "../cite/citation.js";
 import { readAnnotations } from "../spine/persist.js";
 import { writeStructure } from "../spine/structure-persist.js";
@@ -143,7 +143,32 @@ export interface PublishOptions {
    * next exchange.
    */
   getStructure?: StructureLookup;
+  /**
+   * SELF-REPLICATING PUBLISH (Archie-e09d) — hand the publish step the `<archie-viewer>` embed
+   * bundle and the tree carries its OWN interactive viewer: `_viewer/…` + a `viewer.html` shell,
+   * with every static page's viewer link rewritten to that tree-relative page instead of
+   * {@link PublishOptions.viewerBase}. The result is self-contained: no CDN, no hosted Archie
+   * instance, no origin the tree does not control.
+   *
+   * INJECTED, like `getAsset`/`tileObject`, for the same reason: core cannot read
+   * `packages/archie-viewer/dist` (it has no filesystem in a browser, and no dependency on the
+   * embed package). The app supplies the bytes; core decides the layout.
+   *
+   * Returns the bundle's files keyed by the FLAT name they take under `{root}/_viewer/` — the
+   * esbuild output is flat (`archie-viewer.js` plus `chunk-*.js` / `reader-*.js` siblings that the
+   * entry imports relative to itself), so a name containing `/` is rejected rather than silently
+   * written somewhere unexpected. Must include {@link TREE_VIEWER_ENTRY}.
+   *
+   * ABSENT (the default) = byte-identical output to before: no `_viewer/`, no `viewer.html`, no
+   * `.nojekyll`, and `viewerBase` keeps its current meaning. Returning `null` / an empty map is the
+   * app saying "I could not load the bundle" and degrades the same way — the tree never links to a
+   * viewer page it did not write.
+   */
+  getViewerBundle?: () => Promise<ViewerBundleFiles | null>;
 }
+
+/** The embed bundle's files for {@link PublishOptions.getViewerBundle}, keyed by flat filename. */
+export type ViewerBundleFiles = ReadonlyMap<string, string | ArrayBuffer | Blob>;
 
 /**
  * Which exhibits an incremental publish must rewrite (spike-0002). `reassets` is a subset of `exhibits`:
@@ -262,6 +287,46 @@ async function writeText(dir: FsDirectory, name: string, text: string): Promise<
   await w.close();
 }
 
+/**
+ * Write the tree's own viewer (Archie-e09d): the embed bundle under `_viewer/`, the `viewer.html`
+ * shell, and `.nojekyll`.
+ *
+ * `.nojekyll` is not decoration. GitHub Pages runs Jekyll over a pushed tree by default, and Jekyll
+ * EXCLUDES every top-level directory whose name starts with `_` — so `_viewer/` would be silently
+ * absent on exactly the host this feature is aimed at, while working perfectly everywhere else.
+ * (The repo wrote no `.nojekyll` before this: `grep -rn nojekyll` over the tree was empty.)
+ *
+ * `skipBytesIfPresent` is the incremental hot path (folder autosave republishes on every save): the
+ * bundle is ~1 MB and does not change between saves, so re-writing it per keystroke-save is pure
+ * cost. The shell and `.nojekyll` are a few hundred bytes and are always rewritten.
+ */
+async function writeTreeViewer(
+  root: FsDirectory,
+  files: ViewerBundleFiles,
+  shell: string,
+  skipBytesIfPresent: boolean,
+): Promise<void> {
+  const dir = await root.getDirectory(TREE_VIEWER_DIR, { create: true });
+  let writeBytes = true;
+  if (skipBytesIfPresent) {
+    try {
+      await (await dir.getFile(TREE_VIEWER_ENTRY)).readable();
+      writeBytes = false;
+    } catch { /* absent or unreadable — write it */ }
+  }
+  if (writeBytes) {
+    for (const [name, content] of files) {
+      const file = await dir.getFile(name, { create: true });
+      const w = await file.writable();
+      await w.write(content);
+      await w.close();
+    }
+  }
+  await writeText(root, TREE_VIEWER_PAGE, shell);
+  // Jekyll off. Empty file; its NAME is the whole signal.
+  await writeText(root, ".nojekyll", "");
+}
+
 /** Write a DZI tile pyramid into `filesDir` through the fs seam. Tile keys are `{level}/{col}_{row}.{ext}`;
  *  each level subdirectory is created once and reused (the pyramid is hundreds–thousands of tiles). */
 async function writeTilePyramid(filesDir: FsDirectory, tiles: Map<string, Blob>): Promise<void> {
@@ -334,12 +399,41 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     // `{slug}/#/a/<id>` grammar that the slug-qualified router dropped. viewerBase is normally always
     // supplied (Studio's STATIC_PAGE_OPTS); without it, cites degrade to the durable static-archival
     // anchor in the data tree (baseUrl). The stored `archie:` ref grammar (encodeLinkRef) is untouched.
+    //
+    // DELIBERATELY NOT re-pointed at the tree's own viewer (Archie-e09d), unlike the page-level links
+    // below. A cite is rewritten ONCE into the note BODY, and that same body is then served to two
+    // documents at different depths — the exhibit page at `{slug}/index.html` AND the viewer itself at
+    // `viewer.html` (which reads the rewritten body out of annotations.json). One tree-relative string
+    // cannot be correct in both. The page-level links do not have this problem because each page emits
+    // its own. Resolving this needs a root-absolute path derived from baseUrl's pathname, which
+    // re-introduces the base coupling the tree-relative design exists to avoid — see the ledger.
     resolve: (t) => resolveViewerLink(t, { ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), dataBase: baseUrl }),
     validate: (t) => validateLink(t, linkIndex),
   };
   const brokenLinks: BrokenLink[] = [];
   const incompleteCanvases: IncompleteCanvas[] = [];
   const missingAssets: MissingAsset[] = [];
+
+  // SELF-REPLICATING PUBLISH (Archie-e09d). Resolved HERE, before the exhibit loop, because the
+  // per-exhibit pages below need to know which viewer they are linking to — and the tree must never
+  // link to a `viewer.html` it then fails to write. An app that supplies the callback but cannot
+  // produce the bytes (returns null / empty) degrades to the hosted `viewerBase` exactly as if it
+  // had never asked.
+  const viewerFiles = opts.getViewerBundle ? await opts.getViewerBundle() : null;
+  const treeViewer = viewerFiles !== null && viewerFiles.size > 0;
+  if (treeViewer) {
+    for (const name of viewerFiles!.keys()) {
+      if (name.includes("/") || name.includes("\\") || name === "" || name === "." || name === "..") {
+        throw new Error(`getViewerBundle: "${name}" is not a flat file name — ${TREE_VIEWER_DIR}/ is one directory deep`);
+      }
+    }
+    if (!viewerFiles!.has(TREE_VIEWER_ENTRY)) {
+      throw new Error(`getViewerBundle: the bundle must include "${TREE_VIEWER_ENTRY}" — ${TREE_VIEWER_PAGE} loads it by that name`);
+    }
+  }
+  /** The viewer a page at `depth` links to: the tree's own when it carries one, else the hosted
+   *  canonical instance (or nothing, which degrades every link to the static-archival anchor). */
+  const viewerBaseAt = (depth: number): string | undefined => (treeViewer ? treeViewerBase(depth) : opts.viewerBase);
 
   // Orphan pruning (spike-0002) — BEFORE the write loop, so a remove-then-recreate in one publish deletes
   // the old tree first, then the loop rewrites the fresh exhibit (post-loop pruning would delete that write).
@@ -648,10 +742,17 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     // The note biography (Archie-a1d4): the SAME grouping the history sidecar above was built from,
     // so a rendered "v2" and the citation id minted for v2 cannot disagree.
     const historyByLogical = recordsByLogicalId(log);
-    await writeText(exDir, "index.html", exhibitPageHtml(manifestExhibit, htmlRecords, { baseUrl, history: historyByLogical, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.renderBody !== undefined ? { renderBody: opts.renderBody } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
+    // An exhibit page sits ONE directory below the root, so its link to the tree's own viewer is
+    // `../viewer.html` (Archie-e09d). Without a tree viewer this is `opts.viewerBase`, unchanged.
+    const exViewerBase = viewerBaseAt(1);
+    await writeText(exDir, "index.html", exhibitPageHtml(manifestExhibit, htmlRecords, { baseUrl, history: historyByLogical, ...(exViewerBase !== undefined ? { viewerBase: exViewerBase } : {}), ...(opts.renderBody !== undefined ? { renderBody: opts.renderBody } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
   });
+  // The tree's own viewer (Archie-e09d) — written BEFORE index.html so the page that links to it
+  // cannot exist without it, and well before the archie.json commit marker.
+  if (treeViewer) await writeTreeViewer(root, viewerFiles!, viewerShellHtml(library), inc !== undefined);
   // Library landing + sitemap (ADR-0014): the human/crawler entry the data repo never had.
-  await writeText(root, "index.html", libraryPageHtml(library, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
+  const libViewerBase = viewerBaseAt(0);
+  await writeText(root, "index.html", libraryPageHtml(library, { baseUrl, ...(libViewerBase !== undefined ? { viewerBase: libViewerBase } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
   // Crawler sitemaps: keep sitemap.txt (the simple, already-cited surface) AND add the standard
   // sitemap.xml (sitemaps.org 0.9) so search engines ingest it directly with <lastmod> (Q-8).
   // CITATION.cff (Archie-321c): the file GitHub's "Cite this repository" widget reads, and the one a
