@@ -25,8 +25,8 @@ import { join } from "node:path";
 //                bind an OPFS annotation dir (exhibit-session.svelte.ts — save() early-returns on a
 //                template), so the suite first forks one via "Keep a copy" (App.svelte:864 keepCopy)
 //                into a user-owned exhibit that persists.
-//   ✔ publish  — the in-browser LOCAL publish path (Publish.svelte "Locally" → onzip=localPublishZip,
-//                publish-flows.svelte.ts:298). It flushes the exhibit and builds the site projection
+//   ✔ publish  — the in-browser .zip destination (Publish.svelte's one-flow chooser → ondownload=
+//                publish-flows `download`). It flushes the exhibit and builds the site projection
 //                into a .archie.zip via the SAME libraryToZipFs projection every sink uses (STATIC_PAGE_OPTS
 //                — the rendered static pages). We capture that download and assert the authored note's
 //                body text is present in the published output.
@@ -103,7 +103,8 @@ async function bootClean(page: Page) {
 
 // Every navigation: identity pre-seeded (skip the first-publish identity prompt), and the File System
 // Access pickers removed so the app takes its deterministic, Playwright-capturable fallbacks —
-// canFolder=false (binding-store.svelte.ts, folder-backend.ts) routes "Locally" to the zip DOWNLOAD,
+// folderSinkSupported()=false (folder-backend.ts) greys the folder + object-storage rows with their
+// reason and leaves the .zip destination, which is the one this suite drives;
 // and supportsFileStreamSave()=false (binding.ts) routes the zip save to the OPFS-STAGED streaming
 // sink (openOpfsStagedZipSave — headless Chromium has OPFS createWritable), which still ends in an
 // <a download> anchor click (the only sink Playwright's download API can intercept). So the captured
@@ -185,16 +186,24 @@ test.describe("Studio core loop: create → autosave → publish (Archie-c9ac)",
     await forkToSavedEditor(page);
     await authorNote(page, body);
 
-    // Open the merged Publish & Share surface (identity pre-seeded → no prompt), choose "Locally".
-    // With the folder picker removed (canFolder=false) that path offers the .archie.zip download.
+    // Open the merged Publish & Share surface (identity pre-seeded → no prompt) and take the .zip
+    // destination. This used to click "Locally", which on a browser with no folder picker silently
+    // downloaded a zip — the fallback collision Archie-c367 removed. The route now says what it is:
+    // pick "One .zip file" from the one-flow list, press Publish, name it, save. Same sink, same
+    // artifact (openOpfsStagedZipSave → an <a download> anchor), which is what this suite reads.
     await page.getByRole("button", { name: /Publish & share/ }).click();
     const dialog = page.getByRole("dialog", { name: "Publish" });
     await expect(dialog).toBeVisible();
-    await dialog.getByRole("button", { name: /Locally/ }).click();
+    // The probe runs on open; wait for a row rather than counting, so hydration timing cannot make
+    // this vacuous (.claude/rules/playwright-count-does-not-wait.md).
+    const zipRow = dialog.getByRole("radio", { name: /One \.zip file/ });
+    await expect(zipRow).toBeEnabled();
+    await zipRow.check();
+    await dialog.getByRole("button", { name: "Publish", exact: true }).click();
 
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      dialog.getByRole("button", { name: "Download .archie.zip" }).click(),
+      dialog.getByRole("button", { name: "Save copy" }).click(),
     ]);
 
     // Extract the captured zip and prove the authored note body is present in the published output.

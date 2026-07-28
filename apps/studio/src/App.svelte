@@ -2791,14 +2791,19 @@
          PublishDialog was before the merge. -->
     <Pub
       open={p.open}
-      canFolder={bnd.canFolder}
       onclose={() => p.close()}
       onfolder={p.localPublishFolder}
-      onzip={p.localPublishZip}
       ondownload={p.download}
       onenterweb={p.openPublish}
       previewtree={p.previewTree}
       onexportselfcontained={() => p.exportSelfContained()}
+      ondeposit={() => p.depositBag()}
+      probe={p.probe}
+      probing={p.probing}
+      onprobe={(onProgress) => p.probeLibrary(onProgress)}
+      tier={p.tier}
+      ontier={(t) => p.setTier(t)}
+      unscaledSelectors={p.unscaledSelectors}
       exhibits={exportableExhibits}
       suggestedZipName={suggestedZipName}
       library={deployLibrary}
