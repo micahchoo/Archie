@@ -353,3 +353,111 @@ Below ~1100px `.opts` measures 82px then **0px**; the legend is crushed by the b
 allocation question deliberately left closed. Needs a breakpoint decision.
 
 **Count: 42 open, 33 non-map.**
+
+---
+
+# HANDOFF §2 — wayfinder maps c268 + 34a2 drive (separate session, 2026-07-27 ~23:00)
+
+*(Appended by the map-drive session; the sections above belong to the fix/flaky-gates session.
+Do not merge or dedupe the two — different sessions, different branches.)*
+
+Goal (Stop-hook): drive **Archie-c268** (published-tree) and **Archie-34a2** (small-archive) to
+completion, worktrees + commit/merge cadence. **All merges happen in `.claude/worktrees/merge-main`**
+(main is checked out there, NOT in the primary checkout). Main @ **10c82ab**.
+
+## Score: 15/17 map tickets closed
+Closed+merged: 19c5, 3504, 86ff, 30ff, fde8, 3754, 1cf0, c85f, e09d, 8d3d, 039e, 7280, 53e3, 4b0a
+(+7e6f code merged @ b7494ce but ticket held open). Live site **micahchoo.github.io/test**
+republished self-contained (user's own library), live verify-publish 9/9, drive 6/6.
+
+## In flight (2 agents, base 10c82ab)
+- **export-surface** (Archie-c367, `feat/export-surface` @ agent-a4a34806d9bdd2e8a): one-flow
+  Publish.svelte rebuild — probe recommendation preselected, greyed-with-reason destinations,
+  tier control, success panel (embed snippet + rclone two-pass + Deposit-a-copy bag).
+- **thousand-images** (Archie-c74e, `accept/thousand-images` @ agent-ab5ef23c0320521ab): 1,000-image
+  end-to-end acceptance, both tiers, reconcile vs probe estimate 0.54GB web, GitHub-fit verdict.
+On landing: verify file scope vs claim, `merge --no-ff` in merge-main, re-run combined suites
+(baselines: render-core 1394, studio 1177), reconcile counts, `sd close`.
+
+## Open user decisions (batch these to Micah at wind-down)
+1. **7e6f**: declare `codecs-extra` Flatpak extension? (GNOME 49 runtime has NO H.264 either way).
+2. **7e6f**: accept leaving Chromium WebCodecs video path unbuilt? (no AAC encoder in Chromium;
+   would need `mediabunny`). Both recorded on the ticket.
+3. Optional: `.nojekyll` counterfactual push to the live repo was permission-refused; needs explicit
+   go-ahead or a scratch repo.
+
+## Gotchas re-learned this session
+- Concurrent session also merges into main — reconcile test counts against its merges before
+  suspecting a regression.
+- Agent-transcript `gitBranch` metadata can be stale/wrong; trust `git -C <worktree> branch
+  --show-current` (verified both agents on correct branches despite metadata saying otherwise).
+- Only push authorized: micahchoo/test (done). Main not pushed; that's the user's call.
+
+---
+
+## 2026-07-27 (latest) — Archie-1244 + Archie-2865, code stranded on a branch
+
+**The code is NOT on main.** `task/1244-shadow-recal`, **14 commits**, tip `5b033ce`, checked out at
+`/tmp/wt-1244-shadows`. The ticket-CLOSE for both 1244 and 2865 is already committed on
+`fix/flaky-gates` (`da2c28f`) — **so the tracker says done and the CSS is not merged.** Reconcile
+those two before trusting either.
+
+The branch ref and its objects live in the primary `.git`, so a `/tmp` wipe loses only the worktree
+registration, not the work (`git worktree add` somewhere durable, or `git worktree prune` then
+re-add). Base is behind `main` @ `10c82ab`; needs a merge before landing.
+
+### What 1244 actually did
+5c1d's Option C, both halves. Half 1: recalibrated the lift pair in
+`packages/render-core/src/tokens.css` (`0 24px 48px -24px` → `0 1px 2px`; `0 40px 80px -32px` →
+`0 2px 6px -1px`) — **alpha drops WITH the blur on purpose**, 0.30 over 48px is a wash, over 2px a
+hard line. Half 2: 145 lift sites across 47 files, in 8 committed phases; **34 survive, every one an
+annotated keep.** `apps/studio/src/tokens.css` was deleted on main by `ecf4`, so half 1 is one file.
+
+**5c1d's work list was wrong in both directions** — it undercounted (65 → 145; it enumerated Studio
+only, the viewer holds a third) and it was stale (`.load-hint .hint` no longer exists). Don't take a
+prior ticket's site list as the denominator; re-derive it.
+
+### Two hazard classes, both invisible to every gate — the durable lesson
+1. **`outline: none` + `box-shadow` is a FOCUS RING wearing an elevation token.** Three instances.
+   `.object:focus-visible` (ObjectGrid) had the lift as its *only* declaration — deleting the
+   declaration deletes keyboard focus from every object tile, and nothing complains.
+2. **A lift LAYERED with a non-elevation layer.** Four instances, incl. `.plate.over`'s
+   `-4px 0 0 var(--accent)` — the drag-and-drop drop indicator.
+
+Both reduce to: **grep the DECLARATION, not the token.** `svelte-check` cannot see CSS at all, and
+Svelte hashes scoped selectors in the built output (`.tile.svelte-84v3nd:focus-visible`), so a naive
+grep of the artifact returns empty and reads as "not shipped".
+
+Also: stripping a shadow can leave `{ }`. It did, on `.del:hover` — a destructive button with no
+hover feedback, **passed svelte-check at 0/0 because empty CSS is valid.** Scan for empty rules after
+any CSS-strip pass, scoped to `<style>` blocks (an unscoped regex matches JS object literals).
+
+### Archie-2865 — the release gate
+`.github/workflows/release-artifact.yml`, tag-triggered (`v*`), no `permissions:` block, no bot
+commits. Rebuilds from tagged source and diffs the three dist mirrors. Red-green-green proven.
+
+**The diagnosis is the durable part: dist staleness is created by MERGES, not by careless PRs.**
+Measured at `84bab01` (merge of `2699f3f` + `c27aa95`): the tip's `dist/archie-viewer.js` was
+byte-identical to parent `2699f3f`'s while the merge took 3 source files from `c27aa95`. Both PRs can
+be perfectly fresh and the merge still ships stale bytes — **a per-PR gate is structurally incapable
+of catching this.** A fail-on-main gate would redden main on ~73% of source merges (8 of the last 11
+source-touching commits didn't rebuild), which is why `checks.yml:200` already refused it. Tag-time
+is the boundary. (An earlier "~69 commits of drift" figure was wrong — derived from how far the
+branch trailed main and misattributed to dist. Corrected everywhere it landed.)
+
+### Recommended next slate (presented, not yet chosen)
+1. Land `task/1244-shadow-recal` — blocked only on `main` being held in `merge-main`.
+2. **Stale-ticket audit.** `7280` (6 commits), `a09d` (6), `9ece` (4), `69f9`, `7e5b`, `eec7`, `cf4a`
+   all have merged work on main while sitting open. Four tickets closed this way already today.
+3. **`06fb`** — viewer e2e red on main *now*, measured on unmodified main in a separate worktree.
+   `selection.spec.ts:96` passes isolated (552 ms), times out in the full suite (15.4 s).
+   Prior diagnosis is on the ticket (`53b5396`): **bisection says it is not one poisoning spec, and
+   the drag delta reads `d=(0,0)`.** Start there, not from scratch.
+4. **`eec7`** — `axe-core` is declared at root `package.json:24` and **wired into nothing** in
+   `apps/` or `packages/`. Plus the three focus-ring regressions above as live evidence.
+5. `69f9` — tree-level schema migration; self-contained, no user input.
+
+**Needs a human, cannot be moved autonomously:** `9ece` (P0, packaged Flatpak verification — blocks
+`623e`, so the whole Tauri lane sits behind it), `a09d`, `79be`/`87ba` (human-gate triage),
+`84af` (one decision: rigid chips overflowing at 1024px vs shrinkable chips that make the overflow
+menu never fire — work is built and preserved in `ledgers/probes/`), `05e4` (palette walk).
