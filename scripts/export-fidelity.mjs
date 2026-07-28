@@ -37,6 +37,33 @@
 // PORTS: the vite server binds an OS-assigned free port pinned with `strictPort`, never a fixed or
 // auto-incrementing one — two agents running this at once must not drive each other's build
 // (viewer-e2e-shared-port). See the note at `server:` for why `listen(0)` is NOT that.
+//
+// RED-GREEN LEDGER (2026-07-28, branch probe/027c-export-fidelity @ a6f4a14). Every check below was
+// proven able to fail, by injecting the defect it claims to catch and watching THAT line — and only
+// the lines named — go red. Keep this table honest if you add a check.
+//
+//   check          injection                                                      also went red
+//   workers        Worker ctor throws (the CSP worker-src break)                  —
+//   tiling         TILE_MIN_EDGE raised past every fixture image                  —
+//   marker present forge archie.json to `{"format":"not-archie"}` after publish   zip, compose
+//   marker last    an extra `writeText` AFTER the marker, in site.ts itself       —
+//   refs           delete `ex0/assets-thumb/plate-a.jpg` from the finished tree   zip
+//   annotations    skip one authored note                                         —
+//   bytes          getAsset hands publish a truncated blob for one plate          —
+//   zip            zip leg published without `getThumbnail`                        —
+//   compose        corrupt `exhibits.json` after publish                          zip
+//
+// Two of those are worth carrying past this file, because they say what this harness ADDS:
+//   • With the WORKER injection the produced tree is byte-identical and 8/9 checks pass. That is the
+//     silent degradation perf-measure-the-flow §2 describes, and nothing else in the repo except
+//     `worker-smoke.mjs` can see it.
+//   • With the ANNOTATION injection taken to its limit (a first fixture draft published ZERO of 9
+//     authored heads), `verify-publish.mjs` reported `exit 0; 12 checks, 0 failed`. Its heads line is
+//     `check(true, …)` (verify-publish-run.mts:258) — a report, not an assertion — so an empty tree
+//     passes it. An in-vs-out COUNT is the only thing that catches that class.
+//
+// Unchanged-tree repeatability: 12 runs, 12 pass, 0 fail (a-green-run-is-one-sample — a red-green
+// says nothing about whether a check passes RELIABLY, and that needs its own N).
 import { createRequire } from "node:module";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
