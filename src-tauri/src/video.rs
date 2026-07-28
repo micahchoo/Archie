@@ -17,17 +17,31 @@
 //!   * `ffmpeg -c:v libx264` → `Unknown encoder 'libx264'`
 //!   * decoding an H.264 input → `Decoding requested, but no decoder found for: h264`
 //!
-//! The base libavcodec's DT_NEEDED list is libvpx / libaom / libopus / libSvtAv1Enc and NOTHING else;
-//! its build config carries `--disable-decoder='h264,hevc,vc1,vvc'` and no `--enable-libx264`. H.264
-//! arrives ONLY through the `org.freedesktop.Platform.codecs-extra` extension (runtime metadata :90,
-//! `add-ld-path = lib`), which `src-tauri/flatpak/digital.compost.archie.yml` does not declare.
-//! Proven by forcing `LD_LIBRARY_PATH` to the base lib dir: VP9+Opus/WebM and AAC encode fine,
-//! libx264 vanishes, and H.264 input stops decoding.
+//! The base libavcodec's DT_NEEDED list has **28** entries — libvpx, libaom, libopus, libSvtAv1Enc,
+//! and also libdav1d, librsvg, libjxl, libmp3lame, libtheora, libvorbis, libwebp, libva and more —
+//! but **no libx264 and no libx265**. (An earlier version of this note said the list was those four
+//! "and NOTHING else". That was wrong and would mislead anyone who diffs it; the no-libx264
+//! conclusion it supported is correct, and re-measured 2026-07-27.) Its build config carries
+//! `--disable-decoder='h264,hevc,vc1,vvc'` and no `--enable-libx264`. H.264 arrives through the
+//! `org.freedesktop.Platform.codecs-extra` extension, which ships a REPLACEMENT libavcodec at the
+//! same soname whose DT_NEEDED does add libx264/libx265.
 //!
-//! The DECODE half is the constraint that actually bites: most user video IS H.264, so without the
-//! extension the sidecar cannot READ typical input whatever it writes. That is why `probe_encoders`
-//! reports both directions and why the UI must grey the control with a reason (Archie-c367) rather
-//! than fail mid-publish.
+//! **That extension is already present, and the app manifest does not — and should not — declare it.**
+//! `org.gnome.Platform//49` declares the extension point in its OWN metadata with no
+//! `no-autodownload`, so it installs with the runtime. Measured 2026-07-27 in the packaged app:
+//! `flatpak run --command=sh digital.compost.archie -c 'ffmpeg -encoders'` lists `libx264`, and
+//! `-decoders` lists `h264`. See the long note in `src-tauri/flatpak/digital.compost.archie.yml`
+//! for the full evidence, including why the loader picks it up via `/run/flatpak/ld.so.conf.d/`
+//! rather than `LD_LIBRARY_PATH` (which is empty in the sandbox, contrary to the flatpak docs).
+//! What the extension's ABSENCE looks like was simulated by forcing `LD_LIBRARY_PATH` to the base
+//! lib dir — which does outrank the generated ld.so.conf entry, so it is a faithful simulation:
+//! VP9+Opus/WebM and AAC encode fine, libx264 vanishes, and H.264 input stops decoding.
+//!
+//! The DECODE half is the constraint that would actually bite: most user video IS H.264, so a
+//! machine without the extension cannot READ typical input whatever it writes. That case is now
+//! narrow (a `--no-related` install, or a distro that prunes related refs) rather than the default,
+//! but it is why `probe_encoders` reports both directions and why the UI greys the control with a
+//! reason (Archie-c367) rather than failing mid-publish.
 //!
 //! ── SAFETY: NO SHELL, EVER ────────────────────────────────────────────────────────────────────────
 //! `Command` is given an explicit arg vector — there is no shell, so no quoting or metacharacter

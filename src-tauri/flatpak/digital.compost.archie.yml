@@ -18,8 +18,20 @@ command: archie
 # The web-tier video transcode (src-tauri/src/video.rs) shells out to the runtime's `ffmpeg`, and
 # H.264 — the default target, and the format most authored video already IS — is not in the base
 # runtime. The ticket's decision was to make H.264 work on a stock install. Measured on 2026-07-27,
-# that needs no manifest stanza at all, and adding one would be cargo cult. The evidence, so the next
-# reader can re-run it rather than trust it:
+# IT ALREADY DOES, with this manifest exactly as it stands; a stanza would be cargo cult.
+#
+# 0. THE DIRECT PROOF, which needs no reasoning about metadata at all — run against the packaged app
+#    that is installed today:
+#
+#        $ flatpak run --command=sh digital.compost.archie -c 'ffmpeg -hide_banner -encoders' | grep libx264
+#         V....D libx264   libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (codec h264)
+#        $ flatpak run --command=sh digital.compost.archie -c 'ffmpeg -hide_banner -decoders' | grep -w h264
+#         VFS..D h264      H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10
+#
+#    while `flatpak info --show-metadata digital.compost.archie` declares NO codec extension of any
+#    kind. Encode and decode both work already. The rest of this note explains why.
+#
+# The evidence, so the next reader can re-run it rather than trust it:
 #
 # 1. THE RUNTIME ALREADY DECLARES THE EXTENSION POINT. `flatpak info --show-metadata
 #    org.gnome.Platform//49` contains, verbatim:
@@ -40,23 +52,53 @@ command: archie
 #    and it is wrong here. The extension ships its own `libavcodec.so.61.19.101`, `libavformat.so.61`,
 #    `libavutil.so.59`, `libsw{scale,resample}`, `libpostproc`, plus `libx264.so.165` /
 #    `libx265.so.216`. `objdump -p` on the extension's libavcodec lists `NEEDED libx264.so.165` and
-#    `NEEDED libx265.so.216`; the BASE runtime's libavcodec lists neither. `add-ld-path = lib` puts
-#    `/usr/lib/x86_64-linux-gnu/codecs-extra/lib` on LD_LIBRARY_PATH, so the runtime's
-#    `/usr/bin/ffmpeg` resolves `libavcodec.so.61` to the extension's copy and gains H.264 in BOTH
-#    directions. Decode is the half that actually bites: the base build carries
+#    `NEEDED libx265.so.216`; the BASE runtime's libavcodec lists neither, at the identical soname
+#    (13,713,488 B against 10,517,240 B). The extension's `bin/` holds one unrelated binary and no
+#    ffmpeg, so the capability arrives purely by SHADOWING the library under the runtime's own
+#    `/usr/bin/ffmpeg`. Decode is the half that actually bites: the base build carries
 #    `--disable-decoder='h264,hevc,vc1,vvc'`, so without the extension the sidecar cannot even READ
 #    typical authored video, whatever it writes.
+#
+# 2a. HOW THE SHADOWING HAPPENS — NOT via `LD_LIBRARY_PATH`, and this contradicts the documentation.
+#    `man 5 flatpak-metadata` says `add-ld-path` "will be appended to LD_LIBRARY_PATH". Measured
+#    inside this app's own sandbox, `LD_LIBRARY_PATH` is the EMPTY STRING and the shadowing still
+#    happens — flatpak generates a loader config instead:
+#
+#        $ flatpak run --command=sh digital.compost.archie -c 'echo "[$LD_LIBRARY_PATH]"'
+#        []
+#        $ … -c 'cat /run/flatpak/ld.so.conf.d/runtime-*codecs-extra*.conf'
+#        /usr/lib/x86_64-linux-gnu/codecs-extra/lib
+#        $ … -c 'ldd /usr/bin/ffmpeg' | grep libavcodec
+#        libavcodec.so.61 => /usr/lib/x86_64-linux-gnu/codecs-extra/lib/libavcodec.so.61
+#
+#    Recorded because the documented answer sends a debugger down the wrong path: someone chasing a
+#    missing codec will `env | grep LD_LIBRARY_PATH`, find nothing, and wrongly conclude the
+#    extension is not mounted. The file to look at is `/run/flatpak/ld.so.conf.d/`.
 #
 # 3. GNOME 49 sits on freedesktop 25.08 (`org.freedesktop.Platform` installs as `freedesktop-sdk-
 #    25.08.14`, branch `25.08`), which is why the version above reads `25.08-extra`. If this manifest
 #    is ever bumped to a newer GNOME runtime, re-read that stanza — the extension's branch moves with
-#    the freedesktop base, not with GNOME's number.
+#    the freedesktop base, not with GNOME's number. NOTE for anyone who reads an older guide: the
+#    predecessor extension `org.freedesktop.Platform.ffmpeg-full` STOPS at branch 24.08 — there is no
+#    25.08 — and `codecs-extra//25.08-extra` is its successor. Declaring ffmpeg-full here would name
+#    a ref that does not exist.
 #
-# NOT VERIFIED HERE, and deliberately not claimed: no Flatpak was built or run for this change. The
-# above is read from the installed runtime's metadata and the extension's own ELF headers. A packaged
-# run is still the outstanding check on Archie-7e6f, together with `video_probe_encoders` reporting
-# `h264: true` inside the sandbox. `video_probe_encoders` never throws, so a machine that somehow
-# lacks the extension greys the control with a reason rather than failing mid-publish.
+# 4. PRIOR ART, opened rather than assumed. `flathub/com.github.rafostar.Clapper` DOES declare
+#    `org.freedesktop.Platform.ffmpeg-full` (`version 24.08`, `directory lib/ffmpeg`, `add-ld-path .`)
+#    plus a `mkdir -p /app/lib/ffmpeg` cleanup-command — but it is on GNOME 47 / 24.08, the old
+#    arrangement, and the mkdir exists precisely BECAUSE an app-declared point mounts under `/app`,
+#    which the app must create. None of it transfers to a `/usr`-mounted runtime extension. On the
+#    current generation the pattern is the opposite: `io.github.seadve.Kooha` (GNOME 50, a screen
+#    recorder that encodes H.264), `de.haeckerfelix.Shortwave` (GNOME 50) and `fr.handbrake.ghb`
+#    (GNOME 49, a dedicated transcoder) declare NO codec extension at all. Across 29 apps installed
+#    on this machine, zero declare one.
+#
+# NOT VERIFIED, and deliberately not claimed: the transcode itself was never driven end-to-end in the
+# packaged app. What IS verified above is that ffmpeg inside the sandbox offers H.264 both ways. The
+# outstanding check on Archie-7e6f is a real publish through `video_transcode`. Note the residual
+# case the probe still earns its keep on: a `--no-related` install or a pruning distro could lack the
+# extension, and `video_probe_encoders` never throws, so such a machine greys the control with a
+# reason rather than failing mid-publish.
 
 finish-args:
   - --socket=wayland # show the window under Wayland
