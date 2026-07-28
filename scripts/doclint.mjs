@@ -57,7 +57,11 @@ const scopesOf = (fm) => (Array.isArray(fm.scope) ? fm.scope : fm.scope ? fm.sco
 function mdFiles(dir) {
   const abs = join(ROOT, dir);
   if (!existsSync(abs)) return [];
-  return readdirSync(abs).filter((f) => f.endsWith(".md")).map((f) => join(dir, f));
+  // symlinks are excluded: .claude/rules/hub-*.md are scope-push aliases of hubs/*.md
+  // (single source of truth is hubs/); counting them here would double every hub.
+  return readdirSync(abs)
+    .filter((f) => f.endsWith(".md") && !lstatSync(join(abs, f)).isSymbolicLink())
+    .map((f) => join(dir, f));
 }
 
 const RULE_DIRS = [".claude/rules"];
