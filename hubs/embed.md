@@ -19,7 +19,7 @@ receiver-brand-checks, or hydration timing, all classes vitest is structurally b
 
 ## Binding rules
 - [[archie-viewer-eager-closure]] — a value import of `reader.ts` from the entry graph ships
-  OSD eagerly (257.9KB→32.7KB gz was the regression); only `eagerGzKB` sees it, `entryGzKB`/
+  OSD eagerly (32.7KB→257.9KB gz was the regression); only `eagerGzKB` sees it, `entryGzKB`/
   `totalGzKB` moved <0.2KB on the same leak
 - [[vitest-css-id-empty-string]] — tokens must load via the `virtual:archie-tokens` id, not a
   bare `.css` import — vitest silently returns `""` while the real esbuild build is correct
@@ -59,5 +59,6 @@ receiver-brand-checks, or hydration timing, all classes vitest is structurally b
 ## Open & hazards
 - The unattributed smoke.mjs flake has two live suspects (narrative section stepper remount, AV
   note-list post-click reads) — neither confirmed or ruled out as of 2026-07-26
-- CI's `embed-smoke` job is the only thing that builds from current source AND drives real
-  Chromium — unit suites cannot substitute for it on any of the four bug classes above
+- CI's `embed-smoke` job is the only gate driving real Chromium against current source
+  (hit-testing, fetch brand-checks, completeness); eager-closure is caught separately by
+  `archie-viewer-artifact`'s `bundle:check` (esbuild metafile, no browser)
