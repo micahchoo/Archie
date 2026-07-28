@@ -381,8 +381,17 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     // fields win; only the asset triple comes from disk. objectsFromManifest is the round-trip loadLibrary relies on.
     if (!runAssets) {
       const existing = await src.getOptional<IIIFManifest>(`${exhibit.slug}/manifest.json`);
-      if (existing) {
-        const published = new Map(objectsFromManifest(existing).map((o) => [o.id, o]));
+      const publishedNow = existing ? new Map(objectsFromManifest(existing).map((o) => [o.id, o])) : null;
+      // A just-added ASSET object has no published projection, so this pass cannot recover its asset
+      // triple — and the `!p` branch below would then emit the MODEL's refs, i.e. a raw `/assets/{name}`
+      // source and a working `/assets-thumb/{name}` thumbnail, both pointing at files a JSON-only pass
+      // never writes. That shipped a manifest referencing a thumbnail that does not exist (Archie-19d7:
+      // a repeating 404 on {slug}/assets-thumb/{name}). Force the byte passes for this exhibit, exactly
+      // as the missing-manifest self-heal below does, and for the same reason.
+      if (publishedNow && exhibit.objects.some((o) => o.source.startsWith(ASSET_PREFIX) && !publishedNow.has(o.id))) {
+        runAssets = true;
+      } else if (existing && publishedNow) {
+        const published = publishedNow;
         manifestExhibit = {
           ...exhibit,
           objects: exhibit.objects.map((o) => {
