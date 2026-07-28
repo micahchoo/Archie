@@ -10,6 +10,11 @@ use tauri::Manager;
 // stays in Rust (Q-12) and the endpoints have no CORS, so the webview can't call them itself.
 mod github;
 
+// Native video transcode (Archie-7e6f) — the web quality tier's desktop encoder. WebKitGTK has no
+// WebCodecs, so the webview cannot transcode video itself; this shells out to the runtime's ffmpeg.
+// See video.rs for the measured GNOME 49 codec findings (H.264 needs the codecs-extra extension).
+mod video;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -37,6 +42,8 @@ pub fn run() {
             github::gh_token_load,
             github::gh_token_clear,
             github::gh_push_tree,
+            video::video_probe_encoders,
+            video::video_transcode,
         ])
         .setup(|app| {
             let file = SubmenuBuilder::new(app, "File").quit().build()?;
