@@ -21,6 +21,7 @@ import {
   // ADR-0020 tree marker gate — the SHARED validator (was a hand-rolled marker check here); the hosted
   // apps/viewer path (published.ts) composes the SAME function, so both surfaces apply one policy.
   assertArchieTreeMarker,
+  migratingJsonSource,
   // The untrusted-archive open seam (ISSUES.md Issue 5 canonicalization): the zip-bomb-cap +
   // ADR-0020-marker-validate + capped-fetch logic used to be copy-pasted here and in
   // apps/viewer/src/published.ts — both now compose these instead of redefining them.
@@ -218,11 +219,14 @@ export async function openLibraryFromTree(base: string, fetchImpl: typeof fetch 
   const src = httpJsonSource(base, fetchImpl);
   // ADR-0020 marker gate — the SHARED `assertArchieTreeMarker` (was a hand-rolled copy here). Lenient-on-
   // absent, present-must-be-current; identical policy to the hosted apps/viewer path (published.ts).
-  await assertArchieTreeMarker(src);
+  const marker = await assertArchieTreeMarker(src);
+  // Archie-69f9: the gate accepts an OLDER tree when the registry can carry it forward, so read
+  // through the migrating source. Identity when the tree is current (the only case today).
+  const src2 = typeof marker?.version === "number" ? migratingJsonSource(src, marker.version) : src;
   // No marker → accept iff exhibits.json parses (also the marker-present validation's gallery read).
   let gallery: ExhibitsJson;
   try {
-    gallery = await src.get<ExhibitsJson>("exhibits.json");
+    gallery = await src2.get<ExhibitsJson>("exhibits.json");
   } catch (e) {
     openError(e);
   }

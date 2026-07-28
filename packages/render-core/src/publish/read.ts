@@ -13,6 +13,7 @@ import type { W3CAnnotation } from "../wadm/types.js";
 import type { PortableExhibit } from "./portable.js";
 import { NotAnArchieLibraryError, type ArchieMarker } from "./marker.js";
 import { SCHEMA_VERSION } from "../migrate/migrate.js";
+import { TREE_MIGRATIONS, treeMigrationsSince, migrateTreeDoc, migrationGapMessage } from "../migrate/tree.js";
 
 /** The narrow read-only byte seam both real sources satisfy — fs-walk over an opened Filesystem, or
  *  HTTP `fetch` over `${BASE}/published`. Tree-relative paths (`"voynich/manifest.json"`). NOT a
@@ -74,6 +75,72 @@ export function fsJsonSource(fs: Filesystem): JsonSource {
 }
 
 /**
+ * Decorate a `JsonSource` so every document it hands back is brought forward from `from` to the current
+ * `SCHEMA_VERSION` (Archie-69f9). This is where tree migration actually happens: the tree on disk is
+ * never rewritten — it may be a static host the reader cannot write to at all — so an older library
+ * opens by being migrated in memory, per read.
+ *
+ * `from >= SCHEMA_VERSION` (the common case, and the only case today) returns `src` UNCHANGED, so the
+ * normal path pays literally nothing: no wrapper, no per-read branch. A caller must have already
+ * established that the gap is coverable — `assertArchieTreeMarker` / `validateArchieMarker` refuse
+ * otherwise — hence the throw here rather than a silent identity: reaching this with an uncoverable gap
+ * means a gate was bypassed, and that is a bug, not a library problem.
+ */
+export function migratingJsonSource(src: JsonSource, from: number, migrations = TREE_MIGRATIONS, target: number = SCHEMA_VERSION): JsonSource {
+  if (from >= target) return src;
+  const resolved = treeMigrationsSince(from, target, migrations);
+  if (!resolved.ok) {
+    throw new Error(
+      `migratingJsonSource: no migration path from v${from} to v${target} (${resolved.gap.reason}) — ` +
+        "the marker gate should have refused this tree before it got here",
+    );
+  }
+  const chain = resolved.migrations;
+  if (chain.length === 0) return src;
+  return {
+    get: async <T>(path: string): Promise<T> => migrateTreeDoc(await src.get<T>(path), path, chain) as T,
+    getOptional: async <T>(path: string): Promise<T | null> => {
+      const doc = await src.getOptional<T>(path);
+      // An ABSENT document stays absent — a migration must never invent one. Issue 23's
+      // absent-vs-failed distinction is upstream of this and survives it untouched.
+      return doc === null ? null : (migrateTreeDoc(doc, path, chain) as T);
+    },
+  };
+}
+
+/**
+ * The one call a reader makes instead of `fsJsonSource(fs)` when the tree may be OLDER than this
+ * reader (Archie-69f9): read the marker's version, then decorate. Deliberately a helper rather than a
+ * `from: number` threaded through `openArchieLibrary` → caller → source, because that parameter would
+ * have to cross three packages and every call site would have to be right about it; here the tree
+ * carries its own version and one function reads it.
+ *
+ * Cheap: one extra `archie.json` read, and only ever on the open path. Absent or malformed marker →
+ * `SCHEMA_VERSION`, i.e. no migration — matching the gates' lenient-on-absent rule (a pre-marker tree
+ * predates versioning, so there is no version to migrate FROM, and guessing v0 would run it through a
+ * chain written for trees that actually declared v0).
+ */
+export async function migratedFsJsonSource(fs: Filesystem, migrations = TREE_MIGRATIONS): Promise<JsonSource> {
+  const src = fsJsonSource(fs);
+  const marker = await src.getOptional<Partial<ArchieMarker>>("archie.json").catch(() => null);
+  const from = typeof marker?.version === "number" && Number.isFinite(marker.version) ? marker.version : SCHEMA_VERSION;
+  if (from >= SCHEMA_VERSION) return src;
+  // An UNCOVERABLE gap here is a real library the reader cannot open, NOT a bypassed gate — because
+  // several readers on this seam legitimately run ungated: `loadPortableGallery` and
+  // `readPublishedExhibit` are called on a tree whose marker was checked elsewhere (openArchieLibrary)
+  // or, for Studio's own preview, never needed checking. So raise the SAME friendly error the gate
+  // would have raised, not `migratingJsonSource`'s internal invariant throw.
+  //
+  // (Found by the wiring test rather than by reading the code: routing an ungated reader through the
+  // gate-adjacent primitive surfaced "the marker gate should have refused this tree before it got
+  // here" — a sentence about our own bug — where a reader deserves "re-publish it from a current
+  // Archie". The two layers need different failure modes and now have them.)
+  const resolved = treeMigrationsSince(from, SCHEMA_VERSION, migrations);
+  if (!resolved.ok) throw new NotAnArchieLibraryError(migrationGapMessage(from, resolved.gap));
+  return migratingJsonSource(src, from, migrations);
+}
+
+/**
  * ADR-0020 marker gate over an HTTP-shaped published TREE (a `JsonSource`) — the read-side twin of
  * `validateArchieMarker` (which takes an opened `Filesystem` for the zip path). ONE implementation, so the
  * embed's tree open (`load.ts`) and the hosted apps/viewer (`published.ts`) apply the SAME policy instead
@@ -91,7 +158,9 @@ export function fsJsonSource(fs: Filesystem): JsonSource {
  *     possibly-fine library on a marker fetch failure.
  *
  * Returns the parsed marker (or `null` when absent) so a caller can reuse it — e.g. read its `generation`
- * (STALENESS) — without a second fetch.
+ * (STALENESS) — without a second fetch. **A caller that got a marker with `version < SCHEMA_VERSION`
+ * MUST read through `migratingJsonSource(src, marker.version)`** (Archie-69f9); this gate accepting an
+ * older tree is a promise that the migrations exist, not that the raw documents are readable as-is.
  */
 export async function assertArchieTreeMarker(src: JsonSource): Promise<Partial<ArchieMarker> | null> {
   let marker: Partial<ArchieMarker> | null;
@@ -110,10 +179,27 @@ export async function assertArchieTreeMarker(src: JsonSource): Promise<Partial<A
         "This file isn't an Archie library. Choose a published Archie tree or .archie.zip.",
       );
     }
-    if (marker.version !== SCHEMA_VERSION) {
+    if (typeof marker.version !== "number" || !Number.isFinite(marker.version)) {
       throw new NotAnArchieLibraryError(
-        `This library was made with a different version of Archie (schema v${String(marker.version)}, this viewer reads v${SCHEMA_VERSION}). Re-publish it from a current Archie.`,
+        "This library's version marker is malformed. Re-publish it from a current Archie.",
       );
+    }
+    if (marker.version > SCHEMA_VERSION) {
+      // NEWER tree, older reader — the only direction ADR-0020:53 sanctions as a refusal, and nothing
+      // the author can do to the FILE helps. Advice must be about the READER.
+      throw new NotAnArchieLibraryError(
+        `This library was made with a newer version of Archie (schema v${marker.version}, this viewer reads v${SCHEMA_VERSION}). Update Archie to open it.`,
+      );
+    }
+    if (marker.version < SCHEMA_VERSION) {
+      // OLDER tree — accepted iff the registry can actually carry it forward (Archie-69f9). The caller
+      // wraps its source with `migratingJsonSource(src, marker.version)`. Refusing on a GAP rather than
+      // best-efforting is tldraw's rule (`StoreSchema.mjs:108`, "Incompatible schema?") and the reason
+      // accepting an old version is safe at all: coverage is total or it is a refusal.
+      const resolved = treeMigrationsSince(marker.version, SCHEMA_VERSION);
+      if (!resolved.ok) {
+        throw new NotAnArchieLibraryError(migrationGapMessage(marker.version, resolved.gap));
+      }
     }
   }
   return marker; // null = absent (lenient); a present marker is now validated

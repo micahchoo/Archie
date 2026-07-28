@@ -18,7 +18,7 @@ import type { Reading } from "../model/model.js";
 import type { W3CAnnotation } from "../wadm/types.js";
 import type { ExhibitsJson } from "../iiif/exhibits.js";
 import type { PublishedExhibitData } from "./site.js";
-import { readExhibitTree, fsJsonSource, type NoteTransform } from "./read.js";
+import { readExhibitTree, migratedFsJsonSource, type NoteTransform } from "./read.js";
 
 /** A portably-read exhibit: the preview/HTTP `PublishedExhibitData` PLUS the Readings registry (the
  *  legend needs it) — structurally what the Viewer consumes. As of the ADR-0007 read↔write fix,
@@ -179,7 +179,10 @@ export async function loadPortableExhibit(fs: Filesystem, slug: string): Promise
     },
     note: (n) => rewriteNoteBodyMedia(root, slug, n, blobUrls),
   };
-  const exhibit = await readExhibitTree(fsJsonSource(fs), slug, transform);
+  // Archie-69f9: read through the migrating source, so an OLDER published tree opens instead of
+  // refusing. Identity today (empty registry / v1) and identity forever for a current tree — the
+  // decorator returns `src` unchanged when there is nothing to bring forward.
+  const exhibit = await readExhibitTree(await migratedFsJsonSource(fs), slug, transform);
   return {
     exhibit,
     blobUrls,
@@ -193,5 +196,5 @@ export async function loadPortableExhibit(fs: Filesystem, slug: string): Promise
 /** Read the Library Gallery index (`exhibits.json`) from the opened Filesystem — the portable
  *  equivalent of the Viewer's HTTP `loadGallery`. No media, so no blob lifecycle. */
 export async function loadPortableGallery(fs: Filesystem): Promise<ExhibitsJson> {
-  return fsJsonSource(fs).get<ExhibitsJson>("exhibits.json");
+  return (await migratedFsJsonSource(fs)).get<ExhibitsJson>("exhibits.json"); // Archie-69f9
 }

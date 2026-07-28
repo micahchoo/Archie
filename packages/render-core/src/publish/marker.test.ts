@@ -65,7 +65,7 @@ describe("ADR-0020 L1 self-ID marker — write side (publishLibrary)", () => {
 describe("ADR-0020 L1 self-ID marker — read side (validateArchieMarker)", () => {
   it("accepts a freshly published tree (round-trip — marked, valid)", async () => {
     const { fs } = await libraryToZipFs(library, () => []);
-    await expect(validateArchieMarker(fs)).resolves.toBeUndefined();
+    await expect(validateArchieMarker(fs)).resolves.toBe(SCHEMA_VERSION); // Archie-69f9: returns the version to migrate FROM (was void)
   });
 
   it("ACCEPTS an UNMARKED zip that has exhibits.json (pre-marker real export — the regression)", async () => {
@@ -74,19 +74,19 @@ describe("ADR-0020 L1 self-ID marker — read side (validateArchieMarker)", () =
     // Rejecting this on the missing marker alone is the bug the user hit.
     await writeJson(fs, "collection.json", { "@context": "http://iiif.io/api/presentation/3/context.json", type: "Collection" });
     await writeJson(fs, "exhibits.json", { library: { id: "x" }, exhibits: [] });
-    await expect(validateArchieMarker(fs)).resolves.toBeUndefined();
+    await expect(validateArchieMarker(fs)).resolves.toBe(SCHEMA_VERSION); // Archie-69f9: returns the version to migrate FROM (was void)
   });
 
   it("ACCEPTS an UNMARKED zip with only exhibits.json (collection.json absent)", async () => {
     const fs = new MemoryFilesystem();
     await writeJson(fs, "exhibits.json", { library: { id: "x" }, exhibits: [] });
-    await expect(validateArchieMarker(fs)).resolves.toBeUndefined();
+    await expect(validateArchieMarker(fs)).resolves.toBe(SCHEMA_VERSION); // Archie-69f9: returns the version to migrate FROM (was void)
   });
 
   it("ACCEPTS an UNMARKED zip with only collection.json (exhibits.json absent)", async () => {
     const fs = new MemoryFilesystem();
     await writeJson(fs, "collection.json", { type: "Collection" });
-    await expect(validateArchieMarker(fs)).resolves.toBeUndefined();
+    await expect(validateArchieMarker(fs)).resolves.toBe(SCHEMA_VERSION); // Archie-69f9: returns the version to migrate FROM (was void)
   });
 
   it("rejects a junk zip with NEITHER collection.json NOR exhibits.json (genuinely not Archie)", async () => {

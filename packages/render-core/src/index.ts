@@ -57,7 +57,10 @@ export * from "./query/marker-contrast.js";
 // Published-shape (W3CAnnotation) accessors — the canonical home for the viewer's body/reading/overlay reads.
 export * from "./query/published.js";
 // The source-parameterized published-tree reader (the domino) — site/portable/viewer adapt over it.
-export { readExhibitTree, fsJsonSource, FailedReadError, assertArchieTreeMarker, type JsonSource, type NoteTransform } from "./publish/read.js";
+export { readExhibitTree, fsJsonSource, migratingJsonSource, migratedFsJsonSource, FailedReadError, assertArchieTreeMarker, type JsonSource, type NoteTransform } from "./publish/read.js";
+// Archie-69f9: tree-level schema migration — the registry a schema bump appends to, plus the planner
+// whose refusal keeps ADR-0020s clean-refusal guarantee intact when the gate accepts an older tree.
+export { TREE_MIGRATIONS, treeMigrationsSince, migrateTreeDoc, migrationGapMessage, type TreeMigration, type TreeMigrationScope, type TreeMigrationGap } from "./migrate/tree.js";
 
 // Schema migration runner + version stamping (CONTEXT orphan gap; strategy §39).
 export * from "./migrate/migrate.js";

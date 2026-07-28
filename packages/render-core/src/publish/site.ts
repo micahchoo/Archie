@@ -24,7 +24,7 @@ import { langMap, type IIIFManifest, type LangMap } from "../iiif/presentation.j
 import type { Exhibit, AObject, Section, Reading, RightsFields } from "../model/model.js";
 import type { DziTileSource } from "../iiif/resolve.js";
 import type { PortableExhibit } from "./portable.js"; // type-only (erased) — the readings superset; type-cycle is harmless
-import { readExhibitTree, fsJsonSource } from "./read.js";
+import { readExhibitTree, fsJsonSource, migratedFsJsonSource } from "./read.js";
 import { libraryPageHtml, exhibitPageHtml, sitemapTxt, sitemapXml } from "./static-pages.js";
 import { citationCff } from "../cite/citation.js";
 import { readAnnotations } from "../spine/persist.js";
@@ -817,7 +817,7 @@ async function recoverAssetSources(objects: AObject[], manifestId: string, exDir
  */
 export async function loadLibrary(fs: Filesystem): Promise<LoadedLibrary> {
   const root = await fs.root();
-  const src = fsJsonSource(fs);
+  const src = await migratedFsJsonSource(fs); // Archie-69f9: an older tree migrates on read, not refuses
   const ex = await src.get<ExhibitsJson>("exhibits.json");
   const cards = [...ex.exhibits].sort((a, b) => a.order - b.order);
   const exhibits: Exhibit[] = [];
@@ -890,5 +890,5 @@ export interface PublishedExhibitData extends RightsFields {
  */
 export async function readPublishedExhibit(fs: Filesystem, slug: string): Promise<PortableExhibit> {
   // Thin adapter over the shared reader (the domino); preview is the fs source, no transform.
-  return readExhibitTree(fsJsonSource(fs), slug);
+  return readExhibitTree(await migratedFsJsonSource(fs), slug); // Archie-69f9
 }
