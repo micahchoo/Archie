@@ -911,3 +911,46 @@ describe("imageDims — remote dimension probe routes through the injected nativ
     warn.mockRestore();
   });
 });
+
+// ── The view is steered ONCE per import, not once per chunk (Archie-4855) ────────────────────────
+// The bug: `beginBatch`'s chunk flush called setCurrentObjectId every IMPORT_PERSIST_CHUNK (25) files.
+// Each move fires App.svelte:1182's rail effect — `scrollIntoView({ behavior: "smooth" })` — plus a
+// roving-tabindex jump (:1193) and a master re-mint, so a 100-file import scrolled the rail out from
+// under the pointer four times and a 1,000-file one forty times. Clicking an object mid-import missed.
+//
+// These count the CALLS, because the count is the whole defect: steering to the newest object is
+// correct behaviour, doing it repeatedly mid-run is not.
+describe("import steers the view once, not per chunk (Archie-4855)", () => {
+  it("a 100-file drop moves the current object EXACTLY once, to the last object", async () => {
+    const { ctx, exhibits, switchTo } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    exhibits.push({ id: "ex-a", slug: "a", title: "A", objects: [] } as unknown as ExhibitMeta);
+    switchTo("a");
+    const steerSpy = vi.spyOn(ctx, "setCurrentObjectId");
+    const files = Array.from({ length: 100 }, (_, i) => new File([new Uint8Array([0])], `f${i}.mp3`, { type: "audio/mpeg" }));
+
+    await flows.addFiles(files);
+
+    const objs = exhibits.find((e) => e.slug === "a")!.objects;
+    expect(objs.length).toBe(100); // the import really happened — otherwise 0 steers passes vacuously
+    // Four chunks at 25. Pre-fix this was 4; the contract is 1.
+    expect(steerSpy).toHaveBeenCalledTimes(1);
+    // And it lands on the TAIL, so the reader still ends up looking at what just arrived.
+    expect(steerSpy).toHaveBeenLastCalledWith(objs[objs.length - 1]!.id);
+  });
+
+  it("a single-file add still steers, so the common case is unchanged", async () => {
+    const { ctx, exhibits, switchTo } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    exhibits.push({ id: "ex-b", slug: "b", title: "B", objects: [] } as unknown as ExhibitMeta);
+    switchTo("b");
+    const steerSpy = vi.spyOn(ctx, "setCurrentObjectId");
+
+    await flows.addFiles([new File([new Uint8Array([0])], "one.mp3", { type: "audio/mpeg" })]);
+
+    const objs = exhibits.find((e) => e.slug === "b")!.objects;
+    expect(objs.length).toBe(1);
+    expect(steerSpy).toHaveBeenCalledTimes(1); // the fix must not cost the single-add its steer
+    expect(steerSpy).toHaveBeenLastCalledWith(objs[0]!.id);
+  });
+});

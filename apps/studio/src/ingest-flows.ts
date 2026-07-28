@@ -316,11 +316,19 @@ export function createIngestFlows(ctx: IngestContext) {
 
   /** A durable-append batch for ONE pinned exhibit: collect built objects and commit them to library.json in
    *  ONE persist per chunk instead of one-per-object. Media byte-writes (per file, separate save-queue keys)
-   *  and view seeding (seedMaster) still happen per object — only the library.json append coalesces. The view
-   *  is steered to the freshly-landed tail only AFTER its chunk is durable (mirrors the per-object
-   *  appendObject's "persist THEN setCurrentObjectId" ordering), so `current` never points at an object not
-   *  yet in the reactive meta. Ids come from mintObjectId (ULIDs), so the batch needs no id reservation —
-   *  a queued-but-not-flushed object can't collide with any concurrent add. */
+   *  and view seeding (seedMaster) still happen per object — only the library.json append coalesces.
+   *
+   *  THE VIEW IS STEERED ONCE, ON THE FINAL FLUSH — NOT PER CHUNK (Archie-4855). It used to steer on every
+   *  chunk, which made a large import actively unusable: at IMPORT_PERSIST_CHUNK = 25, a 1,000-file folder
+   *  moved `current` 40 times, and each move fires App.svelte's rail `$effect` →
+   *  `scrollIntoView({ behavior: "smooth" })` plus a roving-tabindex jump plus a master re-mint. The rail
+   *  scrolled out from under the pointer every 25 files, so clicking an object mid-import missed.
+   *  Steering still happens AFTER the chunk is durable (mirrors the per-object appendObject's
+   *  "persist THEN setCurrentObjectId" ordering), so `current` never points at an object not yet in the
+   *  reactive meta — that invariant is unchanged, only its frequency is.
+   *
+   *  Ids come from mintObjectId (ULIDs), so the batch needs no id reservation — a queued-but-not-flushed
+   *  object can't collide with any concurrent add. */
   function beginBatch(slug: string) {
     let pending: ObjectMeta[] = [];
     let lastId: string | null = null;
@@ -329,7 +337,6 @@ export function createIngestFlows(ctx: IngestContext) {
       const chunk = pending;
       pending = [];
       await ctx.lib.appendObjects(slug, chunk);
-      if (lastId && slug === ctx.currentSlug()) ctx.setCurrentObjectId(lastId);
     };
     return {
       add(obj: ObjectMeta, blobUrl?: string): void {
@@ -338,7 +345,15 @@ export function createIngestFlows(ctx: IngestContext) {
         lastId = obj.id;
       },
       flushIfFull(): Promise<void> { return pending.length >= IMPORT_PERSIST_CHUNK ? persistChunk() : Promise.resolve(); },
-      flush(): Promise<void> { return persistChunk(); },
+      /** Persist the tail, THEN steer — once. The steer is deliberately NOT inside persistChunk: at a
+       *  file count that is an exact multiple of IMPORT_PERSIST_CHUNK the tail was already drained by
+       *  flushIfFull, so a steer guarded by `pending.length` would never fire at all (measured while
+       *  building this: a 100-file drop steered 0 times, not 1). Awaiting persistChunk first keeps the
+       *  "persist THEN setCurrentObjectId" ordering, so `current` is never ahead of the reactive meta. */
+      async flush(): Promise<void> {
+        await persistChunk();
+        if (lastId && slug === ctx.currentSlug()) ctx.setCurrentObjectId(lastId);
+      },
     };
   }
   type AppendBatch = ReturnType<typeof beginBatch>;
