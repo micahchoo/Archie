@@ -29,12 +29,15 @@ test("a library of only examples refuses to publish, and says why", async ({ pag
   // The way FORWARD is named, not just the refusal — an author who is only told "no" is stuck.
   await expect(dialog.getByText(/keep a copy/i)).toBeVisible();
 
-  // And no destination is reachable. These are the four that would each have built an empty site.
-  // toHaveCount so the assertion waits rather than racing the surface's own render.
-  await expect(dialog.getByRole("button", { name: /publish to the web|to github pages/i })).toHaveCount(0);
-  await expect(dialog.getByRole("button", { name: /^locally$/i })).toHaveCount(0);
-  await expect(dialog.getByRole("button", { name: /share a working copy/i })).toHaveCount(0);
-  await expect(dialog.getByRole("button", { name: /a deposit copy/i })).toHaveCount(0);
+  // And no destination is reachable. Since Archie-c367 the destinations are a radio list, so this
+  // asserts on the rows themselves — zero of them — rather than on the four card buttons that used to
+  // stand where they stand. `toHaveCount` waits rather than racing the surface's own render.
+  await expect(dialog.locator("[data-destination]")).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Publish", exact: true })).toHaveCount(0);
+  // Nor the additional export actions — a deposit bag or an .html file of an empty library is the
+  // same empty site in a different wrapper.
+  await expect(dialog.getByRole("button", { name: /deposit a copy/i })).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: /one .*\.html.* file/i })).toHaveCount(0);
 });
 
 test("forking an example clears the refusal — the destinations come back", async ({ page }) => {
@@ -54,6 +57,8 @@ test("forking an example clears the refusal — the destinations come back", asy
   if (await skip.isVisible().catch(() => false)) await skip.click();
 
   const dialog = page.getByRole("dialog", { name: "Publish" });
-  await expect(dialog.getByRole("heading", { name: /where should this go/i })).toBeVisible();
-  await expect(dialog.getByRole("button", { name: /share a working copy/i })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: /publish your library/i })).toBeVisible();
+  // All four destinations come back, and one of them arrives pre-selected from the probe.
+  await expect(dialog.locator("[data-destination]")).toHaveCount(4);
+  await expect(dialog.locator("[data-destination]").filter({ hasText: "Recommended" })).toHaveCount(1);
 });
