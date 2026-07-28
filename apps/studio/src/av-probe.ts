@@ -120,8 +120,17 @@ export async function probeAvFile(
     // poster — the object still carries its duration, which is the half that always works.
     if (out.width === undefined || out.height === undefined) return out;
 
-    video.currentTime = posterSeekTime(video.duration);
-    if (!(await once(video, "seeked", SEEK_TIMEOUT_MS))) return out;
+    // Seeking to where you ALREADY are fires no `seeked` event, so waiting for one would burn the
+    // full timeout and come back with no poster. That is not hypothetical: a MediaRecorder-produced
+    // webm carries no container duration, `video.duration` reads Infinity, posterSeekTime therefore
+    // returns 0 — and the element is already at 0. Measured in the browser drive
+    // (e2e/av-poster.spec.ts). Frame 0 is already decoded once `loadedmetadata` has fired, so there
+    // is nothing to wait for in that case.
+    const target = posterSeekTime(video.duration);
+    if (Math.abs(video.currentTime - target) > 0.01) {
+      video.currentTime = target;
+      if (!(await once(video, "seeked", SEEK_TIMEOUT_MS))) return out;
+    }
 
     const canvas = deps.createCanvas();
     canvas.width = out.width;
