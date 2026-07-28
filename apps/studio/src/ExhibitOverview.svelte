@@ -1092,8 +1092,10 @@
      metadata-label voice (eyebrows, counts) — guidance styled as a label doesn't get read. */
   .grid-hint { max-width: 100%; margin: var(--space-4) var(--space-6) 0; padding: 0; font-family: var(--font-body); font-size: 0.875rem; line-height: 1.5; color: var(--ink-canvas-secondary); }
 
-  .plate { position: relative; display: flex; flex-direction: column; gap: var(--space-2); width: var(--plate-w, 12.5rem); cursor: pointer; text-align: left; padding: var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); transition: transform 180ms ease, box-shadow 180ms ease; }
-  .plate:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
+  .plate { position: relative; display: flex; flex-direction: column; gap: var(--space-2); width: var(--plate-w, 12.5rem); cursor: pointer; text-align: left; padding: var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-md); transition: transform 180ms ease; }
+  /* No lift: a plate sits ON the overview, it does not float. The raised fill separates it at rest;
+     the 2px rise is the hover affordance. (Archie-1244 / 5c1d Option C) */
+  .plate:hover { transform: translateY(-2px); }
   .plate .order { font-family: var(--font-mono); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-muted); }
   .frame { position: relative; aspect-ratio: 4 / 3; border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-canvas-overlay); display: flex; align-items: center; justify-content: center; }
   /* A real <img> (gap 8, was a background-image span): absolute inset + explicit 100% fill because an
@@ -1113,13 +1115,15 @@
   .caption .lbl .lbl-tail { flex: none; white-space: nowrap; }
   .caption .cnt { font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); }
   .plate.add { background: transparent; box-shadow: none; border: 1px dashed var(--border-canvas-emphasis); justify-content: center; }
-  .plate.add:hover { background: var(--surface-canvas-raised); box-shadow: var(--shadow-lift-low); }
+  .plate.add:hover { background: var(--surface-canvas-raised); }
   .add-frame { background: transparent; border: 1px dashed var(--border-canvas-emphasis); }
   .plate[draggable="true"] { cursor: grab; }
   .plate[draggable="true"]:active { cursor: grabbing; }
   /* Drag-to-reorder feedback (grid): dragged plate dims; drop target shows a quiet signal insert-before bar. */
   .plate-wrap.dragging { opacity: 0.4; } /* dim the whole wrapper (plate + pencil) while it's the drag source */
-  .plate.over { box-shadow: var(--shadow-lift-low), -4px 0 0 var(--accent); }
+  /* Drag-over: the -4px accent bar is the DROP INDICATOR and is the whole point of this rule — only
+     the lift layered beside it goes. (Archie-1244) */
+  .plate.over { box-shadow: -4px 0 0 var(--accent); }
   /* Per-plate pencil (Archie-79be): a quiet glyph over the plate's top-right corner. The wrapper is both the
      flex/drag child AND the positioning context. Faint at rest (still visible on touch), bright on hover/focus.
      PERF (SCALE-GALLERY): content-visibility skips layout/paint/decode of off-screen plates in a large grid —
@@ -1182,8 +1186,8 @@
      so there's nothing for prefers-reduced-motion to suppress. */
   .list .grip.lifted { color: var(--accent); }
   .list > div.moving { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-md); }
-  .list > div button { display: flex; flex: 1; align-items: center; gap: var(--space-4); text-align: left; cursor: pointer; padding: var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); color: inherit; transition: transform 180ms ease, box-shadow 180ms ease; }
-  .list > div button:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
+  .list > div button { display: flex; flex: 1; align-items: center; gap: var(--space-4); text-align: left; cursor: pointer; padding: var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-md); color: inherit; transition: transform 180ms ease; }
+  .list > div button:hover { transform: translateY(-2px); }
   .list > div.end.over button { border: 1px solid var(--accent); color: var(--accent); }
   .li-order { font-family: var(--font-mono); font-size: var(--text-ui-xs); letter-spacing: 0.14em; color: var(--ink-canvas-muted); min-width: 1.5rem; }
   /* A real <img> child now (gap 8) — overflow:hidden clips it to the radius (a background clipped to
@@ -1205,7 +1209,9 @@
   .list > div .row-edit {
     flex: 0 0 auto; margin-left: var(--space-1);
     padding: 0; min-height: 0; border-radius: var(--radius-sm); color: var(--ink-canvas-secondary);
-    transition: opacity 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    /* box-shadow dropped from the transition: `.details-pencil` lost its lift in Archie-1244 phase 1
+       and this variant's :hover sets none either, so there is nothing left here to animate. */
+    transition: opacity 160ms ease, color 160ms ease, border-color 160ms ease;
   }
   .list > div .row-edit:hover { color: var(--accent); border-color: var(--accent); transform: none; }
   .li-add { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised); border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-md); padding: var(--space-3); cursor: pointer; width: 100%; transition: color 160ms ease, border-color 160ms ease; }
@@ -1245,7 +1251,7 @@
   /* Bulk delete — quiet at rest, warms to the semantic-error fill on the armed second-click guard (DetailsEditor idiom); same two-step semantics as before, just relocated off the toolbar. */
   .tray-remove { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-overlay); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: color 160ms ease, background 160ms ease, border-color 160ms ease; white-space: nowrap; }
   .tray-remove:hover:not(:disabled) { background: var(--semantic-error); color: var(--ink-on-accent); border-color: transparent; }
-  .tray-remove.confirming { background: var(--semantic-error); color: var(--ink-on-accent); border-color: transparent; font-weight: 600; box-shadow: var(--shadow-lift-mid); }
+  .tray-remove.confirming { background: var(--semantic-error); color: var(--ink-on-accent); border-color: transparent; font-weight: 600; }
   .tray-remove:disabled { opacity: 0.4; cursor: default; }
   .tray-clear { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: var(--space-2) var(--space-2); background: none; border: none; color: var(--ink-canvas-muted); transition: color 160ms ease; }
   .tray-clear:hover:not(:disabled) { color: var(--accent-2); }
@@ -1254,7 +1260,7 @@
   .tray-done:hover { background: var(--accent); color: var(--ink-on-accent); }
 
   /* Selected state — a rationed accent ring on the plate/row; the checkbox corner appears in select-mode. */
-  .plate-wrap.selected .plate, .list > div.selected button:not(.grip):not(.row-edit) { box-shadow: var(--shadow-lift-low), 0 0 0 2px var(--accent); }
+  .plate-wrap.selected .plate, .list > div.selected button:not(.grip):not(.row-edit) { box-shadow: 0 0 0 2px var(--accent); }
   .checkbox { position: absolute; top: var(--space-2); left: var(--space-2); z-index: 1; width: 1.15rem; height: 1.15rem; border-radius: var(--radius-sm); border: 2px solid var(--border-canvas-emphasis); background: var(--surface-canvas-raised); }
   .checkbox.checked { background: var(--accent); border-color: var(--accent); }
   .checkbox.checked::after { content: "✓"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: var(--ink-on-accent); }
@@ -1283,7 +1289,7 @@
   .ro, .ro:hover { opacity: 0.45; cursor: default; }
   .plate.add.ro:hover { background: transparent; box-shadow: none; transform: none; }
   .ns-start.ro:hover { background: var(--accent); }
-  .li-add.ro:hover { color: var(--ink-canvas-secondary); border-color: var(--border-canvas-emphasis); transform: none; box-shadow: var(--shadow-lift-low); }
+  .li-add.ro:hover { color: var(--ink-canvas-secondary); border-color: var(--border-canvas-emphasis); transform: none; }
   .tb-add.ro:hover, .tb-select.ro:hover { color: var(--ink-canvas-secondary); border-color: var(--border-canvas); }
 
   /* Marquee rubber-band — a faint accent-tinted rectangle over the canvas while background-dragging in select-mode. */
