@@ -46,6 +46,26 @@ export function downloadZip(bytes: Uint8Array, filename: string): void {
   triggerBlobDownload(new Blob([bytes as unknown as BlobPart], { type: "application/zip" }), name, 60_000);
 }
 
+/**
+ * Save a BagIt deposit bag (Archie-039e / Archie-c367). Deliberately NOT `saveZipToDisk`, which forces
+ * an `.archie.zip` suffix: a bag is not an Archie library archive — it is `data/` plus manifests, and
+ * naming it `.archie.zip` would invite someone to feed it back to Archie's importer, which would then
+ * fail on a missing marker. So it saves as a plain `.zip`, through the same two sinks
+ * `saveZipToDisk` uses (native dialog on desktop, anchor download on web — the webview has no
+ * blob-download handler, which is why the Tauri branch cannot be dropped).
+ *
+ * Returns the saved name, or null when the native dialog was dismissed.
+ */
+export async function saveBagZip(bytes: Uint8Array, filename: string): Promise<string | null> {
+  const name = filename.endsWith(".zip") ? filename : `${filename}.zip`;
+  if (isTauri()) {
+    const path = await saveTauriFile(name, bytes);
+    return path ? path.split("/").pop() || name : null;
+  }
+  triggerBlobDownload(new Blob([bytes as unknown as BlobPart], { type: "application/zip" }), name, 60_000);
+  return name;
+}
+
 /** Download the self-contained export as ONE .html file (archie-linkability Q-3). Same download
  *  mechanism as `downloadZip`; a different type and extension because the artifact is a document the
  *  recipient opens directly, not an archive they feed to something. */

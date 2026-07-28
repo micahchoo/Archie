@@ -1,4 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 // The export surface (Archie-c367) — driven, because the thing under test is prop WIRING and hit
 // targets, which svelte-check is structurally blind to (.claude/rules/svelte-no-typecheck-net.md:
@@ -82,6 +86,17 @@ test("an unavailable destination is greyed WITH ITS REASON, and nothing is swapp
   // why the injection is the setup rather than an afterthought.
   await seedIdentity(page);
   await removeFolderPicker(page);
+  // ALSO remove the OS save picker, and this is not incidental. The "no file was quietly produced"
+  // assertion below is only capable of failing if a swap would land on a sink Playwright can
+  // intercept. Measured 2026-07-27 while red-greening this: with the historical defect injected AND
+  // `showSaveFilePicker` left in place, the swapped zip save opened the OS picker, hung, emitted no
+  // download event — and the assertion passed against the defect. With the picker removed the same
+  // injection produced `["archie-library.archie.zip"]` and the assertion went red. A probe that
+  // cannot examine a non-empty subject has not measured anything.
+  await page.addInitScript(() => {
+    // @ts-expect-error non-optional in the lib types, deletable at runtime.
+    delete window.showSaveFilePicker;
+  });
 
   const downloads: string[] = [];
   page.on("download", (d) => downloads.push(d.suggestedFilename()));
@@ -112,6 +127,58 @@ test("an unavailable destination is greyed WITH ITS REASON, and nothing is swapp
   await expect(dialog.locator("[data-destination]").filter({ has: page.locator("input:checked") }))
     .toHaveAttribute("data-destination", before!);
   expect(downloads).toEqual([]);
+});
+
+test("Deposit a copy produces a real BagIt bag, and says what it is", async ({ page }) => {
+  // Archie-039e shipped writeBag and its external bagit-python validation, and explicitly left the
+  // Studio wiring to this ticket. `ondeposit` is a NEW PROP, and a prop can be typed and not bound
+  // with every gate green (.claude/rules/svelte-no-typecheck-net.md) — so this drives the control and
+  // reads the artifact, rather than trusting the type.
+  await seedIdentity(page);
+  await page.addInitScript(() => {
+    // @ts-expect-error deletable at runtime — force the anchor sink Playwright can intercept.
+    delete window.showSaveFilePicker;
+  });
+  const dialog = await openPublishOnAFork(page);
+
+  // Addressed by `data-action`, not by accessible name: the button's name is its title AND its
+  // description, so an anchored name match cannot hit it and an unanchored one would also match the
+  // success panel's prose.
+  const deposit = dialog.locator('[data-action="deposit"]');
+  await expect(deposit).toBeVisible();
+
+  const [download] = await Promise.all([page.waitForEvent("download"), deposit.click()]);
+  // A bag is NOT an .archie.zip — naming it one would invite feeding it back to Archie's importer,
+  // which has no marker to find in it (see `saveBagZip`).
+  expect(download.suggestedFilename()).toMatch(/-bag\.zip$/);
+  expect(download.suggestedFilename()).not.toMatch(/\.archie\.zip$/);
+
+  // MEASURE THE ARTIFACT, not the exit code (.claude/rules/svelte-no-typecheck-net.md). A .zip with
+  // the right name is not a bag; RFC 8493 wants `bagit.txt`, the payload under `data/`, and a
+  // checksum line per payload file.
+  const dir = mkdtempSync(join(tmpdir(), "archie-bag-"));
+  const zipPath = join(dir, "deposit.zip");
+  await download.saveAs(zipPath);
+  const listing = execFileSync("unzip", ["-Z1", zipPath], { encoding: "utf8" }).split("\n").filter(Boolean);
+
+  expect(listing, "a bag declares itself with bagit.txt").toContain("bagit.txt");
+  expect(listing).toContain("bag-info.txt");
+  expect(listing).toContain("manifest-sha256.txt");
+  expect(listing.filter((e) => e.startsWith("data/")).length, "the payload lives under data/").toBeGreaterThan(0);
+  // Every payload file has a checksum line, and every checksum line names a payload file. A manifest
+  // that lists fewer files than the bag carries is exactly what `bagit.py --validate` refuses.
+  execFileSync("unzip", ["-o", "-qq", zipPath, "manifest-sha256.txt", "-d", dir]);
+  const manifest = readFileSync(join(dir, "manifest-sha256.txt"), "utf8").trim().split("\n").filter(Boolean);
+  const hashed = new Set(manifest.map((l) => l.split(/\s+/).slice(1).join(" ")));
+  const payload = listing.filter((e) => e.startsWith("data/") && !e.endsWith("/"));
+  expect([...hashed].sort()).toEqual([...payload].sort());
+  expect(manifest.every((l) => /^[0-9a-f]{64}\s/.test(l)), "each line is a SHA-256 then a path").toBe(true);
+
+  // And the panel names the layout and the checksum, because "a deposit copy" alone does not tell an
+  // author what a repository will do with it.
+  await expect(dialog.getByRole("heading", { name: /deposit copy is saved/i })).toBeVisible();
+  await expect(dialog.getByText(/BagIt bag/)).toBeVisible();
+  await expect(dialog.getByText(/manifest-sha256\.txt/)).toBeVisible();
 });
 
 test("switching quality re-states the numbers on the destinations", async ({ page }) => {

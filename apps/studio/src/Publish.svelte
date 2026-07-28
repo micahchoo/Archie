@@ -706,13 +706,13 @@
         <div class="extras">
           <p class="x-head">Also, whenever you need one:</p>
           {#if ondeposit}
-            <button type="button" class="x-btn" disabled={depositing} onclick={deposit}>
+            <button type="button" class="x-btn" data-action="deposit" disabled={depositing} onclick={deposit}>
               <span class="x-title">{depositing ? "Building the deposit copy…" : "Deposit a copy"}</span>
               <span class="x-desc">Every published file with a checksum beside it, in the BagIt layout repositories ask for. What you hand an archive when they need to prove nothing changed.</span>
             </button>
           {/if}
           {#if onexportselfcontained}
-            <button type="button" class="x-btn" onclick={exportSelfContained}>
+            <button type="button" class="x-btn" data-action="single-file" onclick={exportSelfContained}>
               <span class="x-title">One <code>.html</code> file</span>
               <span class="x-desc">The library <em>and</em> a reader in a single file that opens by double-click — no server, no account, no internet. Search isn't in it. Best for a USB stick or an attachment.</span>
             </button>

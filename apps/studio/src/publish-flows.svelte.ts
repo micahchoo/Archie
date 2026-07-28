@@ -14,7 +14,7 @@ import {
 import { probeArchive, type ArchiveProbe } from "./archive-probe.js";
 import { libraryInventory } from "./archive-inventory.js";
 import { folderSinkSupported } from "./folder-backend.js";
-import { supportsStreamingZipSave, openStreamingZipSave, saveZipToDisk, downloadHtml } from "./binding.js";
+import { supportsStreamingZipSave, openStreamingZipSave, saveZipToDisk, saveBagZip, downloadHtml } from "./binding.js";
 import type { CorruptLogFinding } from "./publish-warnings.js";
 import { pickFolderBinding } from "./folder-backend.js";
 import { sliceToDziAuto } from "./dzi-slice-pool.js";
@@ -616,9 +616,9 @@ export function createPublishFlows(deps: PublishDeps) {
       });
       warnTier(run.rescaled, result.unscaledSelectors);
       const base = (opts.name?.trim() || deps.currentZipName()).replace(/\.archie\.zip$/, "") || "library";
-      const res = await saveZipToDisk(fs, `${base}-bag.zip`);
-      if (res.kind === "cancelled") return { saved: false };
-      return { saved: true, name: res.name, oxum: result.oxum, payloadFiles: result.payloadFiles };
+      const name = await saveBagZip(fs.toZip(), `${base}-bag`);
+      if (name === null) return { saved: false };
+      return { saved: true, name, oxum: result.oxum, payloadFiles: result.payloadFiles };
     },
     openMenu() { s.open = true; },
     close() { s.open = false; },
