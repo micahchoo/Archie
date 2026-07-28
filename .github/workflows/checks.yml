@@ -323,6 +323,39 @@ jobs:
           pnpm sync-dist
           node recipes/smoke.mjs
 
+  # EXPORT FIDELITY. Drives the REAL publishLibrary in headless Chromium (real OPFS, real DZI/bake
+  # worker pools) and asserts in Node, over bytes that left the browser: marker present + LAST-written
+  # (ADR-0020), every JSON ref has a file behind it (Archie-19d7), annotation heads in == out, master
+  # bytes identical, .archie.zip byte-equal to the tree, then composes scripts/verify-publish.mjs over
+  # the result. Its workers check is the only PR-blocking assertion that goes red when both pools die
+  # silently (worker-smoke boots them; this asserts they ran inside a real publish). All 9 checks
+  # proven red-green 2026-07-28; 12/12 unchanged runs; ~2s (Archie-027c).
+  export-fidelity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium (+ OS deps)
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Drive the real publish in Chromium and assert the produced tree
+        run: node scripts/export-fidelity.mjs
+
   # PERF RATCHETS. Both drive BUILT output in a real browser, because both guard failures that are
   # invisible to every unit suite:
   #

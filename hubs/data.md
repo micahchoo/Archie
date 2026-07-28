@@ -4,7 +4,9 @@ scope:
   - "packages/render-core/src/fs/**"
   - "packages/render-core/src/publish/**"
   - "packages/render-core/src/model/**"
-updated: 2026-07-27
+  - "packages/render-core/src/session/**"
+  - "packages/render-core/src/state/**"
+updated: 2026-07-28
 ---
 # data
 > *How is knowledge stored, merged, and kept safe?*
@@ -34,8 +36,16 @@ gate that matters is that suite plus `fs/conformance.ts` run against every backe
   ms threshold.
 
 ## Decisions
-- Archie-cfc1 — `linearHead` now counts `mergeParents`; a resolved note was permanently
-  uneditable/undeletable before this / b090066
+- Archie-01c9 — minimal signals layer (`state/`: atom/computed/transact, 322 code lines, tldraw-cited)
+  ADOPTED per grill 2026-07-28; `workingAnnotations` is a computed over a revision atom, Δ 0.0KB in the
+  embed's eager chunk, perf ratchet live 13/13; the learn-ledger's "transact batches recomputation"
+  claim was wrong — laziness does that, transact batches the SUBSCRIBER tick (both pinned separately)
+  / 90fa87a
+- Archie-69a6 — RecordsDiff undo proven over the PROJECTION, never the log (`session/undo.ts`,
+  `session.entries` byte-identical across undo/redo/bailToMark, O(1) per mutation); freecut's
+  whole-projection snapshot disqualified by the merge model (resurrects an undone note, measured);
+  known limit: undo does not survive save+reload — build ruled session-scoped per grill 2026-07-28
+  / 1ce65c5, `docs/research/undo-feasibility.md`
 - Archie-6b8e — note→section attribution is a 7th content field, dropped on tombstone (non-revivable
   by section un-delete, deliberate) / facb09c
 - Archie-494c — spine stays append-only-DAG, not promoted to an op-log (decision gate, closed)

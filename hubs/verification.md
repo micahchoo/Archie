@@ -6,7 +6,10 @@ scope:
   - ".github/workflows/**"
   - "scripts/doclint.mjs"
   - "scripts/perf/**"
-updated: 2026-07-27
+  - "scripts/export-fidelity.mjs"
+  - "scripts/export-fidelity.ts"
+  - "scripts/export-fidelity.html"
+updated: 2026-07-28
 ---
 # verification
 > *how do I prove a change works?*
@@ -35,6 +38,7 @@ claim from the table below before reaching for a test framework at random.
 | a CSS-text import actually carries the tokens | `tokens.test.ts` content assertion | vitest silently resolved the id to `""` while the shipped bundle was correct — [[vitest-css-id-empty-string]] |
 | real navigation / hit-testing | `apps/studio/e2e` (popstate re-entrancy), `apps/viewer/e2e` (built-output, non-localhost aborted) | static analysis can't see prop wiring or click hit-testing — CI job `e2e` |
 | ~70-object scale holds | `.github/workflows/scale-check.yml` (`workflow_dispatch` only) | real OPFS ingest via `scripts/seed-fixture.mjs`; deliberately never blocks a PR |
+| a real publish produces a faithful tree/zip | `node scripts/export-fidelity.mjs` (CI job `export-fidelity`) | drives `publishLibrary` in real Chromium (OPFS + worker pools live), asserts in Node over emitted bytes; its `workers` check is the only PR gate that reddens on the silent pool-death class — and note the tree stays byte-identical under that injection, so no artifact diff can catch it |
 | knowledge layer (rules/hubs/tickets) is consistent | `scripts/doclint.mjs` (CI job `doclint`, checks.yml) | needs full git history — the job checks out with `fetch-depth: 0`; a shallow local clone gives false reds on pointers/stale-hubs |
 
 ## Binding rules
@@ -53,6 +57,8 @@ claim from the table below before reaching for a test framework at random.
 - Archie-4635 — svelte-check (1464 files, 0/0) proven blind to unbound prop wiring; only a driven browser click caught the dead Cancel button.
 - Archie-656a — a TS2379 violation passed vitest (542 green) and svelte-check (0/0); only `pnpm typecheck` caught it.
 - Archie-676f — scale-check made `workflow_dispatch`-only by design: a multi-minute real-ingest drill must never gate an ordinary PR.
+- Archie-027c — export-fidelity gate shipped and wired as CI job `export-fidelity` (~2s, 12/12 unchanged runs, 9/9 checks red-greened); found `verify-publish.mjs`'s heads line is `check(true, …)` — a report, not an assertion: a 0-of-9-heads tree passed it exit 0 / 35ef836
+- Archie-b5c2 — FSA real-folder autosave measured 1.2–2.7 ms median vs the 800 ms debounce (within 0.5 ms of OPFS; 125 samples/config, `.crswap` temp-swap proven, tmpfs trap dodged — check the device of BOTH sides); web folder-canonical needs NO cadence change; `scripts/perf/fsafolderrun.mjs` is the headed-Xvfb runner (headless can only reach OPFS, which never exercises the temp-swap path) / 3423c92, ledger `ledgers/PERF-fsa-autosave-2026-07-28.md`
 
 ## Evidence
 - `.github/workflows/checks.yml` — enumerates the live gate set: typecheck, unit-scripts, doclint, test, astro-check, svelte-check, gh-pages-build, archie-viewer-artifact, embed-smoke, perf-ratchets, e2e.
