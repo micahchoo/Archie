@@ -14,6 +14,50 @@ sdk: org.gnome.Sdk
 
 command: archie
 
+# ── VIDEO CODECS (Archie-7e6f) — why there is NO `add-extensions` block here ─────────────────────
+# The web-tier video transcode (src-tauri/src/video.rs) shells out to the runtime's `ffmpeg`, and
+# H.264 — the default target, and the format most authored video already IS — is not in the base
+# runtime. The ticket's decision was to make H.264 work on a stock install. Measured on 2026-07-27,
+# that needs no manifest stanza at all, and adding one would be cargo cult. The evidence, so the next
+# reader can re-run it rather than trust it:
+#
+# 1. THE RUNTIME ALREADY DECLARES THE EXTENSION POINT. `flatpak info --show-metadata
+#    org.gnome.Platform//49` contains, verbatim:
+#
+#        [Extension org.freedesktop.Platform.codecs-extra]
+#        directory = lib/x86_64-linux-gnu/codecs-extra
+#        version = 25.08-extra
+#        add-ld-path = lib
+#        autodelete = true
+#
+#    There is no `no-autodownload`, so the extension installs with the runtime. An `add-extensions`
+#    block in THIS file would declare a different, app-scoped point rooted at `/app/…`, which is the
+#    mechanism for an app's OWN plugin directory — it would not and could not supply the runtime's
+#    ffmpeg with anything.
+#
+# 2. THE EXTENSION IS A REPLACEMENT ffmpeg STACK, NOT JUST GSTREAMER PLUGINS — this is the part worth
+#    knowing, because "an ld path can't change what a binary already linked" is the obvious objection
+#    and it is wrong here. The extension ships its own `libavcodec.so.61.19.101`, `libavformat.so.61`,
+#    `libavutil.so.59`, `libsw{scale,resample}`, `libpostproc`, plus `libx264.so.165` /
+#    `libx265.so.216`. `objdump -p` on the extension's libavcodec lists `NEEDED libx264.so.165` and
+#    `NEEDED libx265.so.216`; the BASE runtime's libavcodec lists neither. `add-ld-path = lib` puts
+#    `/usr/lib/x86_64-linux-gnu/codecs-extra/lib` on LD_LIBRARY_PATH, so the runtime's
+#    `/usr/bin/ffmpeg` resolves `libavcodec.so.61` to the extension's copy and gains H.264 in BOTH
+#    directions. Decode is the half that actually bites: the base build carries
+#    `--disable-decoder='h264,hevc,vc1,vvc'`, so without the extension the sidecar cannot even READ
+#    typical authored video, whatever it writes.
+#
+# 3. GNOME 49 sits on freedesktop 25.08 (`org.freedesktop.Platform` installs as `freedesktop-sdk-
+#    25.08.14`, branch `25.08`), which is why the version above reads `25.08-extra`. If this manifest
+#    is ever bumped to a newer GNOME runtime, re-read that stanza — the extension's branch moves with
+#    the freedesktop base, not with GNOME's number.
+#
+# NOT VERIFIED HERE, and deliberately not claimed: no Flatpak was built or run for this change. The
+# above is read from the installed runtime's metadata and the extension's own ELF headers. A packaged
+# run is still the outstanding check on Archie-7e6f, together with `video_probe_encoders` reporting
+# `h264: true` inside the sandbox. `video_probe_encoders` never throws, so a machine that somehow
+# lacks the extension greys the control with a reason rather than failing mid-publish.
+
 finish-args:
   - --socket=wayland # show the window under Wayland
   - --socket=fallback-x11 # …or X11
