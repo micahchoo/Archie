@@ -478,6 +478,13 @@ function buildObjectPatch(
       changes.push({ field: targetLabel({ kind: "dcterms", property }), ...(from ? { from } : {}), to: value.trim() });
     }
   }
+  // INVARIANT: an empty change list means an empty patch, so what the preview shows and what the store
+  // is asked to write can never disagree. There is exactly one way they could drift, and it is worth
+  // naming: `mergeMetadata` may return a new array that only COLLAPSED a pre-existing duplicate
+  // property — a real array difference carrying no value difference, which would preview as a row with
+  // nothing in it and write anyway. Tidying a duplicate the sheet never mentioned is not this import's
+  // job, so the patch goes with the changes.
+  if (changes.length === 0) return { patch: {}, changes };
   return { patch, changes };
 }
 

@@ -194,6 +194,23 @@ describe("a blank cell says nothing — it never clears", () => {
     expect(plan.skipped).toHaveLength(0);
   });
 
+  it("a row whose only effect would be collapsing a pre-existing duplicate reads as unchanged, and writes nothing", () => {
+    // The one way `changes` and `patch` could disagree: mergeMetadata returns a shorter array (the
+    // duplicate collapsed) while no VALUE differs. The planner must not preview an empty row or write
+    // a tidy-up the sheet never asked for.
+    const doubled = [obj({
+      id: "o1", label: "plate-01",
+      metadata: [{ property: "dcterms:creator", value: "Unknown" }, { property: "dcterms:creator", value: "Unknown" }],
+    })];
+    const plan = planMetadataImport(
+      "file,Creator\nplate-01,Unknown\n",
+      map([IGNORE, { kind: "dcterms", property: "dcterms:creator" }], 0, "filename"),
+      { objects: doubled },
+    );
+    expect(plan.updates).toEqual([]);
+    expect(plan.unchanged).toBe(1);
+  });
+
   it("a blank dcterms cell leaves the stored entry standing", () => {
     // o3 has dcterms:creator "Unknown". Blank creator + a real date must keep the creator.
     const plan = planMetadataImport(
