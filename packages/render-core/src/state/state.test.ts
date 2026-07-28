@@ -105,9 +105,14 @@ describe("computed", () => {
     expect(labelRuns).toBe(2);
   });
 
-  it("tracks a dependency set that CHANGES between evaluations", () => {
-    // The reason capture is dynamic rather than declared. Injection that fails it: never
-    // truncate in stopCapturingParents — `b` stays a parent and the last assertion re-runs.
+  it("tracks a dependency set that SWAPS between evaluations", () => {
+    // The reason capture is dynamic rather than declared.
+    //
+    // NOTE WHAT THIS DOES NOT COVER, because the first draft claimed it did and was wrong.
+    // Deleting the truncation in `stopCapturingParents` leaves this test GREEN (measured:
+    // 21/21). The dependency COUNT here is 2 before and after, so the dropped parent is
+    // overwritten in its slot by the positional write in `maybeCaptureParent` and never needs
+    // truncating. Truncation only matters when the set SHRINKS — the test below.
     let runs = 0;
     const useA = atom("useA", true);
     const a = atom("a", "A");
@@ -129,6 +134,32 @@ describe("computed", () => {
 
     a.set("A2"); // `a` is no longer a dependency
     expect(pick.get()).toBe("B2");
+    expect(runs).toBe(2);
+  });
+
+  it("drops a parent when the dependency set SHRINKS", () => {
+    // The truncation test the swap test above cannot be. `sum` reads 3 signals, then 2 — so
+    // `b` sits past the write cursor and must be cut, not overwritten. Injection that fails it:
+    // delete the `frame.offset < parents.length` truncation in stopCapturingParents; `b` stays
+    // a phantom parent and the final read re-derives. Proven red-green.
+    let runs = 0;
+    const both = atom("both", true);
+    const a = atom("a", 1);
+    const b = atom("b", 10);
+    const sum = computed("sum", () => {
+      runs += 1;
+      return both.get() ? a.get() + b.get() : a.get();
+    });
+
+    expect(sum.get()).toBe(11);
+    expect(runs).toBe(1);
+
+    both.set(false); // dependency set goes 3 -> 2
+    expect(sum.get()).toBe(1);
+    expect(runs).toBe(2);
+
+    b.set(999); // no longer a dependency
+    expect(sum.get()).toBe(1);
     expect(runs).toBe(2);
   });
 
