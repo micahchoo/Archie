@@ -571,11 +571,20 @@ describe("publishLibrary — incremental scope (spike-0002)", () => {
     // The INVARIANT, not the symptom: every published ref under this exhibit resolves to a real file.
     // Stated over the manifest's own text so it holds for a source, a thumbnail, or any future third ref —
     // the specific one that 404'd is not privileged.
-    const refs = [...text.matchAll(new RegExp(`${INC_BASE}(p/(?:assets|assets-thumb)/[^"\\\\]+)`, "g"))].map((m) => m[1]!);
-    const dangling = [...new Set(refs)].filter((r) => tree[r] === undefined);
+    // Match EVERY asset-ish string, not only the published-looking ones. The first version of this
+    // assertion anchored on `${INC_BASE}` and was vacuous for exactly that reason: the defect emits the
+    // MODEL's ref, `"/assets/second.jpg"` — a bare working-store path with no base — so an INC_BASE-anchored
+    // regex cannot see the one string it exists to catch, and p1's two good refs made `refs.length > 0`
+    // pass. Measured against the injected defect: it stayed green at 33/33.
+    const refs = [...new Set([...text.matchAll(/"([^"]*\/assets(?:-thumb)?\/[^"]*)"/g)].map((m) => m[1]!))];
+    const dangling = refs.filter((r) => !r.startsWith(INC_BASE) || tree[r.slice(INC_BASE.length)] === undefined);
     // Print the SUBJECT: a run that matched no refs at all would pass this vacuously.
     expect(refs.length, `no asset refs found in the manifest at all — the regex or the fixture is wrong: ${text.slice(0, 400)}`).toBeGreaterThan(0);
-    expect(dangling, `manifest references files absent from the published tree (tree has: ${Object.keys(tree).filter((k) => k.startsWith("p/assets")).join(", ")})`).toEqual([]);
+    expect(
+      dangling,
+      `manifest carries refs that are not published files — either a working-store path or a missing byte. ` +
+        `refs=${JSON.stringify(refs)} tree=${JSON.stringify(Object.keys(tree).filter((k) => k.startsWith("p/assets")))}`,
+    ).toEqual([]);
 
     // And the added object is genuinely there, so "no dangling refs" can't be satisfied by dropping it.
     const ids = objectsFromManifest(JSON.parse(text)).map((o) => o.id);
