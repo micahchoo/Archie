@@ -6,7 +6,7 @@
 //
 // BOUNDARY (kill-criterion, recorded honestly): a host that strips `<script>` from user content — the
 // very CMS class that forced the iframe fallback — ALSO strips the parent listener, so auto-grow can't run
-// there; the fixed-height iframe stays the answer for those hosts. See recipes/EMBED.md + ledgers/PROBE-autogrow.md.
+// there; the fixed-height iframe stays the answer for those hosts. See recipes/EMBED.md + ledgers/PROBE-autogrow-2026-07-06.md.
 
 export const EMBED_HEIGHT_MESSAGE = "archie-embed:height" as const;
 

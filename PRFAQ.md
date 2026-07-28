@@ -1,7 +1,7 @@
 # PRFAQ — Publish to the web
 
 **Provenance:** DIVERGENCES.md divergence 1 (publish-to-web), probe verdict *pursue* 2026-07-05
-(`ledgers/PROBE-publish-to-web.md`), pr-faq interview with the user 2026-07-05. This document is
+(`ledgers/PROBE-publish-to-web-2026-07-22.md`), pr-faq interview with the user 2026-07-05. This document is
 the spec handed to the build session, together with the probe ledger's "What the build session
 inherits" section.
 
@@ -45,7 +45,7 @@ six-digit code, entered on github.com — no developer settings, no token pastin
 Aha = the live URL appearing in under a minute (probe: 0.6 min end-to-end). A paste-a-token field
 remains in settings as the fallback for forks, air-gapped setups, and the distrustful.
 
-**Is it feasible?** Probed, not believed (`ledgers/PROBE-publish-to-web.md`): repo create + Pages
+**Is it feasible?** Probed, not believed (`ledgers/PROBE-publish-to-web-2026-07-22.md`): repo create + Pages
 enable are two REST calls; the tree upload is a **single git pack push** (per-file REST was
 refuted by GitHub's secondary rate limit at ~500 files — never resurrect it). Build = a
 `git2`/`gitoxide` deploy module in `src-tauri`, device-flow + keyring auth, a base-path-aware
@@ -114,5 +114,5 @@ feature; it is never cut — if *it* doesn't fit, the bet is re-examined, not st
 ## Status
 
 Divergence 1 Status: **spec'd — PRFAQ.md** (probe verdict *pursue* stands beneath it). Next:
-a build session starting from this document + `ledgers/PROBE-publish-to-web.md`; slice reference
+a build session starting from this document + `ledgers/PROBE-publish-to-web-2026-07-22.md`; slice reference
 on branch `probe/publish-to-web` (never merges).

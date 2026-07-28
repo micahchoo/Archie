@@ -3,7 +3,7 @@
 // (the asset-blob I/O cluster, Archie-cf93) can import ONE copy instead of each declaring its own.
 // Follow-up to the Archie-cf93 split review: a duplicated PROJECT literal is load-bearing, not
 // cosmetic — store.ts also exports it as WORKING_STORE_ID, the cross-tab single-writer lock name
-// (ISSUES.md Issue 22 / ledgers/TABS.md), so two copies that drift would partition assets and
+// (ISSUES.md Issue 22 / docs/state/TABS.md), so two copies that drift would partition assets and
 // library.json into different OPFS project dirs with no error, just silent data loss. Same class of
 // hazard the untrusted-archive-open-seam rule already closed for SRC_MAX_BYTES (packages/render-core/
 // src/limits.ts) — one definition, importers share it instead of "identical" literals.

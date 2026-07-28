@@ -5,7 +5,7 @@ extracted from the code that implements it (`log.ts`, `merge.ts`, `heads.ts`, pl
 sentinels those files hold). It exists because the SAME contract serves two delivery paths: the
 async zip round-trip (a teacher merges student `.archie.zip`s — `classifyLogical`/`mergeLogs`) and
 the live/multi-tab path (concurrent sibling revs over a synced rev-log — `headsOf` +
-`resolveConflict`; proven in `ledgers/PROBE-collab-crdt-mapping.md`, Scale-up section). Neither
+`resolveConflict`; proven in `ledgers/PROBE-collab-crdt-mapping-2026-07-18.md`, Scale-up section). Neither
 path may fork its own semantics; both are specified here, once.
 
 **Who reads it.** Anyone building a consumer of the merge layer (MergeReview UI, live-sync
@@ -59,7 +59,7 @@ a parent — via `parent` OR `mergeParents`, the same `parentsOf` definition `he
 (`log.ts:44-46`; one implementation, shared, so every head count agrees). It throws on: an absent
 note (`log.ts:57-59`); PLURAL heads (`log.ts:62-64`) — so `appendEdit`/`appendDelete` refuse to
 write into an UNRESOLVED branch, and UIs must gate editing while a conflict is open (verified live
-in `ledgers/PROBE-collab-crdt-mapping.md`); and zero heads = a cyclic DAG, reported as corruption
+in `ledgers/PROBE-collab-crdt-mapping-2026-07-18.md`); and zero heads = a cyclic DAG, reported as corruption
 rather than guessed around (`log.ts:69-71`). After `resolveConflict` (C12) the non-primary heads
 are referenced via the merge node's `mergeParents`, so the merge node is the single head and a
 resolved note edits and deletes normally — the refusal applies exactly to open branches, never to
@@ -230,7 +230,7 @@ conflict discovery — `session.conflicted` already does.
 
 ## What the spine gate (Archie-494c) inherits
 
-If authored structure (sections/readings — today whole-file LWW, `ledgers/AUDIT-stable-ids.md`)
+If authored structure (sections/readings — today whole-file LWW, `ledgers/AUDIT-stable-ids-2026-07-18.md`)
 gets the same rev-log treatment, the clauses split cleanly:
 
 - **Transfer as-is:** C1-C5, C7-C12, C16-C17 — they are content-agnostic DAG semantics (append,

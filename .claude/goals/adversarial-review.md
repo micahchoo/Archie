@@ -7,7 +7,7 @@ description: Run the perpetual adversarial code-review loop — find where the c
 The product `/goal` loop (docs/GOAL.md) asks "is the product better?" This loop asks: **"where
 is the codebase lying?"** Run them alternately, never merged — growth and audit obey different
 gates. This file is self-contained; the loop survives compaction by re-reading it plus
-`HANDOFF.md`, `ISSUES.md`, and `ledgers/REVIEW-COVERAGE.md`.
+`HANDOFF.md`, `ISSUES.md`, and `docs/state/REVIEW-COVERAGE.md`.
 
 ## 0. Role
 
@@ -86,7 +86,7 @@ unread code; "would a fresh agent continue this path?" when a fix keeps growing.
 
 Lanes ordered by blast radius, walked in rotation, proven by the ledger.
 
-`ledgers/REVIEW-COVERAGE.md` — same discipline as the rest of `ledgers/`: row-per-item, action
+`docs/state/REVIEW-COVERAGE.md` — same discipline as the rest of `ledgers/`: row-per-item, action
 recorded the moment it happens (stale ledger = fragmented run: stop, reconcile), kept forever,
 dated section per cycle. Per lane: last commit examined, files walked, findings, clean cells —
 re-walk only when the examined-commit is stale or a fix landed inside. Findings log:
@@ -199,7 +199,7 @@ little; the real test is the full chain (build → sync → smoke; save → relo
 7. **Error-path forcing** — make every `catch` fire; log-and-continue past corruption or a 500
    mapped to "no data" is a defect nobody has hit _yet_.
 8. **Topology probe** — DAG merge never loses a head; autosave interleavings; two-tab races.
-   Issues 22/25 hold manual-verify steps in `ledgers/TABS.md`/`MIRROR.md` — verify or close.
+   Issues 22/25 hold manual-verify steps in `docs/state/TABS.md`/`MIRROR.md` — verify or close.
 9. **Override rationale audit** — per pnpm override: advisory live? bound honored? coexistence
    claim true? Dead exclusion entries are drift.
 10. **Claim audit** (CLAIMS.md method) — five load-bearing claims from README/CONTEXT/newest
@@ -286,7 +286,7 @@ reports headed "CYCLE <n> DRY" on distinct lanes. If there is a report headed
 it shows: lane + attack; exactly one bucket per finding from {fixed@<hash>, filed <id>,
 cut@<hash>, refuted-because, clean-cell, escalated}; the pasted summary line of every gate
 run; and, for fixed/cut, pasted output of `git log origin/main -1 --oneline` (push proof)
-and `git show --stat <hash>` (file list must include ledgers/REVIEW-COVERAGE.md and no CI or
+and `git show --stat <hash>` (file list must include docs/state/REVIEW-COVERAGE.md and no CI or
 gate-config file). Non-merging buckets state "no merge: <bucket>". A DRY report counts ONLY
 with its clean-cell rows pasted. Honest buckets count toward N equally with fixed — never
 bend a finding into "fixed" to satisfy the count. Stop retrying any target after 2

@@ -55,4 +55,4 @@ automatic. Surprising without context: IIIF canon reads Collection = Library, an
 deliberately does not map it. Real trade-off: three coherent shapes existed; this one is the only
 one that honors Manifest = Exhibit in both directions.
 
-Spec detail (caps, picker, fetch policy, failure handling): `ledgers/PLAN-collection-import.md`.
+Spec detail (caps, picker, fetch policy, failure handling): `ledgers/PLAN-collection-import-2026-07-19.md`.

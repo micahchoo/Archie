@@ -52,7 +52,7 @@ export function createBindingStore(deps: BindingDeps) {
 
   let folderFs: Filesystem | null = null; // cached so autosave doesn't re-acquire each tick
   let autosaving = false;
-  // Folder-mirror generation stamp (Issue 25 row c, ledgers/MIRROR.md): the opaque token Archie last
+  // Folder-mirror generation stamp (Issue 25 row c, docs/state/MIRROR.md): the opaque token Archie last
   // wrote into the bound folder. Before an INCREMENTAL mirror, the on-disk token is compared to this —
   // a definite mismatch means an external writer (or a second Archie window) touched the folder, so the
   // mirror stops instead of blind-overwriting. null = no baseline yet (fresh session / just rebound).
@@ -218,7 +218,7 @@ export function createBindingStore(deps: BindingDeps) {
       s.recents = loadRecents();
       s.binding = loadLastBinding();
       s.dirty = false;
-      // Issue 22 (ledgers/TABS.md): adopt another tab's recents write the instant it lands, so this tab
+      // Issue 22 (docs/state/TABS.md): adopt another tab's recents write the instant it lands, so this tab
       // never saves its stale boot-time snapshot over a project another tab just opened (lost update).
       subscribeRecents((list) => { s.recents = list; });
     },
@@ -352,7 +352,7 @@ export function createBindingStore(deps: BindingDeps) {
     // reason worth keeping as the load-bearing invariant: any asset-writing re-add sets `reassets` for the
     // exhibit (markAssetsDirty), so in a single drain site.ts PRUNES the file then RE-COPIES it in the same
     // asset pass — the tree ends consistent; across drains each drain is self-consistent (ISSUES.md Issue 25
-    // row (e), ledgers/MIRROR.md: two concurrently-live objects can never share an asset name, so the
+    // row (e), docs/state/MIRROR.md: two concurrently-live objects can never share an asset name, so the
     // prune-vs-skip-asset-pass dangling manifest is not-reachable). The invariant is therefore "an
     // asset-writing re-add always marks reassets" — if that ever stops holding, purge dRemovedObj by
     // matching (slug, assetName) against live objects here.

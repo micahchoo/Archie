@@ -5,30 +5,9 @@
   "mirrors": {
     ".agents/skills": ".claude/skills"
   },
-  "standingLedgers": [
-    "ASSETQ.md",
-    "AUDIT-stable-ids.md",
-    "BAKE-INDEX.md",
-    "CANON.md",
-    "CLAIMS.md",
-    "HARVEST.md",
-    "MIRROR.md",
-    "NEGSPACE.md",
-    "PLAN-collection-import.md",
-    "PROBE-autogrow.md",
-    "PROBE-collab-crdt-mapping.md",
-    "PROBE-publish-to-web.md",
-    "PROBE-structure-revlog.md",
-    "REVIEW-COVERAGE.md",
-    "SCALE.md",
-    "TABS.md",
-    "SCOPE-linked-objects.md",
-    "WORKLIST-realtime-collab-readiness.md"
-  ],
-  "standingLedgers_why": "ALL deliberate-deferred 2026-07-27: every file has inbound refs (TABS.md: 11) and a fleet was live in the tree; renaming under readers is the shared-worktree hazard. Migration/rename sweep is ticketed \u2014 remove entries here as it lands. Target: dated renames for PROBE-/PLAN-/SCOPE-/WORKLIST-/AUDIT-, hub-or-docs migration for the true standing ones (CANON, CLAIMS, MIRROR, NEGSPACE, HARVEST, SCALE, TABS, ASSETQ, BAKE-INDEX, REVIEW-COVERAGE).",
-  "accretionExempt": [
-    "svelte-no-typecheck-net.md"
-  ],
+  "standingLedgers": [],
+  "standingLedgers_why": "emptied 2026-07-27 (Archie-e149): dated renames landed for PROBE-/PLAN-/SCOPE-/WORKLIST-/AUDIT-; the ten standing docs moved to docs/state/. ledgers/ is dated-only by predicate now. Refs fixed in maintained files; DATED ledgers and .seeds bodies keep historical paths on purpose (immutable evidence).",
+  "accretionExempt": [],
   "coverageIgnore": [
     ".agents",
     ".interface-design",
@@ -40,6 +19,6 @@
     "prototypes",
     "qa"
   ],
-  "accretionExempt_why": "rewrite ticketed as Archie-1f60 (2026-07-27); remove this entry when it lands",
+  "accretionExempt_why": "empty as of Archie-1f60 (2026-07-27): svelte-no-typecheck-net.md rewritten, no longer needs the exemption",
   "coverageIgnore_why": "symlink / trackers / own-vault / source-assets / generated / committed-cache-junk (playwright-transform-cache-1000: swept into git accidentally, cleanup candidate) / prototypes+qa: claim via a hub scope if they become fleet territory"
 }

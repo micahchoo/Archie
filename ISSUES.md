@@ -112,7 +112,7 @@ pursue, not a re-report of its surplus.
 
 ## Issue 14 — The note target-scope ladder: README claims 6 rungs, the Studio authors 4 `[re-run 246550d]`
 
-**Status:** queued (outside `ledgers/CLAIMS.md`'s audited scope)
+**Status:** queued (outside `docs/state/CLAIMS.md`'s audited scope)
 
 **Symptom.** README:47 and :202 claim a 6-rung note ladder (library, exhibit, object, region,
 time-range, geo). Reality: every `createNote` in `App.svelte` (526, 917, 946, 959, 997, 1008) targets
@@ -138,13 +138,13 @@ rung's persist+serialize+render stack is built and tested).
 **Why it's high-leverage.** "Notes at every level, library→region" is an L1 promise a scholar
 evaluates Archie on; two of six rungs are unreachable and one is falsely claimed shipped by an ADR.
 Resolution is a claim-vs-reality reconciliation: correct the docs, wire the cheap Exhibit-note UI
-(surplus already built), hand the Library rung to graft. `ledgers/CLAIMS.md` never audited this — its
+(surplus already built), hand the Library rung to graft. `docs/state/CLAIMS.md` never audited this — its
 README pass scoped only Features/Status/Known-limitations, and README:47/:202 live in "What it
 is"/"Core concepts." *Lesson: documentation drift — a README that claims a concept the authoring
 surface can't produce is a promise every reader, including the next AI session, builds on.*
 
 **Loop.** Claim-vs-reality diff scoped to the note target-scope concept sections + the
-createNote/NoteEditor authoring surface. Ledger `ledgers/CLAIMS.md` (new section — concept-definition
+createNote/NoteEditor authoring surface. Ledger `docs/state/CLAIMS.md` (new section — concept-definition
 scope).
 
 **Run it:**
@@ -154,7 +154,7 @@ Extract every claim README.md's "What it is" (:47) and "Core concepts" (:202) no
 make about note target scopes, plus ADR-0018's "ships the Object and Exhibit rungs," and check each
 against what createNote/NoteEditor can actually target (App.svelte createNote sites 526/917/946/959/
 997/1008; NoteEditor.svelte scope affordance; publish/static-pages.ts:206-216 render path). Ledger
-ledgers/CLAIMS.md (new "concept-definition" section): claim | where | what the code does | type
+docs/state/CLAIMS.md (new "concept-definition" section): claim | where | what the code does | type
 (claimed-not-implemented / implemented-not-authorable / implemented-differently) | resolution |
 commit | recheck. Finish the diff before resolving. Per row: correct the docs, OR wire the Exhibit-
 note authoring toggle (the model+serialize+render stack already exists — a small build), OR record
@@ -234,7 +234,7 @@ about the SNIPPET emitting only `src`) — this is note *reachability inside* th
 skips; the demo has one note per object, the product doesn't.*
 
 **Loop.** Negative-space over the embed read path's note-multiplicity cases. Ledger
-`ledgers/NEGSPACE.md` (new section — Issue 7's NEGSPACE covered the six INGEST flows; this is the
+`docs/state/NEGSPACE.md` (new section — Issue 7's NEGSPACE covered the six INGEST flows; this is the
 embed READ path, a different surface).
 
 **Run it:**
@@ -242,7 +242,7 @@ embed READ path, a different surface).
 ```
 For the <archie-viewer> embed read path, probe the note cases it does NOT handle: an object with 2
 bare-canvas whole-object notes, a bare note + a ≥75% region note, and confirm what the full viewer
-does with the same tree. Ledger ledgers/NEGSPACE.md (embed-read section): case | actual (embed) |
+does with the same tree. Ledger docs/state/NEGSPACE.md (embed-read section): case | actual (embed) |
 actual (full viewer) | verdict | fix commit | retest. Probe a LOCAL build with a synthetic exhibit —
 never live. Fill every actual before fixing — silently dropping notes is a fail; a visible way to
 reach every whole-object note is a pass. Then fix (cycle the frame through wholeObjects, or give the
@@ -281,7 +281,7 @@ canonicalization — every second way to do the same job (here, persist a UI pre
 next change can go wrong.*
 
 **Loop.** Canonicalization of the localStorage idiom first (lowest-risk, highest-repetition), then
-peel the cite-flow and note-drag clusters into owning modules under tests. Ledger `ledgers/CANON.md`
+peel the cite-flow and note-drag clusters into owning modules under tests. Ledger `docs/state/CANON.md`
 (new section — App.svelte persisted-pref idiom; Issue 5's CANON covered the archive-open seam).
 Depends on Issue 12 (svelte-check) landing first, so the extractions have a real type gate.
 
@@ -289,7 +289,7 @@ Depends on Issue 12 (svelte-check) landing first, so the extractions have a real
 
 ```
 App.svelte does UI-pref persistence several ways. Pick the winner: one persistedPref(key) helper
-(get/set/remove with the try/catch idiom once). Ledger ledgers/CANON.md (App-pref section): losing
+(get/set/remove with the try/catch idiom once). Ledger docs/state/CANON.md (App-pref section): losing
 call site | file | migrated commit | tests green. Enumerate every localStorage cluster BEFORE
 migrating any (App.svelte :70, :462-463, :477, :497); then migrate them all under the studio test
 suite, committing as you go. At zero losing call sites, optionally peel the ⌘K cite-flow (~1103-1150)
@@ -305,7 +305,7 @@ by inline comments — prioritization, not discovery).
 
 ## Issue 22 — Two Studio tabs on one library: zero cross-tab write coordination, last-writer-wins silently `[re-run 332798b]`
 
-**Status:** done 2026-07-17 — merged to main `847c6a8`; ledger: ledgers/TABS.md. Cross-tab rows remain needs-manual-verify (human two-tab walk; steps in the ledger). Single-writer via
+**Status:** done 2026-07-17 — merged to main `847c6a8`; ledger: docs/state/TABS.md. Cross-tab rows remain needs-manual-verify (human two-tab walk; steps in the ledger). Single-writer via
 `writer-lock.svelte.ts` (navigator.locks, BroadcastChannel fallback) gating `enqueueSave` — second
 tab gets a read-only banner + "Take over editing", auto-promotes when the writer closes (`e81f38a`);
 recents lost-update fixed via storage-event reconcile (`5a672b5`). 284 studio tests, svelte-check
@@ -329,7 +329,7 @@ writing tab plus a second-tab read-only/take-over UX (or a BroadcastChannel gene
 *Lesson: single-writer discipline — shared storage without a lock is a race you've already lost; the
 browser ships the primitive (navigator.locks).*
 
-**Loop.** Negative-space probe, then fix. Ledger `ledgers/TABS.md`.
+**Loop.** Negative-space probe, then fix. Ledger `docs/state/TABS.md`.
 
 **Run it:**
 
@@ -337,7 +337,7 @@ browser ships the primitive (navigator.locks).*
 Probe Archie Studio's two-tab behavior on a LOCAL dev run (node scripts/start.mjs): open the same
 OPFS library in two tabs, edit different exhibits in each, then the same exhibit; observe file-level
 clobbering (store.ts:23 fixed path; per-tab save-queue save-queue.svelte.ts:13; no navigator.locks,
-no coordinating BroadcastChannel — verified). Ledger ledgers/TABS.md: case | actual | verdict | fix
+no coordinating BroadcastChannel — verified). Ledger docs/state/TABS.md: case | actual | verdict | fix
 commit | retest. Fill every actual before fixing. Then implement single-writer discipline: acquire a
 navigator.locks lock per library at open; a second tab gets read-only or a take-over prompt (pick
 with reasons; note the Tauri webview and FSA folder bindings in the matrix — a folder can also be
@@ -353,7 +353,7 @@ probe confirms rather than discovers).
 
 ## Issue 25 — The folder mirror trusts disk it never verifies: torn-manifest asymmetry, no cross-file ordering, external changes overwritten blind `[re-run 332798b]`
 
-**Status:** done 2026-07-17 — rows c/d/e merged via `847c6a8` (ledger ledgers/MIRROR.md), rows a/b via `516962e`: (c) mirror generation stamp `.archie-mirror.json` — external
+**Status:** done 2026-07-17 — rows c/d/e merged via `847c6a8` (ledger docs/state/MIRROR.md), rows a/b via `516962e`: (c) mirror generation stamp `.archie-mirror.json` — external
 change pauses autosave with "changed outside Archie" (`957a541`); (d) folderFs invalidated on write
 failure + "reopen the folder" guidance (`2ec1275`); (e) not-reachable — asset names are
 per-exhibit-unique; a false "ids minted fresh" premise corrected in comments, optional monotonic
@@ -391,13 +391,13 @@ marker written LAST (not first) + one read policy for torn manifests + a cheap e
 closes all four windows. *Lesson: mirrors need fences — a replica you never verify is a second source
 of truth you didn't ask for.*
 
-**Loop.** Negative-space matrix over the mirror. Ledger `ledgers/MIRROR.md`.
+**Loop.** Negative-space matrix over the mirror. Ledger `docs/state/MIRROR.md`.
 
 **Run it:**
 
 ```
 Probe the Studio folder mirror's consistency windows on a LOCAL run with a scratch folder. Ledger
-ledgers/MIRROR.md: case | actual | verdict | fix commit | retest. Rows: (a) torn {slug}/manifest.json
+docs/state/MIRROR.md: case | actual | verdict | fix commit | retest. Rows: (a) torn {slug}/manifest.json
 → buildImageIndex silently omits the exhibit (read.ts:44-48 getOptional swallows all errors) while
 loadLibrary hard-throws on the same file (site.ts:582) — pick ONE policy (surface the corruption,
 name the file); (b) interrupted publish → marker archie.json written first (site.ts:254) means a torn
@@ -571,8 +571,8 @@ Gate: **this pass found data-loss and live-wrong-data findings** — Issues 19 a
 SHARED.md the platform is burning until they close; no growth recommendation until then.
 *(Resolved same day: Issues 19–26 all done and merged; gate clear. The standing recommendation is now
 the two commissioned pursue specs — Direction 9's embed-parity spec first (must-ship attribution),
-Direction 8's bakeTiles toggle second — plus the human manual-verify walks in ledgers/TABS.md and
-ledgers/MIRROR.md.)*
+Direction 8's bakeTiles toggle second — plus the human manual-verify walks in docs/state/TABS.md and
+docs/state/MIRROR.md.)*
 
 **Top recommendation → Issue 19 (annotation persistence: torn page silently empties an exhibit).**
 It is the single worst corruption seam found: index-before-pages write order, all-or-nothing read,
@@ -623,24 +623,24 @@ Terminal rows, collapsed after their lessons were stored (SHARED.md backlog comp
 git history). Do-not-resurrect set for fresh re-runs.
 
 - Issue 1 CI gate — done — 2026-07-05 — ledgers/GATE.md
-- Issue 2 operational docs drift — done — 2026-07-05 — ledgers/CLAIMS.md
+- Issue 2 operational docs drift — done — 2026-07-05 — docs/state/CLAIMS.md
 - Issue 3 tracked artifacts / NUL byte — done — 2026-07-05 — ledgers/ARTIFACTS.md
 - Issue 4 silent persistence failures — done — 2026-07-05 — ledgers/SILENCE.md
-- Issue 5 untrusted-zip open path ×2 — done — 2026-07-05 — ledgers/CANON.md
+- Issue 5 untrusted-zip open path ×2 — done — 2026-07-05 — docs/state/CANON.md
 - Issue 6 IIIF projection untested — done — 2026-07-05 — ledgers/COVERAGE.md
-- Issue 7 ingest negative space — done — 2026-07-05 — ledgers/NEGSPACE.md
+- Issue 7 ingest negative space — done — 2026-07-05 — docs/state/NEGSPACE.md
 - Issue 8 fresh-clone LFS loss — done — 2026-07-05 — ledgers/COLDSTART.md
 - Issue 9 showroom stranded — done — 2026-07-05 — ledgers/SHOWROOM.md
 - Issue 10 methodology doc drift — done — 2026-07-05 — ledgers/METHOD.md
-- Issue 11 scale/gallery degradation — done — 2026-07-06 — ledgers/SCALE.md
+- Issue 11 scale/gallery degradation — done — 2026-07-06 — docs/state/SCALE.md
 - Issue 12 svelte-check gate hole — done — 2026-07-06 — ledgers/GATE.md §Issue-12
 - Issue 15 dependency audit — done — 2026-07-05 — ledgers/DEPS.md
 - Issue 19 annotation-store torn-page loss — done — 2026-07-17 — ledgers/PERSIST.md (merge 1cb5440)
-- Issue 20 images.json merge drift — done — 2026-07-17 — ledgers/BAKE-INDEX.md (merge c55d056)
+- Issue 20 images.json merge drift — done — 2026-07-17 — docs/state/BAKE-INDEX.md (merge c55d056)
 - Issue 21 unguarded field carries — done — 2026-07-17 — ledgers/CARRY.md (merge 1cb5440)
 - Issue 23 read-policy incoherence — done — 2026-07-17 — ledgers/READPOLICY.md (merge 516962e)
 - Issue 24 publish-generation staleness — done — 2026-07-17 — ledgers/STALENESS.md (merge 516962e)
-- Issue 26 assets bypass save-queue — done — 2026-07-17 — ledgers/ASSETQ.md (merge 847c6a8)
+- Issue 26 assets bypass save-queue — done — 2026-07-17 — docs/state/ASSETQ.md (merge 847c6a8)
 - Direction 1 collaboration machinery — done (pursue) — 2026-07-05 — ledgers/CAPABILITY.md
 - Direction 2 version-history dark data — done (pursue) — 2026-07-05 — ledgers/DARKDATA.md
 - Direction 3 embed snippet generator — done (pursue) — 2026-07-05 — ledgers/CAPABILITY.md
@@ -648,5 +648,5 @@ git history). Do-not-resurrect set for fresh re-runs.
 - Direction 9 embed parity (incl. must-ship attribution) — done (pursue) — 2026-07-17 — ledgers/CAPABILITY.md §embed-parity
 
 Left live deliberately: Issues 22 and 25 (fixes merged 847c6a8/516962e but needs-manual-verify rows
-outstanding — two-tab walk, folder-changed-outside prompts; steps in ledgers/TABS.md and
-ledgers/MIRROR.md); Issues 13, 14, 16, 17, 18 and Directions 4–7 (queued, untouched this run).
+outstanding — two-tab walk, folder-changed-outside prompts; steps in docs/state/TABS.md and
+docs/state/MIRROR.md); Issues 13, 14, 16, 17, 18 and Directions 4–7 (queued, untouched this run).

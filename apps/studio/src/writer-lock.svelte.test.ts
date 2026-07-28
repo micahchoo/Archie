@@ -1,4 +1,4 @@
-// Issue 22 / ledgers/TABS.md — cross-tab single-writer. The Web Locks path is exercised against the REAL
+// Issue 22 / docs/state/TABS.md — cross-tab single-writer. The Web Locks path is exercised against the REAL
 // navigator.locks (Node implements it, process-scoped — so two createWriterLock instances on the same id
 // contend exactly like two tabs). The BroadcastChannel fallback is exercised with an in-memory bus.
 import { describe, it, expect, beforeEach, vi } from "vitest";

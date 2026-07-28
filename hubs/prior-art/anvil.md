@@ -20,6 +20,22 @@ Adopted donor of Studio's editor shell + AnnotationForm (`apps/studio/package.js
 - ADR-0011: anvil's sticky modal toolbar (pick a tool, canvas stays in that mode until reselected) is
   the adopted pattern behind Archie's `mode`/`tool` rune pair — cited with its standing cost named
   (mode amnesia), not as a free lift.
+- **`immediateRender: true`** (verified 2026-07-27, source: local clone) — `app/src/lib/viewer.ts:91`,
+  one flag in the OSD constructor options object alongside `showNavigator: false` (`:90`) and
+  `maxZoomPixelRatio: 16` (`:93`). PURE OSD config, no anvil-specific wrapping — the cheapest
+  perceived-load win the survey found in the corpus (`docs/research/prior-art/16-performance-ux.md:23`).
+- **`fitBounds`-on-select wrapped in try/catch** (verified 2026-07-27, source: local clone) —
+  `app/src/App.svelte:1113-1119` `selectFromList(id)`: `viewer.annotator.setSelected(id)` then
+  `viewer.annotator.fitBounds(id)` inside a `try`; the `catch` at `:1116-1118` swallows a throw with
+  `console.debug` and the comment "fitBounds can throw if the annotation has no resolvable geometry;
+  ignore — selection still works." This is the exact root-cause fix annomea's read-side audit found
+  missing (selection-without-pan) — see [[annomea]].
+- **IIIF Content State encode/decode, base64url** (verified 2026-07-27, source: local clone) —
+  `app/src/lib/share-url.ts:35-56` `encodeContentState(annotationUrn, canvasId, selector)` builds a
+  `motivation: 'highlighting'` Annotation object, `JSON.stringify`s it, then base64url-encodes
+  (`btoa` + `/+//g→'-'`, `/\//g→'_'`, trailing `=` stripped); `:62-81` `decodeContentState` reverses it
+  and returns `null` (not a throw) on any malformed input. Zero framework coupling — `btoa`/`atob`
+  only. Confirmed as the only cross-tool-standards addressing scheme in this donor.
 
 ## Stated absences
 - None recorded beyond the corrected claim below.

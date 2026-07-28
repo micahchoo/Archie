@@ -21,6 +21,23 @@ backwards; the correction below is what actually ships. Source: `ledgers/REVIEW-
 **Net: tropy ships overlay toolbars ON by default**, and had the same row-vs-overlay choice Archie
 faced — it picked overlay.
 
+- **EDTF fuzzy-date parse/format** (verified 2026-07-27, source: local clone) — `src/format.js:1`
+  imports `edtf`/`format as edtfFormat` from the `edtf` npm package; `:11` `edtf(value)` parses,
+  `:17` `edtfFormat(date, ARGS.locale, options)` formats — the only corpus source treating fuzzy
+  scholarly dates as first-class. Confirmed PURE (wraps the external `edtf` lib, no tropy-specific
+  coupling in this function).
+- **Undo/redo is in-memory only, never persisted** (verified 2026-07-27, source: local clone) —
+  `src/selectors/history.js:3-13` reads `state.history.past`/`.future`; the paired reducer
+  `src/reducers/history.js:8-33` mutates only a `{ past: [], future: [] }` object via
+  `HISTORY.UNDO`/`REDO`/`TICK` — no `db`/`localStorage`/write call anywhere in that reducer. Load-
+  bearing for the negative claim behind ADR-0026: tropy's history is session command-history, not
+  document versioning, and does not survive reload/export.
+- **ALTO OCR ingest, no OCR engine** (verified 2026-07-27, source: local clone) —
+  `src/commands/transcription/create.js:2` imports `Document` from `alto-xml`; `:28`
+  `text = Document.parse(data).toPlainText()`. `grep -rli tesseract src/` and `grep -rli "ocr.*engine"
+  src/` are both empty — tropy ingests ALTO XML produced by an external engine/plugin; it never runs
+  OCR/HTR itself.
+
 ## Stated absences
 - None recorded — every trace here resolved to a positive default (overlay), not an absence.
 

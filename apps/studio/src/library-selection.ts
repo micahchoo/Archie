@@ -1,5 +1,5 @@
 // Pure, framework-free selection helpers for LibraryHome's exhibit multi-select (SCALE-GALLERY Phase 2,
-// ledgers/PLAN-collection-import.md §9). The selection GRAMMAR — plain replace / ⌘-toggle / shift-range,
+// ledgers/PLAN-collection-import-2026-07-19.md §9). The selection GRAMMAR — plain replace / ⌘-toggle / shift-range,
 // select-all, clear — is overview-selection.ts's, IMPORTED not re-invented: the plan forbids a second
 // selection idiom, and the reducers there already range over a caller-supplied "visible order" (photo-app
 // semantics), which is exactly what LibraryHome needs. This module adds only what the LIBRARY surface
