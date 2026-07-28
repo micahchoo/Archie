@@ -1,16 +1,16 @@
 {
-  "measuredAt": "2026-07-26T23:43:53.065Z",
+  "measuredAt": "2026-07-28T07:33:53.257Z",
   "note": "gz = minified+gzipped. Renderer floor has no tree-shaking applied. appBundles = the built apps (the ratchet baseline; check with `node scripts/bundle-size.mjs --check`). No aspirational budget — the baseline IS a measurement (retro 2026-06-11). TWO metrics ratchet per app: gzKB = every .js/.css in dist; eagerGzKB = the entry's STATIC closure walked from Vite's manifest, i.e. what a visitor fetches before first paint. They answer different questions — a lazy chunk moves gzKB and not eagerGzKB, and a lazy chunk hoisted onto the load path moves eagerGzKB and not gzKB. eagerGzKB is absent where the build emits no manifest (apps/viewer is Astro, multi-page).",
   "rows": [
     {
       "label": "@render/core (fflate external)",
-      "minKB": 155.6,
-      "gzKB": 52.8
+      "minKB": 180.8,
+      "gzKB": 62.1
     },
     {
       "label": "@render/core + fflate",
-      "minKB": 169.8,
-      "gzKB": 59.7
+      "minKB": 193.2,
+      "gzKB": 68.3
     },
     {
       "label": "OSD + Annotorious + plugin-tools",
@@ -19,19 +19,19 @@
     },
     {
       "label": "read-only mount (OSD, NO Annotorious/pixi)",
-      "minKB": 285.3,
-      "gzKB": 72
+      "minKB": 284.9,
+      "gzKB": 71.8
     }
   ],
   "appBundles": [
     {
       "label": "apps/studio dist (js+css gz)",
-      "gzKB": 875.1,
-      "eagerGzKB": 454.3
+      "gzKB": 1079.1,
+      "eagerGzKB": 468.3
     },
     {
       "label": "apps/viewer dist (js+css gz)",
-      "gzKB": 388.9
+      "gzKB": 407.5
     }
   ]
 }
