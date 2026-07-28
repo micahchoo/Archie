@@ -591,6 +591,49 @@ describe("publishLibrary — incremental scope (spike-0002)", () => {
     expect(ids).toEqual(["p1", "p2"]);
   });
 
+  it("REPORTS a stale ref the JSON-only path mirrors forward — the hole the self-heal cannot close (Archie-19d7)", async () => {
+    // 19d7's second hole, and why the closing invariant exists rather than a second write-time guard.
+    // Here the added-object self-heal does not fire: every object HAS a published projection. But the
+    // projection itself carries a thumbnail ref whose file is gone from the tree, and the recovery path
+    // mirrors `p.thumbnail` forward verbatim — correctly, by its own contract (it must mirror absences,
+    // so it must equally mirror presences). It writes no bytes and inspects no files, so nothing on that
+    // path CAN notice. Only a check over the finished manifest can.
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, libPQ, logsFor(log0), fullOpts()); // p1 published WITH a thumbnail
+
+    // The thumb file goes missing behind the publisher's back (a partial sync, a hand-edited tree, a
+    // torn write — the cause doesn't matter, only that the manifest still names it).
+    await (await (await fs.root()).getDirectory("p")).getDirectory("assets-thumb").then((d) => d.remove("photo.jpg"));
+
+    const log1 = appendNew(log0, { target: canvasP1, body: { type: "TextualBody", value: "second" }, lastEditor: alice, modifiedAt: "t1", now: 2 }).log;
+    const res = await publishLibrary(fs, libPQ, logsFor(log1), {
+      ...fullOpts(),
+      incremental: { exhibits: new Set(["p"]), reassets: new Set() }, // JSON-only: no byte pass to notice
+    });
+
+    expect(res.danglingRefs).toEqual([
+      { exhibitSlug: "p", objectId: "p1", field: "thumbnail", ref: `${INC_BASE}p/assets-thumb/photo.jpg` },
+    ]);
+    // And the ref really is still in the shipped manifest — the invariant REPORTS, it does not silently
+    // rewrite. Asserting this keeps the test honest about what was actually fixed: the publisher now
+    // hears about it. Dropping the ref would be a behaviour change with its own tradeoffs (a viewer that
+    // derives a thumbnail at runtime is better off without it; a transient sync gap is better off with).
+    const text = ((await collectFiles(await fs.root()))["p/manifest.json"] as { text: string }).text;
+    expect(text).toContain("assets-thumb/photo.jpg");
+  });
+
+  it("reports NOTHING for a clean publish — the invariant is not just always-on noise (Archie-19d7)", async () => {
+    // The other direction, and the one that makes the two tests above mean anything: a full publish with
+    // every byte written must report an EMPTY danglingRefs. Without this, a check that reported every ref
+    // unconditionally would pass both tests above.
+    const fs = new MemoryFilesystem();
+    const res = await publishLibrary(fs, libPQ, logsFor(log0), fullOpts());
+    expect(res.danglingRefs).toEqual([]);
+    // libPQ's q1 is a REMOTE source (https://img/q.jpg) — proof the invariant skips refs it doesn't own
+    // rather than reporting every non-asset URL as missing.
+    expect(libPQ.exhibits[1]!.objects[0]!.source).toMatch(/^https:\/\/img\//);
+  });
+
   it("prunes a removed exhibit's whole directory — on a FULL write too (removals decoupled from scope, defect 1)", async () => {
     const fs = new MemoryFilesystem();
     await publishLibrary(fs, libPQ, logsFor(log0), fullOpts());

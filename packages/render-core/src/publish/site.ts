@@ -197,13 +197,30 @@ export interface MissingAsset {
   name: string;
 }
 
+/** A published manifest ref (`source` or `thumbnail`) pointing at an asset file that is NOT in the
+ *  tree this publish produced — the 404 class. Distinct from MissingAsset: that one is "getAsset
+ *  could not give me the bytes", known at write time and specific to the asset pass. This one is a
+ *  CLOSING INVARIANT over the finished manifest, so it catches a dangling ref whatever produced it —
+ *  a working-store path that escaped rewriting, or a stale ref inherited from a previous publish and
+ *  mirrored forward by the JSON-only recovery path (Archie-19d7's second hole, which no write-time
+ *  check can see because that path writes no bytes and inspects no files). Reported, not thrown, for
+ *  MissingAsset's reason: one bad ref must not veto the library. */
+export interface DanglingRef {
+  exhibitSlug: string;
+  objectId: string;
+  field: "source" | "thumbnail";
+  ref: string;
+}
+
 /** What publishLibrary reports back: the broken intra-Library links it degraded, any
- *  spec-non-conformant Canvases (missing dimensions) it shipped anyway, and any imported-asset
- *  sources whose bytes were unavailable (shipped dangling — surface these to the publisher). */
+ *  spec-non-conformant Canvases (missing dimensions) it shipped anyway, any imported-asset
+ *  sources whose bytes were unavailable, and any manifest asset ref with no file behind it
+ *  (shipped dangling — surface these to the publisher). */
 export interface PublishResult {
   brokenLinks: BrokenLink[];
   incompleteCanvases: IncompleteCanvas[];
   missingAssets: MissingAsset[];
+  danglingRefs: DanglingRef[];
 }
 
 interface LinkRewrite {
@@ -286,6 +303,23 @@ async function writeTilePyramid(filesDir: FsDirectory, tiles: Map<string, Blob>)
 async function removeIfExists(dir: FsDirectory, name: string): Promise<void> {
   try { await dir.remove(name); } catch { /* already absent */ }
 }
+/** Where a manifest ref should live inside `{slug}/`, or null if it isn't an asset ref this publish owns.
+ *  Two accepted shapes, and both must resolve to a real file (Archie-19d7):
+ *    `{baseUrl}{slug}/assets-thumb/x.jpg`  a PUBLISHED ref — the normal case
+ *    `/assets/x.jpg`                       a WORKING-STORE path that escaped rewriting; it can never
+ *                                          resolve, and mapping it into the exhibit dir is what makes
+ *                                          the invariant report it rather than shrug.
+ *  A remote source, a IIIF service URL, or another origin's `/assets/` is none of our business — null. */
+function assetRelPath(ref: string, baseUrl: string, slug: string): { dir: string; name: string } | null {
+  const published = `${baseUrl}${slug}/`;
+  const tail = ref.startsWith(published) ? ref.slice(published.length)
+    : ref.startsWith(ASSET_PREFIX) || ref.startsWith("/assets-thumb/") || ref.startsWith("/assets-original/") ? ref.slice(1) // "/assets/x" -> "assets/x"
+    : null;
+  if (tail === null) return null;
+  const m = /^(assets|assets-thumb|assets-original)\/([^/]+)$/.exec(tail);
+  return m ? { dir: m[1]!, name: m[2]! } : null;
+}
+
 /** Open a child directory, or null if it doesn't exist (create:false throws on the FSA/OPFS backends). */
 async function getDirOptional(dir: FsDirectory, name: string): Promise<FsDirectory | null> {
   try { return await dir.getDirectory(name); } catch { return null; }
@@ -340,6 +374,7 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
   const brokenLinks: BrokenLink[] = [];
   const incompleteCanvases: IncompleteCanvas[] = [];
   const missingAssets: MissingAsset[] = [];
+  const danglingRefs: DanglingRef[] = [];
 
   // Orphan pruning (spike-0002) — BEFORE the write loop, so a remove-then-recreate in one publish deletes
   // the old tree first, then the loop rewrites the fresh exhibit (post-loop pruning would delete that write).
@@ -640,6 +675,24 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     const manifest = embedHeadsIntoManifest(bareManifest, embeds);
     await writeJson(exDir, "manifest.json", manifest);
 
+    // CLOSING INVARIANT (Archie-19d7): no asset ref in the manifest we just wrote may point at a file
+    // that is not in the tree. Runs at the END of the exhibit write, over the finished projection, which
+    // is what makes it catch causes no write-time check can — see DanglingRef. Two shapes are dangling:
+    // a working-store path that never got rewritten (`/assets/{name}`, i.e. published as-is), and a
+    // published-looking `{slug}/assets…` URL whose bytes this pass didn't write (a stale ref inherited
+    // through the JSON-only recovery path). Cost is bounded: at most two existence probes per
+    // asset-bearing object, and none at all for a library of remote sources.
+    await Promise.all(manifestExhibit.objects.flatMap((o) =>
+      ([["source", o.source], ["thumbnail", o.thumbnail]] as const)
+        .filter((e): e is readonly ["source" | "thumbnail", string] => typeof e[1] === "string")
+        .map(async ([field, ref]) => {
+          const rel = assetRelPath(ref, baseUrl, exhibit.slug);
+          if (rel === null) return; // not an asset ref (remote source, IIIF service, data URL, …)
+          const dir = await getDirOptional(exDir, rel.dir);
+          const present = dir !== null && await dir.getFile(rel.name).then(() => true, () => false);
+          if (!present) danglingRefs.push({ exhibitSlug: exhibit.slug, objectId: o.id, field, ref });
+        })));
+
     // Static archival page (ADR-0014): the FULL heads projection's note texts with per-note
     // anchors — the durable ref `{slug}/index.html#note-<logicalId>`. Bodies get the same
     // archie:-link rewrite the JSON heads pages get; the throwaway sink keeps the brokenLinks
@@ -685,7 +738,7 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
   // republish, note-only included). The Viewer keys hosted fetches on `?g=<generation>`.
   const generation = opts.generation ?? generationHash(JSON.stringify(exhibitsJson) + "\u0000" + JSON.stringify(imageIndex) + "\u0000" + (opts.publishedAt ?? ""));
   await writeJson(root, "archie.json", { ...ARCHIE_LIBRARY_MARKER, generation });
-  return { brokenLinks, incompleteCanvases, missingAssets };
+  return { brokenLinks, incompleteCanvases, missingAssets, danglingRefs };
 }
 
 /** A tiny, dependency-free stable string hash (djb2) → base36 — the default publish-generation id when
