@@ -70,6 +70,25 @@ jobs:
       - name: desktop capability manifest covers the fs bridge
         run: node scripts/check-tauri-capabilities.mjs
 
+  doclint:
+    runs-on: ubuntu-latest
+    steps:
+      # full history: doclint verifies cited shas (git cat-file) and compares hub
+      # updated: dates against `git log -1 -- <scope>` — both wrong under a shallow clone.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # The knowledge-layer gate (design: ledgers/DESIGN-knowledge-layer-2026-07-27.md §2 Q6).
+      # Bare node, no toolchain. Its reference (scripts/doclint-allow.json) is hand-maintained
+      # by design — a diff touching it deserves test-assertion-level review scrutiny.
+      - name: knowledge layer consistent (doclint)
+        run: node scripts/doclint.mjs
+
   test:
     runs-on: ubuntu-latest
     steps:

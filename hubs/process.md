@@ -16,8 +16,8 @@ discipline when agents share a checkout, `.seeds` as the single issue tracker (`
 searchable, and the counting/verification traps that make a green run or a clean `git
 diff` misleading. The one gate that matters here is `node scripts/doclint.mjs` — it is
 the mechanical check over the knowledge layer itself (see `ledgers/DESIGN-knowledge-layer-2026-07-27.md`
-§2 Q6, §3b) and is what enforces the closure convention below; it is not yet wired into
-`.github/workflows/checks.yml` (verified: no `doclint` reference there as of this write).
+§2 Q6, §3b) and is what enforces the closure convention below; wired into CI 2026-07-27
+(job `doclint` in `.github/workflows/checks.yml`, full-history checkout).
 
 ## Binding rules
 - [[shared-worktree-agent-collisions]] — two agents in one checkout turns safe git habits (`add -A`, `commit -a`, `restore --source=HEAD`, remembering your own branch) into destructive ones; pass `isolation: "worktree"` and verify with `git worktree list`.
@@ -41,4 +41,4 @@ the mechanical check over the knowledge layer itself (see `ledgers/DESIGN-knowle
 - `.seeds/issues.jsonl` is ONE shared file — `git add .seeds/` is a precise path and still sweeps every other agent's concurrent ticket edit into your commit. Diff the set of ids, not the line count, before committing it.
 - Ledger files recur with embedded NUL bytes (hit `ledgers/CANON.md`, `ledgers/ANTIPATTERN-SWEEP-2026-07-19.md`, this design doc itself, among others) — plain `grep` silently reports zero matches; use `grep -a` or `fff`/`file(1)` to confirm before trusting a no-match result.
 - `hubs/**` cannot yet be a self-referential scope glob for any hub: doclint's scope check (like constraint 1 above) runs over `git ls-files`, and hub files are untracked until a commit adds them — this file's own scope list omits `hubs/**` for that reason; revisit once the ten-hub rollout is committed.
-- The stale-hub closure convention (`ledgers/DESIGN-knowledge-layer-2026-07-27.md` §3, row 1) is enforced by doclint check 3 ("stale hubs") but that wiring into CI is not yet live — until `checks.yml` calls doclint, a missed hub update is a silent gap, not a red build.
+- The stale-hub closure convention (`ledgers/DESIGN-knowledge-layer-2026-07-27.md` §3, row 1) is live in CI as of 2026-07-27: a diff touching a hub's scope without moving the hub is a red build, not a silent gap.
