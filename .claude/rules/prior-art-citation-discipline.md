@@ -25,7 +25,7 @@ in a real library, and every one was wrong about what that file did.
 | --- | --- |
 | "annomea proposes this gate" | it proposes no gate |
 | "scrollama has a reentrancy guard" | it has none — it only ever *reads* `scrollTop`; `grep scrollIntoView src/` is empty |
-| "universalviewer's suite covers this" | its suite never touches the network |
+| "universalviewer's suite covers this" | the correction that stood here — "its suite never touches the network" — was ITSELF false: UV 4.3.0's suite is jest-puppeteer against live remote manifests (`__tests__/test.js:7-12`; see `hubs/prior-art/universalviewer.md`). A correction outlives the error it replaced and nobody re-opens it — re-verify corrections on the same terms as claims |
 | "clover-iiif tabulates it at `:78-89`" | that range is a bullet list, not a table |
 | "anvil ships no embed smoke" | it does |
 | "quire solves the two-directions problem" | `canvas-panel.js:259` calls `goToFigureState` *and* `scrollToHash` straight from an IntersectionObserver callback with **no suppression** — quire *demonstrates* the hazard |

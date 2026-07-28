@@ -2,7 +2,7 @@
 scope:
   - "apps/studio/src/**"
   - "apps/studio/e2e/**"
-updated: 2026-07-27
+updated: 2026-07-28
 ---
 # authoring
 > *how do authors make things?*
@@ -25,6 +25,9 @@ check`. Neither alone is sufficient — see below.
 - [[tauri-fs-seam]] — desktop fs backend needs atomic temp+rename writes and name containment that plugin-fs doesn't give for free; both are studio write paths (autosave, resident store).
 
 ## Decisions
+- Archie-7e6f — video transcode CLOSED: browser WebCodecs path via mediabunny wired into the
+  web-tier publish with pinned fallback counters (both routes); H.264 empirically proven present in
+  the Flatpak, so no codecs-extra manifest stanza needed / 6f4c3cc
 - Archie-5a9b — RightsFields clobber audit shipped; every UI write-back site converted to keyed patches / `0fb15fc`
 - Archie-458e — metadata joined the Details panel as a tab at all three levels (Library/Exhibit/Object) / `16d0f2c`
 - Archie-a5b1 — partially this territory: the fix landed on the archival-page RENDER side, not studio write-back; RightsEditor's keyed-patch contract (Archie-5a9b) was already correct and untouched / `58f1cc3`
