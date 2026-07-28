@@ -116,7 +116,7 @@ async function loadDirInto(dir: FsDirectory, diskPath: string): Promise<void> {
   }
 }
 
-interface Baked { html: string; htmlBytes: number; zipBytes: number; bundleBytes: number; objects: number; notes: number }
+interface Baked { html: string; htmlBytes: number; zipBytes: number; bundleBytes: number; objects: number; notes: number; covers: number }
 
 async function bake(): Promise<Baked> {
   const src = new MemoryFilesystem();
@@ -182,6 +182,17 @@ async function bake(): Promise<Baked> {
   const libraryBytes = NO_LIBRARY ? new Uint8Array(0) : zip;
   const html = buildSingleFileHtml({ bundle, libraryBytes, title: exhibit.title });
 
+  // How many exhibit cards the emitted `exhibits.json` claims a cover for. The drive needs this as
+  // its EXPECTED count: a card with no cover renders the same `<span class="cover">` fallback as a
+  // card whose cover failed to load (element.ts:874 vs :902), so counting rendered `<img>`s alone
+  // cannot tell "no thumbnail" from "broken thumbnail". Read back out of the zip that actually ships,
+  // not off the in-memory model, so it describes the artifact.
+  const covers = await (async (): Promise<number> => {
+    const { ZipFilesystem, fsJsonSource } = await import("@render/core");
+    const gallery = await fsJsonSource(ZipFilesystem.fromZip(zip)).get<{ exhibits: { cover?: string }[] }>("exhibits.json");
+    return gallery.exhibits.filter((e) => e.cover !== undefined).length;
+  })();
+
   return {
     html,
     htmlBytes: Buffer.byteLength(html, "utf8"),
@@ -189,6 +200,7 @@ async function bake(): Promise<Baked> {
     bundleBytes: Buffer.byteLength(bundle, "utf8"),
     objects: objects.length,
     notes: log.length,
+    covers,
   };
 }
 
@@ -242,6 +254,20 @@ async function main(): Promise<void> {
       cards = await page.evaluate(q("ul.grid li button[data-slug]")) as number;
     } catch { /* stays 0 → FAIL below */ }
     record(cards > 0, "the inlined bundle boots from file:// and the inlined library opens", `${cards} exhibit card(s)`);
+
+    // The gallery's cover cells are read HERE, because the drive navigates away from them below and
+    // this is the only place a card's `cover` is ever resolved. Settle first: an `<img>` that has not
+    // been asked for yet is indistinguishable from one that loaded.
+    //
+    // Read the COVER CELL, not `querySelectorAll('img')`. A cover that 404s does not linger as a
+    // broken image — element.ts:885-902 swaps it for a `<span class="cover">` carrying the title. So
+    // an img-only probe finds an EMPTY SUBJECT and returns a confident "0 broken" (measured: it did
+    // exactly that, 10 runs, while the request list showed the miss every time). The cell's tagName
+    // is what survives the fallback.
+    await page.waitForTimeout(1500);
+    const coverCells = await page.evaluate(`[...(${sr}?.querySelectorAll('.grid .cover') ?? [])].map((e) => ({
+      tag: e.tagName, src: (e.currentSrc || e.getAttribute('src') || ""), w: e.naturalWidth ?? -1,
+    }))`) as { tag: string; src: string; w: number }[];
 
     // (2) the deep-zoom canvas mounts and PAINTS. Present-in-the-DOM is not painted: a canvas of zero
     //     area, or one that never drew a tile, satisfies a selector and shows nothing. So the check
@@ -340,10 +366,24 @@ async function main(): Promise<void> {
     //     into the CDN embed on any page has the same broken cover — and the same class as V11 /
     //     Archie-84e0, which fixed exactly this for the tree path. Fixing it means editing a surface
     //     the CDN embed shares, so it is reported rather than patched here.
+    //
+    //     TWO instruments, because neither is sufficient alone and each failed once. Watching for a
+    //     stray REQUEST is a RACE — the cover `<img>` is lazy, and a drive that clicks through the
+    //     gallery quickly leaves before the request is issued (measured: caught 10 unchanged runs,
+    //     missed the 11th — [[a-green-run-is-one-sample]] in the false-green direction). Reading the
+    //     DOM is deterministic but must read the right thing: the first version counted `<img>`s and
+    //     found ZERO, because the fallback had already replaced the broken one, and it reported
+    //     "0 broken" about an empty subject. So the check compares SURVIVING `img.cover` cells that
+    //     decoded against the number of covers the shipped `exhibits.json` actually claims.
     const docUrl = pathToFileURL(file).href;
     const strayFiles = requests.filter((u) => u.startsWith("file://") && u !== docUrl);
-    record(strayFiles.length === 0, "SELF-CONTAINED — no reference resolves to a sibling file on disk",
-      strayFiles.length === 0 ? "every reference resolved inside the document" : `${strayFiles.length} dangling: ${strayFiles.map((u) => u.replace("file://", "")).join(", ").slice(0, 200)}`);
+    const liveCovers = coverCells.filter((c) => c.tag === "IMG" && c.w > 0);
+    const inlineCovers = liveCovers.filter((c) => c.src.startsWith("blob:") || c.src.startsWith("data:"));
+    record(strayFiles.length === 0 && liveCovers.length === baked.covers && inlineCovers.length === baked.covers,
+      "SELF-CONTAINED — no reference resolves to a sibling file on disk",
+      `${baked.covers} cover(s) claimed by exhibits.json; cells rendered ${JSON.stringify(coverCells.map((c) => `${c.tag} ${c.src.slice(0, 48)} w=${c.w}`))}; ` +
+      `${liveCovers.length} decoded, ${inlineCovers.length} from an inline URL, ${strayFiles.length} stray file:// request(s)` +
+      (strayFiles.length > 0 ? ` (${strayFiles.map((u) => u.replace("file://", "")).join(", ").slice(0, 160)})` : ""));
     // PRINT THE SUBJECT, not only the verdict. A bare "0 non-local" is consistent with a page that
     // made no requests because it never booted. Enumerating every URL is what lets a reader see WHAT
     // the browser asked for — including Chromium's own unprompted `favicon.ico` probe beside the
