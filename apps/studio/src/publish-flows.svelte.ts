@@ -6,7 +6,7 @@
 // primitive + per-host adapters" now has one home. A `.svelte.ts` rune module (cf.
 // library-meta.svelte.ts): the $state container is never reassigned, getters stay live.
 import {
-  MemoryFilesystem, ZipFilesystem, publishLibrary, collectFiles, publishToGitHub, renderMarkdown, readStructureReport, asExhibitId,
+  MemoryFilesystem, ZipFilesystem, publishLibrary, collectFiles, publishToGitHub, pagesUrlFor, renderMarkdown, readStructureReport, asExhibitId,
   preflightTree, rightsCoverageFinding, blocksPublish, type PreflightFinding,
   type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type MissingAsset, type GitHubTarget, type PublishProgress, type IncrementalScope, type SectionLog, type PublishResult,
 } from "@render/core";
@@ -115,6 +115,11 @@ export function createPublishFlows(deps: PublishDeps) {
     preflight: [],
   });
   let cachedSiteFs: MemoryFilesystem | null = null; // the no-originals projection from openPublish, reused by publish
+  // The base `cachedSiteFs` was projected AT (Archie-19c5 / Archie-3504). The cache is only sound for
+  // a publish going to that same base — `openPublish` runs before the author has typed a repo name, so
+  // its tree is projected at whatever `publishBase()` knew then (relative, for a first-ever publish).
+  // Reusing it for a push to a NOW-KNOWN destination is what shipped every id on the wrong origin.
+  let cachedSiteBase: string | null = null;
 
   const getAsset = (slug: string, name: string) => readAssetBlob(slug, name);
   // Structure rev-log lookup for every publish sink (Archie-aef4): read the exhibit's persisted
@@ -284,10 +289,32 @@ export function createPublishFlows(deps: PublishDeps) {
     if (missingAssets.length > 0) console.warn(`Publish: ${missingAssets.length} imported image(s) have no stored bytes — they publish as broken references`, missingAssets);
     return { fs, brokenLinks, incompleteCanvases, missingAssets, corruptLogs: [...annotationCorruption, ...structureCorruption] };
   }
-  // Flatten the projected tree to the path→FileContent map the git-trees push consumes. A no-originals
-  // publish reuses the tree openPublish already built; an originals publish re-projects (rare, opt-in).
-  async function collectSiteFiles(withOriginals = false) {
-    const fs = withOriginals || !cachedSiteFs ? (await projectSite(withOriginals)).fs : cachedSiteFs;
+  // Flatten the projected tree to the path→FileContent map the git-trees push consumes.
+  //
+  // The cache is keyed on the BASE it was projected at, not merely on existence (Archie-19c5). The
+  // ordering is the whole point: `openPublish` bakes a tree the moment the author enters the GitHub
+  // step — before any owner/repo is typed — so on a first-ever publish that tree is relative. The push
+  // then knows its destination (`pagesUrlFor(owner, repo)`, a pure function of owner+repo) and passes
+  // it here; a base that disagrees with the cached one re-projects rather than shipping stale ids.
+  // Same-base pushes (a repeat publish, or a library that had already deployed) still reuse the warm
+  // tree, so the cache keeps doing the job it was added for.
+  async function collectSiteFiles(withOriginals = false, baseOverride?: string) {
+    const base = baseFor(baseOverride);
+    const reusable = !withOriginals && cachedSiteFs !== null && cachedSiteBase === base;
+    let fs: MemoryFilesystem;
+    if (reusable) {
+      fs = cachedSiteFs!;
+    } else {
+      fs = (await projectSite(withOriginals, base)).fs;
+      // Only the no-originals tree is the shareable one openPublish caches; an originals projection is
+      // a one-off (opt-in, rare) and must not become the tree a later plain push reuses.
+      //
+      // Caching the push's own projection matters because a retry is the common case (a bad token, a
+      // taken repo name) and re-projecting re-tiles every large image. It is safe for the same reason
+      // openPublish's cache is: the Publish surface is a modal, scrimmed dialog, so the library cannot
+      // be edited between the projection and the push.
+      if (!withOriginals) { cachedSiteFs = fs; cachedSiteBase = base; }
+    }
     return collectFiles(await fs.root());
   }
   // The publish opts shared by every zip sink (streaming + eager): the SAME projection (media tiling,
@@ -444,9 +471,15 @@ export function createPublishFlows(deps: PublishDeps) {
       if (s.missingAssets.length > 0) console.warn(`Publish: ${s.missingAssets.length} imported image(s) have no stored bytes — the saved zip references them but does not contain them`, s.missingAssets);
       return saved;
     },
-    /** GH publish (includeOriginals opt-in from the dialog; onProgress reports upload/commit/Pages). */
+    /** GH publish (includeOriginals opt-in from the dialog; onProgress reports upload/commit/Pages).
+     *
+     *  The destination is knowable BEFORE the tree is projected — `pagesUrlFor` is a pure function of
+     *  owner+repo — so the base is derived here and handed to the projection, exactly as the desktop
+     *  deploy already does (`deploy-flows.svelte.ts` computes the same URL before it stages). Without
+     *  this the push shipped whatever `openPublish` had cached before the author typed a repo name.
+     *  (Archie-19c5 / Archie-3504.) */
     publish: async (target: GitHubTarget, opts?: { includeOriginals?: boolean }, onProgress?: (p: PublishProgress) => void) =>
-      publishToGitHub(await collectSiteFiles(opts?.includeOriginals ?? false), target, onProgress),
+      publishToGitHub(await collectSiteFiles(opts?.includeOriginals ?? false, pagesUrlFor(target.owner, target.repo)), target, onProgress),
     /** The projected static-site tree for the desktop one-motion deploy (Task 13). The SAME projection
      *  (media tiling / baked thumbnails) every other sink uses — deploy-flows flattens it into one git
      *  pack, so it never has to duplicate the browser-only tiling closures. Flushes the current exhibit
@@ -479,8 +512,13 @@ export function createPublishFlows(deps: PublishDeps) {
       s.corruptLogs = [];
       s.missingAssets = [];
       cachedSiteFs = null;
-      void projectSite(false).then(({ fs, brokenLinks: bl, incompleteCanvases: ic, missingAssets: ma, corruptLogs: cl }) => {
+      cachedSiteBase = null;
+      // The base the destination is NOT yet known at — see `collectSiteFiles`. Captured here so the
+      // cache carries what it was projected at, rather than being reused for any base at all.
+      const warmBase = baseFor();
+      void projectSite(false, warmBase).then(({ fs, brokenLinks: bl, incompleteCanvases: ic, missingAssets: ma, corruptLogs: cl }) => {
         cachedSiteFs = fs;
+        cachedSiteBase = warmBase;
         s.brokenLinks = bl;
         s.incompleteCanvases = ic;
         s.missingAssets = ma;
