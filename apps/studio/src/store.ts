@@ -31,7 +31,7 @@ import { residentRootFs, residentProjectDir, residentProjectAtRoot, residentExte
 const SAMPLE_SLUG = "sample";
 
 /** The stable identity of Studio's single OPFS working library — the fixed path all tabs of this origin
- *  share. Used as the cross-tab single-writer lock name (ISSUES.md Issue 22 / ledgers/TABS.md). */
+ *  share. Used as the cross-tab single-writer lock name (ISSUES.md Issue 22 / docs/state/TABS.md). */
 export const WORKING_STORE_ID = PROJECT;
 
 /** The project-level directory the metadata openers author into — the resident folder root on desktop,

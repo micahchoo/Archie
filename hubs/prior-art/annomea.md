@@ -20,6 +20,23 @@ Adopted read-side donor (narrative pane + popup/drawer, `docs/adr/0002-rendering
   against Archie's 5.55.9) — donor-side evidence in the still-open prop-naming-convention question.
 - `EMBED-AUDIT.md` — annomea shipped an inconsistent embed element name + attribute set once pasted
   into real pages (cited by ADR-0021 as the reason Archie's viewer target contract was frozen early).
+- **WADM data-model spine, the survey's "gold" source** (verified 2026-07-27, source: local clone) —
+  `src/data/wadm.ts:6-13` `createAnnotationPage(label?, creator?)` emits `@context:
+  'http://www.w3.org/ns/anno.jsonld'`, `creator: { type: 'Person', name }` (`:12`), `created: new
+  Date().toISOString()` (`:13`); `:19-23` `fragmentSelector(x,y,w,h)` builds `conformsTo:
+  media-frags` + rounded `xywh=`; `:55-57` `annotationUrn(hash, index)` returns
+  `` `urn:anvil:annotation:${hash}:${index}` ``. All PURE functions, no annomea-specific coupling —
+  matches the survey's "LIFT verbatim" claim (`docs/research/prior-art/03-annotation-data-model.md:72`).
+- **`makeSanitizer` closure pattern, no global DOMPurify state** (verified 2026-07-27, source: local
+  clone) — `src/viewer/sanitize.ts:66-67` `makeSanitizer(config)` returns a closure that always pipes
+  through `stripDangerousDataUris` (`:59-61`, a regex replace on `data:text/html`) after
+  `DOMPurify.sanitize`. Confirmed PURE — the config is captured per call, never mutates a shared
+  DOMPurify instance.
+- **`modified` is declared, never written — a real provenance gap, not a stated feature** (verified
+  2026-07-27, source: local clone) — `src/shared/types.ts:12` declares `modified?: string` on
+  `WadmAnnotationPage`; `grep -rn "\.modified\b|modified:" src/` across the whole package returns
+  **zero** call sites that set it. Load-bearing for the ADR-0026 framing that no corpus repo ships
+  persisted per-annotation edit history.
 
 ## Stated absences
 - "annomea proposes this gate" is **false** — it proposes no gate ([[prior-art-citation-discipline]]).

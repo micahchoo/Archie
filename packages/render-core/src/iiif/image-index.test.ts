@@ -83,7 +83,7 @@ describe("buildImageIndex — library-level image index (ADR-0023, spike-0004)",
   });
 });
 
-// Merge-preserving bake — Issue 20 / ledgers/BAKE-INDEX.md R1. gen-published bakes a SOURCE library
+// Merge-preserving bake — Issue 20 / docs/state/BAKE-INDEX.md R1. gen-published bakes a SOURCE library
 // into a tree that already holds CARRIED exhibits (published by a prior run, preserved on disk). The
 // wall's images.json is a UNION projection, so the bake MUST build it over owned ∪ carried. Because
 // buildImageIndex covers exactly the exhibits in its `library` argument, building over the source-only

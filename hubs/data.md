@@ -51,7 +51,7 @@ gate that matters is that suite plus `fs/conformance.ts` run against every backe
   (past the 16ms bar) for ONE edit; `HeadIndex` (incremental projection) makes it O(versions-of-note),
   130-314x measured. Save's `toZip` was the real freeze (5.7s at 272MB, not Open, which cost 155ms) —
   per-entry STORE-for-media fixed it to 0.6s (9x, end-to-end validated, not just micro-benched).
-- `ledgers/CANON.md` — the untrusted-archive seam's canonicalization: zero remaining call sites of
+- `docs/state/CANON.md` — the untrusted-archive seam's canonicalization: zero remaining call sites of
   `ZipFilesystem.fromZip` outside `open.ts`; caps rescaled 2026-07-19 (`SRC_MAX_BYTES` 256MB→1GiB,
   `maxEntries` 50k→500k) after a legit 100-object library blew past the old ones.
 - `packages/render-core/src/spine/MERGE-CONTRACT.md` — OQ-2 (rev-collision content mismatch is
@@ -62,7 +62,7 @@ gate that matters is that suite plus `fs/conformance.ts` run against every backe
 ## Open & hazards
 - MERGE-CONTRACT OQ-2/3/5 above are load-bearing gaps, not oversights — a new caller that can inject
   duplicate revs or replay `logicalId`s (an importer) hits them for real.
-- `ledgers/CANON.md`'s deferred `HttpFilesystem` (unifying zip-open and tree-over-HTTP marker-check
+- `docs/state/CANON.md`'s deferred `HttpFilesystem` (unifying zip-open and tree-over-HTTP marker-check
   into one 5th backend) was never built — `load.ts`'s tree-marker path stays a separate, unfolded
   validator per [[untrusted-archive-open-seam]]'s last bullet.
 - Zip-open cap rescale is an accepted DoS tradeoff: a crafted `?src=` URL can now cost a tab ~4GiB

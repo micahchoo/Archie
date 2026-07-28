@@ -1,4 +1,4 @@
-// Ingest-flow tests (tend Issue 7, ledgers/NEGSPACE.md). This path had zero direct coverage before —
+// Ingest-flow tests (tend Issue 7, docs/state/NEGSPACE.md). This path had zero direct coverage before —
 // each test below reproduces one of the negative-space matrix's real findings against the actual
 // createIngestFlows factory (not a reimplementation), with a minimal in-memory IngestContext mock.
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";

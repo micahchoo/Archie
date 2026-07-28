@@ -1,4 +1,4 @@
-// Issue 26 / ledgers/ASSETQ.md: binary asset writes route through the save-queue (failures visible) and
+// Issue 26 / docs/state/ASSETQ.md: binary asset writes route through the save-queue (failures visible) and
 // a quota preflight refuses cleanly. Drives the real createIngestFlows factory with a minimal
 // IngestContext; the store writers are mocked so a test can force a write failure deterministically.
 import { describe, it, expect, vi, beforeEach } from "vitest";

@@ -5,7 +5,7 @@
 // `DagRecord<SectionKey>`, but its content-level append family lives here — annotations and
 // sections deliberately do NOT share content helpers (different tombstone semantics, different
 // field inventories). Promoted from the reviewed probe `probe/structure-revlog`
-// (`structure-probe.ts` @ 099f622, ledger `ledgers/PROBE-structure-revlog.md`) with the probe's
+// (`structure-probe.ts` @ 099f622, ledger `ledgers/PROBE-structure-revlog-2026-07-18.md`) with the probe's
 // debts paid: carry sentinels on every hand-mapper (rule render-core-data-integrity #3),
 // containment negatives on `sectionKey`, and the merge contract's C13/C14 re-derivation for
 // section fields.

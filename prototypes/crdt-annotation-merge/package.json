@@ -2,7 +2,7 @@
   "name": "crdt-annotation-merge-probe",
   "private": true,
   "type": "module",
-  "description": "THROWAWAY probe for Archie-70e6 — delete or absorb per ledgers/PROBE-collab-crdt-mapping.md",
+  "description": "THROWAWAY probe for Archie-70e6 — delete or absorb per ledgers/PROBE-collab-crdt-mapping-2026-07-18.md",
   "scripts": {
     "probe": "bun probe.ts"
   },

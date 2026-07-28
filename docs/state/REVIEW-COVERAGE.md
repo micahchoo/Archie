@@ -36,7 +36,7 @@ Commit examined: `8a577f0` (main). This is the first-run bootstrap (§9).
 
 Issue 13 (collab summary inert), Issue 14 (note ladder claims), Issue 16 (gh-pages bake untested),
 Issue 17 (embed drops whole-object notes), Issue 18 (App.svelte god-orchestrator) — all queued,
-unverified at this bootstrap. Issues 22/25 need manual verify (ledgers/TABS.md, ledgers/MIRROR.md).
+unverified at this bootstrap. Issues 22/25 need manual verify (docs/state/TABS.md, docs/state/MIRROR.md).
 
 ### Rotation
 

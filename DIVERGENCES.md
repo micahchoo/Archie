@@ -24,7 +24,7 @@ hypothetical.*
 ## 1. publish-to-web — one-continuous-motion publishing from Studio
 
 **Status:** **spec'd — PRFAQ.md** 2026-07-05 (pr-faq interview; appetite 3–4 weeks, user-set).
-Beneath it: probe verdict **pursue** 2026-07-05 — ledger: ledgers/PROBE-publish-to-web.md (seed
+Beneath it: probe verdict **pursue** 2026-07-05 — ledger: ledgers/PROBE-publish-to-web-2026-07-22.md (seed
 tree live on GitHub Pages in 0.6 min against a 10-min kill budget; per-blob REST refuted, A2;
 single-pack git push confirmed, A6 — build = `git2`/`gitoxide` in `src-tauri` + 2 REST calls).
 Interview decisions: device-flow + PAT fallback; GitHub-only with a host-adapter seam; Tauri
@@ -73,7 +73,7 @@ kill criterion: any required terminal step or third-party proxy, or >10 min to l
 seed exhibit) — list every assumption it rests on and mark the riskiest (candidate: GitHub
 device-flow + repo create + Pages enable all work from the Tauri webview with only the user's
 token; note curl/wget are blocked in this repo's sessions — use ctx_execute or in-app fetch).
-Ledger ledgers/PROBE-publish-to-web.md: assumption | riskiest? | probe | result | verdict. State
+Ledger ledgers/PROBE-publish-to-web-2026-07-22.md: assumption | riskiest? | probe | result | verdict. State
 the kill criterion before writing any code; it does not move after. Build the smallest slice that
 tests the riskiest assumption — behind flag archie.deployToPages, on branch probe/publish-to-web,
 demo data allowed, shortcuts allowed everywhere the assumption isn't. Demo it, record the result
@@ -211,7 +211,7 @@ wired into apps), ledger `ledgers/PROBE-headless.md`; kill criterion stated befo
 ## 5. embed-autogrow — iframes that size themselves
 
 **Status:** **built — `e3766bc`** 2026-07-07 (user-ordered, review-gated on main; ledger
-`ledgers/PROBE-autogrow.md`). Kill-criterion finding recorded: script-stripping hosts strip the
+`ledgers/PROBE-autogrow-2026-07-06.md`). Kill-criterion finding recorded: script-stripping hosts strip the
 parent listener too — auto-grow serves script-permitting hosts; fixed height stays the documented
 answer for the strip class. Reader view deliberately excluded (zoom surface; feedback loop).
 
@@ -235,7 +235,7 @@ snippet, tested in the recipes demo page. **Kill: if the documented script-strip
 strip the listener snippet (making auto-grow unreachable exactly where it's needed), record that
 and close as docs-only.**
 
-**Loop.** thin-slice probe on branch `probe/embed-autogrow`, ledger `ledgers/PROBE-autogrow.md`.
+**Loop.** thin-slice probe on branch `probe/embed-autogrow`, ledger `ledgers/PROBE-autogrow-2026-07-06.md`.
 Natural companion to tend's Direction 3 (snippet generator) — same dialog, one session.
 
 **Strength:** Worth exploring (one artifact citation; nearly-free probe justifies keeping it).

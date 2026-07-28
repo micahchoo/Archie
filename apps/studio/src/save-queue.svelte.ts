@@ -37,7 +37,7 @@ export const saveStatus = {
 // the chain); different keys (library.json vs an exhibit's annotations) stay concurrent.
 const tails = new Map<string, Promise<unknown>>();
 
-// Single-writer gate (ISSUES.md Issue 22 / ledgers/TABS.md). Every OPFS/folder persist routes through
+// Single-writer gate (ISSUES.md Issue 22 / docs/state/TABS.md). Every OPFS/folder persist routes through
 // enqueueSave, so ONE gate here enforces cross-tab single-writer discipline for library.json, annotations,
 // assets, AND the folder mirror: when this tab is not the writer (another tab holds the Web Lock), a
 // persist is refused instead of silently overwriting the writer's edits. Injected by the writer-lock

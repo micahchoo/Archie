@@ -1,4 +1,4 @@
-// Folder-mirror generation stamp (ISSUES.md Issue 25 row (c), ledgers/MIRROR.md). The incremental
+// Folder-mirror generation stamp (ISSUES.md Issue 25 row (c), docs/state/MIRROR.md). The incremental
 // folder mirror (binding-store.svelte.ts) rewrites only dirty exhibits and TRUSTS the rest of the
 // on-disk tree — with no check that the tree is still the one Archie last wrote. An external writer
 // (git checkout, a Dropbox sync, a SECOND Archie window bound to the same folder) can change the tree

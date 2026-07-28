@@ -46,13 +46,13 @@ const ASSET_THUMB_PREFIX = "/assets-thumb/"; // working ref for a baked thumbnai
 // few MB. 32 MB is generous headroom; above it something is wrong (or hostile) rather than merely big.
 // Distinct from @render/core's SRC_MAX_BYTES (the untrusted-.archie.zip byte cap), which caps a DIFFERENT
 // trust boundary — this one guards an arbitrary-JSON fetch that had NO cap at all (tend Issue 7,
-// ledgers/NEGSPACE.md row 5). Exported (Archie-51cc) so create-exhibit-dialog.ts's validation-preview
+// docs/state/NEGSPACE.md row 5). Exported (Archie-51cc) so create-exhibit-dialog.ts's validation-preview
 // fetch enforces the SAME cap as the real import below — one definition, not a second copy that could drift.
 export const IIIF_MANIFEST_MAX_BYTES = 32 * 1024 * 1024;
 
 // The three local-file bulk-import vectors (CSV notes, WADM notes, VTT/SRT captions) had no size cap
 // either — a many-hundred-MB file gets `.text()`-read then synchronously parsed on the main thread with
-// nothing to stop it (tend Issue 7, ledgers/NEGSPACE.md rows 6-8). These are hand-authored annotation
+// nothing to stop it (tend Issue 7, docs/state/NEGSPACE.md rows 6-8). These are hand-authored annotation
 // files; legitimate ones are KBs to low MBs even for thousands of notes.
 export const LOCAL_TEXT_IMPORT_MAX_BYTES = 64 * 1024 * 1024;
 
@@ -120,7 +120,7 @@ export type CollectionImportOutcome = {
   fatal: string | null;
 };
 
-// Binary-asset persistence routes through the save-queue (ISSUES.md Issue 26 / ledgers/ASSETQ.md): the
+// Binary-asset persistence routes through the save-queue (ISSUES.md Issue 26 / docs/state/ASSETQ.md): the
 // queue header promises "NO failure is silent," but the OPFS asset writers (store.ts saveAssetFile /
 // saveOriginalFile / saveThumbFile) were called directly, so a failed write never reached saveStatus.
 // enqueueSave NEVER throws — it returns false on failure — so the caller MUST branch on the boolean and
@@ -347,7 +347,7 @@ export function createIngestFlows(ctx: IngestContext) {
   // keep its blob: URL. `targetSlug` matters for multi-item loops (newExhibitFromFolder,
   // newExhibitFromManifest, addFiles): each PINS the exhibit it's importing into at the start, so a
   // user switching exhibits mid-import can't silently misdirect later items onto the wrong one (tend
-  // Issue 7, ledgers/NEGSPACE.md — mid-flow-interruption rows). Only steer the view to this object
+  // Issue 7, docs/state/NEGSPACE.md — mid-flow-interruption rows). Only steer the view to this object
   // when the target is still the one open; a background loop must not yank the user back.
   async function appendObject(obj: ObjectMeta, blobUrl?: string, targetSlug: string = ctx.currentSlug()) {
     // Seed the master blob BEFORE the awaited persist (Archie-9db6): lib.appendObject sync-mutates the
@@ -377,7 +377,7 @@ export function createIngestFlows(ctx: IngestContext) {
   // picker → selectedLinks). Each entry lands exactly as addObject would store it (a zero-copy remote
   // reference; nothing is downloaded beyond the same best-effort dimension probe). This exists apart
   // from a per-entry addObject loop for the two reasons addFiles does: the target exhibit is PINNED
-  // up front (mid-flow exhibit-switch protection, tend Issue 7 / ledgers/NEGSPACE.md) and the
+  // up front (mid-flow exhibit-switch protection, tend Issue 7 / docs/state/NEGSPACE.md) and the
   // library.json appends are batched (one persist per IMPORT_PERSIST_CHUNK, not per object). No quota
   // preflight and no storeReady gate, deliberately: no OPFS bytes are written — the references live in
   // library.json alone, same as a single hand-pasted link.
@@ -585,7 +585,7 @@ export function createIngestFlows(ctx: IngestContext) {
       ctx.setImportNote("Open an exhibit first.", "problem");
       return;
     }
-    // Pin the exhibit this drop targets (tend Issue 7, ledgers/NEGSPACE.md): a multi-file drop has the
+    // Pin the exhibit this drop targets (tend Issue 7, docs/state/NEGSPACE.md): a multi-file drop has the
     // same mid-flow-interruption exposure as the folder/manifest loops below — without this, switching
     // exhibits partway through a drop would silently redirect the remaining files.
     const targetSlug = opened.slug;
@@ -688,7 +688,7 @@ export function createIngestFlows(ctx: IngestContext) {
         const g = groups[gi]!;
         await ctx.newExhibit(titleOverride ?? g.name);
         exhibitsMade++;
-        // Pin THIS group's exhibit slug right after creating it (tend Issue 7, ledgers/NEGSPACE.md):
+        // Pin THIS group's exhibit slug right after creating it (tend Issue 7, docs/state/NEGSPACE.md):
         // the per-file loop below has awaits the user can act during, and a multi-folder import
         // navigates through several exhibits in turn — without pinning, switching exhibits mid-group
         // would silently redirect that group's remaining files onto whatever's now current.
@@ -785,7 +785,7 @@ export function createIngestFlows(ctx: IngestContext) {
       return null;
     }
   }
-  // Append a plan's objects onto `targetSlug`. Pinned slug (tend Issue 7, ledgers/NEGSPACE.md): the
+  // Append a plan's objects onto `targetSlug`. Pinned slug (tend Issue 7, docs/state/NEGSPACE.md): the
   // per-object loop awaits per object, and nothing blocks the user from navigating elsewhere mid-import —
   // without pinning, a later object would silently land on whatever exhibit is now current.
   async function importManifestObjects(plan: ManifestPlan, targetSlug: string) {

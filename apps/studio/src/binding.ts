@@ -314,7 +314,7 @@ export function saveRecents(list: RecentProject[]): void {
 }
 
 /**
- * Reconcile recents across tabs (ISSUES.md Issue 22 / ledgers/TABS.md). localStorage is origin-shared,
+ * Reconcile recents across tabs (ISSUES.md Issue 22 / docs/state/TABS.md). localStorage is origin-shared,
  * but each tab keeps its OWN in-memory recents snapshot and OVERWRITES the whole key on save — so a
  * recent added in tab B is silently dropped the next time tab A saves from its boot-time snapshot
  * (last-writer-wins, lost update). The `storage` event fires in EVERY OTHER tab when the key changes;

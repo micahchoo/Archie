@@ -1,4 +1,4 @@
-// Cross-tab single-writer discipline (ISSUES.md Issue 22 / ledgers/TABS.md). OPFS is origin-shared, so
+// Cross-tab single-writer discipline (ISSUES.md Issue 22 / docs/state/TABS.md). OPFS is origin-shared, so
 // two Studio tabs on the same library interleave writes over the same files — last-writer-wins, silent.
 // The browser ships the primitive to stop this: navigator.locks. The FIRST tab to open the library takes
 // an EXCLUSIVE Web Lock held for the tab's lifetime and becomes the WRITER; a second tab that can't get

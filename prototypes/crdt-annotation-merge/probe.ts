@@ -1,10 +1,10 @@
 // PROTOTYPE — THROWAWAY. Probe for ticket Archie-70e6 (map Archie-f849).
-// Verdict lives in ledgers/PROBE-collab-crdt-mapping.md; delete or absorb this dir once read.
+// Verdict lives in ledgers/PROBE-collab-crdt-mapping-2026-07-18.md; delete or absorb this dir once read.
 //
 // Question: does the Archie annotation model map onto an annotation-granular CRDT (Yjs),
 // or does concurrent editing force field-level merge / a model rewrite?
 //
-// The audit (ledgers/AUDIT-stable-ids.md) established: annotation identity is already a
+// The audit (ledgers/AUDIT-stable-ids-2026-07-18.md) established: annotation identity is already a
 // global ULID `logicalId`, and the spine is ALREADY a version-DAG (wadm/types.ts:210 —
 // each edit appends a `rev` with a `parent`; concurrent edits => sibling revs => two heads,
 // reconciled by resolveConflict/mergeLogs, surfaced for MergeReview).

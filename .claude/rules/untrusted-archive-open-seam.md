@@ -13,7 +13,7 @@ and `validateArchieMarker` are composed. Every consumer that opens an untrusted 
 `packages/archie-viewer/src/load.ts`, `apps/viewer/src/published.ts`, `apps/studio/src/ingest-flows.ts`
 — imports this module instead of re-implementing the decode-then-validate sequence.
 
-**Why:** this is the trust boundary for hostile input (ISSUES.md Issue 5, `ledgers/CANON.md`). Before
+**Why:** this is the trust boundary for hostile input (ISSUES.md Issue 5, `docs/state/CANON.md`). Before
 canonicalization, `load.ts` and `published.ts` had near-verbatim duplicate copies of the zip-bomb-cap +
 marker-validate + capped-fetch logic (drifted in small ways — one surfaced `e.message`, the other
 sometimes didn't), and `apps/studio/src/ingest-flows.ts`'s `openZip` skipped `validateArchieMarker`
@@ -39,5 +39,5 @@ skipped the others.
 - `apps/archie-viewer/src/load.ts`'s `openLibraryFromTree` (the published-tree-over-HTTP marker check)
   and `apps/viewer/src/published.ts`'s hosted-tree reading (`loadGallery`/`httpSource`) are a related,
   currently-separate validator — deliberately NOT folded into this seam (would require a new
-  `Filesystem` HTTP backend; scoped out of Issue 5, flagged as a follow-up in `ledgers/CANON.md`). Don't
+  `Filesystem` HTTP backend; scoped out of Issue 5, flagged as a follow-up in `docs/state/CANON.md`). Don't
   treat their existence as license to add a *third* shape for the zip-open case.
