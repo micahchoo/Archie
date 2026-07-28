@@ -35,3 +35,14 @@ Three id spaces: `Issue N` (ISSUES.md, FROZEN), `Archie-xxxx` (.seeds, canonical
 | Q-14 | docs/decisions/archie.md:26 | — |
 
 <!-- hand-corrections below this line are preserved by scripts/trackers-gen.mjs -->
+
+## Hand corrections (2026-07-28): the four UNMAPPED rows resolved
+
+- **Issue 22** — DONE pre-seeds (2026-07-17, merged `847c6a8`, writer-lock `e81f38a`); ledger
+  `docs/state/TABS.md`. No seeds ticket ever existed — the work predates the tracker. Cross-tab
+  rows still carry a needs-manual-verify (human two-tab walk; steps in the ledger).
+- **Issue 25** — DONE pre-seeds (2026-07-17, rows c/d/e via `847c6a8`, a/b via `516962e`); ledger
+  `docs/state/MIRROR.md`. Same pre-seeds shape as Issue 22.
+- **Issue 14** — still queued; now carried by seeds ticket **Archie-d895** (created 2026-07-28 on
+  the `fix/flaky-gates` tracker — the generated table above maps it after that branch merges).
+- **Issue 16** — still queued; now carried by seeds ticket **Archie-59c4** (same tracker note).
