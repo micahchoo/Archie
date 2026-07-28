@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { publishLibrary } from "./site.js";
-import { sitemapXml, exhibitPageHtml, libraryPageHtml } from "./static-pages.js";
+import { sitemapXml, exhibitPageHtml, libraryPageHtml, viewerShellHtml, treeViewerBase } from "./static-pages.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { appendNew, appendEdit, appendDelete } from "../spine/log.js";
 import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
@@ -554,5 +554,38 @@ describe("machine-citable head + cite block + CITATION.cff (Archie-321c)", () =>
     const fs = new MemoryFilesystem();
     await publishLibrary(fs, library, getLog, { baseUrl: BASE });
     await expect(readText(fs, ["CITATION.cff"])).rejects.toThrow();
+  });
+});
+
+describe("the tree's own viewer shell (Archie-e09d)", () => {
+  const shellLib: Library = { id: asLibraryId("lib"), title: 'A "quoted" <library>', exhibits: [] };
+
+  it("addresses the viewer from the page's own depth", () => {
+    expect(treeViewerBase(0)).toBe("viewer.html"); // the library landing, at the tree root
+    expect(treeViewerBase(1)).toBe("../viewer.html"); // an exhibit page, one directory down
+  });
+
+  it("resolves BOTH its library base and its route at runtime, so the tree stays portable", () => {
+    const html = viewerShellHtml(shellLib);
+    // The base is the directory this document was actually served from — never a baked origin, which
+    // is the whole point: move the tree and it still opens its own library.
+    expect(html).toContain('el.setAttribute("src", new URL(".", location.href).href)');
+    expect(html).not.toContain("https://");
+    // `viewer.html#/{slug}` deep-links, and the browser's back/forward re-route in place.
+    expect(html).toContain('el.setAttribute("target", h)');
+    expect(html).toContain('addEventListener("hashchange", sync)');
+    // The bundle is loaded relative to the shell, so `_viewer/`'s sibling chunks resolve beside it.
+    expect(html).toContain('src="./_viewer/archie-viewer.js"');
+  });
+
+  it("escapes the library title into the document title", () => {
+    expect(viewerShellHtml(shellLib)).toContain("<title>A &quot;quoted&quot; &lt;library&gt;</title>");
+  });
+
+  it("names the archival pages for a reader with no JavaScript", () => {
+    // Zero-JS is a first-class audience here (ADR-0014); a blank page would strand them on the one
+    // surface of this tree that needs a script.
+    expect(viewerShellHtml(shellLib)).toContain("<noscript>");
+    expect(viewerShellHtml(shellLib)).toContain('href="index.html"');
   });
 });

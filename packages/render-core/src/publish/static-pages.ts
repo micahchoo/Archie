@@ -219,6 +219,86 @@ ${body}
 `;
 }
 
+// ---------------------------------------------------------------------------------------------
+// SELF-REPLICATING PUBLISH (Archie-e09d) — the tree carries its own viewer.
+//
+// A published tree links out to a canonical hosted Viewer (`viewerBase`). That makes the artifact
+// depend on an origin it does not control: move the tree, take the instance down, or read it from a
+// mirror, and the interactive half is gone. When the publish step is handed the embed bundle
+// (`PublishOptions.getViewerBundle`), the tree instead ships `_viewer/` + this shell, and every
+// page's viewer link becomes TREE-RELATIVE.
+//
+// Tree-relative rather than absolute, deliberately: the published tree is relative-first (the
+// publish-base work, Archie-d6ad), so `viewer.html` must resolve from whatever base the tree is
+// actually served under — a user directory, a project subpath, a renamed folder, a mirror.
+// ---------------------------------------------------------------------------------------------
+
+/** The tree's own viewer page, at the tree ROOT. */
+export const TREE_VIEWER_PAGE = "viewer.html";
+/** The directory the embed bundle's files are written into, at the tree ROOT. Underscore-prefixed so
+ *  it cannot collide with an exhibit slug. GitHub Pages runs Jekyll by default and Jekyll SKIPS
+ *  underscore-prefixed directories — which is exactly why `.nojekyll` is written beside it
+ *  (site.ts). Renaming this without keeping that file would make the bundle 404 on Pages only. */
+export const TREE_VIEWER_DIR = "_viewer";
+/** The bundle entry inside {@link TREE_VIEWER_DIR}. Its sibling chunks resolve relative to it. */
+export const TREE_VIEWER_ENTRY = "archie-viewer.js";
+
+/** Where a page `depth` directories below the tree root finds {@link TREE_VIEWER_PAGE}.
+ *  0 = the library landing, 1 = an exhibit page. */
+export function treeViewerBase(depth: number): string {
+  return `${"../".repeat(depth)}${TREE_VIEWER_PAGE}`;
+}
+
+/**
+ * The tree's own viewer page: an `<archie-viewer>` over the tree it sits in.
+ *
+ * Two things are computed at RUNTIME rather than baked, and both are what make the tree portable:
+ *
+ *  - `src` is `new URL(".", location.href)` — the directory this document was actually served from.
+ *    A baked absolute base would pin the tree to one origin, which is the defect this whole feature
+ *    exists to remove; a baked RELATIVE base cannot be used either, because `HttpFilesystem` joins
+ *    base + path by string concatenation (`fs/http.ts`) and the element rebases each exhibit's asset
+ *    refs against the same value, so it wants a real absolute base.
+ *  - `target` mirrors `location.hash`, so `viewer.html#/{slug}` deep-links and the browser's own
+ *    back/forward work. The element re-routes in place when `target` changes (element.ts:283), so
+ *    `hashchange` needs no reload.
+ *
+ * The inline script is a CLASSIC (non-module) script at the end of the body, so it runs before the
+ * deferred module bundle: both attributes are already on the element when it upgrades.
+ */
+export function viewerShellHtml(library: Library, opts: { title?: string } = {}): string {
+  const title = esc(opts.title ?? library.title ?? "Library");
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${title}</title>
+<style>html,body{margin:0;height:100%;background:#F7F4EC}archie-viewer{display:block;height:100vh}.fallback{max-width:42rem;margin:2rem auto;padding:0 1rem;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55;color:#1A3C23}.fallback a{color:#2D5F3A}</style>
+<script type="module" src="./${TREE_VIEWER_DIR}/${TREE_VIEWER_ENTRY}"></script>
+</head>
+<body>
+<archie-viewer></archie-viewer>
+<noscript><div class="fallback"><p>The interactive viewer needs JavaScript. Every exhibit&#8217;s full text, notes and citations are also published as plain pages: <a href="index.html">browse the library</a>.</p></div></noscript>
+<script>
+(function () {
+  var el = document.querySelector("archie-viewer");
+  if (!el) return;
+  el.setAttribute("src", new URL(".", location.href).href);
+  function sync() {
+    var h = location.hash;
+    if (h && h.length > 1) el.setAttribute("target", h);
+    else el.removeAttribute("target");
+  }
+  sync();
+  addEventListener("hashchange", sync);
+})();
+</script>
+</body>
+</html>
+`;
+}
+
 /** sitemap.txt — exactly the emitted pages: library first, then exhibits in library order. */
 export function sitemapTxt(library: Library, baseUrl: string): string {
   return [`${baseUrl}index.html`, ...library.exhibits.map((e) => `${baseUrl}${e.slug}/index.html`)].map((u) => `${u}\n`).join("");
