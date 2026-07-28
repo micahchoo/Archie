@@ -31,11 +31,13 @@ cycle reverts. Architecture changes additionally require a same-commit ADR or de
 
 ## Decisions
 - Archie-ebe7 — AV posters: canvas frame-grab now, `mediabunny` deferred until rotation/audio
-  bites / dc012e9
+  bites / dc012e9 (branch `fix/flaky-gates`, unmerged — the 0c7f frame-grab code rides there too)
 - Archie-5fb5 — untrusted-archive import validates marker + structure only, not content
-  (`[[untrusted-archive-open-seam]]` is the enforcement seam) / 0efc2a1
-- Archie-be3a — desktop CSP cleartext `http://**` grant removed, tightened to `https:`
-  (`[[tauri-csp]]` covers the rest of that CSP) / baa86a7
+  (`[[untrusted-archive-open-seam]]` is the enforcement seam) / 0efc2a1 (branch `fix/flaky-gates`,
+  unmerged; decision-only — the shipping code was already at that depth)
+- Archie-be3a — desktop CSP cleartext `http://**` grant removal ratified — but the fix (7da8734)
+  is on `fix/flaky-gates`, unmerged: **main's `capabilities/default.json` still carries the grant**
+  (`[[tauri-csp]]` covers the rest of that CSP)
 - Archie-3754 — bulk catalogue-spreadsheet metadata import built: columns → Dublin Core, rows →
   objects by filename / c800a83
 - Archie-19c5 / Archie-3504 — publish base URL derived from the destination BEFORE projection,

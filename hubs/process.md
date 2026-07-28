@@ -28,11 +28,11 @@ the mechanical check over the knowledge layer itself (see `ledgers/DESIGN-knowle
 ## Decisions
 - Archie-1f60 — first exercise of the accretion rewrite: svelte-no-typecheck-net cut ~110→61 lines, evidence kept, correction-narrative dropped; the doclint accretion exemption list is empty again.
 - Archie-1a47 — worktree "drift" was a measurement artifact (diffed against a stale ref); 11 merged checkouts pruned, prune criterion recorded in `ledgers/AUDIT-worktrees-2026-07-27.md`.
-- Archie-e149 / bf5b1ce — ledgers/ is dated-only by predicate; standing docs moved to docs/state/; dated ledgers + .seeds bodies keep historical paths (immutable evidence).
+- Archie-e149 / 4f7636f — ledgers/ is dated-only by predicate; standing docs moved to docs/state/; dated ledgers + .seeds bodies keep historical paths (immutable evidence).
 - Archie-098f — toolchain & docs pipeline tend epic closed; its children are the process-tooling ratchets below.
 - Archie-9140 / 7a07cd9 — harness consolidation: two rotted drive-and-shoot verifiers deleted with coverage proof (behavior moved to unit + e2e), one shared driver.mjs kept.
 - Archie-b975 / 329ee4d — screenshot capture gate wired with no exit-0 escape (zero skips, per-viewport, size floor); wiring it exposed month-old rot the old gate had stopped catching.
-- (doclint itself, no ticket) / 13bc33a — deterministic knowledge-layer gate shipped, 10 checks, born red on 2 real standing findings (undated ledgers, svelte rule 4x accretion) — proves the gate can fail before being trusted, per this design's own §2 Q6.
+- (doclint itself, no ticket) / a3fd4d8 — deterministic knowledge-layer gate shipped, 10 checks, born red on 2 real standing findings (undated ledgers, svelte rule 4x accretion) — proves the gate can fail before being trusted, per this design's own §2 Q6.
 
 ## Evidence
 - `scripts/doclint.mjs` — 10 checks (dangling `[[links]]`, dead scopes, stale hubs via `git log -1 -- <scope>` vs `updated:`, INDEX drift, ticket/sha pointer integrity, untracked docs, declared mirrors, ledger date-naming, rule-accretion count, scope-coverage totality); all scope/link checks run against `git ls-files` — an **uncommitted** hub or rule file is invisible to it.
