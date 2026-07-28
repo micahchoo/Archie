@@ -85,7 +85,7 @@
     box-shadow: var(--shadow-signal-glow);
     transition: background 160ms ease, box-shadow 160ms ease;
   }
-  .primary:hover { background: var(--accent-hover); box-shadow: var(--shadow-lift-mid); }
+  .primary:hover { background: var(--accent-hover); }
   .primary:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); box-shadow: none; cursor: default; }
   .ghost {
     font-family: var(--font-body); font-size: 0.9rem; font-weight: 500;

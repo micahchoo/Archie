@@ -1115,13 +1115,12 @@
     display: flex; flex-direction: column; gap: var(--space-1); text-align: left; cursor: pointer;
     padding: var(--space-4) var(--space-5);
     background: var(--surface-paper-card); border: none; border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low);
-    transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+    transition: background 160ms ease, transform 160ms ease;
   }
-  .choice:hover { background: var(--surface-paper-hover); transform: translateY(-1px); box-shadow: var(--shadow-lift-mid); }
+  .choice:hover { background: var(--surface-paper-hover); transform: translateY(-1px); }
   /* The leading card — marked with the CALM accent (accent-2), not the rationed signal-orange (that stays
      reserved for the publish action inside the wizard). A hairline + eyebrow, not a loud fill. */
-  .choice.lead { border: 1px solid var(--accent-2); box-shadow: var(--shadow-lift-mid); }
+  .choice.lead { border: 1px solid var(--accent-2); }
   .c-eyebrow { font-family: var(--font-ui); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-2); }
   .c-title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 400; color: var(--ink-paper-primary); }
   .c-desc { font-family: var(--font-body); font-size: 0.875rem; line-height: 1.5; color: var(--ink-paper-secondary); }
@@ -1235,7 +1234,7 @@
   input:focus { outline: none; border-color: var(--accent-2); }
 
   /* Broken-link warning — quiet warm tint (degradation is recoverable, not an error). */
-  .broken { padding: var(--space-3) var(--space-4); background: var(--surface-canvas-overlay); border-left: 3px solid var(--semantic-warning); border-radius: var(--radius-sm); box-shadow: var(--shadow-lift-low); }
+  .broken { padding: var(--space-3) var(--space-4); background: var(--surface-canvas-overlay); border-left: 3px solid var(--semantic-warning); border-radius: var(--radius-sm); }
   .broken .b-head { margin: 0; font-family: var(--font-ui); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-paper-secondary); }
   .broken .b-sub { margin: var(--space-1) 0 var(--space-2); font-family: var(--font-body); font-size: 0.78rem; line-height: 1.6; color: var(--ink-paper-secondary); }
   .broken ul { margin: 0; padding-left: var(--space-4); }
@@ -1259,7 +1258,7 @@
     transition: background 160ms ease, box-shadow 160ms ease;
   }
   .primary.big { padding: var(--space-3) var(--space-5); font-size: 1rem; }
-  .primary:hover { background: var(--accent-hover); box-shadow: var(--shadow-lift-mid); }
+  .primary:hover { background: var(--accent-hover); }
   .primary:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); box-shadow: none; cursor: default; }
   /* Quiet secondary → warm paper, soft border, ink text (the .soft-btn shape). */
   .ghost {
