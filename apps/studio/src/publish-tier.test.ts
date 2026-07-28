@@ -9,14 +9,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { asExhibitId, asLibraryId, asObjectId, type Library } from "@render/core";
 import { WEB_TIER } from "./archive-probe.js";
+import { WEB_TIER_H264 } from "./video-transcode.js";
 import {
   DEFAULT_TIER, applyTier, assetMime, capsFor, projectLibraryForTier, renameForTier, resetTierFallbacks,
   tierDecision, tierFallbackCount, tierFallbacksByReason, tierNameMap,
   type TierCaps, type TierDecision,
 } from "./publish-tier.js";
 
-const FULL: TierCaps = { image: true, audio: true };
-const NONE: TierCaps = { image: false, audio: false };
+const FULL: TierCaps = { image: true, audio: true, video: WEB_TIER_H264 };
+const NONE: TierCaps = { image: false, audio: false, video: null };
 
 beforeEach(() => resetTierFallbacks());
 
@@ -51,12 +52,29 @@ describe("the web tier's transforms are the ones Archie-4b0a decided and Archie-
     expect(d.ext).toBe("opus");
   });
 
-  it("VIDEO passes through unchanged — Archie-7e6f owns transcode, and this engine must not widen scope", () => {
-    const d = tierDecision("video/mp4", "web", FULL);
-    expect(d.action).toBe("passthrough");
+  // SUPERSEDED BY Archie-7e6f. This used to assert "VIDEO passes through unchanged — Archie-7e6f owns
+  // transcode, and this engine must not widen scope", which was correct until 7e6f shipped the
+  // transcode and wired it here. Both directions are pinned now, because the interesting property is
+  // no longer "video is exempt" but "video follows its CAPABILITY, and the file is named accordingly".
+  it("VIDEO transcodes when a profile is reachable, and the published name follows the container", () => {
+    const d = tierDecision("video/quicktime", "web", FULL);
+    expect(d.action).toBe("video-transcode");
+    expect(d.ext).toBe(WEB_TIER_H264.ext);
+    // The manifest's `format` is a BARE media type, like its `image/webp` sibling — never the
+    // parameterised `<source type>` string. A real defect, caught by this test's earlier form.
     expect(d.mime).toBe("video/mp4");
+    expect(d.mime).not.toContain("codecs=");
+  });
+
+  it("VIDEO takes a COUNTED passthrough where no profile is reachable — never a silent one", () => {
+    // Firefox, Safari, and a desktop build whose ffmpeg lacks codecs all land here. The bytes are the
+    // originals, the name is unchanged, and `degraded` is what makes it visible in the fallback tally
+    // rather than looking like a policy exemption.
+    const d = tierDecision("video/quicktime", "web", { image: true, audio: true, video: null });
+    expect(d.action).toBe("passthrough");
+    expect(d.mime).toBe("video/quicktime");
     expect(d.ext).toBeNull();
-    expect(d.reason).toMatch(/7e6f/);
+    expect(d.degraded).toBe("no-video-encoder");
   });
 
   it("SVG and GIF are exempt WITH A STATED REASON — rasterising one and flattening the other are losses with no win", () => {
@@ -84,7 +102,7 @@ describe("a platform that cannot encode degrades CLEANLY — the name and the MI
   });
 
   it("no audio encoder ⇒ passthrough (today's real platform state — no Ogg/WebM muxer ships)", () => {
-    expect(tierDecision("audio/wav", "web", { image: true, audio: false }).action).toBe("passthrough");
+    expect(tierDecision("audio/wav", "web", { image: true, audio: false, video: null }).action).toBe("passthrough");
   });
 
   it("but the degradation is FLAGGED on the decision, so it can be counted rather than shrugged off", () => {
@@ -97,9 +115,9 @@ describe("a platform that cannot encode degrades CLEANLY — the name and the MI
   });
 
   it("capability means AN ENCODER IS WIRED — not a probe of whatever runtime happens to be running", () => {
-    expect(capsFor({})).toEqual({ image: false, audio: false });
-    expect(capsFor({ encodeImage: async () => new Blob() })).toEqual({ image: true, audio: false });
-    expect(capsFor({ encodeImage: async () => new Blob(), encodeAudio: async () => new Blob() })).toEqual({ image: true, audio: true });
+    expect(capsFor({})).toEqual({ image: false, audio: false, video: null });
+    expect(capsFor({ encodeImage: async () => new Blob() })).toEqual({ image: true, audio: false, video: null });
+    expect(capsFor({ encodeImage: async () => new Blob(), encodeAudio: async () => new Blob() })).toEqual({ image: true, audio: true, video: null });
   });
 });
 
@@ -183,11 +201,23 @@ describe("the library projection keeps source / thumbnail / format / dimensions 
     expect(p.rescaled).toEqual([]);
   });
 
-  it("a video asset keeps its own name and format inside a web publish", () => {
-    const l = lib([{ id: asObjectId("v"), source: "/assets/talk.mp4", label: "v", format: "video/mp4", mediaType: "video" }]);
+  it("a video asset is RENAMED to the target container, and its format follows the bytes", () => {
+    // Superseded by Archie-7e6f (this used to assert the name and format were untouched). The
+    // rename is the load-bearing half: site.ts derives the published file name from `source`, so a
+    // `.mov` transcoded to MP4 must SAY `.mp4` or the tree serves H.264 bytes under a QuickTime name.
+    const l = lib([{ id: asObjectId("v"), source: "/assets/talk.mov", label: "v", format: "video/quicktime", mediaType: "video" }]);
     const p = projectLibraryForTier(l, "web", FULL);
     expect(p.library.exhibits[0]!.objects[0]!.source).toBe("/assets/talk.mp4");
     expect(p.library.exhibits[0]!.objects[0]!.format).toBe("video/mp4");
+  });
+
+  it("a video asset keeps its own name and format where NO profile is reachable", () => {
+    // The other direction, and the one that must stay true on Firefox/Safari: a passthrough renames
+    // nothing. A name that changed without the bytes changing would be the manifest lying.
+    const l = lib([{ id: asObjectId("v"), source: "/assets/talk.mov", label: "v", format: "video/quicktime", mediaType: "video" }]);
+    const p = projectLibraryForTier(l, "web", { image: true, audio: true, video: null });
+    expect(p.library.exhibits[0]!.objects[0]!.source).toBe("/assets/talk.mov");
+    expect(p.library.exhibits[0]!.objects[0]!.format).toBe("video/quicktime");
   });
 });
 

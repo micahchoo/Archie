@@ -36,8 +36,18 @@ export interface VideoTargetParams {
   codec: VideoTarget;
   /** Container extension, without the dot. */
   ext: "mp4" | "webm";
-  /** The `type` a `<video>` / `<source>` should advertise. */
+  /** The `type` a `<video>` / `<source>` should advertise — WITH codec parameters, because that is
+   *  the whole point of the attribute: it lets a browser skip a source it cannot play without
+   *  fetching it. NOT for a manifest `format` field; see {@link VideoTargetParams.containerMime}. */
   mime: string;
+  /** The bare media type, no parameters — what an object's `format` carries in the published
+   *  manifest, beside `image/webp` and `audio/ogg`.
+   *
+   *  SEPARATE FROM `mime` because a test caught them being conflated: the tier decision put the full
+   *  `video/mp4; codecs="avc1.640028, mp4a.40.2"` into `AObject.format`. IIIF Presentation 3 `format`
+   *  is a media type, and every other tier writes a bare one, so a parameterised string there is both
+   *  off-spec and inconsistent with its siblings. Two fields, two jobs. */
+  containerMime: string;
   /** Downscale-only cap on the long-ish edge (height). A smaller source is left alone. */
   maxHeight: number;
   /** Constant-quality knob. The scales are NOT comparable between codecs: 23 is a normal H.264
@@ -67,6 +77,7 @@ export const WEB_TIER_H264: VideoTargetParams = {
   codec: "h264",
   ext: "mp4",
   mime: 'video/mp4; codecs="avc1.640028, mp4a.40.2"',
+  containerMime: "video/mp4",
   maxHeight: 720,
   crf: 23,
   webBitrateKbps: 2000,
@@ -81,6 +92,7 @@ export const WEB_TIER_VP9: VideoTargetParams = {
   codec: "vp9",
   ext: "webm",
   mime: 'video/webm; codecs="vp9, opus"',
+  containerMime: "video/webm",
   maxHeight: 720,
   crf: 33,
   webBitrateKbps: 1400,

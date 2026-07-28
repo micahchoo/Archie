@@ -525,10 +525,24 @@ function estimateTier(
         bytesByMedia.audio += f.bytes;
       }
     } else {
-      // VIDEO IS STORED AS-IS AT BOTH TIERS. `ingest-flows.ts:461-467` applies no transcode and no
-      // cap, and Archie-4b0a graduated transcode out to Archie-7e6f. So the web tier buys video
-      // nothing — which is exactly why a video-carrying archive lands on object storage either way,
-      // and the surface must say so rather than implying the quality toggle will help.
+      // VIDEO IS COUNTED AT FULL SIZE AT BOTH TIERS — deliberately, and this is now a DELIBERATE
+      // OVER-ESTIMATE rather than a statement of fact. Archie-7e6f shipped the web-tier transcode
+      // (ffmpeg sidecar on desktop, mediabunny/WebCodecs in Chromium), so on a capable platform the
+      // web tier DOES shrink video. This estimate does not model that, for a reason:
+      //
+      //   whether it shrinks depends on a CAPABILITY PROBE (`probeBrowserVideoCaps`) that is async
+      //   and platform-specific, while `probeArchive` is pure and synchronous — and the answer
+      //   differs between the machine estimating and the machine publishing.
+      //
+      // The error is therefore in the SAFE direction: the surface over-states the web tier's size,
+      // so it recommends a destination that will certainly hold the result and never one that
+      // will not. `videoTierTell` (video-transcode.ts) is the honest per-platform figure and is what
+      // the copy should quote when the platform is known.
+      //
+      // FOLLOW-UP, named rather than silent (Archie-7e6f): thread a resolved video target into
+      // `ProbeOptions` so `web` reflects `WEB_TIER_VIDEO_KBPS × duration` where a transcode is
+      // actually reachable. Not done here because it changes the recommendation engine and its
+      // suite, which is its own slice.
       bytesByMedia.video += f.bytes;
     }
   }

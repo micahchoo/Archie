@@ -25,6 +25,9 @@ import {
   DEFAULT_TIER, applyTier, assetMime, capsFor, projectLibraryForTier, resetTierFallbacks, selectorScaleOf, tierDecision, tierFallbackCount,
   type QualityTier, type TierEncoders, type TierRescale,
 } from "./publish-tier.js";
+// The browser video path (Archie-7e6f H3). Cheap to import: `mediabunny` itself sits behind an
+// `await import` inside both of these, so a library with no video never downloads the muxer.
+import { pickBrowserTarget, probeBrowserVideoCaps, transcodeVideoInBrowser } from "./video-transcode-web.js";
 // ADR-0014 (static archival pages): note bodies render through the SAME sanitize pipeline the
 // live Viewer uses (P-1 Q3 no-drift invariant) — renderMarkdown is canonical in @render/core now
 // (sanitize moved into core; @render/svelte only re-exports for back-compat).
@@ -335,6 +338,38 @@ export function createPublishFlows(deps: PublishDeps) {
   };
 
   /**
+   * The video encoder for this platform, resolved ONCE and only when a web-tier publish asks.
+   *
+   * Memoised on the PROMISE rather than on its value, so two projections started together share one
+   * probe instead of racing two. Capability cannot change within a session, so there is no staleness
+   * to invalidate — and the probe is not free: `probeBrowserVideoCaps` constructs real encoders to
+   * ask, which is the whole reason it is not re-asked per file.
+   *
+   * WHY THE BROWSER PATH ONLY, stated plainly rather than left as an apparent oversight. The desktop
+   * sidecar (`transcodeVideo`) is genuinely better — its ffmpeg reaches H.264 that Chromium's encoder
+   * pool cannot pair with AAC — but it takes ABSOLUTE FILE PATHS in and out, while `applyTier` holds
+   * a `Blob` and expects a `Blob` back. Bridging them needs a temp-file seam (write blob → invoke →
+   * read back → clean up) plus a Tauri fs capability grant for that directory, and neither exists
+   * today. Writing one here would be code no gate in this repo can execute: there is no packaged
+   * desktop run available, and `.claude/rules/svelte-no-typecheck-net.md` is explicit that compiling
+   * is not carrying. So the desktop wiring is a NAMED follow-up on Archie-7e6f, not a silent gap —
+   * and until it lands a desktop web-tier publish takes the counted `no-video-encoder` passthrough,
+   * which is visible in `tierFallbacksByReason()` and `videoSkipCount()` rather than invisible.
+   */
+  let videoEncoderOnce: Promise<Pick<TierEncoders, "encodeVideo" | "videoTarget">> | null = null;
+  function resolveVideoEncoder() {
+    videoEncoderOnce ??= (async () => {
+      const target = pickBrowserTarget(await probeBrowserVideoCaps());
+      // No reachable profile ⇒ BOTH members stay absent. `capsFor` treats a half-configured pair as
+      // no capability at all, but leaving neither is what makes that guard unreachable rather than
+      // merely correct.
+      if (!target) return {};
+      return { videoTarget: target, encodeVideo: (src: Blob) => transcodeVideoInBrowser(src, { target }) };
+    })();
+    return videoEncoderOnce;
+  }
+
+  /**
    * Everything one projection needs in order to publish at `tier`: the rewritten library, the two
    * tier-aware byte callbacks, and the rescale report.
    *
@@ -349,9 +384,15 @@ export function createPublishFlows(deps: PublishDeps) {
    * assumes projections do not overlap, which holds: the Publish surface is a modal, scrimmed dialog
    * and every sink awaits its own projection.
    */
-  function tierRun(tier: QualityTier, lib: Library) {
+  async function tierRun(tier: QualityTier, lib: Library) {
     resetTierFallbacks();
-    const caps = capsFor(tierEncoders);
+    // ASYNC only because video capability is. The probe is skipped entirely at the archival tier —
+    // today's default — so the ordinary publish pays nothing for a question it never asks. Resolving
+    // it HERE, before `projectLibraryForTier`, is not incidental: the profile decides the published
+    // file's extension and MIME, so a target that arrived after the projection would name files the
+    // encoder does not produce.
+    const enc: TierEncoders = tier === "archival" ? tierEncoders : { ...tierEncoders, ...(await resolveVideoEncoder()) };
+    const caps = capsFor(enc);
     const proj = projectLibraryForTier(lib, tier, caps);
     const read = (source: (slug: string, name: string) => Promise<Blob | null>) => async (slug: string, published: string): Promise<Blob | null> => {
       const stored = proj.stored.get(slug)?.get(published) ?? published;
@@ -363,7 +404,7 @@ export function createPublishFlows(deps: PublishDeps) {
       // Always through `applyTier`, including for a passthrough: a passthrough the tier was FORCED
       // into (no encoder for a type it owns) is a counted degradation, and short-circuiting here
       // would be exactly the silent fallback this engine is not allowed to have.
-      return (await applyTier(src, tierDecision(srcMime, tier, caps), tierEncoders, srcMime)).bytes;
+      return (await applyTier(src, tierDecision(srcMime, tier, caps), enc, srcMime)).bytes;
     };
     // SELECTOR RESCALE (Archie-4b0a). The projection already knows, per object, how far the pixel
     // space moved — that report was the ticket's evidence that the web tier misplaced every note.
@@ -389,7 +430,7 @@ export function createPublishFlows(deps: PublishDeps) {
     const logs = await deps.loadAllLogs();
     const annotationCorruption = deps.annotationCorruption?.() ?? [];
     const fs = new MemoryFilesystem();
-    const run = tierRun(tierFor(tierOverride), deps.buildFullLibrary());
+    const run = await tierRun(tierFor(tierOverride), deps.buildFullLibrary());
     const { brokenLinks, incompleteCanvases, missingAssets, unscaledSelectors } = await publishLibrary(fs, run.library, (id: string) => logs[id] ?? [], { baseUrl: baseFor(baseOverride), getAsset: run.getAsset, getThumbnail: run.getThumbnail, scaleSelectors: run.scaleSelectors, tileObject, tileRemote, getStructure: makeGetStructure((f) => structureCorruption.push(f)), ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
     if (incompleteCanvases.length > 0) console.warn(`Publish: ${incompleteCanvases.length} image object(s) publishing with no width/height (IIIF Pres 3 §5.3)`, incompleteCanvases);
@@ -449,7 +490,7 @@ export function createPublishFlows(deps: PublishDeps) {
   // two byte callbacks come from the caller's `tierRun` so the opts and the library it publishes are
   // built from ONE projection — a `getAsset` from a different run would be handed published names it
   // has no map for and would read straight through, silently un-tiering the bytes.
-  const zipPublishOpts = (run: ReturnType<typeof tierRun>) => ({ baseUrl: baseFor(), getAsset: run.getAsset, getThumbnail: run.getThumbnail, scaleSelectors: run.scaleSelectors, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS });
+  const zipPublishOpts = (run: Awaited<ReturnType<typeof tierRun>>) => ({ baseUrl: baseFor(), getAsset: run.getAsset, getThumbnail: run.getThumbnail, scaleSelectors: run.scaleSelectors, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS });
   // The library a zip export ships: the full build, optionally narrowed to the chosen exhibits (the
   // Publish dialog's working-copy chooser). Filtering AFTER buildFullLibrary keeps the template
   // exclusion and every mapper in one place; a cite into an omitted exhibit degrades to plain text
@@ -462,7 +503,7 @@ export function createPublishFlows(deps: PublishDeps) {
   // ONE projection for the two zip paths (streaming disk save / eager download); returns the advisories.
   async function publishInto(fs: Filesystem, slugs?: string[]): Promise<PublishResult> {
     const logs = await deps.loadAllLogs();
-    const run = tierRun(tierFor(), libraryForZip(slugs));
+    const run = await tierRun(tierFor(), libraryForZip(slugs));
     const result = await publishLibrary(fs, run.library, (id: string) => logs[id] ?? [], zipPublishOpts(run));
     warnTier(run.rescaled, result.unscaledSelectors);
     return result;
@@ -514,7 +555,7 @@ export function createPublishFlows(deps: PublishDeps) {
   // was the cost we cut.
   async function writeTree(fs: Filesystem, plan: FolderWritePlan = {}) {
     const logs = await deps.loadAllLogs();
-    const run = tierRun(tierFor(), deps.buildFullLibrary());
+    const run = await tierRun(tierFor(), deps.buildFullLibrary());
     const result = await publishLibrary(fs, run.library, (id: string) => logs[id] ?? [], { baseUrl: baseFor(), getAsset: run.getAsset, getThumbnail: run.getThumbnail, scaleSelectors: run.scaleSelectors, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS, ...plan });
     warnTier(run.rescaled, result.unscaledSelectors);
   }
@@ -606,7 +647,7 @@ export function createPublishFlows(deps: PublishDeps) {
       if (!(await zipSizeOk(opts.slugs))) return { saved: false };
       await deps.flushExhibit();
       const logs = await deps.loadAllLogs();
-      const run = tierRun(tierFor(), libraryForZip(opts.slugs));
+      const run = await tierRun(tierFor(), libraryForZip(opts.slugs));
       const fs = new ZipFilesystem({ maxUncompressedBytes: EAGER_ZIP_CEILING_BYTES });
       const result = await writeBag(fs, run.library, (id: string) => logs[id] ?? [], zipPublishOpts(run), {
         // RFC 8493 §2.2.2 wants YYYY-MM-DD. Injected here rather than defaulted inside `bag.ts` so the
