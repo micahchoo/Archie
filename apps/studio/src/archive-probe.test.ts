@@ -458,6 +458,53 @@ describe("destination limits are the REAL ones, and the zip's are a parameter", 
   });
 });
 
+// ===============================================================================================
+describe("the pinned web-tier params are held to their MEASURED values, not to themselves", () => {
+  // WHY THIS BLOCK EXISTS: every estimator assertion elsewhere computes its expectation FROM
+  // WEB_TIER.bytesPerPixel, so it is a tautology — proven by injection, bpp 0.1476 -> 0.30 left all
+  // 46 tests green. These assertions carry the measured numbers as LITERALS so a constant that drifts
+  // from the sweep fails, and they pin the DECISION CRITERION rather than only the value.
+
+  it("carries the values scripts/perf/webptierbench.ts measured on 2026-07-27", () => {
+    expect(WEB_TIER.maxDim).toBe(2400);
+    expect(WEB_TIER.quality).toBe(0.8);
+    // Pooled mean over 6 masters x 3 output dimensions at q0.80.
+    expect(WEB_TIER.bytesPerPixel).toBeCloseTo(0.1476, 4);
+    expect(WEB_TIER.bytesPerPixelRange).toEqual([0.05, 0.2345]);
+    // Mean of the five within-cap masters re-encoded at q0.92.
+    expect(ARCHIVAL_WEBP_BYTES_PER_PIXEL).toBeCloseTo(0.2971, 4);
+  });
+
+  it("keeps the point estimate inside its own measured range", () => {
+    const [lo, hi] = WEB_TIER.bytesPerPixelRange;
+    expect(WEB_TIER.bytesPerPixel).toBeGreaterThan(lo);
+    expect(WEB_TIER.bytesPerPixel).toBeLessThan(hi);
+    // Archival at q0.92 must cost MORE per pixel than web at q0.80, or the tiers are mislabelled.
+    expect(ARCHIVAL_WEBP_BYTES_PER_PIXEL).toBeGreaterThan(WEB_TIER.bytesPerPixel);
+  });
+
+  it("keeps the map's 1,000-image reference library inside GitHub Pages' 1 GB, with headroom", () => {
+    // THIS is the criterion (2400, 0.80) was pinned against — Archie-34a2's own reference point,
+    // 1,000 images at 4000x6000. The sweep's alternatives were rejected here: q0.9 lands 0.89 GB and
+    // 3200px lands 0.91 GB, both of which lose the free destination once thumbnails and pages count.
+    // A bpp or maxDim that drifts upward fails this, which is exactly what the injection did not.
+    const reference = Array.from({ length: 1000 }, (_, i) => img(i, { bytes: 12 * MB, width: 4000, height: 6000 }));
+    const p = probeArchive(reference, { exhibitCount: 20 });
+    expect(p.tiers.web.publishedBytes).toBeLessThan(0.75 * GITHUB_PAGES_LIMITS.maxSiteBytes);
+    expect(p.tiers.web.publishedBytes / GB).toBeCloseTo(0.54, 1);
+    expect(verdict(p, "github-pages", "web").fits).toBe(true);
+    // And the archival tier does NOT fit there — which is the whole reason the web tier exists.
+    expect(verdict(p, "github-pages", "archival").fits).toBe(false);
+  });
+
+  it("holds the Opus target to the bitrate the audio decision was made on", () => {
+    expect(WEB_TIER_OPUS_KBPS).toBe(32);
+    // One hour of speech lands ~14.4 MB. Stated absolutely so a changed constant fails here first.
+    const oneHour = probeArchive([audio(0, { bytes: WAV_BYTES_PER_HOUR, durationSec: 3600 })], {});
+    expect(oneHour.tiers.web.bytesByMedia.audio).toBe(14_400_000);
+  });
+});
+
 describe("humanBytes keeps the surface honest about precision", () => {
   it("rounds coarsely rather than implying precision the estimate lacks", () => {
     expect(humanBytes(0)).toBe("0 bytes");
