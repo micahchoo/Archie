@@ -1,5 +1,6 @@
 ---
 scope:
+  - "hubs/**"
   - ".claude/rules/**"
   - ".seeds/**"
   - "ledgers/**"
