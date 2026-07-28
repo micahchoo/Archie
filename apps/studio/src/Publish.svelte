@@ -408,8 +408,12 @@
   let advProgress = $state<PublishProgress | null>(null); // live step from publishToGitHub while publishing
 
   // Human-readable progress for the long push (media upload is one request per asset → show the count).
+  // The republish case says what it SKIPPED as well as what it's sending: a publish that uploads 3 of
+  // 4,132 files and one that uploads all 4,132 look identical without it (Archie-53e3).
   const progressText = $derived(
-    advProgress?.phase === "uploading" ? `Uploading media — ${advProgress.done} of ${advProgress.total}…`
+    advProgress?.phase === "comparing" ? "Checking what's already published…"
+    : advProgress?.phase === "uploading"
+      ? `Uploading media — ${advProgress.done} of ${advProgress.total}…${advProgress.unchanged > 0 ? ` (${advProgress.unchanged} already up to date)` : ""}`
     : advProgress?.phase === "committing" ? "Creating the commit…"
     : advProgress?.phase === "enabling-pages" ? "Turning on GitHub Pages…"
     : "Preparing the library…",

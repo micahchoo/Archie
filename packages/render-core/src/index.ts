@@ -30,6 +30,7 @@ export * from "./session/session.js";
 export * from "./publish/site.js";
 export * from "./publish/ghpages.js";
 export * from "./publish/delta.js";
+export * from "./publish/push-delta.js";
 // Pre-push preflight + rights coverage (Archie-0cd6 / Archie-8772) — the severity model lives there.
 export * from "./publish/preflight.js";
 // Portable read seam (ADR-0010): read a published tree out of an opened `.archie.zip`, media → blob URLs.
