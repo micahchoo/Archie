@@ -26,7 +26,6 @@ import {
   estimateWebTierVideoBytes,
   formatBytes,
   videoTierTell,
-  webCodecsVideoAssessment,
   type EncoderReport,
   type VideoBridge,
   type VideoProgress,
@@ -336,16 +335,3 @@ describe("the measure-and-tell hand-off (H4)", () => {
   });
 });
 
-describe("the WebCodecs assessment (H3 — designed, not built)", () => {
-  it("reports the mux gap as unconditional, independent of encoder presence", () => {
-    // WebCodecs specifies NO demuxer and NO muxer. That is true on Chromium too, which is why H3 is
-    // a dependency decision rather than an implementation task.
-    const a = webCodecsVideoAssessment();
-    expect(a.muxGap).toBe(true);
-    expect(a.note).toMatch(/muxer|no WebCodecs/i);
-  });
-
-  it("reads the CURRENT realm honestly — node/jsdom has no VideoEncoder", () => {
-    expect(webCodecsVideoAssessment().encoderPresent).toBe("VideoEncoder" in globalThis);
-  });
-});

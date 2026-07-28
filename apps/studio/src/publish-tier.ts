@@ -55,6 +55,10 @@
 import { fitWithin, type AObject, type Library, type SelectorScale } from "@render/core";
 import { WEB_TIER, WEB_TIER_OPUS_KBPS, type QualityTier } from "./archive-probe.js";
 import { inferredMime } from "./folder-import.js";
+// Type-only for the profile, plus the ONE value this module needs: the video seam's skip counter.
+// `video-transcode.ts` itself is import-cheap (no Tauri, no mediabunny at module scope — both are
+// behind `await import`), so this does not drag either heavy path into the tier engine's graph.
+import { noteVideoSkipped, type VideoTargetParams } from "./video-transcode.js";
 
 export type { QualityTier };
 
@@ -68,7 +72,7 @@ export const DEFAULT_TIER: QualityTier = "archival";
 
 /** What the tier does to one asset's bytes. `passthrough` covers both "this tier re-encodes nothing"
  *  and "this MIME is deliberately exempt" — `reason` says which, so a readout can explain itself. */
-export type TierAction = "passthrough" | "image-webp" | "audio-opus";
+export type TierAction = "passthrough" | "image-webp" | "audio-opus" | "video-transcode";
 
 export interface TierDecision {
   action: TierAction;
@@ -107,6 +111,15 @@ const IMAGE_EXEMPT: Readonly<Record<string, string>> = {
 export interface TierCaps {
   image: boolean;
   audio: boolean;
+  /** VIDEO IS A PROFILE, NOT A BOOLEAN, and that asymmetry is load-bearing rather than untidy.
+   *
+   *  Image and audio have one web-tier answer each (WebP, Opus/Ogg), so "can this build do it" is the
+   *  whole question. Video has TWO declared profiles — `WEB_TIER_H264` (.mp4) and `WEB_TIER_VP9`
+   *  (.webm) — and which one a machine can reach decides the published file's EXTENSION and MIME.
+   *  Since `tierDecision` is what names the file, a boolean here would leave the namer unable to
+   *  name. Null = no reachable profile, which is the ordinary state on Firefox, Safari, and a desktop
+   *  build whose ffmpeg lacks codecs. */
+  video: VideoTargetParams | null;
 }
 
 /** Capability IS "an encoder was wired". Deliberately not a feature probe of the running JS runtime:
@@ -114,15 +127,23 @@ export interface TierCaps {
  *  a worker or a test runner, and `bake-async` already degrades internally (worker → DOM canvas) and
  *  counts what it degrades. A platform where the wired encoder nonetheless throws is caught per file
  *  by `applyTier`'s `*-encode-failed` counters. */
-export const capsFor = (enc: TierEncoders): TierCaps => ({ image: !!enc.encodeImage, audio: !!enc.encodeAudio });
+export const capsFor = (enc: TierEncoders): TierCaps => ({
+  image: !!enc.encodeImage,
+  audio: !!enc.encodeAudio,
+  // BOTH halves or neither. An `encodeVideo` with no `videoTarget` cannot name the output file, and a
+  // `videoTarget` with no encoder would name a `.mp4` nothing writes — either alone would produce a
+  // published tree whose manifest and bytes disagree, which is the failure `TierCaps` exists to make
+  // structurally impossible.
+  video: enc.encodeVideo && enc.videoTarget ? enc.videoTarget : null,
+});
 
 /**
  * Which transform the tier applies to a source MIME. PURE — no bytes, no DOM; `caps` is passed in so
  * the same inputs always give the same answer and the whole decision layer unit-tests headlessly.
  *
- * VIDEO is a passthrough by decision, not by omission: Archie-4b0a graduated video transcode out to
- * its own ticket (Archie-7e6f, native sidecar on desktop + WebCodecs on Chromium), so a video file in
- * the web tier is copied as-is here.
+ * VIDEO transcodes when `caps.video` names a reachable profile — Archie-7e6f's native sidecar on
+ * desktop, mediabunny/WebCodecs in Chromium. Where neither is reachable (Firefox, Safari, a build
+ * whose ffmpeg lacks codecs) it takes the COUNTED passthrough, exactly like an unencodable image.
  */
 export function tierDecision(mime: string, tier: QualityTier, caps: TierCaps): TierDecision {
   const m = mime.toLowerCase();
@@ -135,7 +156,16 @@ export function tierDecision(mime: string, tier: QualityTier, caps: TierCaps): T
   if (m.startsWith("audio/")) {
     return caps.audio ? { action: "audio-opus", mime: "audio/ogg", ext: "opus" } : PASS(mime, "no Opus encoder wired — shipping the archival bytes under their own name", "no-audio-encoder");
   }
-  if (m.startsWith("video/")) return PASS(mime, "video transcode is Archie-7e6f's — the web tier copies video unchanged");
+  if (m.startsWith("video/")) {
+    // The profile carries the extension AND the mime, so the published name, the manifest's `format`
+    // and the bytes are all derived from one object — there is no second place to keep in step.
+    return caps.video
+      // `containerMime`, NOT `mime`: the manifest's `format` is a bare media type like its
+      // `image/webp` sibling. `mime` carries codec parameters for a `<source type>` attribute and
+      // does not belong in the model.
+      ? { action: "video-transcode", mime: caps.video.containerMime, ext: caps.video.ext }
+      : PASS(mime, "no video converter on this platform — shipping the archival bytes under their own name", "no-video-encoder");
+  }
   return PASS(mime, "not a media type this tier re-encodes");
 }
 
@@ -346,6 +376,18 @@ export interface TierEncoders {
   /** Re-encode to Opus at `kbps`, in a playable container. Nothing supplies this yet — see
    *  `audioEncodeAvailable`. */
   encodeAudio?: (src: Blob, kbps: number) => Promise<Blob>;
+  /** Re-encode one video to `target`. Supplied by `publish-flows` from whichever path the platform
+   *  has: the ffmpeg sidecar on desktop, mediabunny/WebCodecs in Chromium, neither elsewhere.
+   *
+   *  MUST THROW rather than return the source bytes. Both implementations already do
+   *  (`transcodeVideo`, `transcodeVideoInBrowser`), and `applyTier` is what converts that throw into
+   *  a COUNTED passthrough — so the "never silently degrade" contract lives in one place instead of
+   *  being re-decided by each encoder. */
+  encodeVideo?: (src: Blob, target: VideoTargetParams) => Promise<Blob>;
+  /** The profile `encodeVideo` will produce. Separate from the function because the DECISION layer
+   *  needs it before any encode runs — see `TierCaps.video`. Meaningless without `encodeVideo`, and
+   *  `capsFor` refuses the half-configured pair. */
+  videoTarget?: VideoTargetParams;
 }
 
 /** Why a web-tier asset shipped its archival bytes anyway. Every one of these is a REAL degradation
@@ -354,11 +396,18 @@ export interface TierEncoders {
  *  The `no-*-encoder` pair fires on the DECIDED degradation (`TierDecision.degraded`): the tier owned
  *  the media type, no encoder was wired, so it shipped archival bytes under their own name. That is
  *  the honest outcome AND a real shortfall against the size the probe estimated, so it is both a
- *  clean tree and a counted one. `no-audio-encoder` is today's normal state on every platform. */
-export type TierFallbackReason = "no-image-encoder" | "no-audio-encoder" | "image-encode-failed" | "audio-encode-failed";
+ *  clean tree and a counted one. `no-audio-encoder` is today's normal state on every platform.
+ *
+ *  The two VIDEO reasons are the ones worth watching. An image that ships archival costs megabytes;
+ *  a video that ships archival costs GIGABYTES — it is the single largest gap between the size the
+ *  probe estimated and the size the author actually uploads. */
+export type TierFallbackReason =
+  | "no-image-encoder" | "no-audio-encoder" | "no-video-encoder"
+  | "image-encode-failed" | "audio-encode-failed" | "video-encode-failed";
 
 const counts: Record<TierFallbackReason, number> = {
-  "no-image-encoder": 0, "no-audio-encoder": 0, "image-encode-failed": 0, "audio-encode-failed": 0,
+  "no-image-encoder": 0, "no-audio-encoder": 0, "no-video-encoder": 0,
+  "image-encode-failed": 0, "audio-encode-failed": 0, "video-encode-failed": 0,
 };
 
 /** Total assets that fell back to archival bytes inside a web-tier publish.
@@ -403,7 +452,19 @@ export interface TierBytes {
  * — `TierCaps` turns it into a clean archival passthrough, name and MIME included.
  */
 export async function applyTier(src: Blob, decision: TierDecision, enc: TierEncoders, srcMime: string): Promise<TierBytes> {
-  const fall = (reason: TierFallbackReason): TierBytes => { counts[reason]++; return { bytes: src, mime: srcMime, fellBack: true }; };
+  const fall = (reason: TierFallbackReason): TierBytes => {
+    counts[reason]++;
+    // TWO counters for video, deliberately, because they answer to different readers — and it is done
+    // HERE so both routes are covered by one line: the DECIDED degradation (no encoder on this
+    // platform, which arrives via `decision.degraded` below) and the per-file throw. `counts` is this
+    // engine's own tally, so `tierFallbacksByReason` stays a complete account of one publish.
+    // `noteVideoSkipped()` feeds the VIDEO seam's `videoSkipCount()`, whose stated contract is that a
+    // caller choosing to publish an original after a refusal must say so — and `applyTier` IS that
+    // caller. Counting only locally would leave `videoSkipCount()` reading zero while gigabytes of
+    // originals shipped, which is exactly the invisibility it exists to prevent.
+    if (reason === "no-video-encoder" || reason === "video-encode-failed") noteVideoSkipped();
+    return { bytes: src, mime: srcMime, fellBack: true };
+  };
   // A passthrough the tier CHOSE (archival, video, SVG/GIF) is not a fallback. A passthrough it was
   // FORCED into carries `degraded` and is counted here — that is the "never silent" half of the
   // contract, and counting it at the decision's edge keeps one counter for both routes.
@@ -416,6 +477,14 @@ export async function applyTier(src: Blob, decision: TierDecision, enc: TierEnco
       return { bytes: await enc.encodeImage(src, WEB_TIER.maxDim, WEB_TIER.quality), mime: decision.mime, fellBack: false };
     } catch {
       return fall("image-encode-failed");
+    }
+  }
+  if (decision.action === "video-transcode") {
+    if (!enc.encodeVideo || !enc.videoTarget) return fall("no-video-encoder");
+    try {
+      return { bytes: await enc.encodeVideo(src, enc.videoTarget), mime: decision.mime, fellBack: false };
+    } catch {
+      return fall("video-encode-failed");
     }
   }
   if (!enc.encodeAudio) return fall("no-audio-encoder");
