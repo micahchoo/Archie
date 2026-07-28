@@ -48,12 +48,18 @@
 // AUTHORS its probe note through the real spine (`appendNew` → `libraryToZip` → the published
 // annotation page), same as that donor, and PRINTS the region count so an empty subject cannot hide.
 //
-// RED-GREEN: `--no-library` emits the same document with an EMPTY base64 payload. The boot must fail
-// visibly and the canvas assertion must go red. A run that stays green without the library is
-// measuring something other than what it claims.
+// RED-GREEN, and it takes TWO levers because one of them only proves a precondition. `--no-library`
+// emits the same document with an EMPTY base64 payload: the boot fails and every later assertion goes
+// red — but reds 2 and 3 are then *precondition* failures (no library ⇒ no gallery ⇒ nothing to
+// click), which prove nothing about those assertions themselves
+// (.claude/rules/post-review-fixes-are-unreviewed.md: "a red run is only evidence if it is red for
+// the reason you intended"). `--no-assets` is the isolating lever: the manifest is emitted with the
+// image BYTES withheld, so the gallery and the region overlay still work and only the image
+// assertion can fail. The two remaining assertions were isolated by injections into the code they
+// gate rather than by a flag; the measurements are in the ticket's report.
 //
 // Run:  cd apps/viewer && pnpm exec vite-node ../../scripts/prototypes/single-file-export.mts
-// Flags: --objects N (default 1) · --out <path> · --keep · --no-library (the RED run)
+// Flags: --objects N (default 1) · --out <path> · --keep · --no-library · --no-assets (RED runs)
 import { readFile, readdir, stat, mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -70,6 +76,7 @@ const SOURCE_TREE = path.join(REPO, "apps/viewer/public/published");
 const SINGLE_BUNDLE = path.join(REPO, "packages/archie-viewer/dist-single/archie-viewer.single.js");
 
 const NO_LIBRARY = process.argv.includes("--no-library");
+const NO_ASSETS = process.argv.includes("--no-assets");
 const KEEP = process.argv.includes("--keep");
 const argAfter = (flag: string): string | undefined => {
   const i = process.argv.indexOf(flag);
@@ -155,6 +162,7 @@ async function bake(): Promise<Baked> {
   // `loadLibrary` inverts published asset URLs back to the working `/assets/{name}` form, so the
   // re-publish must hand the bytes back or the manifest ships pointers to nothing (donor comment).
   const getAsset = async (slug: string, name: string): Promise<ArrayBuffer | null> => {
+    if (NO_ASSETS) return null; // the isolating RED lever — see the header
     try {
       const exDir = await (await src.root()).getDirectory(slug);
       return await (await (await exDir.getDirectory("assets")).getFile(name)).readable();
@@ -163,7 +171,10 @@ async function bake(): Promise<Baked> {
 
   const { zip, missingAssets } = await libraryToZip(kept, getLog, { baseUrl: BASE, getAsset });
   for (const m of missingAssets) console.warn(`missing bytes: ${m.exhibitSlug}/${m.name} (object ${m.objectId})`);
-  if (missingAssets.length > 0) throw new Error("refusing to emit an export whose manifest points at bytes it does not carry");
+  // A manifest that references a file the tree lacks is Archie-19d7's invariant; this prototype
+  // refuses rather than emitting one. `--no-assets` deliberately steps past it to make the image
+  // assertion falsifiable in isolation.
+  if (missingAssets.length > 0 && !NO_ASSETS) throw new Error("refusing to emit an export whose manifest points at bytes it does not carry");
 
   const bundle = await readFile(SINGLE_BUNDLE, "utf8");
   // The RED run: same document, EMPTY payload. Everything else is byte-identical, so a green result
