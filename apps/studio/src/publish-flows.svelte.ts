@@ -9,6 +9,7 @@ import {
   MemoryFilesystem, ZipFilesystem, publishLibrary, collectFiles, publishToGitHub, pagesUrlFor, renderMarkdown, readStructureReport, asExhibitId,
   preflightTree, rightsCoverageFinding, blocksPublish, type PreflightFinding,
   type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type MissingAsset, type GitHubTarget, type PublishProgress, type IncrementalScope, type SectionLog, type PublishResult,
+  type SelectorScale, type UnscaledSelector,
 } from "@render/core";
 import { supportsStreamingZipSave, openStreamingZipSave, saveZipToDisk, downloadHtml } from "./binding.js";
 import type { CorruptLogFinding } from "./publish-warnings.js";
@@ -18,7 +19,7 @@ import { resolveTileSource, type AObject } from "@render/core";
 import { readAssetBlob, readOriginalBytes, readThumbBytes, assetSize, isAsset, ASSET_PREFIX, openExhibitStructureDirIfExists, type ExhibitMeta } from "./store.js";
 import { bakeDisplayMasterAsync } from "./bake-async.js";
 import {
-  DEFAULT_TIER, applyTier, assetMime, capsFor, projectLibraryForTier, resetTierFallbacks, tierDecision, tierFallbackCount,
+  DEFAULT_TIER, applyTier, assetMime, capsFor, projectLibraryForTier, resetTierFallbacks, selectorScaleOf, tierDecision, tierFallbackCount,
   type QualityTier, type TierEncoders, type TierRescale,
 } from "./publish-tier.js";
 // ADR-0014 (static archival pages): note bodies render through the SAME sanitize pipeline the
@@ -113,7 +114,7 @@ export function createPublishFlows(deps: PublishDeps) {
   // ONE open flag (Archie-1921 — PublishDialog + the Publish wizard merged into one scrimmed surface):
   // the old `dialogOpen`/`publishOpen` pair (one per dialog, toggled in lockstep by the chooser's
   // "Publish to the web" card) is gone now that there's only one surface to show or hide.
-  const s = $state<{ open: boolean; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; corruptLogs: CorruptLogFinding[]; missingAssets: MissingAsset[]; preflight: PreflightFinding[]; tierRescaled: TierRescale[]; tierFallbacks: number }>({
+  const s = $state<{ open: boolean; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; corruptLogs: CorruptLogFinding[]; missingAssets: MissingAsset[]; preflight: PreflightFinding[]; tierRescaled: TierRescale[]; unscaledSelectors: UnscaledSelector[]; tierFallbacks: number }>({
     open: false, // the merged Publish & Share surface
     brokenLinks: [], // intra-Library links that degrade to plain text on publish (dialog advisory)
     incompleteCanvases: [], // Image objects publishing with no width/height (IIIF Pres 3 §5.3; dialog advisory)
@@ -123,12 +124,16 @@ export function createPublishFlows(deps: PublishDeps) {
     // severity model lives in render-core's preflight.ts; this just carries the findings to the
     // dialog, which renders them into the advisory surface it already has.
     preflight: [],
-    // Web-tier reporting (Archie-4b0a). `tierRescaled` is the KNOWN BLOCKER made visible: every object
-    // whose published pixel space differs from the authored one, i.e. every object whose annotation
-    // coordinates now land in the wrong place (see publish-tier.ts's header). `tierFallbacks` is the
-    // count of assets that shipped archival bytes inside a web publish — a tier that quietly did less
-    // than it promised. Both are zero for an archival publish, which is the default.
+    // Web-tier reporting (Archie-4b0a). `tierRescaled` is INFORMATIONAL as of the selector-rescale fix:
+    // every object whose published pixel space differs from the authored one — worth telling an author
+    // (their 6000 px plate ships at 2400 px), no longer a correctness warning, because the same report
+    // is what feeds `publishLibrary`'s `scaleSelectors` and moves the notes with the image.
+    // `unscaledSelectors` is the residue that IS a correctness finding: a selector the scaler could not
+    // move exactly (an imported `<path>`, an SVG with a transform), shipped in the authored pixel space.
+    // `tierFallbacks` is the count of assets that shipped archival bytes inside a web publish — a tier
+    // that quietly did less than it promised. All three are zero for an archival publish, the default.
     tierRescaled: [],
+    unscaledSelectors: [],
     tierFallbacks: 0,
   });
   let cachedSiteFs: MemoryFilesystem | null = null; // the no-originals projection from openPublish, reused by publish
@@ -342,10 +347,23 @@ export function createPublishFlows(deps: PublishDeps) {
       // would be exactly the silent fallback this engine is not allowed to have.
       return (await applyTier(src, tierDecision(srcMime, tier, caps), tierEncoders, srcMime)).bytes;
     };
-    return { library: proj.library, rescaled: proj.rescaled, getAsset: read(readAssetBlob), getThumbnail: read(readThumbBytes) };
+    // SELECTOR RESCALE (Archie-4b0a). The projection already knows, per object, how far the pixel
+    // space moved — that report was the ticket's evidence that the web tier misplaced every note.
+    // Handing it to `publishLibrary` as `scaleSelectors` is what turns the report into the fix: the
+    // published heads pages and Range `start`s are projected into the SERVED image's pixel space, so
+    // the manifest's canvas dimensions and the annotation coordinates agree by construction.
+    //
+    // Keyed by slug AND object id because an object id is only unique within its exhibit. `null` for
+    // an object that did not move is the contract render-core expects (and is what every object
+    // returns at the archival tier, where `rescaled` is empty and the callback is a constant `null` —
+    // byte-identical output, pinned by site-rescale.test.ts).
+    const scales = new Map<string, SelectorScale>();
+    for (const r of proj.rescaled) scales.set(`${r.slug} ${r.objectId}`, selectorScaleOf(r));
+    const scaleSelectors = (slug: string, objectId: string): SelectorScale | null => scales.get(`${slug} ${objectId}`) ?? null;
+    return { library: proj.library, rescaled: proj.rescaled, scaleSelectors, getAsset: read(readAssetBlob), getThumbnail: read(readThumbBytes) };
   }
 
-  async function projectSite(withOriginals: boolean, baseOverride?: string, tierOverride?: QualityTier): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; missingAssets: MissingAsset[]; corruptLogs: CorruptLogFinding[]; tierRescaled: TierRescale[]; tierFallbacks: number }> {
+  async function projectSite(withOriginals: boolean, baseOverride?: string, tierOverride?: QualityTier): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; missingAssets: MissingAsset[]; corruptLogs: CorruptLogFinding[]; tierRescaled: TierRescale[]; unscaledSelectors: UnscaledSelector[]; tierFallbacks: number }> {
     // Torn-store advisory (Archie-a690): the annotation findings come back from the loadAllLogs pass
     // (which just warned on them); the structure findings are collected as publishLibrary reads each
     // exhibit's section log via this per-run `collect` sink. Combined, they feed the dialog advisory.
@@ -354,20 +372,29 @@ export function createPublishFlows(deps: PublishDeps) {
     const annotationCorruption = deps.annotationCorruption?.() ?? [];
     const fs = new MemoryFilesystem();
     const run = tierRun(tierFor(tierOverride), deps.buildFullLibrary());
-    const { brokenLinks, incompleteCanvases, missingAssets } = await publishLibrary(fs, run.library, (id: string) => logs[id] ?? [], { baseUrl: baseFor(baseOverride), getAsset: run.getAsset, getThumbnail: run.getThumbnail, tileObject, tileRemote, getStructure: makeGetStructure((f) => structureCorruption.push(f)), ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
+    const { brokenLinks, incompleteCanvases, missingAssets, unscaledSelectors } = await publishLibrary(fs, run.library, (id: string) => logs[id] ?? [], { baseUrl: baseFor(baseOverride), getAsset: run.getAsset, getThumbnail: run.getThumbnail, scaleSelectors: run.scaleSelectors, tileObject, tileRemote, getStructure: makeGetStructure((f) => structureCorruption.push(f)), ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
     if (incompleteCanvases.length > 0) console.warn(`Publish: ${incompleteCanvases.length} image object(s) publishing with no width/height (IIIF Pres 3 §5.3)`, incompleteCanvases);
     if (missingAssets.length > 0) console.warn(`Publish: ${missingAssets.length} imported image(s) have no stored bytes — they publish as broken references`, missingAssets);
-    warnTier(run.rescaled);
-    return { fs, brokenLinks, incompleteCanvases, missingAssets, corruptLogs: [...annotationCorruption, ...structureCorruption], tierRescaled: run.rescaled, tierFallbacks: tierFallbackCount() };
+    warnTier(run.rescaled, unscaledSelectors);
+    return { fs, brokenLinks, incompleteCanvases, missingAssets, corruptLogs: [...annotationCorruption, ...structureCorruption], tierRescaled: run.rescaled, unscaledSelectors, tierFallbacks: tierFallbackCount() };
   }
-  /** The web tier's two degradations, on the console for every sink — the dialog only sees the two
-   *  that go through `projectSite`, and a folder/zip publish deserves the same warning. */
-  function warnTier(rescaled: TierRescale[]): void {
+  /** The web tier's console readout for every sink — the dialog only sees the two paths that go
+   *  through `projectSite`, and a folder/zip publish deserves the same lines.
+   *
+   *  THREE LINES, THREE SEVERITIES, and the middle one changed meaning when Archie-4b0a's selector
+   *  rescale landed. `rescaled` used to say "every note on these objects is now misplaced"; the same
+   *  report is now the INPUT that prevents that, so it is `console.info` — a fact about the artifact,
+   *  not a defect. `unscaledSelectors` is the residue that IS still a defect (a `<path>` or a
+   *  transform the scaler refuses to move rather than mangle), so it keeps the warning. */
+  function warnTier(rescaled: TierRescale[], unscaled: UnscaledSelector[] = []): void {
     const fell = tierFallbackCount();
     if (fell > 0) console.warn(`Publish: ${fell} asset(s) shipped their ARCHIVAL bytes inside a web-tier publish — the published site is larger than the tier promised`);
     if (rescaled.length > 0) {
-      console.warn(`Publish: the web tier re-encoded ${rescaled.length} object(s) at smaller pixel dimensions. Annotation selectors are stored in IMAGE-PIXEL space and nothing rescales them, so every note on these objects will land in the wrong place in the published tree (Archie-4b0a — see publish-tier.ts).`, rescaled);
+      console.info(`Publish: the web tier re-encoded ${rescaled.length} object(s) at smaller pixel dimensions; their annotation selectors and narrative regions were rescaled to match (Archie-4b0a).`, rescaled);
+    }
+    if (unscaled.length > 0) {
+      console.warn(`Publish: ${unscaled.length} selector(s) could not be rescaled exactly and ship in the AUTHORED pixel space — they will land in the wrong place on a re-encoded object (Archie-4b0a).`, unscaled);
     }
   }
   // Flatten the projected tree to the path→FileContent map the git-trees push consumes.
@@ -404,7 +431,7 @@ export function createPublishFlows(deps: PublishDeps) {
   // two byte callbacks come from the caller's `tierRun` so the opts and the library it publishes are
   // built from ONE projection — a `getAsset` from a different run would be handed published names it
   // has no map for and would read straight through, silently un-tiering the bytes.
-  const zipPublishOpts = (run: ReturnType<typeof tierRun>) => ({ baseUrl: baseFor(), getAsset: run.getAsset, getThumbnail: run.getThumbnail, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS });
+  const zipPublishOpts = (run: ReturnType<typeof tierRun>) => ({ baseUrl: baseFor(), getAsset: run.getAsset, getThumbnail: run.getThumbnail, scaleSelectors: run.scaleSelectors, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS });
   // The library a zip export ships: the full build, optionally narrowed to the chosen exhibits (the
   // Publish dialog's working-copy chooser). Filtering AFTER buildFullLibrary keeps the template
   // exclusion and every mapper in one place; a cite into an omitted exhibit degrades to plain text
@@ -419,7 +446,7 @@ export function createPublishFlows(deps: PublishDeps) {
     const logs = await deps.loadAllLogs();
     const run = tierRun(tierFor(), libraryForZip(slugs));
     const result = await publishLibrary(fs, run.library, (id: string) => logs[id] ?? [], zipPublishOpts(run));
-    warnTier(run.rescaled);
+    warnTier(run.rescaled, result.unscaledSelectors);
     return result;
   }
   // Assemble the whole site into an in-memory ZipFilesystem (the EAGER path — Tauri/non-Chromium).
@@ -470,8 +497,8 @@ export function createPublishFlows(deps: PublishDeps) {
   async function writeTree(fs: Filesystem, plan: FolderWritePlan = {}) {
     const logs = await deps.loadAllLogs();
     const run = tierRun(tierFor(), deps.buildFullLibrary());
-    await publishLibrary(fs, run.library, (id: string) => logs[id] ?? [], { baseUrl: baseFor(), getAsset: run.getAsset, getThumbnail: run.getThumbnail, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS, ...plan });
-    warnTier(run.rescaled);
+    const result = await publishLibrary(fs, run.library, (id: string) => logs[id] ?? [], { baseUrl: baseFor(), getAsset: run.getAsset, getThumbnail: run.getThumbnail, scaleSelectors: run.scaleSelectors, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS, ...plan });
+    warnTier(run.rescaled, result.unscaledSelectors);
   }
   /** Download the library as .archie.zip. False = the user declined/cancelled. Chromium streams to
    *  disk in bounded memory; else the size-guarded eager path. `opts` = the save surfaces' custom
@@ -491,9 +518,14 @@ export function createPublishFlows(deps: PublishDeps) {
     get publishBlocked(): boolean { return blocksPublish(s.preflight); },
     get missingAssets(): MissingAsset[] { return s.missingAssets; },
     /** Objects the LAST projection published at smaller pixel dimensions than they were authored at
-     *  (web tier only). Non-empty means the published notes on those objects are misplaced — see the
-     *  BLOCKER note in publish-tier.ts. A surface offering the web tier must read this. */
+     *  (web tier only). INFORMATIONAL since Archie-4b0a's selector rescale: the notes on these objects
+     *  moved with the image, so this reports what the artifact IS, not what is wrong with it. The
+     *  correctness residue is `unscaledSelectors`. */
     get tierRescaled(): TierRescale[] { return s.tierRescaled; },
+    /** Selectors the LAST projection could NOT rescale exactly and therefore shipped in the authored
+     *  pixel space — an imported `<path>`, or an SVG carrying a `transform`. Non-empty means those
+     *  specific notes land in the wrong place on a re-encoded object; everything else is correct. */
+    get unscaledSelectors(): UnscaledSelector[] { return s.unscaledSelectors; },
     /** Assets the LAST projection shipped at archival bytes despite a web-tier decision (no encoder,
      *  or an encode that threw). Non-zero = the tier under-delivered; the site is bigger than the
      *  estimate the probe gave. */
@@ -590,12 +622,13 @@ export function createPublishFlows(deps: PublishDeps) {
       await deps.flushExhibit();
       // `baseUrl` is the deploy path's known destination (pagesUrlFor, before staging). Absent for
       // every other caller, which then resolves through `publishBase()`.
-      const { fs, brokenLinks, incompleteCanvases, missingAssets, corruptLogs, tierRescaled, tierFallbacks } = await projectSite(false, baseUrl);
+      const { fs, brokenLinks, incompleteCanvases, missingAssets, corruptLogs, tierRescaled, unscaledSelectors, tierFallbacks } = await projectSite(false, baseUrl);
       s.brokenLinks = brokenLinks;
       s.incompleteCanvases = incompleteCanvases;
       s.missingAssets = missingAssets;
       s.corruptLogs = corruptLogs;
       s.tierRescaled = tierRescaled;
+      s.unscaledSelectors = unscaledSelectors;
       s.tierFallbacks = tierFallbacks;
       s.preflight = await runPreflight(fs);
       return fs;
@@ -615,6 +648,7 @@ export function createPublishFlows(deps: PublishDeps) {
       s.corruptLogs = [];
       s.missingAssets = [];
       s.tierRescaled = [];
+      s.unscaledSelectors = [];
       s.tierFallbacks = 0;
       cachedSiteFs = null;
       cachedSiteBase = null;
@@ -625,7 +659,7 @@ export function createPublishFlows(deps: PublishDeps) {
       // surface after this warm projection has already run.
       const warmBase = baseFor();
       const warmTier = tierFor();
-      void projectSite(false, warmBase, warmTier).then(({ fs, brokenLinks: bl, incompleteCanvases: ic, missingAssets: ma, corruptLogs: cl, tierRescaled: tr, tierFallbacks: tf }) => {
+      void projectSite(false, warmBase, warmTier).then(({ fs, brokenLinks: bl, incompleteCanvases: ic, missingAssets: ma, corruptLogs: cl, tierRescaled: tr, unscaledSelectors: us, tierFallbacks: tf }) => {
         cachedSiteFs = fs;
         cachedSiteBase = warmBase;
         cachedSiteTier = warmTier;
@@ -634,6 +668,7 @@ export function createPublishFlows(deps: PublishDeps) {
         s.missingAssets = ma;
         s.corruptLogs = cl;
         s.tierRescaled = tr;
+        s.unscaledSelectors = us;
         s.tierFallbacks = tf;
         // Preflight walks the BUILT tree, so it can only run once the projection lands — same
         // reactive fill-in as the advisories above (the wizard is already on screen by then).

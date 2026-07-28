@@ -20,6 +20,7 @@ import { buildImageIndex } from "../iiif/image-index.js";
 import { toManifest, objectsFromManifest, canvasIdMap, sectionsFromManifest, sectionsToAnnotationCollection, embedHeadsIntoManifest, findCanvasesMissingDimensions, type HeadsEmbed } from "../iiif/manifest.js";
 import { rightsFromIIIF } from "../iiif/rights.js";
 import { rebaseCanvasId } from "../iiif/canvasid.js";
+import { isIdentityScale, scaleMediaFragmentValue, scaleTarget, type SelectorScale } from "../geometry/rescale.js";
 import { langMap, type IIIFManifest, type LangMap } from "../iiif/presentation.js";
 import type { Exhibit, AObject, Section, Reading, RightsFields } from "../model/model.js";
 import type { DziTileSource } from "../iiif/resolve.js";
@@ -184,6 +185,30 @@ export interface PublishOptions {
    * `mergeFixity` for why that is sound.
    */
   fixity?: boolean;
+  /**
+   * SELECTOR RESCALE (Archie-4b0a) — the per-object linear factor from the AUTHORED master's pixel
+   * space to the pixel space of the image this publish actually SERVES. Return `null` (or omit the
+   * option) for an object whose pixels did not move.
+   *
+   * WHY IT IS A CALLBACK AND NOT A COMPUTATION. Annotation geometry is absolute image pixels against
+   * the master (`xywh=pixel:…`, SvgSelector polygons), and the viewer maps it off the LOADED image's
+   * content size (`render-mount/src/read-overlay.ts:295` → `mount.ts:405` `getContentSize()`). Any
+   * tier that re-encodes an image smaller — Studio's web tier at 2400 px — therefore has to move the
+   * selectors with it, and only the tier knows by how much: it computed the served dimensions with
+   * `fitWithin` before any encode ran (`apps/studio/src/publish-tier.ts` `projectLibraryForTier`).
+   * render-core cannot re-derive the factor from the library it is handed, because that library
+   * ALREADY carries the served dimensions — the master's are gone by the time it gets here.
+   *
+   * PROJECTION ONLY, the same posture as `rebaseCanvasId`: the per-canvas heads pages and the
+   * manifest's Range `start` are scaled; the history sidecar (`annotations/history/`) keeps the
+   * authored master-space coordinates verbatim, so a load→publish round trip rescales from canonical
+   * each time instead of compounding.
+   *
+   * ABSENT = byte-identical output. Returning `{ sx: 1, sy: 1 }` is likewise a no-op (`isIdentityScale`).
+   * Anything that cannot be scaled EXACTLY is left untouched and reported in
+   * {@link PublishResult.unscaledSelectors} rather than shipped with wrong coordinates.
+   */
+  scaleSelectors?: (slug: string, objectId: string) => SelectorScale | null;
 }
 
 /** The embed bundle's files for {@link PublishOptions.getViewerBundle}, keyed by flat filename. */
@@ -241,13 +266,29 @@ export interface MissingAsset {
   name: string;
 }
 
+/** A selector on a RESCALED object that this publish could not scale exactly, and therefore shipped
+ *  in the AUTHORED master's pixel space — i.e. in the wrong place, by the object's rescale factor.
+ *  Reported for the same reason `missingAssets` is: the alternatives are inventing a transform for
+ *  geometry the shape vocabulary does not cover, or shipping the loss silently. Empty whenever
+ *  {@link PublishOptions.scaleSelectors} is absent or returns identity — there is nothing to miss. */
+export interface UnscaledSelector {
+  exhibitSlug: string;
+  objectId: string;
+  /** The note's stable logical id, or the SECTION id when the selector is a narrative Range `start`. */
+  logicalId: string;
+  /** Which coordinate form defeated the scaler (a `<path>`, a transform, a torn fragment). */
+  reason: string;
+}
+
 /** What publishLibrary reports back: the broken intra-Library links it degraded, any
- *  spec-non-conformant Canvases (missing dimensions) it shipped anyway, and any imported-asset
- *  sources whose bytes were unavailable (shipped dangling — surface these to the publisher). */
+ *  spec-non-conformant Canvases (missing dimensions) it shipped anyway, any imported-asset
+ *  sources whose bytes were unavailable (shipped dangling — surface these to the publisher), and any
+ *  selector a rescaling publish had to leave in the authored pixel space. */
 export interface PublishResult {
   brokenLinks: BrokenLink[];
   incompleteCanvases: IncompleteCanvas[];
   missingAssets: MissingAsset[];
+  unscaledSelectors: UnscaledSelector[];
   /**
    * The fixity manifest this publish wrote, as records — present only when
    * {@link PublishOptions.fixity} was set. Exactly the lines of `manifest-sha256.txt`, plus each
@@ -305,6 +346,25 @@ function rebaseHeadTarget(rec: AnnotationRecord, base: string, slug: string, isO
   }
   const next = rebaseCanvasId(t.source, base, slug, isObjectId);
   return next === t.source ? rec : { ...rec, target: { ...t, source: next } };
+}
+
+/**
+ * Rescale a head's selector from the AUTHORED master's pixel space into the space of the image this
+ * publish serves (Archie-4b0a). CONSUMER PROJECTION ONLY, beside `rebaseHeadTarget` and for the same
+ * reason: the history sidecar keeps the authored coordinates, so a load→publish round trip rescales
+ * from canonical rather than compounding.
+ *
+ * `record.geo` is deliberately NOT touched — a `GeoAnchor` is WGS84 lng/lat (`wadm/types.ts:279`),
+ * not image pixels, so re-encoding the image at 40% moves nothing about where on Earth a note points.
+ */
+function scaleHeadTarget(rec: AnnotationRecord, s: SelectorScale | null, exhibitSlug: string, objectId: string, sink: UnscaledSelector[]): AnnotationRecord {
+  if (s === null || isIdentityScale(s)) return rec;
+  const r = scaleTarget(rec.target, s);
+  if (r.unscalable !== undefined) {
+    sink.push({ exhibitSlug, objectId, logicalId: rec.logicalId, reason: r.unscalable });
+    return rec;
+  }
+  return r.value === rec.target ? rec : { ...rec, target: r.value };
 }
 
 async function writeJson(dir: FsDirectory, name: string, data: unknown): Promise<void> {
@@ -457,6 +517,7 @@ export async function publishLibrary(sink: Filesystem, library: Library, getLog:
   const brokenLinks: BrokenLink[] = [];
   const incompleteCanvases: IncompleteCanvas[] = [];
   const missingAssets: MissingAsset[] = [];
+  const unscaledSelectors: UnscaledSelector[] = [];
 
   // SELF-REPLICATING PUBLISH (Archie-e09d). Resolved HERE, before the exhibit loop, because the
   // per-exhibit pages below need to know which viewer they are linking to — and the tree must never
@@ -632,6 +693,29 @@ export async function publishLibrary(sink: Filesystem, library: Library, getLog:
         }),
       };
     }
+    // SELECTOR RESCALE, half 1 of 2 (Archie-4b0a): a Section's `start` is a media fragment in the SAME
+    // image-pixel space as a note selector (`model.ts:245` — `xywh=…` for an image object, `t=…` for
+    // AV), and it becomes the Range's `start` id + FragmentSelector in the manifest
+    // (`iiif/manifest.ts:282`,`:316`) and the narrative AnnotationCollection. A web-tier publish that
+    // moved only the notes would leave every narrative beat's camera 2.5x out of place, which is the
+    // same defect wearing different clothes. Projected on the manifest COPY, like the prose rewrite
+    // above; the working model's authored fragment stays canonical.
+    if (opts.scaleSelectors && manifestExhibit.sections?.some((s) => s.start !== undefined)) {
+      manifestExhibit = {
+        ...manifestExhibit,
+        sections: manifestExhibit.sections.map((s) => {
+          if (s.start === undefined) return s;
+          const scale = opts.scaleSelectors!(exhibit.slug, s.objectId);
+          if (scale === null || isIdentityScale(scale)) return s;
+          const r = scaleMediaFragmentValue(s.start, scale);
+          if (r.unscalable !== undefined) {
+            unscaledSelectors.push({ exhibitSlug: exhibit.slug, objectId: s.objectId, logicalId: s.id, reason: r.unscalable });
+            return s;
+          }
+          return r.value === s.start ? s : { ...s, start: r.value };
+        }),
+      };
+    }
     // Build the bare manifest, then EMBED each canvas's heads items inline into its annotations entries
     // (below) before writing it — a pure IIIF viewer / portable zip can't dereference a bare reference
     // off a placeholder or blob: origin. The per-canvas loop COLLECTS the inline content keyed by page id
@@ -736,11 +820,20 @@ export async function publishLibrary(sink: Filesystem, library: Library, getLog:
       const canvasId = `${baseUrl}${exhibit.slug}/canvas/${obj.id}`;
       const objDir = await canvasDir.getDirectory(obj.id, { create: true });
       // Resolve in-body `archie:` links on the consumer projection only (history stays canonical).
-      const projected = heads.filter((h) => targetSource(h) === canvasId).map((h) => rewriteHeadBodies(h, exhibit.slug, rw, brokenLinks));
+      // SELECTOR RESCALE, half 2 of 2 (Archie-4b0a). Applied HERE rather than beside the rebase at
+      // `heads` because the factor is per OBJECT and this is the one place the object is known — the
+      // grouping filter above is what turns a canvas IRI back into `obj`.
+      const scale = opts.scaleSelectors?.(exhibit.slug, obj.id) ?? null;
+      const projected = heads
+        .filter((h) => targetSource(h) === canvasId)
+        .map((h) => rewriteHeadBodies(h, exhibit.slug, rw, brokenLinks))
+        .map((h) => scaleHeadTarget(h, scale, exhibit.slug, obj.id, unscaledSelectors));
       const fileFor = (r: string | undefined) => (r === undefined ? "annotations.json" : `annotations-${r}.json`);
       const pageId = (r: string | undefined) => `${canvasId}/${fileFor(r)}`;
-      const opts = { historyBase: historyBaseAbs };
-      const partition = new Map(headsPagesByReading(projected, ids, pageId, collId, opts).map((p) => [p.reading, p.page]));
+      // NB: `pageOpts`, not `opts` — this block reads the OUTER `opts` (PublishOptions.scaleSelectors
+      // above), and a local named `opts` shadowed it into a TDZ error.
+      const pageOpts = { historyBase: historyBaseAbs };
+      const partition = new Map(headsPagesByReading(projected, ids, pageId, collId, pageOpts).map((p) => [p.reading, p.page]));
       // Record the page's items as the manifest's matching annotations-entry embed (so a pure IIIF
       // viewer renders inline, no fetch/CORS) AND write the standalone sidecar file (citation target).
       const record = (page: W3CAnnotationPage, extra: Pick<HeadsEmbed, "label" | "summary"> = {}) => {
@@ -752,7 +845,7 @@ export async function publishLibrary(sink: Filesystem, library: Library, getLog:
       };
       // Base page — always written (the manifest lists it unconditionally). A "Base" label only when the
       // exhibit has Readings (so the viewer can name the always-on toggle alongside the reading toggles).
-      const basePage = partition.get(undefined) ?? headsPageFromRecords([], pageId(undefined), ids, opts);
+      const basePage = partition.get(undefined) ?? headsPageFromRecords([], pageId(undefined), ids, pageOpts);
       record(basePage, readings.length > 0 ? { label: langMap("Base") } : {});
       await writeJson(objDir, "annotations.json", basePage);
       // One page per REGISTRY reading — empty (with partOf) if this canvas has no notes for it,
@@ -760,7 +853,7 @@ export async function publishLibrary(sink: Filesystem, library: Library, getLog:
       // Name the page inline (label/summary from the Reading) so a viewer can label the toggle and
       // group by `partOf` WITHOUT dereferencing the AnnotationCollection at a placeholder/host origin.
       for (const r of readings) {
-        const page = partition.get(r.id) ?? Object.assign(headsPageFromRecords([], pageId(r.id), ids, opts), { partOf: [{ id: collId(r.id), type: "AnnotationCollection" }] });
+        const page = partition.get(r.id) ?? Object.assign(headsPageFromRecords([], pageId(r.id), ids, pageOpts), { partOf: [{ id: collId(r.id), type: "AnnotationCollection" }] });
         record(page, { label: langMap(r.name), ...(r.description ? { summary: langMap(r.description) } : {}) });
         await writeJson(objDir, fileFor(r.id), page);
       }
@@ -840,7 +933,7 @@ export async function publishLibrary(sink: Filesystem, library: Library, getLog:
   }
 
   await writeJson(root, "archie.json", { ...ARCHIE_LIBRARY_MARKER, generation });
-  return { brokenLinks, incompleteCanvases, missingAssets, ...(fixity !== undefined ? { fixity } : {}) };
+  return { brokenLinks, incompleteCanvases, missingAssets, unscaledSelectors, ...(fixity !== undefined ? { fixity } : {}) };
 }
 
 /** Read the tree's existing `manifest-sha256.txt`, or `[]` when there is none / it cannot be read.
