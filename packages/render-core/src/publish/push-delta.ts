@@ -31,6 +31,13 @@
 // match, which re-uploads. The only way to skip an upload wrongly is a sha1 collision between two
 // different byte strings, which is not a failure mode this code has to defend against.
 
+// NOT the same thing as `publish/delta.ts` (`computeDelta`, Archie-c85f), which will sit beside this
+// file after merge. That one diffs two LOCAL published trees, prev vs next, to report what `rclone
+// sync` would re-upload to a bucket — it needs both trees in hand. This one has no previous local
+// tree to compare against, because Archie does not keep one: the REMOTE branch's git tree is the prior
+// state, and a blob sha is how you compare against it without downloading it. Different inputs,
+// different question; neither replaces the other.
+
 import type { FileContent } from "./ghpages.js";
 
 /**
