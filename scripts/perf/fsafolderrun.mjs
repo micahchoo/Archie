@@ -40,14 +40,20 @@ import { execFileSync, spawnSync, spawn } from "node:child_process";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { launchBrowser } from "../lib/driver.mjs";
+import { launchPersistentProfile } from "../lib/driver.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..");
 
 const DISPLAY = process.env.FSA_DISPLAY ?? ":91";
 const PORT = Number(process.env.FSA_PORT ?? 4372);
-const TARGET = process.env.FSA_TARGET ?? mkdtempSync(path.join(tmpdir(), "archie-b5c2-"));
+// DEFAULT AWAY FROM /tmp ON PURPOSE. On this machine /tmp is **tmpfs** — a RAM disk — so a first
+// run measured a "real folder" that never touched a platter and reported parity with OPFS. Both
+// halves of the comparison must sit on the SAME REAL DEVICE or the number means nothing: the
+// browser profile carries OPFS, so it is placed beside the target rather than left in Playwright's
+// own /tmp profile dir. `df -T <dir>` is the check; FSA_TARGET overrides.
+const TARGET = process.env.FSA_TARGET ?? mkdtempSync(path.join(process.env.HOME ?? tmpdir(), ".archie-b5c2-"));
+const PROFILE = process.env.FSA_PROFILE ?? path.join(TARGET, "..", `${path.basename(TARGET)}-profile`);
 const NOTES = process.env.FSA_NOTES ?? "10,50,200";
 const SAVES = process.env.FSA_SAVES ?? "25";
 
@@ -75,7 +81,11 @@ if (!sh("xdotool", ["getdisplaygeometry"]).trim()) {
   process.exit(1);
 }
 console.log(`• display ${DISPLAY} ${sh("xdotool", ["getdisplaygeometry"]).trim().replace("\n", "x")}`);
-console.log(`• folder under test: ${TARGET}`);
+// PRINT THE SUBJECT, not just the verdict: a tmpfs target silently turns this whole measurement
+// into a RAM benchmark that reports parity with OPFS and looks entirely healthy.
+const devOf = (p) => (spawnSync("df", ["-T", p], { encoding: "utf8" }).stdout ?? "").trim().split("\n").pop()?.split(/\s+/).slice(0, 2).join(" ") ?? "?";
+console.log(`• folder under test: ${TARGET}   [${devOf(TARGET)}]`);
+console.log(`• browser profile (carries OPFS): ${PROFILE}   [${devOf(path.dirname(PROFILE))}]`);
 
 // ── the bench page ────────────────────────────────────────────────────────────────────────────────
 const req = createRequire(path.join(REPO, "apps/studio/package.json"));
@@ -88,9 +98,8 @@ await server.listen();
 const url = `http://localhost:${PORT}/fs.html?flow=autosave&folder=1&notes=${NOTES}&saves=${SAVES}`;
 console.log(`• bench ${url}`);
 
-// launchBrowser keeps the bundled→system chromium fallback ladder the other harnesses use; the
-// opts spread lands after its `headless: true` default, so headless:false wins.
-const browser = await launchBrowser({ headless: false, env, args: ["--no-sandbox", "--ozone-platform=x11"] });
+// A PERSISTENT profile, so OPFS lives on a device we choose rather than Playwright's /tmp default.
+const browser = await launchPersistentProfile(PROFILE, { headless: false, env, args: ["--no-sandbox", "--ozone-platform=x11"] });
 const page = await browser.newPage();
 page.on("console", (m) => console.log(`  [${m.type()}] ${m.text()}`));
 let onPageError;
