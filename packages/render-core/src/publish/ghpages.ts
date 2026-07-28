@@ -7,6 +7,7 @@
 // binary → base64 (uploaded as git blobs, referenced by sha). collectFiles classifies by extension.
 
 import type { FsDirectory } from "../fs/seam.js";
+import { planPush, localBlobShas, EMPTY_REMOTE_TREE, UNKNOWN_REMOTE_TREE, type RemoteTreeIndex } from "./push-delta.js";
 
 /** One published file: UTF-8 text (JSON pages) or base64-encoded bytes (image assets). */
 export type FileContent = { text: string } | { base64: string };
@@ -65,10 +66,16 @@ export interface GitHubTarget {
 }
 
 /** Coarse publish progress for the UI — media upload is the long part (one request per asset), so it
- *  carries a count; the rest is a single labelled step. */
+ *  carries a count; the rest is a single labelled step.
+ *
+ *  `comparing` is the incremental push's read of what GitHub already holds (Archie-53e3), and
+ *  `uploading.unchanged` is how many files that read spared. The pair is what lets the UI say
+ *  "uploading 300 changed files" rather than "uploading 4,132" — the ticket's stated requirement for
+ *  a progress model that can tell an incremental republish from a full one. */
 export type PublishProgress =
   | { phase: "creating-repo" }
-  | { phase: "uploading"; done: number; total: number }
+  | { phase: "comparing" }
+  | { phase: "uploading"; done: number; total: number; unchanged: number }
   | { phase: "committing" }
   | { phase: "pushing" }
   | { phase: "enabling-pages" };
@@ -159,18 +166,53 @@ export async function ensureRepo(owner: string, repo: string, token: string): Pr
 const BLOB_CONCURRENCY = 6;
 
 /**
+ * Read the target branch's tree as `path -> blob sha`, so the push can reference blobs GitHub already
+ * has instead of re-uploading them (Archie-53e3; the reasoning lives in `push-delta.ts`).
+ *
+ * NEVER throws. A publish must not fail because an optimization could not read its input, so every
+ * failure — a 404 on a rewritten commit, a 5xx, a torn body — returns {@link UNKNOWN_REMOTE_TREE},
+ * which `planPush` turns into a full upload. Same for GitHub's `truncated` flag: the recursive read
+ * caps at 100,000 entries / 7 MB, and a cut listing cannot be read as a statement of absence.
+ */
+async function readRemoteTree(api: string, headers: Record<string, string>, commitSha: string): Promise<RemoteTreeIndex> {
+  try {
+    const commit = await ghJson<{ tree?: { sha?: string } }>(`${api}/git/commits/${commitSha}`, { headers }, "remote tree");
+    const treeSha = commit.tree?.sha;
+    if (!treeSha) return UNKNOWN_REMOTE_TREE;
+    const listing = await ghJson<{ tree?: { path?: string; type?: string; sha?: string }[]; truncated?: boolean }>(
+      `${api}/git/trees/${treeSha}?recursive=1`, { headers }, "remote tree",
+    );
+    if (listing.truncated || !Array.isArray(listing.tree)) return UNKNOWN_REMOTE_TREE;
+    const blobs: Record<string, string> = {};
+    for (const e of listing.tree) if (e.type === "blob" && e.path && e.sha) blobs[e.path] = e.sha;
+    return { blobs, truncated: false };
+  } catch (err) {
+    console.warn("[publish] couldn't read the published branch's tree — re-uploading every file", err);
+    return UNKNOWN_REMOTE_TREE;
+  }
+}
+
+/**
  * LEGACY browser-PAT path — do NOT extend. The one-motion desktop deploy uploads via a single git pack
  * push in Rust (`gh_push_tree`), not this per-blob JS engine; see docs/decisions/archie.md Q-13. This
  * function survives only for the browser paste-a-PAT flow; its `ghJson`/`ghError` REST helpers,
  * `pagesUrlFor`, `enablePages`, and `ensureRepo` are reused by the desktop path, but the upload sequence
  * below is not.
  *
- * Push a published file tree to a GitHub Pages branch via the git-trees API: upload binary files as
- * base64 blobs (bounded concurrency → sha), create tree from the base commit → commit → update ref,
- * then best-effort enable Pages. Every network step ok-checks and throws a mapped cause on failure.
- * `onProgress` (optional) reports the long media-upload phase plus the commit/Pages steps for the UI.
- * BROWSER/NETWORK — verified in the browser, not headless. The pure tree-building above is unit-tested;
- * the sequence + error mapping are covered with a mocked fetch.
+ * Push a published file tree to a GitHub Pages branch via the git-trees API: read what the branch
+ * already holds, upload only the files GitHub cannot already name (bounded concurrency → sha),
+ * create tree → commit → update ref, then best-effort enable Pages. Every network step ok-checks and
+ * throws a mapped cause on failure. `onProgress` (optional) reports the compare + media-upload phases
+ * plus the commit/Pages steps for the UI.
+ *
+ * INCREMENTAL (Archie-53e3). The tree is still emitted COMPLETE — no `base_tree` — but an unchanged
+ * file contributes a `sha` reference to a blob GitHub already stores rather than its bytes, so a
+ * republish costs one blob POST per CHANGED asset instead of one per asset. Deletions stay structural:
+ * a path absent from `files` is absent from the tree. See `push-delta.ts` for why the failure
+ * directions are all "re-upload" and never "skip".
+ *
+ * BROWSER/NETWORK — verified in the browser, not headless. The pure tree-building and the pure delta
+ * are unit-tested; the sequence + error mapping are covered with a mocked fetch.
  */
 export async function publishToGitHub(
   files: Record<string, FileContent>,
@@ -181,36 +223,50 @@ export async function publishToGitHub(
   const api = `https://api.github.com/repos/${target.owner}/${target.repo}`;
   const headers = { Authorization: `Bearer ${target.token}`, Accept: "application/vnd.github+json", "Content-Type": "application/json" };
 
-  // Binary entries upload as blobs first (git-trees `content` is UTF-8 only); text stays inline.
+  // 1. base ref -> base commit. A missing branch (404) is fine (fresh branch); other failures are real.
+  //    This runs BEFORE the upload now: the base commit's tree is what makes the push incremental.
+  const refRes = await fetch(`${api}/git/ref/heads/${branch}`, { headers });
+  if (!refRes.ok && refRes.status !== 404) throw await ghError(refRes, "branch lookup");
+  const baseCommitSha = refRes.ok ? (await refRes.json() as { object: { sha: string } }).object.sha : undefined;
+
+  // 2. what does GitHub already have? A fresh branch holds nothing, which is a TRUSTWORTHY empty
+  //    index (EMPTY_REMOTE_TREE) — not the same as a listing we failed to read (UNKNOWN_REMOTE_TREE).
+  onProgress?.({ phase: "comparing" });
+  const localShas = await localBlobShas(files);
+  const remote = baseCommitSha ? await readRemoteTree(api, headers, baseCommitSha) : EMPTY_REMOTE_TREE;
+  const plan = planPush(localShas, remote);
+  const reference = new Set(plan.toReference);
+
+  // 3. binary entries GitHub lacks upload as blobs (git-trees `content` is UTF-8 only); changed text
+  //    stays inline; anything unchanged names its existing sha and costs no request at all.
   const entries = buildGitTree(files);
-  const total = entries.filter((e) => "base64" in e).length; // only binaries are uploaded; text is inline.
+  const total = entries.filter((e) => "base64" in e && !reference.has(e.path)).length;
+  const unchanged = plan.toReference.length;
   let done = 0;
-  if (total > 0) onProgress?.({ phase: "uploading", done, total });
+  if (total > 0) onProgress?.({ phase: "uploading", done, total, unchanged });
   const tree = await mapWithConcurrency(entries, BLOB_CONCURRENCY, async (e) => {
+    const known = localShas[e.path];
+    if (known && reference.has(e.path)) return { path: e.path, mode: e.mode, type: e.type, sha: known };
     if ("content" in e) return { path: e.path, mode: e.mode, type: e.type, content: e.content };
     const { sha } = await ghJson<{ sha: string }>(`${api}/git/blobs`, { method: "POST", headers, body: JSON.stringify({ content: e.base64, encoding: "base64" }) }, "image upload");
-    onProgress?.({ phase: "uploading", done: ++done, total });
+    onProgress?.({ phase: "uploading", done: ++done, total, unchanged });
     return { path: e.path, mode: e.mode, type: e.type, sha };
   });
   onProgress?.({ phase: "committing" });
 
-  // 1. base ref -> base commit. A missing branch (404) is fine (fresh branch); other failures are real.
-  const refRes = await fetch(`${api}/git/ref/heads/${branch}`, { headers });
-  if (!refRes.ok && refRes.status !== 404) throw await ghError(refRes, "branch lookup");
-  const baseCommitSha = refRes.ok ? (await refRes.json() as { object: { sha: string } }).object.sha : undefined;
-  // 2. create the tree (replace-this-tree: no base_tree => full replacement).
+  // 4. create the tree (still replace-this-tree: no base_tree, so a removed path drops out by omission).
   const { sha: treeSha } = await ghJson<{ sha: string }>(`${api}/git/trees`, { method: "POST", headers, body: JSON.stringify({ tree }) }, "file tree");
-  // 3. create the commit.
+  // 5. create the commit.
   const commit = await ghJson<{ sha: string; html_url: string }>(`${api}/git/commits`, {
     method: "POST", headers,
     body: JSON.stringify({ message: "Publish via Archie", tree: treeSha, ...(baseCommitSha ? { parents: [baseCommitSha] } : {}) }),
   }, "commit");
-  // 4. point the branch at the new commit (create the ref if the branch is new).
+  // 6. point the branch at the new commit (create the ref if the branch is new).
   await ghJson(`${api}/git/refs/heads/${branch}`, {
     method: baseCommitSha ? "PATCH" : "POST", headers,
     body: JSON.stringify(baseCommitSha ? { sha: commit.sha, force: true } : { ref: `refs/heads/${branch}`, sha: commit.sha }),
   }, "branch update");
-  // 5. best-effort: enable Pages (deploy-from-branch). The commit ALREADY landed, so a Pages failure
+  // 7. best-effort: enable Pages (deploy-from-branch). The commit ALREADY landed, so a Pages failure
   //    (missing Pages scope, org policy, private-repo entitlement) must NOT fail the publish — report it.
   onProgress?.({ phase: "enabling-pages" });
   const pagesEnabled = await enablePages(api, headers, branch);
