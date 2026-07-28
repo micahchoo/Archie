@@ -19,29 +19,40 @@
 // `bake-async.ts`: the dimension math lives in a headless core module, only the encode is in the DOM.
 //
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-// KNOWN BLOCKER, recorded here because the next person to enable the web tier must meet it first:
-// ANNOTATION GEOMETRY IS IMAGE-PIXEL SPACE, AND THE WEB TIER MOVES IT.
+// CLOSED 2026-07-27 — WAS A BLOCKER: ANNOTATION GEOMETRY IS IMAGE-PIXEL SPACE, AND THE WEB TIER
+// MOVES IT.
 //
-// Notes are stored as absolute pixels against the published master — `xywh=pixel:x,y,w,h`
-// (`spine/serialize.test.ts:20`) or an SvgSelector polygon in the same space — and the viewer maps
-// them with OSD's `viewport.imageToViewportRectangle` off the LOADED image's content size
-// (`render-mount/src/read-overlay.ts:295`, `mount.ts:233`, `mount.ts:405` `item.getContentSize()`).
-// Nothing anywhere rescales a selector between the canvas dimensions in the manifest and the image
-// actually served. So a 6000 px master published at 2400 px puts every region 2.5x out of place.
+// The defect, for the record, because the shape recurs: notes are stored as absolute pixels against
+// the published master — `xywh=pixel:x,y,w,h` (`spine/serialize.test.ts:20`) or an SvgSelector
+// polygon in the same space — and the viewer maps them with OSD's `viewport.imageToViewportRectangle`
+// off the LOADED image's content size (`render-mount/src/read-overlay.ts:295`, `mount.ts:233`,
+// `mount.ts:405` `item.getContentSize()`). Nothing rescaled a selector between the canvas dimensions
+// in the manifest and the image actually served, so a 6000 px master published at 2400 px put every
+// region 2.5x out of place.
 //
-// This engine therefore does NOT silently pretend the problem away: `projectLibraryForTier` reports
-// every object whose published pixel space differs from the authored one (`rescaled`), and
-// `publish-flows` surfaces the count. Rescaling the selectors (or teaching the viewer a canvas→image
-// transform) is a separate change and touches the annotation projection / render-mount, both outside
-// this ticket's studio-side seam. Until it lands, the web tier is correct for an UNANNOTATED library
-// and wrong for an annotated one — which is precisely why the engine default stays "archival" and
-// why c367's surface must not pre-check "web" before this is closed.
+// THE FIX, and why it lands where it does. `projectLibraryForTier` already computed the served
+// dimensions purely (`fitWithin`, below) before any encode ran, so it already KNEW the factor — the
+// only missing piece was a seam to hand it to the writer. `publishLibrary` now takes
+// `scaleSelectors(slug, objectId)` (`render-core/src/publish/site.ts`) and moves the CONSUMER
+// PROJECTION with the image: the per-canvas heads pages and the manifest's Range `start`. The
+// authored log and the `annotations/history/` sidecar are untouched, exactly like `rebaseCanvasId`,
+// so a load→publish round trip rescales from canonical rather than compounding.
+//
+// This engine supplies the factor from `rescaled` (`publish-flows.svelte.ts` `tierRun`), so the
+// report that USED to be a warning about misplacement is now the input that prevents it. Note what
+// stays true: `rescaled` remains worth surfacing — an author is entitled to know their 6000 px plate
+// ships at 2400 px — it just no longer means "your notes are wrong".
+//
+// STILL FENCED (see `unscaledSelectors` in the publish result, surfaced by `warnTier`): a selector
+// the scaler cannot move EXACTLY — an `<path>`, or any SVG carrying a `transform` — ships in the
+// authored pixel space and is reported per note. Neither is in the v1 shape vocabulary Archie
+// authors or draws (`isV1Shape`), so this is an imported-WADM edge, counted rather than silent.
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 //
 // AUDIO — assessed against the browser-compat data on 2026-07-27, not from memory, and the ticket's
 // premise turned out to be out of date. See `audioEncodeAvailable` for the matrix and the one thing
 // still missing.
-import { fitWithin, type AObject, type Library } from "@render/core";
+import { fitWithin, type AObject, type Library, type SelectorScale } from "@render/core";
 import { WEB_TIER, WEB_TIER_OPUS_KBPS, type QualityTier } from "./archive-probe.js";
 import { inferredMime } from "./folder-import.js";
 
@@ -198,8 +209,14 @@ export function tierNameMap(assets: readonly { name: string; format?: string }[]
 const ASSET_PREFIX = "/assets/";
 const THUMB_PREFIX = "/assets-thumb/";
 
-/** An object whose published pixel space is not the authored one — see this file's BLOCKER note.
- *  Reported, never swallowed: `publish-flows` exposes the count so a surface can refuse or warn. */
+/** An object whose published pixel space is not the authored one.
+ *
+ *  TWO JOBS, and the second one is what closed this file's former blocker:
+ *  1. REPORTING — an author is entitled to know their 6000 px plate ships at 2400 px
+ *     (`publish-flows` surfaces the count).
+ *  2. The INPUT to `publishLibrary`'s `scaleSelectors`, which moves every annotation selector and
+ *     narrative `start` on this object by exactly this factor, so the published tree is internally
+ *     consistent. See `selectorScaleOf` for the conversion. */
 export interface TierRescale {
   slug: string;
   objectId: string;
@@ -208,6 +225,17 @@ export interface TierRescale {
   /** Linear factor, `to.width / from.width`. < 1 for every downscale. */
   scale: number;
 }
+
+/** A rescale as the per-axis factor the selector rescaler takes.
+ *
+ *  Both axes, separately, deliberately: `fitWithin` rounds each dimension independently, so a
+ *  "uniform" downscale is very nearly — but not exactly — uniform (6000x4001 → 2400x1600 gives
+ *  sx 0.4000 and sy 0.39990). Collapsing to the single `scale` above would put a tall region a
+ *  fraction of a pixel out on the long axis for no reason. */
+export const selectorScaleOf = (r: TierRescale): SelectorScale => ({
+  sx: r.to.width / r.from.width,
+  sy: r.to.height / r.from.height,
+});
 
 export interface TierProjection {
   /** The library as the published tree should describe it: rewritten `source` / `thumbnail` /

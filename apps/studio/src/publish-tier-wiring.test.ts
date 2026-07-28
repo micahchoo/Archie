@@ -18,7 +18,7 @@
 // is the real one — real `publishLibrary`, real manifest, real MemoryFilesystem tree.
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
-  MemoryFilesystem, ZipFilesystem, collectFiles, asLibraryId, asExhibitId, asObjectId,
+  MemoryFilesystem, ZipFilesystem, collectFiles, asLibraryId, asExhibitId, asObjectId, asClientId, appendNew,
   type Library, type FileContent, type GitHubTarget, type FsDirectory,
 } from "@render/core";
 
@@ -292,7 +292,77 @@ describe("a web-tier fallback is COUNTED and reaches the surface — never silen
   });
 });
 
-describe("the annotation-geometry blocker is REPORTED, because nothing else can see it", () => {
+describe("the annotation-geometry blocker is CLOSED — the rescale report drives the fix (Archie-4b0a)", () => {
+  // A log against the SAME library the suite already publishes: a rect + a polygon on `o1` (the
+  // 6000x4000 master, which the web tier serves at 2400x1600), and a rect on `o2` (1200x900, under
+  // the cap and therefore untouched). Authored coordinates are master-space, as they always are.
+  const log = (() => {
+    const sel = (value: string, type: "FragmentSelector" | "SvgSelector" = "FragmentSelector") => ({ type, value });
+    let l = appendNew([], { target: { type: "SpecificResource", source: `${SLUG}/canvas/o1`, selector: sel("xywh=pixel:1200,800,600,400") }, lastEditor: asClientId("a"), modifiedAt: "t", now: 1 } as never).log;
+    l = appendNew(l, { target: { type: "SpecificResource", source: `${SLUG}/canvas/o1`, selector: sel(`<svg><polygon points="1200,800 1800,800 1500,1600" /></svg>`, "SvgSelector") }, lastEditor: asClientId("a"), modifiedAt: "t", now: 2 } as never).log;
+    l = appendNew(l, { target: { type: "SpecificResource", source: `${SLUG}/canvas/o2`, selector: sel("xywh=pixel:100,100,50,50") }, lastEditor: asClientId("a"), modifiedAt: "t", now: 3 } as never).log;
+    return l;
+  })();
+  const annotatedDeps = (tier: () => QualityTier): PublishDeps => ({ ...deps(tier), loadAllLogs: async () => ({ [SLUG]: log }) });
+
+  /** Selector values on one canvas's published base page, SORTED — never keyed on projection order
+   *  (`.claude/rules/a-green-run-is-one-sample.md`). */
+  const publishedSelectors = (files: Record<string, FileContent>, objId: string): string[] => {
+    const page = JSON.parse(textAt(files, `${SLUG}/canvas/${objId}/annotations.json`)) as { items?: Array<{ target: { selector?: { value?: string } } }> };
+    return (page.items ?? []).map((a) => a.target.selector?.value ?? "").sort();
+  };
+
+  it("a WEB publish ships selectors in the SERVED pixel space — both shapes, on the object that moved", async () => {
+    const flows = createPublishFlows(annotatedDeps(() => "web"));
+    const fs = new MemoryFilesystem();
+    await flows.writeToFolder(fs);
+    const files = await treeOf(await fs.root());
+    expect(publishedSelectors(files, "o1")).toEqual([
+      "xywh=pixel:480,320,240,160",
+      `<svg><polygon points="480,320 720,320 600,640" /></svg>`,
+    ].sort());
+    // The manifest's canvas dimensions and the selectors now describe the SAME image — the internal
+    // consistency the fence was about. 2400/6000 = 0.4, and 1200*0.4 = 480.
+    const manifest = JSON.parse(textAt(files, `${SLUG}/manifest.json`)) as { items: Array<{ id: string; width: number; height: number }> };
+    const o1 = manifest.items.find((c) => c.id.endsWith("/canvas/o1"))!;
+    expect([o1.width, o1.height]).toEqual([2400, 1600]);
+  });
+
+  it("the object that did NOT move keeps its authored coordinates", async () => {
+    const flows = createPublishFlows(annotatedDeps(() => "web"));
+    const fs = new MemoryFilesystem();
+    await flows.writeToFolder(fs);
+    expect(publishedSelectors(await treeOf(await fs.root()), "o2")).toEqual(["xywh=pixel:100,100,50,50"]);
+  });
+
+  it("an ARCHIVAL publish ships the authored coordinates unchanged — the tier is what decides", async () => {
+    const flows = createPublishFlows(annotatedDeps(() => "archival"));
+    const fs = new MemoryFilesystem();
+    await flows.writeToFolder(fs);
+    expect(publishedSelectors(await treeOf(await fs.root()), "o1")).toEqual([
+      "xywh=pixel:1200,800,600,400",
+      `<svg><polygon points="1200,800 1800,800 1500,1600" /></svg>`,
+    ].sort());
+  });
+
+  it("the HISTORY sidecar keeps master-space coordinates even at the web tier (projection-only)", async () => {
+    const flows = createPublishFlows(annotatedDeps(() => "web"));
+    const fs = new MemoryFilesystem();
+    await flows.writeToFolder(fs);
+    const files = await treeOf(await fs.root());
+    const hist = Object.keys(files).filter((p) => p.startsWith(`${SLUG}/annotations/history/`) && !p.endsWith("index.json"));
+    expect(hist.length).toBe(3);
+    const values = hist.flatMap((p) => {
+      const page = JSON.parse(textAt(files, p)) as { items?: Array<{ target: { selector?: { value?: string } } }> };
+      return (page.items ?? []).map((a) => a.target.selector?.value ?? "");
+    });
+    expect(values.sort()).toEqual([
+      "xywh=pixel:100,100,50,50",
+      "xywh=pixel:1200,800,600,400",
+      `<svg><polygon points="1200,800 1800,800 1500,1600" /></svg>`,
+    ].sort());
+  });
+
   it("a web publish names every object whose pixel space moved", async () => {
     const flows = createPublishFlows(deps(() => "web"));
     await flows.projectSiteFs();
