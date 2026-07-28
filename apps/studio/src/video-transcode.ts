@@ -424,9 +424,23 @@ export interface WebCodecsAssessment {
  *  it does not work in some of the most widely-used browsers" (fetched 2026-07-27), which is the
  *  platform half; the container gap is the harder half and it does not go away on Chromium.
  *
- *  Closing it needs a dependency — mp4box.js / mediabunny / mp4-muxer+webm-muxer are the candidates —
- *  and adding one is the user's call in this repo, so H3 is DESIGNED AND NOT BUILT. The measurement
- *  behind this claim is scripts/probe/webcodecs-video.mjs; run it before revisiting.
+ *  MEASURED 2026-07-27 by scripts/probe/webcodecs-video.mjs against headless Chromium 148, in a
+ *  localhost secure context — two findings, and the second is the one that matters:
+ *
+ *   1. Video encode is genuinely there: H.264 High, VP9, VP8 and AV1 all produced a real chunk (not
+ *      merely `isConfigSupported`, which freecut documents as unreliable — see the probe's header).
+ *      No demux or mux surface exists: `MediaContainerDecoder`, `MediaContainerEncoder`, `VideoMuxer`
+ *      and `VideoDemuxer` are all absent, and `MediaRecorder` only muxes a LIVE stream in real time.
+ *   2. **AAC-LC encode is NOT available** — the only audio codec offered was Opus. So even handed a
+ *      muxer, that browser could not produce this seam's `WEB_TIER_H264` target; it could only emit
+ *      VP9+Opus/WebM, a DIFFERENT artifact from the desktop sidecar's. Archie-7e6f requires the two
+ *      implementations to produce compatible output, so H3 is not merely a dependency decision.
+ *
+ *  The dependency, if H3 is ever built, is precedented rather than speculative: freecut carries
+ *  `mediabunny` 1.50.3 for BOTH halves (demux `new Input({ formats: ALL_FORMATS, source })`,
+ *  canvas-render-orchestrator.ts:300; mux `new Output({ format, target })`, client-renderer.ts:267-297)
+ *  and carries no other muxer at all — no mp4box.js, no webm-muxer, no mp4-muxer, none hand-rolled.
+ *  Adding a runtime dependency is the user's call in this repo, so H3 is DESIGNED AND NOT BUILT.
  *
  *  Note this is a probe of the CURRENT realm and is therefore honest on the studio's own page; it
  *  says nothing about the author's other browsers. */
