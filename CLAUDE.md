@@ -60,3 +60,21 @@ When spawning subagents (Agent/Task tool), the routing block is automatically in
 | `ctx stats` | Call the `ctx_stats` MCP tool and display the full output verbatim |
 | `ctx doctor` | Call the `ctx_doctor` MCP tool, run the returned shell command, display as checklist |
 | `ctx upgrade` | Call the `ctx_upgrade` MCP tool, run the returned shell command, display as checklist |
+
+# Knowledge layer (design: ledgers/DESIGN-knowledge-layer-2026-07-27.md)
+
+- **hubs/** — one pull-side page per territory, named after the question it answers
+  (`verification.md` = "how do I prove a change works?"). Read the relevant hub BEFORE
+  writing a dispatch brief; briefs carry a `hub:` line. `hubs/INDEX.md` is generated
+  (`node scripts/doclint.mjs --index`) — never hand-edit it.
+- **Hub lines are verdicts + pointers, never prose**: `Archie-xxxx / <sha> → verdict`,
+  with stakes in the wording. Evidence stays where it was measured.
+- **Closing a ticket = one hub line.** If your diff touches a hub's `scope`, add the
+  one-liner to that hub in the same commit. Enforced: `node scripts/doclint.mjs`
+  (stale-hubs check) — run it before any docs/rules/hubs commit.
+- **Adding knowledge = choosing a rung** (see design §3b): scope-pushed rule (rarest,
+  every in-scope task needs it) → hub line (leads need it) → raw layer (default: the
+  ticket/ledger you were writing anyway). Rules follow writing-great-skills pruning;
+  3+ inline corrections means rewrite (doclint enforces).
+- **Trackers**: `.seeds/` is canonical; ISSUES.md is FROZEN; `docs/TRACKERS.md` maps
+  Issue-N ↔ Archie-xxxx ↔ Q-N.

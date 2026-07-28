@@ -72,7 +72,9 @@ const wikiFiles = [...ruleFiles, ...hubFiles, ...priorArtFiles];
   const known = new Set(wikiFiles.map((f) => f.split("/").pop().replace(/\.md$/, "")));
   const bad = [];
   for (const f of wikiFiles) {
-    const text = readFileSync(join(ROOT, f), "utf8");
+    const text = readFileSync(join(ROOT, f), "utf8")
+      .replace(/```[\s\S]*?```/g, "")
+      .replace(/`[^`\n]*`/g, "");
     for (const m of text.matchAll(/\[\[([\w-]+)\]\]/g)) {
       const name = m[1];
       if (!known.has(name) && !ALLOW.danglingLinks.includes(name)) bad.push(`${f} → [[${name}]]`);
