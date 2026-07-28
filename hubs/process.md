@@ -26,6 +26,9 @@ the mechanical check over the knowledge layer itself (see `ledgers/DESIGN-knowle
 - [[prior-art-citation-discipline]] — a citation that reads plausibly and is never re-opened is wrong more often than not; open the file, grep where a thing is USED not just defined, cite to the line.
 
 ## Decisions
+- Archie-1a47 — worktree "drift" was a measurement artifact (diffed against a stale ref); 11 merged checkouts pruned, prune criterion recorded in `ledgers/AUDIT-worktrees-2026-07-27.md`.
+- Archie-1a47 — worktree "drift" was a measurement artifact (diffed against a stale ref); 11 merged checkouts pruned, prune criterion recorded in `ledgers/AUDIT-worktrees-2026-07-27.md`.
+- Archie-1a47 — worktree "drift" was a measurement artifact (diffed against a stale ref); 11 merged checkouts pruned, prune criterion recorded in `ledgers/AUDIT-worktrees-2026-07-27.md`.
 - Archie-e149 / bf5b1ce — ledgers/ is dated-only by predicate; standing docs moved to docs/state/; dated ledgers + .seeds bodies keep historical paths (immutable evidence).
 - Archie-098f — toolchain & docs pipeline tend epic closed; its children are the process-tooling ratchets below.
 - Archie-9140 / 7a07cd9 — harness consolidation: two rotted drive-and-shoot verifiers deleted with coverage proof (behavior moved to unit + e2e), one shared driver.mjs kept.
