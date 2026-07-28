@@ -80,15 +80,35 @@ export interface ZipSink {
 }
 
 /**
- * Classic (non-Zip64) .zip WRITER ceilings — what fflate 0.8.3 can emit CORRECTLY. Its end-of-central-
- * directory writer (`wzf`) stores the entry count in a 2-byte field and every offset in a 4-byte field
- * with NO overflow check, so an archive with more than 65 535 entries or data past 4 GiB isn't refused
- * — it's emitted with silently wrapped/truncated headers that readers then mis-parse (fflate's own
- * `unzipSync` reads the 2-byte count back, so a 70k-entry export would reopen as ~4.5k files: silent
- * data loss). Both zip serializers (`ZipFilesystem.toZip`, `ZipStreamFilesystem`) enforce these and
- * throw an ACTIONABLE error instead. Injectable only so tests can trip the guard cheaply (a tiny
- * ceiling) — production always uses this default. NOTE: distinct from `ZIP_LIMITS`, the READ-side
- * zip-bomb caps.
+ * Classic (non-Zip64) .zip WRITER ceilings — what fflate 0.8.2 can emit CORRECTLY on its own. Its
+ * end-of-central-directory writer (`wzf`) stores the entry count in a 2-byte field and every offset in
+ * a 4-byte field with NO overflow check (verified against the pinned 0.8.2 source: the only Zip64 code
+ * anywhere in the bundle is `z64e`, a READ-side helper — there is no write-side Zip64 emission at all),
+ * so an archive with more than 65 535 entries or data past 4 GiB isn't refused by fflate itself — it's
+ * emitted with silently wrapped/truncated headers that readers then mis-parse (fflate's own `unzipSync`
+ * reads the 2-byte count back, so a 70k-entry export would reopen as ~4.5k files: silent data loss).
+ *
+ * `ZipFilesystem.toZip` (eager) enforces the ENTRIES ceiling and throws an ACTIONABLE error — it is the
+ * non-Chromium fallback (memory-bounded separately, see `ZipStore`/`EAGER_ZIP_CEILING_BYTES`), and
+ * fixing its entries cap the same way `ZipStreamFilesystem` does below would mean re-deriving its
+ * central-directory offset/size independently of `zipSync`'s single-shot output (the same corruption
+ * `ZipStreamFilesystem` routes around) — deferred as out of scope for Archie-1cf0's low-priority pass;
+ * `libraryToZip`'s own doc calls this path "the non-Chromium fallback", not the one that matters at scale.
+ *
+ * `ZipStreamFilesystem` (Archie-1cf0) no longer refuses on the ENTRIES ceiling: past `maxEntries` it
+ * rebuilds its own trailing block with a Zip64 EOCD Record + Locator (`buildEocdTail` in
+ * `zip-stream.ts`) instead of trusting fflate's unchecked count write. Proven against fflate 0.8.2's
+ * `unzipSync`, Info-ZIP `unzip`, AND Python's `zipfile` (independent of fflate) for a real 66,001-entry
+ * archive — see `zip-stream.test.ts`.
+ *
+ * The BYTES ceiling (4 GiB) is UNCHANGED for both serializers and is NOT part of this pass: going past
+ * it needs a PER-ENTRY Zip64 extra field on every local/central-directory header whose offset would
+ * overflow — materially more surface than the EOCD-only fix above, and not exercised (a >4 GiB in-CI
+ * archive isn't buildable cheaply). `ZipStreamFilesystem.commit` still throws `zipFormatError("bytes",
+ * ...)` the moment emitted bytes cross this ceiling.
+ *
+ * Injectable only so tests can trip the guard cheaply (a tiny ceiling) — production always uses this
+ * default. NOTE: distinct from `ZIP_LIMITS`, the READ-side zip-bomb caps.
  */
 export interface ZipFormatLimits {
   /** Max central-directory entries a 2-byte EOCD count can index. */

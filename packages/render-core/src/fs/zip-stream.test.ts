@@ -157,19 +157,53 @@ describe("ZipStreamFilesystem — write-through streaming zip sink", () => {
     expect(events.filter((e) => e === "close")).toHaveLength(1); // exactly once
   });
 
-  // Format guard (ZIP_FORMAT_LIMITS): fflate's writer silently wraps a >65 535 entry count and
-  // truncates >4 GiB offsets (wzf writes them unchecked), so the stream must REFUSE with the
-  // actionable steer instead of emitting a corrupt archive. Limits are injected tiny — the guard
-  // logic is identical at the production ceilings.
-  it("format guard: refuses the entry that would overflow the 2-byte entry count", async () => {
+  // Format guard (ZIP_FORMAT_LIMITS), ENTRIES dimension — Archie-1cf0. fflate's writer silently wraps
+  // a >65 535 entry count (wzf writes it unchecked; see zip.ts's ZIP_FORMAT_LIMITS doc), so past
+  // `limits.maxEntries` the stream now switches the archive to Zip64 (a Zip64 EOCD Record + Locator
+  // ahead of the classic EOCD, entry-count sentinelled to 0xFFFF) instead of refusing. `limits` is
+  // injected tiny here so the switch is cheap to trigger; the production threshold (65,535) gets its
+  // own real-scale proof below.
+  it("format guard: entries past maxEntries switch to Zip64 instead of refusing, and round-trip", async () => {
     const c = collector();
     const fs = new ZipStreamFilesystem(c.sink, { maxEntries: 2, maxBytes: 0xffff_ffff });
     await writeText(fs, "a.json", "{}");
     await writeText(fs, "b.json", "{}");
-    await expect(writeText(fs, "c.json", "{}")).rejects.toThrow(/publish to a folder/i);
-    // The refusal names the limit, not a generic failure.
-    await expect(writeText(fs, "d.json", "{}")).rejects.toThrow(/files/i);
+    await writeText(fs, "c.json", '{"c":1}'); // 3rd entry — past the injected ceiling — no refusal
+    await writeText(fs, "d.json", '{"d":1}');
+    await fs.finish();
+    // fflate's OWN unzipSync (the reader ZipFilesystem.fromZip is built on) must parse the Zip64 EOCD.
+    const out = unzipSync(c.bytes());
+    expect(Object.keys(out)).toHaveLength(4);
+    expect(new TextDecoder().decode(out["c.json"]!)).toBe('{"c":1}');
+    expect(new TextDecoder().decode(out["d.json"]!)).toBe('{"d":1}');
   });
+
+  // The real acceptance criterion (Archie-1cf0): the 65,535-entry classic-ZIP ceiling is gone at
+  // PRODUCTION scale, not just under an injected tiny limit — and the result is readable back through
+  // the repo's own untrusted-open path (ZipFilesystem.fromZip / the Filesystem seam), not merely by
+  // fflate's raw unzipSync. 66,001 tiny entries is cheap in CI; a >4 GiB archive is not (that dimension
+  // is documented, not tested here — see the byte-cap test above and zip.ts's ZIP_FORMAT_LIMITS doc).
+  it("Archie-1cf0: 66,001 entries — past the classic 65,535 cap for real — round-trip via ZipFilesystem.fromZip", async () => {
+    const c = collector();
+    const fs = new ZipStreamFilesystem(c.sink); // production ZIP_FORMAT_LIMITS — the real 65,535 threshold
+    const N = 66_001;
+    for (let i = 0; i < N; i++) await writeText(fs, `f${i}.json`, "{}");
+    await fs.finish();
+
+    const raw = unzipSync(c.bytes());
+    expect(Object.keys(raw)).toHaveLength(N);
+
+    const reopened = ZipFilesystem.fromZip(c.bytes());
+    const root = await reopened.root();
+    let count = 0;
+    for await (const _entry of root.entries()) count++;
+    expect(count).toBe(N); // every entry survives the repo's own open path, not just fflate's raw reader
+
+    for (const i of [0, 33_000, N - 1]) {
+      const f = await root.getFile(`f${i}.json`);
+      expect(new TextDecoder().decode(new Uint8Array(await f.readable()))).toBe("{}");
+    }
+  }, 30_000);
 
   it("format guard: refuses once emitted bytes overflow a 4-byte offset", async () => {
     const c = collector();
