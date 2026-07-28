@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3 · Ports, the front door, and why deploying has none</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<p class="eyebrow">Archie codebase · Lesson 3</p>
+<h1>Ports and the front door</h1>
+<p class="standfirst">Three ports in dev, zero in production. The gap between those two numbers is
+the whole design.</p>
+
+<h2>Start at the end: deploying has no ports</h2>
+
+<p>Worth getting this straight first, because it makes the dev setup make sense.</p>
+
+<p>A deployed Archie is <strong>files</strong>. <code>pnpm build:gh-pages</code> produces a folder —
+<code class="path">gh-pages-dist/</code> — containing a landing page, <code>studio/</code>, and
+<code>viewer/</code>. You copy that folder onto GitHub Pages, Netlify, an S3 bucket, a USB stick.
+Nothing listens on a port. Nothing runs. There's no process to keep alive, nothing to restart at
+3am, no server to be breached.</p>
+
+<p>Ports exist <em>only</em> while you're developing, because dev servers need to watch files and
+push hot reloads. They're scaffolding. And scaffolding around a shape this specific gets awkward,
+which is why there are three of them.</p>
+
+<h2>Why three?</h2>
+
+<p>Archie is two apps. In dev each brings its own server, because they're built by different tools:
+Studio is <strong>Vite</strong>, Viewer is <strong>Astro</strong>. Left alone that's two
+origins — <code>localhost:5174</code> and <code>localhost:4321</code>.</p>
+
+<p>Two origins would work fine. It would also throw away the single best thing about the dev setup:</p>
+
+<div class="aside">
+  <span class="tag">The payoff</span>
+  <p>The browser keeps your Studio work in <strong>OPFS</strong> — private storage scoped to
+  <em>an origin</em>. Put both apps on the <em>same</em> origin and the Viewer can read the Studio's
+  working store directly.</p>
+  <p>Which means: author an exhibit at <code>/studio/</code>, open <code>/viewer/</code>, and it's
+  <strong>already there</strong>. No publish step. No export. You see what a visitor sees, live, as
+  you type.</p>
+  <p class="path">scripts/dev.sh:5 — "Same origin ⇒ the Viewer's live source reads the Studio's OPFS
+  working store in dev."</p>
+</div>
+
+<p>To get one origin you need one door. So a third process — a ~45-line proxy — sits on
+<strong>:5173</strong> and routes by path. That's the front door.</p>
+
+<h3>The routing rule, in full</h3>
+
+<pre><code>const targetFor = (url) =&gt;
+  url.startsWith("/studio") ? "http://localhost:5174"   // Vite
+                            : "http://localhost:4321";  // Astro</code></pre>
+<p class="path">scripts/dev-proxy.mjs:21 — that really is the whole rule.</p>
+
+<p>It's deliberately dumb. Anything starting <code>/studio</code> goes to Vite; <em>everything
+else</em> goes to Astro. That asymmetry works because Vite namespaces all its dev URLs under its
+<code>base</code>, so the one prefix catches its internals too — while Astro's internals live at
+root-relative paths and fall through the catch-all.</p>
+
+<div class="model">
+  <p class="hint">Click a URL. See where it lands in dev, and what it is in production.</p>
+  <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem">
+    <button class="url" data-u="/">/</button>
+    <button class="url" data-u="/studio/">/studio/</button>
+    <button class="url" data-u="/studio/@vite/client">/studio/@vite/client</button>
+    <button class="url" data-u="/viewer/voynich">/viewer/voynich</button>
+    <button class="url" data-u="/@id/astro-internal">/@id/astro-internal</button>
+  </div>
+  <div class="feedback" id="routeOut"></div>
+</div>
+
+<h2>Why not just make one server front the other?</h2>
+
+<p>Obvious first instinct — Vite and Astro both ship proxy config. Both were tried. Both fail, in
+different ways, and one of them fails <em>dishonestly</em>:</p>
+
+<ul>
+  <li><strong>Vite can't front Astro.</strong> Astro asks for its dev internals at root-relative
+  paths (<code>/@vite</code>, <code>/@id</code>, <code>/src</code>, <code>/@fs</code>). A
+  <code>/viewer</code>-prefixed proxy never sees them.</li>
+  <li><strong>Astro can't front Vite.</strong> Astro routes HTML <em>navigations</em> — anything
+  with <code>Accept: text/html</code> — through its own router <em>before</em> its proxy middleware
+  runs.</li>
+</ul>
+
+<div class="aside">
+  <span class="tag">The bug worth retelling</span>
+  <p>That second one produces the nastiest symptom in this repo's history: <strong><code>curl
+  /studio/</code> works perfectly. A browser visiting <code>/studio/</code> gets a 404.</strong></p>
+  <p>Same URL, same server, opposite results — because curl doesn't send <code>Accept:
+  text/html</code> and a browser does. Every tool you'd reach for to debug it reports success.</p>
+  <p class="path">scripts/dev-proxy.mjs:6 — "Found the hard way."</p>
+</div>
+
+<h2>Two rules that look fussy and aren't</h2>
+
+<h3>1. <code>strictPort: true</code> — fail loudly, never drift</h3>
+
+<p>Normally a dev server whose port is busy just takes the next one and prints a friendly message.
+Both servers here refuse to. If :5174 is taken, Vite <em>dies</em>.</p>
+
+<p>Because the front door's targets are hardcoded. A server that silently moved to :5175 leaves the
+proxy pointing at nothing — and you'd get a 502 on a page that looks like it should work, with two
+healthy-looking servers running. A loud failure at boot is strictly better than a confusing one
+later. Kill the stale server, rerun. <span class="path">apps/studio/vite.config.ts:33</span></p>
+
+<h3>2. <code>127.0.0.1</code> — a literal, not <code>localhost</code>, never a wildcard</h3>
+
+<p>Two separate decisions packed into one line, and both matter:</p>
+
+<p><strong>Not a wildcard bind.</strong> The proxy forwards <code>/studio/*</code> to Vite
+<em>unrewritten</em> — including Vite's <code>/@fs</code> path, which serves arbitrary files from
+your disk. Binding to <code>0.0.0.0</code> would put your filesystem on the café wifi.</p>
+
+<p><strong>Not the word <code>localhost</code>.</strong> Passing a hostname to <code>listen()</code>
+sends it through <code>dns.lookup</code> — so which interface you actually bind to depends on the
+machine's resolver. The literal IP removes the question.
+<span class="path">scripts/dev-proxy.mjs:37</span></p>
+
+<h2>The port table</h2>
+
+<table style="width:100%;border-collapse:collapse;font-size:.94rem">
+<tr style="text-align:left;border-bottom:1px solid var(--rule)">
+  <th style="padding:.4rem 0">Port</th><th>What</th><th>Notes</th></tr>
+<tr><td style="padding:.35rem 0"><code>5173</code></td><td>Front door proxy</td>
+  <td>The only one you type. <code>/</code> → 302 to <code>/studio/</code></td></tr>
+<tr><td style="padding:.35rem 0"><code>5174</code></td><td>Studio (Vite)</td>
+  <td><code>strictPort</code>, base <code>/studio/</code></td></tr>
+<tr><td style="padding:.35rem 0"><code>4321</code></td><td>Viewer (Astro)</td>
+  <td><code>strictPort</code></td></tr>
+<tr><td style="padding:.35rem 0"><code>5198</code></td><td>Studio e2e tests</td>
+  <td>Its own port so a running <code>pnpm dev</code> never collides. Override with
+  <code>STUDIO_E2E_PORT</code> when two agents run tests at once.</td></tr>
+</table>
+
+<p>One command starts the first three: <code>pnpm dev</code> →
+<code class="path">scripts/dev.sh</code>, which boots both servers in the background and then runs
+the proxy in the foreground, with a <code>trap</code> that kills both children on exit.</p>
+
+<h2>Back to production: what replaces the proxy?</h2>
+
+<p>Nothing. A static host has no routing layer to configure, so the paths must be
+<strong>baked in at build time</strong> — that's what the build script's flags are doing:</p>
+
+<pre><code>vite build --base="/Archie/studio/"     # Studio's asset URLs
+SITE_BASE="/Archie/viewer/" pnpm build  # Astro's</code></pre>
+
+<p>Get one wrong and you ship a page whose every asset 404s. So the origin has exactly one
+definition — <code class="path">archie.config.json</code> — read by the build script, by Studio's
+share links, and by the Viewer's og-image and sitemap emitters. Changing domains is a one-file edit,
+and the build <em>refuses to run</em> if that origin doesn't match the repo name.
+<span class="path">scripts/build-gh-pages.sh:12</span></p>
+
+<div class="aside">
+  <span class="tag">Three deployments, not two</span>
+  <p>There's a third thing that gets "deployed" and it's the one that matters to users: a
+  <strong>published library</strong>. That isn't built by any of this — it's the folder Studio's
+  publish step writes. Plain HTML, JSON, and media. Drop it anywhere. Or hand someone a single
+  <code>.archie.zip</code> and they open it with no host at all.</p>
+</div>
+
+<h2>Read next (primary source)</h2>
+
+<p><code class="path">scripts/dev-proxy.mjs</code> — 45 lines, of which 20 are comments explaining
+exactly why each decision is what it is. It is the best-commented file in the repo and you can read
+it in three minutes. Then <code class="path">scripts/dev.sh</code> for how the three processes are
+started and torn down together.</p>
+
+<div class="next">
+  <h2>Next lesson</h2>
+  <p>Open question — say the word on any of these, or something else entirely:
+  the gates (which check catches what), what makes Archie different from Mirador and friends,
+  or reading one real Studio component line by line.</p>
+</div>
+
+<p class="ask">If a piece of this didn't land, say which — a confusing paragraph is my bug to fix.</p>
+
+<script>
+const ROUTES = {
+  "/": ["302 → /studio/", "the front door redirects the bare root",
+        "gh-pages-dist/index.html — a hand-written landing page with two links"],
+  "/studio/": ["→ Vite :5174", "starts with /studio, so the prefix rule sends it to Vite",
+               "gh-pages-dist/studio/index.html — a built SPA, no server"],
+  "/studio/@vite/client": ["→ Vite :5174", "Vite namespaces its dev internals under its base too, so the same prefix catches them — this is why the dumb rule works",
+                           "doesn't exist — dev-only machinery, never built"],
+  "/viewer/voynich": ["→ Astro :4321", "not /studio, so it falls through to the catch-all",
+                      "gh-pages-dist/viewer/voynich/index.html — pre-rendered at build time"],
+  "/@id/astro-internal": ["→ Astro :4321", "Astro's internals are root-relative — exactly what a /viewer-prefixed proxy would MISS, and why Vite can't front Astro",
+                          "doesn't exist — dev-only machinery"]
+};
+const out = document.getElementById("routeOut");
+document.querySelectorAll(".url").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".url").forEach(x => x.setAttribute("aria-pressed", x === b));
+  const [dev, why, prod] = ROUTES[b.dataset.u];
+  out.innerHTML =
+    "<div><strong>In dev</strong> — <code>" + dev + "</code><br><span style='opacity:.8'>" + why + "</span></div>" +
+    "<div style='margin-top:.6rem'><strong>In production</strong> — " + prod + "</div>";
+}));
+</script>
+</body>
+</html>

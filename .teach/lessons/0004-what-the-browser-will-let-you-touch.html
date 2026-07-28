@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 4 · What the browser will let you touch</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<p class="eyebrow">Archie codebase · Lesson 4</p>
+<h1>What the browser will let you touch</h1>
+<p class="standfirst">Getting files in, and getting them back out. The File System Access API is
+really two APIs with completely different support — and that split is why Studio behaves the way it
+does.</p>
+
+<h2>The awkward fact</h2>
+
+<p>Archie's whole pitch is "no server." That means the browser has to hold real work — gigabytes of
+images — and hand it back as real files. Which runs straight into the thing browsers are most
+paranoid about: your disk.</p>
+
+<p>So the File System API got built in two halves, and they landed in <em>very</em> different
+places. This is the single fact to hold:</p>
+
+<div class="model">
+  <div style="display:grid;grid-template-columns:1fr;gap:1rem">
+    <div style="border-left:3px solid var(--ok);padding-left:1rem">
+      <strong>OPFS</strong> — private storage, invisible to the user, scoped to your origin.<br>
+      <span style="color:var(--ok);font:600 .85rem/1.6 var(--mono)">Baseline · widely available
+      since March 2023</span><br>
+      <span style="opacity:.75">Works everywhere. No permission prompt — the user never sees it,
+      because it isn't <em>their</em> filesystem.</span>
+    </div>
+    <div style="border-left:3px solid var(--warn);padding-left:1rem">
+      <strong>The pickers</strong> — <code>showDirectoryPicker</code>,
+      <code>showOpenFilePicker</code>, <code>showSaveFilePicker</code>. Reach into the user's
+      actual folders.<br>
+      <span style="color:var(--warn);font:600 .85rem/1.6 var(--mono)">Limited availability ·
+      still flagged experimental</span><br>
+      <span style="opacity:.75">MDN, today: <em>"not Baseline because it does not work in some of
+      the most widely-used browsers."</em></span>
+    </div>
+  </div>
+</div>
+
+<p>Same spec family, opposite realities. Everything Archie does about browsers follows from it:
+<strong>the private half is universal, so that's where the working copy lives; the real-disk half
+is a bonus, so it's an upgrade, never a requirement.</strong></p>
+
+<div class="aside">
+  <span class="tag">Why the pickers are slow, too</span>
+  <p>Not just rarer — heavier. MDN: writes through a picker handle are <strong>not in-place</strong>.
+  The browser writes a temp file, runs security checks (Safe Browsing in Chrome), and only then
+  replaces the original. Fine for a text file, painful for a 300MB folder of tiles. OPFS is the
+  optimised path <em>on purpose</em>.</p>
+</div>
+
+<h2>Archie's answer: never ask which browser</h2>
+
+<p>There is no user-agent sniffing anywhere in this codebase. Capability is <em>probed</em>, in
+exactly one module, and the result is never shown to the user as a limitation:</p>
+
+<pre><code>export function supportsFolderPicker(): boolean {
+  return typeof window !== "undefined" &amp;&amp; "showDirectoryPicker" in window;
+}</code></pre>
+<p class="path">apps/studio/src/binding.ts:16 — "This is the ONLY place capability is read — the
+user never sees it."</p>
+
+<p>Four probes, layered, each naming the fallback beneath it:</p>
+
+<ul>
+  <li><code>supportsFolderPicker()</code> — can we bind a project to a real folder?</li>
+  <li><code>supportsFileStreamSave()</code> — is there a save picker to stream into?</li>
+  <li><code>supportsOpfsStagedZipSave()</code> — no picker, but can we stage the zip in OPFS and
+  hand the browser a disk-backed file to download?</li>
+  <li><code>supportsStreamingZipSave()</code> — <em>any</em> of the above, or desktop.</li>
+</ul>
+
+<p>Note the third one. It's a workaround with real teeth: a browser with no save picker can still
+stream a huge archive to disk, because OPFS <em>is</em> disk — write it there in bounded memory,
+then hand the download pipeline a File that's already on disk. No 4GB blob in RAM.</p>
+
+<h3>Drive it</h3>
+
+<div class="model">
+  <p class="hint">Pick a platform. The booleans below are computed with the real logic from
+  <code>binding.ts</code>.</p>
+  <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem">
+    <button class="plat" data-k="chromium">Chromium</button>
+    <button class="plat" data-k="firefox">Firefox</button>
+    <button class="plat" data-k="safari">Safari-class</button>
+    <button class="plat" data-k="oldsafari">Older Safari-class</button>
+    <button class="plat" data-k="tauri">Archie desktop (Tauri)</button>
+  </div>
+  <div id="caps" style="font:.82rem/1.8 var(--mono)"></div>
+  <div class="feedback" id="capOut"></div>
+</div>
+
+<h2>Three doors in, and the trap between two of them</h2>
+
+<p>Files reach Studio three ways, and they are <em>not</em> equivalent:</p>
+
+<h3>1. <code>&lt;input webkitdirectory&gt;</code> — the universal one</h3>
+<p>Works everywhere. Gives you a flat <code>File[]</code> where each file carries
+<code>webkitRelativePath</code> — <code>"MyFolder/scans/f01.jpg"</code> — which is how Archie knows
+which subfolder a file came from and what to name things.
+<span class="path">apps/studio/src/folder-import.ts:45</span></p>
+
+<h3>2. Drag-and-drop a folder — same idea, different API, one nasty gap</h3>
+<p>A drop gives you <code>DataTransferItem</code>s; you call <code>webkitGetAsEntry()</code> and
+walk the tree yourself. And here's the bite:</p>
+
+<div class="aside">
+  <span class="tag">The divergence that costs you an afternoon</span>
+  <p><code>FileSystemFileEntry.file()</code> <strong>does not set
+  <code>webkitRelativePath</code></strong> the way an <code>&lt;input webkitdirectory&gt;</code>
+  pick does. Same-looking <code>File</code> objects, one silently missing the property all the
+  downstream grouping logic reads.</p>
+  <p>So the walker assigns it by hand, and there is exactly <em>one</em> walker in the codebase —
+  both the page-level dropzone and the create-dialog dropzone go through it, precisely so this fix
+  can't exist in one place and not the other.
+  <span class="path">apps/studio/src/folder-drop.ts:1-9</span></p>
+</div>
+
+<p>That walker is also <strong>per-entry tolerant</strong>: a real drop can contain a file removed
+between drag and drop, or a directory the OS won't enumerate. One bad entry skips and increments a
+counter — it never rejects the whole walk. A drag-drop that half-worked must report "3 couldn't be
+added," not die silently.</p>
+
+<h3>3. <code>showDirectoryPicker()</code> — Chromium only, and different in kind</h3>
+<p>The other two <em>copy files in</em>. This one hands back a live, writable handle to a real
+folder — Archie keeps it as a <strong>binding</strong>, so saving writes back to your actual disk in
+place. That's a different product experience, not just a different code path, which is why it gets
+its own concept and its own module.</p>
+
+<h2>Two gotchas that make the picker fail for reasons unrelated to support</h2>
+
+<ul>
+  <li><strong>Secure context.</strong> HTTPS or <code>localhost</code> only. This is one more reason
+  the dev front door is <code>localhost:5173</code> and not a LAN IP — an IP address isn't a secure
+  context, and the pickers would vanish on a browser that has them.</li>
+  <li><strong>Transient user activation.</strong> The call must come from a real click. Do
+  <code>await somethingSlow()</code> <em>first</em> and the activation can expire — the picker then
+  throws <code>SecurityError</code> on a browser that fully supports it. Open the picker first, do
+  the slow work after.</li>
+</ul>
+
+<h2>The principle worth stealing</h2>
+
+<p>Where support runs out, Archie doesn't disable a feature — it <strong>changes the shape of the
+feature</strong> so the product stays whole:</p>
+
+<table style="width:100%;border-collapse:collapse;font-size:.94rem;margin:1rem 0">
+<tr style="text-align:left;border-bottom:1px solid var(--rule)"><th style="padding:.4rem 0">Platform</th><th>What "Save" means</th></tr>
+<tr><td style="padding:.4rem 0">Chromium</td><td>Write back into the folder you bound. Like a native app.</td></tr>
+<tr><td style="padding:.4rem 0">Firefox / Safari</td><td>Save <em>downloads</em> a <code>.archie.zip</code>. The Word-2003 model — your document is a file you keep.</td></tr>
+<tr><td style="padding:.4rem 0">Desktop</td><td>Native dialog, native writes, no browser rules at all.</td></tr>
+</table>
+
+<p>Neither browser user hits a wall reading "your browser is unsupported." They get a coherent,
+complete way to work that happens to differ. That's the bar — and it's only affordable because
+capability lives behind four booleans in one file instead of being scattered through the UI.</p>
+
+<div class="aside">
+  <span class="tag">One more divergence, different layer</span>
+  <p>Importing by <em>URL</em> — a remote image or a IIIF manifest — isn't about the File System API
+  at all. It hits <strong>CORS</strong>, which the browser enforces no matter how modern it is. A
+  host that refuses cross-origin reads simply can't be imported from a web browser.</p>
+  <p>The desktop build escapes it: Tauri's native HTTP has no CORS, so images and
+  <code>info.json</code> route through a native bridge instead. Same app, one genuine capability the
+  web version cannot have.
+  <span class="path">.claude/rules/tauri-csp.md</span></p>
+</div>
+
+<h2>Read next (primary sources)</h2>
+
+<p><a href="https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system">MDN
+— Origin private file system</a>. It explains the temp-file-and-security-check cost of picker
+writes, which is the thing that makes OPFS a performance decision and not just a fallback.</p>
+
+<p>Then <code class="path">apps/studio/src/binding.ts</code>, top to line 115 — four probes and
+their comments, which read as a design document for this whole lesson.</p>
+
+<div class="aside">
+  <span class="tag">Verify before you quote</span>
+  <p>Support levels move. The two claims above — OPFS Baseline, pickers Limited — were checked
+  against MDN on <strong>2026-07-24</strong>. Re-check before repeating them anywhere public. This
+  is also exactly why the code probes at runtime instead of encoding a browser table: the code
+  doesn't go stale.</p>
+</div>
+
+<div class="next">
+  <h2>Next lesson</h2>
+  <p>Natural sequel, if you want it: <strong>where a dropped file actually goes</strong> — OPFS
+  layout, the cross-tab single-writer lock, and what happens when you open Studio in two tabs.
+  Or name something else.</p>
+</div>
+
+<p class="ask">Ask me anything that didn't land — especially if a claim here contradicts something
+you've seen in the running app. That'd be worth chasing.</p>
+
+<script>
+const PLATFORMS = {
+  chromium:  { showDirectoryPicker: true,  showSaveFilePicker: true,  opfsWritable: true,  tauri: false },
+  firefox:   { showDirectoryPicker: false, showSaveFilePicker: false, opfsWritable: true,  tauri: false },
+  safari:    { showDirectoryPicker: false, showSaveFilePicker: false, opfsWritable: true,  tauri: false },
+  oldsafari: { showDirectoryPicker: false, showSaveFilePicker: false, opfsWritable: false, tauri: false },
+  tauri:     { showDirectoryPicker: false, showSaveFilePicker: false, opfsWritable: false, tauri: true  }
+};
+const STORY = {
+  chromium:  "Full experience. Bind a project to a real folder; Save writes through to that folder. Streaming save via the picker handle — no size ceiling.",
+  firefox:   "No pickers, so no folder binding. Save = download a .archie.zip. Still streams: the zip is staged in OPFS and handed to the download pipeline as a disk-backed File, so memory stays bounded.",
+  safari:    "Same tier as Firefox in this codebase — the label doesn't decide anything, the probe does. If createWritable is there, it gets the staged-streaming path.",
+  oldsafari: "The honest floor. No picker, no OPFS createWritable, so the whole archive is built in memory — which is why this path is size-gated at 1 GiB rather than pretending to work.",
+  tauri:     "None of the web capabilities are present and none are needed: isTauri() short-circuits supportsStreamingZipSave to true. Native dialog, native streaming write, plus a native HTTP bridge that sidesteps CORS entirely."
+};
+const capsEl = document.getElementById("caps"), capOut = document.getElementById("capOut");
+document.querySelectorAll(".plat").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".plat").forEach(x => x.setAttribute("aria-pressed", x === b));
+  const p = PLATFORMS[b.dataset.k];
+  // The real logic, transcribed from binding.ts
+  const folderPicker = p.showDirectoryPicker;
+  const fileStream   = p.showSaveFilePicker;
+  const opfsStaged   = p.opfsWritable;
+  const streaming    = p.tauri || fileStream || opfsStaged;
+  const row = (label, v, note) =>
+    "<div>" + (v ? "<span style='color:var(--ok)'>✔ true </span>" : "<span style='opacity:.5'>✘ false</span>") +
+    "  " + label + (note ? " <span style='opacity:.55'>— " + note + "</span>" : "") + "</div>";
+  capsEl.innerHTML =
+    row("supportsFolderPicker()", folderPicker, folderPicker ? "can bind a real folder" : "→ zip-as-file model") +
+    row("supportsFileStreamSave()", fileStream) +
+    row("supportsOpfsStagedZipSave()", opfsStaged) +
+    row("supportsStreamingZipSave()", streaming, streaming ? "bounded memory, no size ceiling" : "eager build, 1 GiB gate");
+  capOut.textContent = STORY[b.dataset.k];
+}));
+document.querySelector('.plat[data-k="chromium"]').click();
+</script>
+</body>
+</html>

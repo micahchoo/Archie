@@ -1,0 +1,194 @@
+/* Shared lesson stylesheet for the .teach workspace.
+   Every lesson links this. Add here, never inline in a lesson. */
+
+:root {
+  --ink: #1a1815;
+  --ink-soft: #56504a;
+  --ink-faint: #8d857c;
+  --paper: #fdfcf9;
+  --rule: #e2ddd3;
+  --accent: #7a4b2a;
+  --accent-soft: #f3ece3;
+  --code-bg: #f5f1ea;
+  --ok: #2f6b46;
+  --warn: #9a5b1c;
+  --measure: 38rem;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e8e3db;
+    --ink-soft: #b0a89e;
+    --ink-faint: #7d766d;
+    --paper: #16150f;
+    --rule: #35322b;
+    --accent: #d99b6c;
+    --accent-soft: #241f18;
+    --code-bg: #201e17;
+    --ok: #7fc09a;
+    --warn: #e0a866;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0 auto;
+  padding: 4rem 1.5rem 8rem;
+  max-width: var(--measure);
+  background: var(--paper);
+  color: var(--ink);
+  font: 1.05rem/1.62 var(--serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Masthead ─────────────────────────────────────────────── */
+
+.eyebrow {
+  font: 500 0.72rem/1 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 0.9rem;
+}
+
+h1 {
+  font-size: 2.05rem;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.6rem;
+}
+
+.standfirst {
+  font-size: 1.15rem;
+  color: var(--ink-soft);
+  font-style: italic;
+  margin: 0 0 2.5rem;
+}
+
+h2 {
+  font-size: 1.32rem;
+  font-weight: 600;
+  margin: 3rem 0 0.8rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--rule);
+}
+
+h3 { font-size: 1.05rem; font-weight: 600; margin: 1.8rem 0 0.4rem; }
+
+p { margin: 0 0 1.1rem; }
+
+a { color: var(--accent); text-underline-offset: 0.18em; }
+
+strong { font-weight: 600; }
+
+code {
+  font: 0.86em/1.4 var(--mono);
+  background: var(--code-bg);
+  padding: 0.12em 0.35em;
+  border-radius: 3px;
+}
+
+pre {
+  background: var(--code-bg);
+  border-left: 3px solid var(--rule);
+  padding: 0.9rem 1.1rem;
+  overflow-x: auto;
+  font: 0.82rem/1.55 var(--mono);
+}
+pre code { background: none; padding: 0; }
+
+/* ── Asides & callouts ────────────────────────────────────── */
+
+.aside {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 0.9rem 1.1rem;
+  margin: 1.6rem 0;
+  font-size: 0.94rem;
+}
+.aside p:last-child { margin-bottom: 0; }
+.aside .tag {
+  display: block;
+  font: 600 0.68rem/1 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+.path {
+  font: 0.82rem/1.4 var(--mono);
+  color: var(--ink-faint);
+}
+
+/* ── Interactive model shell ──────────────────────────────── */
+
+.model {
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 1.2rem;
+  margin: 1.8rem 0;
+  background: color-mix(in srgb, var(--paper) 92%, var(--ink) 8%);
+}
+.model .hint {
+  font: 0.78rem/1.4 var(--mono);
+  color: var(--ink-faint);
+  margin: 0 0 1rem;
+}
+
+button, .chip {
+  font: 500 0.85rem/1.3 var(--mono);
+  color: inherit;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: border-color 120ms, background 120ms, transform 80ms;
+}
+button:hover, .chip:hover { border-color: var(--accent); }
+button:active { transform: translateY(1px); }
+button[aria-pressed="true"], .chip.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.correct { border-color: var(--ok) !important; color: var(--ok) !important; }
+.wrong   { border-color: var(--warn) !important; color: var(--warn) !important; }
+
+.feedback {
+  min-height: 1.4rem;
+  margin-top: 0.9rem;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+.feedback:empty { display: none; }
+
+/* ── Footer ───────────────────────────────────────────────── */
+
+.next {
+  margin-top: 3.5rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.94rem;
+  color: var(--ink-soft);
+}
+.next h2 { border: none; padding: 0; margin: 0 0 0.6rem; font-size: 1.05rem; }
+
+.ask {
+  margin-top: 2rem;
+  font-size: 0.9rem;
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+@media print {
+  body { max-width: none; padding: 0; font-size: 11pt; }
+  .model { break-inside: avoid; }
+  button { display: none; }
+}

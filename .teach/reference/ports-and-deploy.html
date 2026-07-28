@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reference · Ports & deploy</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<style>
+  body { max-width: 46rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; margin: 0 0 1.5rem; }
+  th { text-align: left; font: 600 .72rem/1 var(--mono); letter-spacing: .1em;
+       text-transform: uppercase; color: var(--ink-faint); padding: 0 .6rem .5rem 0;
+       border-bottom: 1px solid var(--rule); }
+  td { padding: .45rem .6rem .45rem 0; border-bottom: 1px solid var(--rule);
+       vertical-align: top; }
+  td:first-child { white-space: nowrap; }
+  h2 { margin-top: 2.2rem; }
+</style>
+</head>
+<body>
+
+<p class="eyebrow">Archie · quick reference</p>
+<h1>Ports &amp; deploy</h1>
+<p class="standfirst">The cheat sheet for lesson 3. Prints on one page.</p>
+
+<h2>Dev ports</h2>
+
+<table>
+<tr><th>Port</th><th>Process</th><th>Config</th></tr>
+<tr><td><code>5173</code></td><td><strong>Front door</strong> — path-routing proxy. The only URL you
+  type. <code>/</code> 302s to <code>/studio/</code>.</td><td><code>scripts/dev-proxy.mjs</code></td></tr>
+<tr><td><code>5174</code></td><td>Studio — Vite SPA. <code>base: "/studio/"</code>,
+  <code>strictPort</code>.</td><td><code>apps/studio/vite.config.ts</code></td></tr>
+<tr><td><code>4321</code></td><td>Viewer — Astro. <code>strictPort</code>. Booted with
+  <code>SITE_BASE=/viewer/</code>.</td><td><code>apps/viewer/astro.config.mjs</code></td></tr>
+<tr><td><code>5198</code></td><td>Studio e2e — own port so a running <code>pnpm dev</code> never
+  collides. Override <code>STUDIO_E2E_PORT</code> for concurrent runs.</td>
+  <td><code>apps/studio/e2e/playwright.config.ts</code></td></tr>
+</table>
+
+<h2>Commands</h2>
+
+<pre><code>pnpm dev                  # all three: scripts/dev.sh
+                          #   → http://localhost:5173/studio/
+                          #   → http://localhost:5173/viewer/
+
+pnpm build:gh-pages       # → gh-pages-dist/{index.html, studio/, viewer/}
+pnpm --filter @archie/studio e2e --config e2e/playwright.config.ts</code></pre>
+
+<h2>The routing rule</h2>
+
+<pre><code>url.startsWith("/studio") ? :5174 (Vite) : :4321 (Astro)</code></pre>
+
+<p>Asymmetric on purpose. Vite namespaces <em>all</em> its dev URLs under <code>base</code>, so one
+prefix catches its internals. Astro's internals are root-relative and need the catch-all.</p>
+
+<h2>Rules with teeth</h2>
+
+<table>
+<tr><th>Rule</th><th>Why</th></tr>
+<tr><td><code>strictPort: true</code></td><td>Front-door targets are hardcoded. A silent port bump
+  → 502 on a page that looks fine, with two healthy servers running. Fail at boot instead.</td></tr>
+<tr><td>Bind <code>127.0.0.1</code></td><td>Proxy forwards Vite's <code>/@fs</code> unrewritten — a
+  wildcard bind puts your filesystem on the LAN.</td></tr>
+<tr><td>Literal IP, not <code>"localhost"</code></td><td><code>listen()</code> with a hostname goes
+  through <code>dns.lookup</code>; the bound interface would depend on the resolver.</td></tr>
+<tr><td>One origin source</td><td><code>archie.config.json</code> → build script, Studio share links,
+  viewer og/sitemap. Build aborts if it doesn't contain the repo name.</td></tr>
+</table>
+
+<h2>Symptom → cause</h2>
+
+<table>
+<tr><th>You see</th><th>It's probably</th></tr>
+<tr><td>502 from the front door</td><td>That dev server isn't up (or bumped its port). The proxy
+  names the unreachable target in the error body — read it.</td></tr>
+<tr><td>Browser 404s but <code>curl</code> works</td><td>Something is routing HTML navigations
+  before its proxy middleware. This is why the standalone proxy exists; don't re-solve it with
+  <code>vite.server.proxy</code>.</td></tr>
+<tr><td>Vite died on boot</td><td><code>strictPort</code> doing its job — a stale
+  <code>pnpm dev</code> holds :5174. Kill it and rerun.</td></tr>
+<tr><td>Deployed page, every asset 404s</td><td>Wrong <code>--base</code> / <code>SITE_BASE</code>.
+  A static host can't rewrite; paths are baked at build time.</td></tr>
+<tr><td>Viewer's exhibit vanished after another agent ran tests</td><td>Not a port problem — the
+  shared Vite dep cache. Restart Astro, don't hard-reload.
+  See <code>.claude/rules/viewer-optimizedeps-bare-includes.md</code>.</td></tr>
+</table>
+
+<h2>What ships</h2>
+
+<pre><code>gh-pages-dist/
+├── index.html     hand-written landing page (in build-gh-pages.sh)
+├── studio/        Vite build, --base=/Archie/studio/
+└── viewer/        Astro build, SITE_BASE=/Archie/viewer/</code></pre>
+
+<p>No process. No port. A published <em>library</em> is a third artefact entirely — the folder
+Studio's publish step writes, or one <code>.archie.zip</code>, servable from anywhere or nowhere.</p>
+
+<p class="ask">Source: <a href="../lessons/0003-ports-and-the-front-door.html">lesson 3</a> ·
+<code>scripts/dev-proxy.mjs</code>, <code>scripts/dev.sh</code>,
+<code>scripts/build-gh-pages.sh</code></p>
+
+</body>
+</html>

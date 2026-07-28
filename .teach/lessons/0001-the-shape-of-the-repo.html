@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1 · The shape of the repo</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<p class="eyebrow">Archie codebase · Lesson 1</p>
+<h1>The shape of the repo</h1>
+<p class="standfirst">Six folders, one rule about which way the arrows point. Learn the rule and
+you can place any change without opening a file.</p>
+
+<h2>The problem this shape solves</h2>
+
+<p>Archie does two jobs that pull in opposite directions. <strong>Studio</strong> is a live editing
+app: drag in an image, draw on it, type a note. <strong>Viewer</strong> is a dead-static site: HTML
+and JSON on a dumb host, no server, works offline.</p>
+
+<p>Both need to draw the same annotation on the same deep-zoom image, in the same place, with the
+same maths. Write that twice and it drifts — the region you drew in Studio lands three pixels off
+in the published site, and now you have a bug that only exists in one of them.</p>
+
+<p>So the shared brains got pulled out into packages, and the two apps were forbidden from ever
+importing each other. Everything below follows from that.</p>
+
+<h2>The six boxes</h2>
+
+<div class="model">
+  <p class="hint">Click a box.</p>
+  <div id="map" style="display:grid;gap:.5rem;">
+    <button data-k="core">📦 @render/core <span style="opacity:.6">— the brains, no browser</span></button>
+    <div style="text-align:center;color:var(--ink-faint)">↓ may import ↓</div>
+    <button data-k="mount">📦 @render/mount <span style="opacity:.6">— the canvas wiring</span></button>
+    <div style="text-align:center;color:var(--ink-faint)">↓ may import ↓</div>
+    <button data-k="svelte">📦 @render/svelte <span style="opacity:.6">— the reactivity glue</span></button>
+    <div style="text-align:center;color:var(--ink-faint)">↓ may import ↓</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;">
+      <button data-k="studio">🖊️ apps/studio</button>
+      <button data-k="viewer">📖 apps/viewer</button>
+    </div>
+    <div style="text-align:center;color:var(--ink-faint)">— and off to one side —</div>
+    <button data-k="embed">📦 packages/archie-viewer <span style="opacity:.6">— the embed tag</span></button>
+  </div>
+  <div class="feedback" id="mapOut"></div>
+</div>
+
+<div class="aside">
+  <span class="tag">The rule</span>
+  <p>Arrows point <strong>down only</strong>. <code>core</code> never imports <code>mount</code>.
+  Neither app imports the other. When an agent hands you a diff that reaches upward or sideways,
+  that's the structural smell to catch — it's how the two apps drift apart again.</p>
+  <p>Studio and Viewer <em>do</em> connect, but not through code: Studio's publish step
+  <strong>writes the files</strong> Viewer reads. A build artefact, not an import.</p>
+</div>
+
+<h2>Why <code>core</code> refuses to touch the browser</h2>
+
+<p><code>@render/core</code> has no DOM in it — no <code>document</code>, no
+<code>window</code>, no canvas library. That sounds like purism; it's actually leverage. Three
+things fall out of it:</p>
+
+<ul>
+  <li><strong>It runs anywhere.</strong> Same code in Studio, in Viewer's build step, in a Node
+  script, in a test with no browser at all.</li>
+  <li><strong>Its tests are fast and honest.</strong> No fake DOM to disagree with the real one.</li>
+  <li><strong>It's the one place the data model is defined.</strong> Everything upstream speaks
+  the types in <code class="path">packages/render-core/src/wadm/types.ts</code>.</li>
+</ul>
+
+<p>The trade is that <code>core</code> can't <em>do</em> anything visible. Showing pixels is
+<code>mount</code>'s job; reacting to clicks is <code>svelte</code>'s.</p>
+
+<h2>Try it: where does this change go?</h2>
+
+<p>Five real change requests. Pick the box that owns each. Immediate feedback — guessing is fine,
+that's the point.</p>
+
+<div class="model" id="sorter">
+  <p class="hint">Read the task, click the box you'd put it in.</p>
+  <div id="task" style="font-size:1.05rem;margin-bottom:1rem;"></div>
+  <div style="display:flex;flex-wrap:wrap;gap:.5rem;">
+    <button class="pick" data-k="core">@render/core</button>
+    <button class="pick" data-k="mount">@render/mount</button>
+    <button class="pick" data-k="svelte">@render/svelte</button>
+    <button class="pick" data-k="studio">apps/studio</button>
+    <button class="pick" data-k="viewer">apps/viewer</button>
+  </div>
+  <div class="feedback" id="sortOut"></div>
+  <p style="margin-top:1rem"><button id="next">Next task →</button>
+     <span class="path" id="score" style="margin-left:.8rem"></span></p>
+</div>
+
+<h2>What you now know</h2>
+
+<p>Placing a change is mostly one question: <em>does this need a browser?</em> No → it's
+<code>core</code>. Yes, but it's pixels-and-events plumbing → <code>mount</code>. Yes, and it's
+"when this variable changes, tell the canvas" → <code>svelte</code>. Otherwise it's the app that
+owns the screen it appears on.</p>
+
+<h2>Read next (primary source)</h2>
+
+<p>The <a href="../../README.md#architecture">Architecture section of the repo README</a> — it has
+the same diagram in Mermaid, the workspace table, and a "Where to start in the code" list naming
+the exact files behind each box. Ten minutes, and it's the map you'll keep returning to.</p>
+
+<p>Then, when you want the <em>reasoning</em> rather than the shape:
+<code class="path">docs/adr/0002-rendering-and-framework.md</code> — the decision record that chose this
+split, with the alternatives that lost.</p>
+
+<div class="next">
+  <h2>Next lesson</h2>
+  <p>The annotation spine — what happens when two people edit the same note, and why Archie never
+  overwrites anything. It's the idea the whole product is built on, and the one place the code
+  will look strange until you've seen the problem it solves.</p>
+</div>
+
+<p class="ask">Anything here that didn't land? Ask — I'm your teacher for this, and a confusing
+sentence is my bug, not yours.</p>
+
+<script>
+const BOXES = {
+  core: ["@render/core — packages/render-core/src/",
+    "Pure TypeScript, no DOM. Holds the annotation spine (spine/log.ts, heads.ts, merge.ts), the data types (wadm/types.ts), IIIF projection (iiif/), the publish engine (publish/site.ts), and one Filesystem interface with five implementations (fs/fsa.ts, memory.ts, zip.ts, http.ts, tauri.ts) so the same code writes to a real folder, a zip, memory, or the desktop app."],
+  mount: ["@render/mount — packages/render-mount/src/",
+    "Framework-free browser wiring: OpenSeadragon (deep zoom) + Annotorious (drawing) + WaveSurfer (audio). Exposes plain imperative calls — fitBounds, setSelected, destroy — plus an onSelect callback. No Svelte, no React. If you ever swapped UI frameworks, this box survives."],
+  svelte: ["@render/svelte — packages/render-svelte/src/",
+    "The thin adapter that makes mount reactive: bind a variable to setSelected, subscribe to onSelect. It has a deliberate budget of under 500 lines — if it grows, logic has leaked into the wrong layer. The size limit IS the design check."],
+  studio: ["apps/studio — the authoring app",
+    "A Svelte 5 SPA built by Vite. Everything you do while making a library: LibraryHome, the canvas editor, AvEditor, NarrativeEditor, MergeReview, Publish. Its state lives in the browser (OPFS / a real folder / the desktop fs), never on a server."],
+  viewer: ["apps/viewer — the published reader",
+    "Astro static site with Svelte islands. Read-only. It renders whatever published library it's pointed at — gallery, exhibit, deep-zoom reader, deep links. This is what a visitor loads."],
+  embed: ["packages/archie-viewer — the <archie-viewer> tag",
+    "A single custom element someone can drop on their own webpage to show one exhibit, in a shadow DOM. Off to the side because it isn't part of the layer stack — it's a separate shippable artefact with a hard rule of its own: opening the gallery must not download the deep-zoom engine (~230KB) until a reader actually opens an object."]
+};
+const out = document.getElementById("mapOut");
+document.getElementById("map").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  document.querySelectorAll("#map button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  const [title, body] = BOXES[b.dataset.k];
+  out.innerHTML = "<strong>" + title + "</strong><br>" + body;
+});
+
+const TASKS = [
+  { q: "Notes should be sortable by the date they were written.",
+    a: "core",
+    why: "Sorting is logic over data — no screen involved. It belongs beside the model, so Studio and Viewer sort identically." },
+  { q: "Double-clicking the image should zoom to the region under the cursor.",
+    a: "mount",
+    why: "Pure canvas plumbing: a DOM event turning into an OpenSeadragon viewport call. No framework, no app opinion." },
+  { q: "The publish dialog needs a checkbox for including source images.",
+    a: "studio",
+    why: "It's one screen in the authoring app. Viewer has no publish dialog and core has no dialogs at all." },
+  { q: "A .archie.zip must refuse to open if it's secretly a 4GB decompression bomb.",
+    a: "core",
+    why: "Reading an untrusted archive is model-and-storage work, and the check must be identical everywhere it opens — Studio, Viewer, and the embed all call the one seam in publish/open.ts." },
+  { q: "When a visitor clicks a note in the sidebar, the canvas should highlight its region.",
+    a: "svelte",
+    why: "This is exactly the adapter's job: a reactive variable changing, pushed into mount's setSelected. Both apps get it for free." }
+];
+let i = 0, right = 0, answered = false;
+const taskEl = document.getElementById("task"), sortOut = document.getElementById("sortOut"),
+      scoreEl = document.getElementById("score");
+function render() {
+  answered = false;
+  taskEl.textContent = "“" + TASKS[i].q + "”";
+  sortOut.textContent = "";
+  document.querySelectorAll(".pick").forEach(b => b.className = "pick");
+  scoreEl.textContent = (i + 1) + " / " + TASKS.length + (i ? "  ·  " + right + " right" : "");
+}
+document.getElementById("sorter").addEventListener("click", e => {
+  const b = e.target.closest(".pick"); if (!b || answered) return;
+  answered = true;
+  const t = TASKS[i], ok = b.dataset.k === t.a;
+  if (ok) right++;
+  b.classList.add(ok ? "correct" : "wrong");
+  if (!ok) document.querySelector('.pick[data-k="' + t.a + '"]').classList.add("correct");
+  sortOut.innerHTML = (ok ? "<strong>Yes.</strong> " : "<strong>It's " + t.a + ".</strong> ") + t.why;
+});
+document.getElementById("next").addEventListener("click", () => {
+  i = (i + 1) % TASKS.length; render();
+});
+render();
+</script>
+</body>
+</html>
