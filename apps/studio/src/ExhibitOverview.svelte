@@ -22,7 +22,7 @@
   import { moveBlock, marqueeHits, START, END, type ClickMods, type PlateRect } from "./overview-selection.js";
   import { viewPrefs, overviewDensityMetrics } from "./view-prefs.svelte.js";
   import { hintSeen, markHintSeen } from "./canvas-first-use.js";
-  import { isReorderable, reorderBlockedMessage } from "./reorder-state.js";
+  import { isReorderable, reorderBlockedMessage, canCommitSort, commitSortBlockedMessage } from "./reorder-state.js";
   import { midEllipsis, splitForMidTruncation } from "./mid-ellipsis.js";
   import type { IngestActivity } from "./ingest-activity.js";
   import Spinner from "./Spinner.svelte";
@@ -255,6 +255,32 @@
   // fixed "Clear search & sort to reorder" wrongly told a search-only user to also clear a sort they'd
   // never touched).
   const reorderMessage = $derived(canWrite ? reorderBlockedMessage(sortMode, search) : READ_ONLY_MSG);
+
+  // Archie-3b9f — "Set as reading order". Sort was deliberately scoped as a pure VIEW (:232), which
+  // left no way to say "this arrangement IS the order" without dragging ~100 plates by hand. This is
+  // the explicit COMMIT that scoping left out, and it stays explicit: nothing about changing a sort
+  // touches the canonical array, exactly as before.
+  //
+  // Offered only when a sort is active and NO search is filtering — a filtered view is a subset, and
+  // committing it would have to invent a rule for the objects you can't see. `canCommitSort` states
+  // that alongside `isReorderable`, so both live in one place.
+  const commitSortAvailable = $derived(canWrite && canCommitSort(sortMode, search));
+  const commitSortReason = $derived(canWrite ? commitSortBlockedMessage(sortMode, search) : READ_ONLY_MSG);
+  // The order this REPLACED, kept so the commit is reversible. An authored reading order can represent
+  // real work, and there is no confirm dialog in this component to model an "are you sure" on — an undo
+  // the author can see and reach is the better trade, and it costs one array.
+  let undoOrder = $state<string[] | null>(null);
+  function commitSortAsReadingOrder(): void {
+    if (!commitSortAvailable) return;
+    undoOrder = objects.map((o) => o.id);
+    onreorder(displayObjects.map((o) => o.id)); // the SAME commit channel a drag drop uses
+    sortMode = "reading"; // the view and the canonical order are now the same thing (eyebrow honesty, O6)
+  }
+  function undoCommitSort(): void {
+    if (!undoOrder) return;
+    onreorder(undoOrder);
+    undoOrder = null;
+  }
   // The plate/row NUMBER is the canonical reading-order position — stable even when the view is sorted by
   // name/recency (sort is a view, never a reorder), so a sorted plate still shows where it reads.
   const orderIndexOf = $derived(new Map(objects.map((o, i) => [o.id, i])));
@@ -618,6 +644,22 @@
           <option value="recent">Recently annotated</option>
         </select>
       </label>
+      <!-- Archie-3b9f: turn the current sort INTO the reading order. Disabled (with the reason as its
+           title) rather than hidden, so the affordance is discoverable from the sorted view where you
+           actually want it — and so "why can't I?" is answerable without guessing. -->
+      {#if sortMode !== "reading" || undoOrder}
+        {#if undoOrder}
+          <button type="button" class="tb-commit" onclick={undoCommitSort}>Undo reading order</button>
+        {:else}
+          <button
+            type="button"
+            class="tb-commit"
+            disabled={!commitSortAvailable}
+            title={commitSortReason}
+            onclick={commitSortAsReadingOrder}
+          >Set as reading order</button>
+        {/if}
+      {/if}
       {#if mode === "grid"}
         <!-- Density (grid only): a per-device preference driving the plate min-width AND the virtualization
              intrinsic-size in lockstep (view-prefs overviewDensityMetrics). List mode keeps one fixed row
@@ -1203,6 +1245,11 @@
   .tb-search input { background: none; border: none; outline: none; color: var(--ink-canvas-primary); font-family: var(--font-ui); font-size: var(--text-ui-sm); width: 11rem; }
   .tb-search input::placeholder { color: var(--ink-canvas-muted); }
   .tb-field { display: inline-flex; align-items: center; gap: var(--space-2); }
+  /* Archie-3b9f: same visual weight as the toolbar's other controls — this is a deliberate action, not
+     a primary call to action, so it must not out-shout the sort it sits beside. */
+  .tb-commit { font: inherit; padding: var(--space-1) var(--space-3); border: 1px solid var(--rule-soft); border-radius: var(--radius-2); background: var(--surface-raised); color: var(--ink-primary); cursor: pointer; white-space: nowrap; }
+  .tb-commit:hover:not(:disabled) { background: var(--surface-canvas); }
+  .tb-commit:disabled { opacity: 0.5; cursor: not-allowed; }
   .tb-lbl { font-family: var(--font-ui); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-muted); }
   .tb-field select { background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); padding: 4px var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; }
   .tb-select { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: color 160ms ease, border-color 160ms ease, background 160ms ease; }
