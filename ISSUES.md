@@ -1,5 +1,10 @@
 # ISSUES — Archie tend backlog
 
+> **FROZEN 2026-07-27.** This file is historical narrative — live tracking is
+> `.seeds/issues.jsonl` (`sd` CLI), and the cross-tracker mapping is
+> `docs/TRACKERS.md`. Do not add new entries here.
+> Decision: ledgers/DESIGN-knowledge-layer-2026-07-27.md §2.
+
 Generated 2026-07-05 by a tend diagnosis. Commit examined: `2091557` (main).
 Evidence gathered by two codebase walks (core packages + apps/ops surface); every
 symptom below was verified against files on disk, not inferred. Issues are ordered
