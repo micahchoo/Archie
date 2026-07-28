@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reference · Browser capabilities &amp; file I/O</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<style>
+  body { max-width: 48rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; margin: 0 0 1.6rem; }
+  th { text-align: left; font: 600 .7rem/1 var(--mono); letter-spacing: .1em;
+       text-transform: uppercase; color: var(--ink-faint); padding: 0 .6rem .5rem 0;
+       border-bottom: 1px solid var(--rule); }
+  td { padding: .45rem .6rem .45rem 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:first-child { white-space: nowrap; }
+  .y { color: var(--ok); font-weight: 600; }
+  .n { opacity: .5; }
+  h2 { margin-top: 2.2rem; }
+</style>
+</head>
+<body>
+
+<p class="eyebrow">Archie · quick reference</p>
+<h1>Browser capabilities &amp; file I/O</h1>
+<p class="standfirst">Cheat sheet for lesson 4. Support facts checked against MDN 2026-07-24 —
+re-verify before quoting.</p>
+
+<h2>The two halves of the File System API</h2>
+
+<table>
+<tr><th>Half</th><th>Status</th><th>Meaning</th></tr>
+<tr><td><strong>OPFS</strong><br><code>navigator.storage.getDirectory()</code></td>
+    <td class="y">Baseline, widely available (Mar 2023)</td>
+    <td>Private per-origin storage. No prompt. Optimised for in-place writes. Available in Workers.</td></tr>
+<tr><td><strong>Pickers</strong><br><code>showDirectoryPicker</code> · <code>showOpenFilePicker</code> · <code>showSaveFilePicker</code></td>
+    <td class="n">Limited availability · experimental</td>
+    <td>Real user files. Secure context + transient user activation required. Writes go via temp file + security checks — slower.</td></tr>
+</table>
+
+<h2>Capability probes — <code>apps/studio/src/binding.ts</code></h2>
+
+<table>
+<tr><th>Probe</th><th>Tests</th><th>False ⇒</th></tr>
+<tr><td><code>supportsFolderPicker()</code></td><td><code>"showDirectoryPicker" in window</code></td><td>No folder binding — zip-as-file model</td></tr>
+<tr><td><code>supportsFileStreamSave()</code></td><td><code>"showSaveFilePicker" in window</code></td><td>Try OPFS staging next</td></tr>
+<tr><td><code>supportsOpfsStagedZipSave()</code></td><td><code>storage.getDirectory</code> + <code>FileSystemFileHandle.prototype.createWritable</code> + <code>document</code></td><td>No staged streaming</td></tr>
+<tr><td><code>supportsStreamingZipSave()</code></td><td><code>isTauri() ‖ fileStream ‖ opfsStaged</code></td><td>Eager <code>saveZipToDisk</code>, 1 GiB gate</td></tr>
+</table>
+
+<p>Capability is read <strong>only</strong> here, and never surfaced to the user as a limitation.
+No user-agent sniffing anywhere in the codebase.</p>
+
+<h2>Platform tiers</h2>
+
+<table>
+<tr><th></th><th>Folder<br>picker</th><th>Save<br>picker</th><th>OPFS<br>createWritable</th><th>What "Save" is</th></tr>
+<tr><td>Chromium</td><td class="y">✔</td><td class="y">✔</td><td class="y">✔</td><td>Write through to the bound folder</td></tr>
+<tr><td>Firefox</td><td class="n">✘</td><td class="n">✘</td><td class="y">✔</td><td>OPFS-staged stream → download <code>.archie.zip</code></td></tr>
+<tr><td>Safari-class</td><td class="n">✘</td><td class="n">✘</td><td class="y">✔</td><td>Same as Firefox <em>(probe decides, not the label)</em></td></tr>
+<tr><td>Older Safari-class</td><td class="n">✘</td><td class="n">✘</td><td class="n">✘</td><td>Eager in-memory build, gated at 1 GiB</td></tr>
+<tr><td>Tauri desktop</td><td colspan="3" style="text-align:center">n/a — <code>isTauri()</code> short-circuits</td><td>Native dialog + plugin-fs streaming write</td></tr>
+</table>
+
+<h2>Three doors in</h2>
+
+<table>
+<tr><th>Door</th><th>Support</th><th>Watch for</th></tr>
+<tr><td><code>&lt;input webkitdirectory&gt;</code></td><td class="y">Universal</td>
+    <td>Sets <code>webkitRelativePath</code> — the grouping/naming logic depends on it</td></tr>
+<tr><td>Drag-drop folder<br><code>webkitGetAsEntry()</code></td><td class="y">Universal</td>
+    <td><strong><code>FileSystemFileEntry.file()</code> does NOT set <code>webkitRelativePath</code></strong> — <code>folder-drop.ts</code> assigns it by hand. One walker only; don't write a second.</td></tr>
+<tr><td><code>showDirectoryPicker()</code></td><td class="n">Chromium-class</td>
+    <td>Different in kind — a live writable handle (a <em>binding</em>), not a copy</td></tr>
+<tr><td>Remote URL</td><td>—</td>
+    <td>Not an FSA question at all: <strong>CORS</strong>. Desktop bypasses via native HTTP; web cannot.</td></tr>
+</table>
+
+<h2>Picker failures unrelated to support</h2>
+
+<table>
+<tr><th>Symptom</th><th>Cause</th></tr>
+<tr><td>Picker missing on a browser that has it</td><td>Not a secure context — needs HTTPS or <code>localhost</code>. A LAN IP won't do.</td></tr>
+<tr><td><code>SecurityError</code> from a supported picker</td><td>Transient user activation expired — you <code>await</code>ed before calling. Open the picker first, do slow work after.</td></tr>
+<tr><td><code>AbortError</code></td><td>User dismissed, or the browser judged the directory too sensitive.</td></tr>
+<tr><td>Drop imported files with no folder grouping</td><td>The <code>webkitRelativePath</code> gap above.</td></tr>
+</table>
+
+<p class="ask">Source: <a href="../lessons/0004-what-the-browser-will-let-you-touch.html">lesson 4</a> ·
+<code>apps/studio/src/binding.ts</code>, <code>folder-drop.ts</code>, <code>folder-import.ts</code> ·
+<a href="https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system">MDN OPFS</a></p>
+
+</body>
+</html>

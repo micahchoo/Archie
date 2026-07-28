@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2 · Nothing is ever overwritten</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<p class="eyebrow">Archie codebase · Lesson 2</p>
+<h1>Nothing is ever overwritten</h1>
+<p class="standfirst">The annotation spine. One decision — never destroy the old version — and
+everything odd-looking in <code>spine/</code> falls out of it.</p>
+
+<h2>Two problems, one answer</h2>
+
+<p><strong>Problem one: the citation.</strong> A scholar cites a note in your library — a
+footnote in a published paper pointing at it. You come back next year and reword that note. Their
+footnote now points at words that were never written when they cited it. Silently. That's not a
+bug you can fix later; it's a bug you can only avoid by design.</p>
+
+<p><strong>Problem two: the two zips.</strong> Archie has no server, so co-authoring means mailing
+a <code>.archie.zip</code> back and forth. Two people work on the same library for a week. Both
+edited note #47. Now what?</p>
+
+<p>The tempting answer to problem two is "newest wins — compare timestamps." Archie refuses that,
+and the reason is worth memorising because it generalises:</p>
+
+<div class="aside">
+  <span class="tag">Rejected: last-write-wins on the clock</span>
+  <p>Two machines' clocks routinely differ by 1–30 seconds. So the edit made <em>later in real
+  life</em> can carry the <em>earlier</em> timestamp — and gets silently discarded. You get no
+  error, no conflict, no card. Just work that quietly disappeared.</p>
+  <p class="path">docs/adr/0003 · "Pure wall-clock LWW — rejected: clock skew silently loses the
+  older-by-the-clock-but-actually-later edit."</p>
+</div>
+
+<p>Both problems have the same answer: <strong>an edit never replaces anything. It appends.</strong>
+The old version stays on disk forever. A delete isn't a deletion either — it appends a record with
+<code>deleted: true</code>, which the codebase calls a <em>tombstone</em>.</p>
+
+<h2>What one record looks like</h2>
+
+<p>This is the actual shape, from <code class="path">packages/render-core/src/spine/log.ts:25</code>.
+Click a field for the plain-English version.</p>
+
+<div class="model">
+  <p class="hint">Click a field name.</p>
+  <pre style="margin:0"><code>interface DagRecord {
+  <button class="fld" data-k="logicalId">logicalId</button>: Id;
+  <button class="fld" data-k="rev">rev</button>: RevId;
+  <button class="fld" data-k="parent">parent</button>: RevId | null;
+  <button class="fld" data-k="mergeParents">mergeParents</button>?: RevId[];
+  <button class="fld" data-k="modifiedAt">modifiedAt</button>: IsoDateTime;
+  <button class="fld" data-k="lastEditor">lastEditor</button>: ClientId;
+  <button class="fld" data-k="deleted">deleted</button>: boolean;
+}</code></pre>
+  <div class="feedback" id="fldOut"></div>
+</div>
+
+<h3>The bit that trips everyone: there are two ids</h3>
+
+<p>A note has a <code>logicalId</code> (this note, across all its versions) and each
+<em>version</em> has a <code>rev</code>. But versions also have a human-facing number —
+<code>note-47/v3</code> — and that number is <strong>not</strong> what <code>parent</code> points
+at.</p>
+
+<p>Why not? Because two people editing v1 at the same time both produce a "v2". If
+<code>parent</code> pointed at version numbers, a later record saying <code>parent: "note-47/v2"</code>
+would be <em>ambiguous</em> — which v2? So the DAG walks <code>rev</code>, a unique ULID minted per
+record, and the pretty <code>/v3</code> number is kept purely as the citation label.</p>
+
+<div class="aside">
+  <span class="tag">The analogy that makes it stick</span>
+  <p>This is git, exactly. <code>rev</code> = the commit hash. <code>parent</code> = the parent
+  hash. <code>{logicalId}/v3</code> = the tag — a human-friendly name for a commit, never the
+  thing git actually follows.</p>
+  <p>The repo found this the hard way and amended the ADR mid-implementation
+  (<code class="path">docs/adr/0003…md:35</code>). Retelling tip: this is a good "we got it wrong
+  and here's the failure that showed us" story.</p>
+</div>
+
+<h2>So what's true *right now*?</h2>
+
+<p>If the log holds every version ever written, rendering the library means answering: which
+records are current? The rule is one line, and it's beautiful:</p>
+
+<p><strong>A record is current if nothing else claims it as a parent.</strong> Nobody has edited it,
+so it's the tip. The code calls these <em>heads</em>, and computing them is a single pass —
+<code class="path">spine/heads.ts:28</code>.</p>
+
+<p>Note the plural. Usually there's one head per note. After two people edit independently, there
+are <em>two</em>, and Archie renders both overlapping on the canvas rather than picking one. That
+looks like a bug and is a deliberate choice: showing you that two truths exist is honest; silently
+picking one is the data loss you were avoiding.</p>
+
+<h3>Drive it</h3>
+
+<div class="model">
+  <p class="hint">Alice and Bob each have a copy of the same library. Append some edits and watch
+  the heads recompute by the rule above.</p>
+  <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem">
+    <button id="aEdit">Alice edits</button>
+    <button id="bEdit">Bob edits</button>
+    <button id="resolve">Resolve the conflict</button>
+    <button id="reset">Reset</button>
+  </div>
+  <div id="log" style="font:0.82rem/1.7 var(--mono)"></div>
+  <div class="feedback" id="verdict"></div>
+</div>
+
+<h2>Merging is a classification, not a decision</h2>
+
+<p>When two logs meet, Archie doesn't try to be clever per note. It sorts each note into one of
+three buckets — <code class="path">spine/merge.ts:140</code>:</p>
+
+<ul>
+  <li><strong>identical</strong> — same <code>rev</code>. Nothing to do.</li>
+  <li><strong>fast-forward</strong> — one side's head is an ancestor of the other's. Only one person
+  actually edited; take the descendant. <em>No card, no question asked.</em></li>
+  <li><strong>conflict</strong> — both moved on from a shared ancestor. Only now does a human get
+  asked, in the Review Changes UI.</li>
+</ul>
+
+<p>Most "conflicts" in real zip-swapping are fast-forwards in disguise — the two people touched
+different notes. That's the payoff of keeping ancestry: the machine resolves the boring 95% because
+it can prove which is which, and bothers you only for the genuine 5%. Timestamps play no part in
+this classification at all; <code>modifiedAt</code> is only ever shown to you <em>inside</em> a
+conflict card as a hint.</p>
+
+<h2>The three alternatives that lost</h2>
+
+<p>Keep these — they're the spine of the retelling:</p>
+
+<ul>
+  <li><strong>Edit in place</strong> — kills provenance, breaks citations, makes ancestry impossible.</li>
+  <li><strong>Every difference is a conflict card</strong> — throws away the common ancestor the log
+  hands you free, so the human resolves everything by hand.</li>
+  <li><strong>Just use git on the folder</strong> — line-diffing JSON is the wrong granularity for
+  annotations, and it drags a terminal into a product built for people who don't have one. The
+  parent chain gives you three-way-merge <em>semantics</em> without git.</li>
+</ul>
+
+<h2>Read next (primary source)</h2>
+
+<p><a href="../../docs/adr/0003-annotation-spine-append-only-version-dag.md">ADR-0003</a> — 41 lines,
+the whole argument chain plus six rejected alternatives. The single densest document in this repo.
+Then <code class="path">packages/render-core/src/spine/MERGE-CONTRACT.md</code> when you need the
+rules as a contract rather than a story.</p>
+
+<div class="next">
+  <h2>Next lesson</h2>
+  <p>Either: <strong>where your work actually lives</strong> (no server, no database — so what's
+  holding the bytes? one <code>Filesystem</code> interface, five implementations), or <strong>the
+  hot-path trap</strong> — why "just recompute the heads" is correct, fast in a test, and quietly
+  quadratic in the running app. Your pick.</p>
+</div>
+
+<p class="ask">Confused by anything above? Say so — that's the fastest signal I get about what to
+teach next.</p>
+
+<script>
+const FIELDS = {
+  logicalId: "Which NOTE this is. Stays the same across every version, forever. This is what a citation points at.",
+  rev: "Which VERSION this is — a unique ULID minted per record. The id the ancestry graph actually walks. Think: commit hash.",
+  parent: "The rev this one was edited FROM. null means it's the original. Follow these backwards and you have the note's whole history.",
+  mergeParents: "Extra parents, present only on a record that RESOLVED a conflict — it points back at both competing versions, which is what makes them stop counting as current.",
+  modifiedAt: "Wall-clock time. Deliberately powerless: it never decides a merge, it's only shown to you inside a conflict card as a tiebreaker hint.",
+  lastEditor: "Which client wrote it. Provenance — who said this.",
+  deleted: "The tombstone. A deleted note is an APPENDED record flagged true, never a removal. Heads skip it, so it renders as nothing, but its history survives."
+};
+const fldOut = document.getElementById("fldOut");
+document.querySelectorAll(".fld").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".fld").forEach(x => x.setAttribute("aria-pressed", x === b));
+  fldOut.innerHTML = "<strong>" + b.dataset.k + "</strong> — " + FIELDS[b.dataset.k];
+}));
+
+let log, n, tips;
+function reset() {
+  log = [{ rev: "r1", parent: null, who: "—", label: "note created" }];
+  n = 1; tips = { Alice: "r1", Bob: "r1" }; draw();
+}
+function headsOf() {
+  const referenced = new Set();
+  for (const r of log) { if (r.parent) referenced.add(r.parent); (r.mergeParents || []).forEach(p => referenced.add(p)); }
+  return log.filter(r => !referenced.has(r.rev));
+}
+function ancestorsOf(rev) {
+  const seen = new Set(); const stack = [rev];
+  while (stack.length) {
+    const cur = stack.pop(); const rec = log.find(r => r.rev === cur); if (!rec) continue;
+    for (const p of [rec.parent, ...(rec.mergeParents || [])]) if (p && !seen.has(p)) { seen.add(p); stack.push(p); }
+  }
+  return seen;
+}
+function edit(who) {
+  const rev = "r" + (++n);
+  log.push({ rev, parent: tips[who], who, label: who + " reworded it" });
+  tips[who] = rev; draw();
+}
+function draw() {
+  const heads = headsOf(); const headSet = new Set(heads.map(h => h.rev));
+  document.getElementById("log").innerHTML = log.map(r =>
+    "<div style='padding:.15rem 0;" + (headSet.has(r.rev) ? "color:var(--accent);font-weight:600" : "opacity:.55") + "'>" +
+    r.rev + "  ← parent: " + (r.parent || "null") +
+    ((r.mergeParents || []).length ? " + " + r.mergeParents.join(",") : "") +
+    "   <span style='font-family:var(--serif)'>" + r.label + "</span>" +
+    (headSet.has(r.rev) ? "  ◀ HEAD" : "") + "</div>").join("");
+  const v = document.getElementById("verdict");
+  if (heads.length === 1) {
+    v.innerHTML = "<strong>One head.</strong> Unambiguous — this is what the canvas renders. " +
+      (n > 1 ? "Merging another copy in this state classifies as <em>fast-forward</em>: no card." : "");
+  } else {
+    const [a, b] = heads;
+    const kind = ancestorsOf(a.rev).has(b.rev) || ancestorsOf(b.rev).has(a.rev) ? "fast-forward" : "conflict";
+    v.innerHTML = "<strong>Two heads → " + kind + ".</strong> " + (kind === "conflict"
+      ? "Both moved on from a shared ancestor, so neither can be proven later. Archie renders BOTH overlays and asks a human. Note it never looked at a clock to decide this."
+      : "One is an ancestor of the other — resolved automatically.");
+  }
+  document.getElementById("resolve").disabled = heads.length < 2;
+}
+document.getElementById("aEdit").onclick = () => edit("Alice");
+document.getElementById("bEdit").onclick = () => edit("Bob");
+document.getElementById("resolve").onclick = () => {
+  const heads = headsOf(); if (heads.length < 2) return;
+  const rev = "r" + (++n);
+  log.push({ rev, parent: heads[0].rev, mergeParents: heads.slice(1).map(h => h.rev), who: "you", label: "you resolved it" });
+  tips.Alice = tips.Bob = rev; draw();
+};
+document.getElementById("reset").onclick = reset;
+reset();
+</script>
+</body>
+</html>
