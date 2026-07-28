@@ -202,6 +202,19 @@ favour, and it survived only until someone opened the file in order to apply it.
 be wrong in the same direction for it to get that far. When a review hands you good news, that is the
 moment to open the file.
 
+**A second counting trap, and this one truncates SILENTLY (2026-07-27).** `sd list` defaults to
+`--limit 50`. It prints `50 issue(s)` and says nothing about the cut, so an open-ticket count taken
+from it is capped at 50 no matter how many exist. Measured: `sd list --status open` → `50 issue(s)`
+while `sd stats` → `Open: 63`. A derived "41 non-map" was one command away from being reported.
+
+The tell is the same as the `Scope:` one: **another command already states the number**, and it
+disagrees. `sd stats` is the reconciler; `sd list --status open --limit 500 --json` is the enumerator.
+Never take a backlog count from a bare `sd list`.
+
+Note the shape it shares with `head -20` on sorted output — a default limit is a truncation you did
+not write and therefore do not picture. **Any tool that paginates has a default page size; find it
+before you count with it.**
+
 **One counting trap in this repo, made twice on 2026-07-26 by two different people.**
 `pnpm -r run typecheck | grep -c "typecheck: Done"` returns **7**. The answer is **6** — the seventh
 match is `apps/viewer pretypecheck: Done`, the astro sync step. The second instance is the instructive
