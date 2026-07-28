@@ -8,8 +8,8 @@ Three id spaces: `Issue N` (ISSUES.md, FROZEN), `Archie-xxxx` (.seeds, canonical
 | ISSUES.md | title | seeds tickets citing it |
 | --- | --- | --- |
 | Issue 13 | The shipped ⑧ collaboration summary is inert: no UI can ever | Archie-21b1, Archie-2bf1, Archie-321c, Archie-697c, Archie-b415, Archie-c268, Archie-d71c, Archie-f849 |
-| Issue 14 | The note target-scope ladder: README claims 6 rungs, the Stu | UNMAPPED |
-| Issue 16 | The sole gh-pages bake path ( | UNMAPPED |
+| Issue 14 | The note target-scope ladder: README claims 6 rungs, the Stu | Archie-d895 |
+| Issue 16 | The sole gh-pages bake path ( | Archie-59c4 |
 | Issue 17 | The embed reader silently drops every whole-object note past | Archie-cc98 |
 | Issue 18 | `App.svelte | Archie-3148 |
 | Issue 22 | Two Studio tabs on one library: zero cross-tab write coordin | UNMAPPED |

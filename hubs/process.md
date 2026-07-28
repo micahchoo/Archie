@@ -5,7 +5,7 @@ scope:
   - ".seeds/**"
   - "ledgers/**"
   - "docs/agents/**"
-updated: 2026-07-27
+updated: 2026-07-28
 ---
 # process
 > *how do agents work in this repo?*

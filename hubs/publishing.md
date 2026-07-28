@@ -7,7 +7,7 @@ scope:
   - "scripts/perf/publish*"
   - "scripts/perf/worker-smoke.mjs"
   - ".github/workflows/deploy.yml"
-updated: 2026-07-27
+updated: 2026-07-28
 ---
 # publishing
 > *How does authored become published?*
@@ -50,6 +50,9 @@ end-to-end wall-clock over a real library (`scripts/perf/publishrun.mjs`), not a
 - Archie-039e — BagIt-shaped deposit export with a fixity manifest, validated against `bagit-python`
   / `b0c73f4`.
 - Archie-c85f — object-storage publish probe (rclone, two-pass marker-last ordering) / `d7ae26f`.
+- Archie-19d7 — a published manifest may not reference an asset file the tree lacks; enforced as a
+  CLOSING invariant over the finished manifest (`PublishResult.danglingRefs`), because the JSON-only
+  recovery path writes no bytes and so cannot check its own output / 896a92f, 2c997fe
 - Archie-fde8 — post-publish verification (`verify-publish.mjs`, reads the tree back through the
   REAL render-core readers) / `7fbd87d`. Not present on this branch's tree — merged via `main`.
 

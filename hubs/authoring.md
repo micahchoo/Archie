@@ -2,7 +2,7 @@
 scope:
   - "apps/studio/src/**"
   - "apps/studio/e2e/**"
-updated: 2026-07-27
+updated: 2026-07-28
 ---
 # authoring
 > *how do authors make things?*

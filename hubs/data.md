@@ -4,7 +4,7 @@ scope:
   - "packages/render-core/src/fs/**"
   - "packages/render-core/src/publish/**"
   - "packages/render-core/src/model/**"
-updated: 2026-07-27
+updated: 2026-07-28
 ---
 # data
 > *How is knowledge stored, merged, and kept safe?*
