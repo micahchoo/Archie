@@ -122,6 +122,16 @@ describe("a platform that cannot encode degrades CLEANLY — the name and the MI
     expect(capsFor({ encodeImage: async () => new Blob() })).toEqual({ image: true, audio: false, video: null });
     expect(capsFor({ encodeImage: async () => new Blob(), encodeAudio: async () => new Blob() })).toEqual({ image: true, audio: true, video: null });
   });
+
+  it("VIDEO capability needs BOTH halves — a half-configured pair is no capability at all", () => {
+    // Found by red-green: this guard had no test, while its comment claimed it made a manifest/bytes
+    // mismatch structurally impossible. Each half alone is a distinct way to publish a lie —
+    // a target with no encoder NAMES files `.mp4` that nothing writes, and an encoder with no target
+    // leaves the decision layer unable to name the file it is about to produce.
+    expect(capsFor({ videoTarget: WEB_TIER_H264 }).video).toBeNull();
+    expect(capsFor({ encodeVideo: async () => new Blob() }).video).toBeNull();
+    expect(capsFor({ encodeVideo: async () => new Blob(), videoTarget: WEB_TIER_H264 }).video).toBe(WEB_TIER_H264);
+  });
 });
 
 describe("naming: the published file name is a pure function of the stored one, and collisions are resolved", () => {
