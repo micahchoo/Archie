@@ -14,7 +14,9 @@
 //
 // Memory is the binding constraint, not CPU: the decoded source alone is w*h*4 bytes per worker
 // (192 MB for an 8000x6000). The pool sizes itself against that — see dzi-slice-pool.ts.
-import { tileRect, tilePath, mapLimit, type DziLevel } from "@render/core";
+// The DOM-FREE subpath, deliberately — see bake-worker.ts and
+// packages/render-core/src/worker.ts. The barrel cannot be imported here.
+import { tileRect, tilePath, mapLimit, type DziLevel } from "@render/core/worker";
 
 /** Encode fan-out WITHIN one worker. Deliberately smaller than the inline slicer's 48: this multiplies
  *  by the pool width, and the pool already saturates the encode threads. */
