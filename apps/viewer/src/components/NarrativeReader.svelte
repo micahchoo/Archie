@@ -788,9 +788,20 @@
       ? `Read down the page, or jump to any section. The image follows along, zooming to what each section is about${multiObject ? ", and switching between items as you go" : ""}.`
       : "Notes written on the item you’re reading. Select one to open it — its marker lights up on the image."}</p>
     <!-- `rights` here is ALREADY the exhibit's (ExhibitView passes exhibitRights to this reader), so the
-         credit line was correct — what was missing is its metadata run (Archie-36e6). -->
+         credit line was correct — what was missing is its metadata run (Archie-36e6).
+
+         The credit stays UNCONDITIONALLY VISIBLE and must never move inside the disclosure below: it
+         renders the IIIF `requiredStatement`, which is MUST-display, and a closed `<details>` is not
+         displayed. The metadata run is `metadata` — additive, not MUST-display (presentation.ts:31) —
+         so that is the half that folds. Archie-1474: adding the run at :793 grew this header enough to
+         push the pane toggle off-screen on a scrolled narrative, which is the defect being fixed. -->
     <p class="credit-row"><Credit {rights} tone="paper" /></p>
-    <MetadataRun rows={exhibitMeta} tone="paper" />
+    {#if exhibitMeta.length > 0}
+      <details class="meta-fold">
+        <summary>Details · {exhibitMeta.length}</summary>
+        <MetadataRun rows={exhibitMeta} tone="paper" />
+      </details>
+    {/if}
     <!-- Pane toggle: the authored read (sections) ⇄ the active object's notes. Without it, an item's
          notes were reachable only by spotting canvas markers — no listable surface in the narrative. -->
     <div class="pane-toggle" role="group" aria-label="Show sections or notes">
@@ -926,7 +937,44 @@
   /* Pane toggle (sections ⇄ notes) — a quiet segmented pair in the spine's mono eyebrow voice; the
      active pane gets the muted-accent fill (the same "you are here" mark the active section card uses),
      never a loud orange. */
-  .pane-toggle { display: flex; gap: var(--space-2); margin: 0 0 var(--space-4); }
+  /* STICKY, because this column is the scroll container (`aside { overflow: auto }`) and the toggle is
+     the only way to reach an item's notes. Before Archie-1474 it scrolled away with the header, so the
+     further a reader got into a narrative the more unreachable the Notes pane became — the reported
+     defect. `top: 0` pins it to the scrollport's top edge; the aside's own top padding scrolls beneath.
+     The negative horizontal margin bleeds the bar into that padding so section cards passing underneath
+     cannot peek at its left and right edges, and the padding puts the buttons back where they were. */
+  .pane-toggle {
+    display: flex; gap: var(--space-2);
+    position: sticky; top: 0; z-index: 2;
+    margin: 0 calc(var(--space-5) * -1) var(--space-4);
+    padding: var(--space-3) var(--space-5);
+    background: var(--surface-paper);
+    border-bottom: 1px solid var(--border-canvas);
+  }
+
+  /* The exhibit's Dublin Core rows, folded. Open they are the tallest thing in this header, and every
+     pixel here pushes the sticky bar's resting position down and eats the spine. Closed by default —
+     descriptive metadata is reference material a reader consults, not something they read on arrival.
+     The credit line above is deliberately NOT in here (MUST-display; see the markup comment). */
+  .meta-fold { margin: 0 0 var(--space-4); }
+  .meta-fold > summary {
+    cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-1) 0;
+    font-family: var(--font-ui); font-size: 0.7rem; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-paper-muted);
+    transition: color 160ms ease;
+  }
+  .meta-fold > summary::-webkit-details-marker { display: none; }
+  /* The affordance: a caret that turns. Drawn here rather than left to the UA marker so the row keeps
+     the eyebrow's voice, and so `list-style: none` above cannot leave it with no open/closed signal. */
+  .meta-fold > summary::before {
+    content: "▸"; display: inline-block; font-size: 0.85em;
+    transition: transform 160ms ease;
+  }
+  .meta-fold[open] > summary::before { transform: rotate(90deg); }
+  .meta-fold > summary:hover { color: var(--ink-paper-primary); }
+  .meta-fold > summary:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; border-radius: var(--radius-sm); }
+  .meta-fold[open] > summary { margin-bottom: var(--space-2); }
   .pane-toggle button {
     flex: none; cursor: pointer; padding: var(--space-2) var(--space-3);
     background: none; border: none; border-radius: var(--radius-sm);
