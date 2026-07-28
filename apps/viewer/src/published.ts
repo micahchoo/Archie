@@ -151,6 +151,55 @@ export function isPortable(): boolean {
 // deployment simply never finds the store — the probe quietly returns false and the Viewer behaves
 // exactly as before. Live is additive, never load-bearing.
 let liveFs: MemoryFilesystem | null = null;
+
+// Archie-f34b: a LIVE (OPFS-fronted) exhibit's gallery cover and wall thumbnails are TREE-RELATIVE
+// refs (`{slug}/assets-thumb/{name}`) into `liveFs`, an in-memory tree that no server hosts. The
+// gallery ran them through `publishedAssetUrl`, which resolves a relative ref against the PUBLISHED
+// root — so a live exhibit asked the network for a file that only exists in this tab's memory, and
+// rendered the broken-cover fallback. `publishedAssetUrl`'s own doc asserted the opposite ("a
+// live/OPFS-fronted exhibit already hands us a usable URL"); measured, it does not.
+//
+// Bytes are already in memory, so minting is cheap: `URL.createObjectURL` over a Blob the tree
+// already holds costs a URL-table entry, not a copy and not a decode — the decode happens only when
+// an <img> actually loads one. That is why this is a plain cache rather than the observer-bounded
+// pattern Studio's GalleryThumb needs (which mints from OPFS, where the read itself is the cost).
+const liveAssetUrls = new Map<string, string>();
+function revokeLiveAssetUrls(): void {
+  for (const u of liveAssetUrls.values()) URL.revokeObjectURL(u);
+  liveAssetUrls.clear();
+}
+/**
+ * A usable `src` for a tree-relative ref into an in-memory tree: mint (and cache) a blob URL for the
+ * bytes. An ABSOLUTE ref of any kind — scheme, protocol-relative, or root-absolute — is returned
+ * untouched, because a remote IIIF cover needs no help and a root-absolute path is already servable.
+ * `undefined` when the bytes aren't in the tree, so the caller's own fallback still fires.
+ *
+ * Exported and fs-parameterized purely so it can be tested: the live source is reached through
+ * `navigator.storage.getDirectory()` and nothing in this suite could stand that up, which is exactly
+ * why Archie-f34b shipped unnoticed. Taking the tree as an argument makes the RULE testable against a
+ * MemoryFilesystem even while the end-to-end live path stays uncovered.
+ */
+export async function treeAssetBlobUrl(
+  fs: Filesystem | null,
+  ref: string | undefined,
+  cache: Map<string, string>,
+): Promise<string | undefined> {
+  if (!ref || !fs || /^([a-z][a-z0-9+.-]*:|\/\/|\/)/i.test(ref)) return ref; // absolute → as-is
+  const hit = cache.get(ref);
+  if (hit) return hit;
+  try {
+    const parts = ref.split("/");
+    let dir = await fs.root();
+    for (let i = 0; i < parts.length - 1; i++) dir = await dir.getDirectory(parts[i]!);
+    const bytes = await (await dir.getFile(parts[parts.length - 1]!)).readable();
+    const url = URL.createObjectURL(new Blob([bytes]));
+    cache.set(ref, url);
+    return url;
+  } catch {
+    return undefined; // absent in the live tree — let the caller's own fallback fire
+  }
+}
+const liveAssetUrl = (ref: string | undefined): Promise<string | undefined> => treeAssetBlobUrl(liveFs, ref, liveAssetUrls);
 let liveSlugs: ReadonlySet<string> = new Set();
 let liveRevoke: (() => void) | null = null;
 let liveSeq = 0; // mirrors portableSeq — guards the live-source revoke handle against the same load race
@@ -176,6 +225,7 @@ export async function initLiveSource(): Promise<boolean> {
       console.info("Archie: no local working library here — showing published exhibits only");
       return false;
     }
+    revokeLiveAssetUrls(); // a re-probe replaces the tree; the old tree's blob URLs are now dead
     const mem = new MemoryFilesystem();
     // baseUrl = WORKING_IRI_BASE — the SAME namespace Studio mints its annotation targets against (NOT the
     // published base / real deploy origin): publishLibrary groups annotations by `targetSource(h) ===
@@ -190,6 +240,7 @@ export async function initLiveSource(): Promise<boolean> {
     return true;
   } catch (e) {
     console.warn("Archie: live-source probe failed — showing published exhibits only", e);
+    revokeLiveAssetUrls();
     liveFs = null;
     liveSlugs = new Set();
     return false;
@@ -410,7 +461,16 @@ export async function loadGallery(): Promise<ExhibitsJson> {
     if (hosted) return hosted;
     throw hostedErr;
   }
-  return mergeGalleries(await loadPortableGallery(liveFs), hosted);
+  // Archie-f34b: rewrite the LIVE cards' covers to blob URLs before they reach the gallery, so a
+  // tree-relative ref into the in-memory tree never reaches `publishedAssetUrl` (which would resolve
+  // it against the published root — a file that does not exist for a live-only exhibit). Bounded by
+  // exhibit COUNT, not object count.
+  const live = await loadPortableGallery(liveFs);
+  const liveCards = await Promise.all(live.exhibits.map(async (e) => {
+    const cover = await liveAssetUrl(e.cover);
+    return cover === e.cover ? e : cover === undefined ? (({ cover: _drop, ...rest }) => rest)(e) : { ...e, cover };
+  }));
+  return mergeGalleries({ ...live, exhibits: liveCards }, hosted);
 }
 
 /** The library-level image index (ADR-0023) — the Gallery wall's ONE-fetch source. Returns null when the
@@ -432,6 +492,15 @@ export async function loadImageIndex(): Promise<ImageIndex | null> {
     // hosted wall stands alone.
     if (liveFs) {
       const live = await fsJsonSource(liveFs).getOptional<ImageIndex>("images.json");
+      // Archie-f34b, same rule one level down: the wall's per-object thumbnails are tree-relative into
+      // the live tree. Minting is per-entry and lazy in COST (a URL entry over a Blob already in
+      // memory), so a large working library pays URL-table entries, not decodes.
+      if (live) {
+        live.images = await Promise.all(live.images.map(async (im) => {
+          const thumb = await liveAssetUrl(im.thumbnail);
+          return thumb === im.thumbnail ? im : { ...im, ...(thumb !== undefined ? { thumbnail: thumb } : {}) };
+        }));
+      }
       return mergeImageIndex(live, hosted, liveSlugs);
     }
     return hosted;
