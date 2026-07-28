@@ -99,6 +99,7 @@
   import { ingestActivityOf } from "./ingest-activity.js";
   import Spinner from "./Spinner.svelte";
   import { buildCsvTemplate, type CsvPendingNote } from "./csv-import.js";
+  import MetadataImport from "./MetadataImport.svelte";
   // The per-exhibit session state machine (session lifecycle + atomic open) — the DOMINO cut.
   import { createExhibitSession } from "./exhibit-session.svelte.js";
   // Structure rev-log (Archie-42f3; DEFAULT ON since Archie-b0b1). archie.structureRevlog survives as
@@ -1252,6 +1253,15 @@
     a.href = url; a.download = `${vs.currentSlug || "exhibit"}-notes-template.csv`; a.click();
     URL.revokeObjectURL(url);
   }
+  // --- Bulk metadata import (Archie-3754). The dialog owns the file, the mapping and the preview; it hands
+  // back updates whose patches are already KEYED PARTIALS, so this handler forwards each verbatim and
+  // reconstructs nothing (.claude/rules/metadata-rights-keyed-writebacks.md rule 2).
+  let metadataImportOpen = $state(false);
+  function applyMetadataImport(updates: import("./metadata-import.js").PlannedUpdate[]) {
+    for (const u of updates) lib.patchObject(vs.currentSlug, u.objectId, u.patch);
+    const n = updates.length;
+    importNote = { message: `Updated ${n} media item${n === 1 ? "" : "s"} from your spreadsheet.`, ok: true };
+  }
   // Step to the previous/next object on the rail ([ / ] shortcuts).
   function stepObject(dir: -1 | 1) {
     if (vs.OBJECTS.length < 2) return;
@@ -2186,6 +2196,7 @@
       onopenbeat={openBeat}
       oneditobject={(objId) => (editingObjectId = objId)}
       onaddobject={() => (addMediaOpen = true)}
+      onimportmetadata={canWriteNow ? () => (metadataImportOpen = true) : undefined}
       onback={backToLibrary}
       onreorder={reorderObjects}
       {lastAnnotatedOf}
@@ -2236,6 +2247,16 @@
         />
       {/if}
     </PropsDrawer>
+    <!-- Bulk metadata import (Archie-3754) — the catalogue-spreadsheet door, at the EXHIBIT level because
+         one sheet describes many media items. Its trigger is the overview toolbar's "Import metadata…"
+         (onimportmetadata above); the notes CSV on-ramp stays in the inspector beside the notes it makes. -->
+    <MetadataImport
+      open={metadataImportOpen}
+      exhibitName={vs.currentExhibit.title}
+      objects={vs.OBJECTS}
+      onapply={applyMetadataImport}
+      onclose={() => (metadataImportOpen = false)}
+    />
   </div>
 {:else}
   <header>
