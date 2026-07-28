@@ -544,6 +544,44 @@ describe("publishLibrary — incremental scope (spike-0002)", () => {
     expect(Object.keys(await collectFiles(await fs.root())).some((k) => k.startsWith("r/r1_files/"))).toBe(false);
   });
 
+  it("a JSON-only pass over a JUST-ADDED asset object emits NO ref to a file it never wrote (Archie-19d7)", async () => {
+    // The live defect: a repeating 404 on `{slug}/assets-thumb/{name}`. Its shape is why the two
+    // neighbouring tests above could not see it — one covers "full pass, no bytes → stripped", the other
+    // "incremental → preserved", and this is "PRESERVED AND THE BYTES ARE ABSENT", which is a third thing.
+    //
+    // Mechanism: an object added since the last publish has no entry in the published manifest, so the
+    // recovery map cannot supply its asset triple. Without the self-heal it fell through to the MODEL,
+    // whose refs (`/assets/{name}`, `/assets-thumb/{name}`) are working-store paths — and a pass with
+    // `reassets` empty writes neither file.
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, libPQ, logsFor(log0), fullOpts()); // baseline: p1 published, bytes on disk
+
+    // p2 is added to the SAME exhibit and carries a working thumbnail ref, exactly like a fresh import.
+    const objP2 = { id: asObjectId("p2"), source: "/assets/second.jpg", label: "Second", width: 20, height: 15, thumbnail: "/assets-thumb/second.jpg" };
+    const libAdded: Library = { ...libPQ, exhibits: [{ ...exP, objects: [objP, objP2] }, exQ] };
+    await publishLibrary(fs, libAdded, logsFor(log0), {
+      ...fullOpts(),
+      getAsset: async (_slug, name) => (name === "second.jpg" ? new Uint8Array([7, 7, 7]).buffer : assetBytes),
+      incremental: { exhibits: new Set(["p"]), reassets: new Set() }, // p NOT in reassets — the JSON-only pass
+    });
+
+    const tree = await collectFiles(await fs.root());
+    const text = (tree["p/manifest.json"] as { text: string }).text;
+
+    // The INVARIANT, not the symptom: every published ref under this exhibit resolves to a real file.
+    // Stated over the manifest's own text so it holds for a source, a thumbnail, or any future third ref —
+    // the specific one that 404'd is not privileged.
+    const refs = [...text.matchAll(new RegExp(`${INC_BASE}(p/(?:assets|assets-thumb)/[^"\\\\]+)`, "g"))].map((m) => m[1]!);
+    const dangling = [...new Set(refs)].filter((r) => tree[r] === undefined);
+    // Print the SUBJECT: a run that matched no refs at all would pass this vacuously.
+    expect(refs.length, `no asset refs found in the manifest at all — the regex or the fixture is wrong: ${text.slice(0, 400)}`).toBeGreaterThan(0);
+    expect(dangling, `manifest references files absent from the published tree (tree has: ${Object.keys(tree).filter((k) => k.startsWith("p/assets")).join(", ")})`).toEqual([]);
+
+    // And the added object is genuinely there, so "no dangling refs" can't be satisfied by dropping it.
+    const ids = objectsFromManifest(JSON.parse(text)).map((o) => o.id);
+    expect(ids).toEqual(["p1", "p2"]);
+  });
+
   it("prunes a removed exhibit's whole directory — on a FULL write too (removals decoupled from scope, defect 1)", async () => {
     const fs = new MemoryFilesystem();
     await publishLibrary(fs, libPQ, logsFor(log0), fullOpts());
