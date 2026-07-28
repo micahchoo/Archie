@@ -76,7 +76,7 @@ async function freshOpfs(): Promise<Filesystem> {
 
 type Mode = "off" | "serial" | "inline" | "pooled";
 
-async function run(label: string, make: () => Promise<Filesystem>, objectCount: number, exhibits: number, mode: Mode, master: Blob, baselineOff: number | null = null) {
+async function run(label: string, make: () => Promise<Filesystem>, objectCount: number, exhibits: number, mode: Mode, master: Blob, baselineOff: number | null = null, fixity = false) {
   const { library, getLog } = makeLibrary(objectCount, exhibits);
   const fs = await make();
   let tileCalls = 0;
@@ -107,6 +107,11 @@ async function run(label: string, make: () => Promise<Filesystem>, objectCount: 
     getAsset: async () => master,
     getThumbnail: async () => null,
     tileObject,
+    // Archie-039e: the SHA-256 fixity manifest. Measured as an axis of this bench rather than in a
+    // microbenchmark, per .claude/rules/perf-measure-the-flow.md — a hash rate in MB/s says nothing
+    // about a publish that already fans out across objects and spends most of its time in tile
+    // encode. The number that decides whether this is cheap is the END-TO-END delta right here.
+    fixity,
   } as never);
   const total = performance.now() - t;
   if ("finish" in fs) await (fs as ZipStreamFilesystem).finish();
@@ -116,7 +121,7 @@ async function run(label: string, make: () => Promise<Filesystem>, objectCount: 
   // the first version of this bench reported "tiling 883% of total", which is how that was caught.
   const attributable = baselineOff === null ? null : total - baselineOff;
   const pct = attributable === null ? "  —" : `${(100 * attributable / total).toFixed(0)}%`;
-  say(`  ${label.padEnd(14)} ${mode.padEnd(7)} total ${total.toFixed(0).padStart(7)} ms   tiling(by difference) ${attributable === null ? "     —" : attributable.toFixed(0).padStart(6)} ms ${pct.padStart(5)}   [${tileCalls} tiled]`);
+  say(`  ${label.padEnd(14)} ${(mode + (fixity ? "+fix" : "")).padEnd(11)} total ${total.toFixed(0).padStart(7)} ms   by difference ${attributable === null ? "     —" : attributable.toFixed(0).padStart(6)} ms ${pct.padStart(5)}   [${tileCalls} tiled]`);
   return { total, attributable, tileCalls };
 }
 
@@ -136,15 +141,26 @@ async function main() {
     say(`── ${objects} objects across ${exhibits} exhibits, every one tileable (worst case) ──`);
     const opfsOff = await run("opfs", freshOpfs, objects, exhibits, "off", master);
     results[`opfs|${objects}|off`] = opfsOff;
+    let opfsPooled: Awaited<ReturnType<typeof run>> | null = null;
     for (const mode of ["serial", "inline", "pooled"] as Mode[]) {
-      results[`opfs|${objects}|${mode}`] = await run("opfs", freshOpfs, objects, exhibits, mode, master, opfsOff.total);
+      const r = await run("opfs", freshOpfs, objects, exhibits, mode, master, opfsOff.total);
+      results[`opfs|${objects}|${mode}`] = r;
+      if (mode === "pooled") opfsPooled = r;
     }
+    // FIXITY (Archie-039e) attributed by DIFFERENCE against the same publish with it off — the same
+    // discipline the tiling rows use, and for the same reason: publish's writes are concurrent, so
+    // summing per-file hash times would double-count.
+    results[`opfs|${objects}|pooled+fixity`] = await run("opfs", freshOpfs, objects, exhibits, "pooled", master, opfsPooled!.total, true);
     const zipMake = async () => new ZipStreamFilesystem(nullSink());
     const zipOff = await run("zip-stream", zipMake, objects, exhibits, "off", master);
     results[`zip|${objects}|off`] = zipOff;
+    let zipPooled: Awaited<ReturnType<typeof run>> | null = null;
     for (const mode of ["serial", "pooled"] as Mode[]) {
-      results[`zip|${objects}|${mode}`] = await run("zip-stream", zipMake, objects, exhibits, mode, master, zipOff.total);
+      const r = await run("zip-stream", zipMake, objects, exhibits, mode, master, zipOff.total);
+      results[`zip|${objects}|${mode}`] = r;
+      if (mode === "pooled") zipPooled = r;
     }
+    results[`zip|${objects}|pooled+fixity`] = await run("zip-stream", zipMake, objects, exhibits, "pooled", master, zipPooled!.total, true);
     say("");
   }
 

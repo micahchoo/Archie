@@ -290,13 +290,30 @@ check(true, "library: total annotation heads across all exhibits", String(librar
 }
 
 // ---------------------------------------------------------------------------
-// 7. No occurrence of the authoring namespace (`archie.demo`, WORKING_IRI_BASE) anywhere in the
-//    served HTML/JSON — the regression net for the base-URL fix (Archie-3504/19c5). Archie-3504's
+// 7. No occurrence of the authoring namespace (`archie.demo`, WORKING_IRI_BASE) on the FOUR
+//    ABSOLUTE-URL SURFACES — the regression net for the base-URL fix (Archie-3504/19c5). Archie-3504's
 //    DECIDED note names exactly four fields that carry an ABSOLUTE url in a relative-first tree:
 //    og:url, JSON-LD url, IIIF canvas ids, and the canonical link. Every one of those lives in either
-//    a slug's manifest.json (canvas ids) or an index.html (og:url / JSON-LD / canonical) — so this
-//    scans the marker, the gallery, every exhibit's manifest + static page, and the library landing
-//    page: exactly the served surfaces where a leaked WORKING_IRI_BASE would show up.
+//    a slug's manifest.json (canvas ids) or an index.html (og:url / JSON-LD / canonical), so that is
+//    what this scans: the marker, the gallery, every exhibit's manifest + static page, and the
+//    library landing page.
+//
+//    THE LABEL SAYS THAT, AND USED NOT TO (Archie-fde8, corrected 2026-07-27). It read "no
+//    occurrences anywhere in the served tree" while the detail beside it admitted a 5-file scan of a
+//    438-file tree — a check whose name claimed the whole artifact and whose measurement covered
+//    1%. The `8d3d` agent then measured **4 real `archie.demo` occurrences** the scan never saw, in
+//    an annotation page: a TOMBSTONE's `target.source`, which `rebaseCanvasId` deliberately does not
+//    re-mint (its contract is a provable match against this exhibit's own canvases, never a fuzzy
+//    one). See ledgers/PUBLISH-test-republish-2026-07-27.md.
+//
+//    So the label is narrowed rather than the scan widened, and that is the substantive choice:
+//    widening it would report those tombstones as leaks, which they are not — they are authored
+//    history, correctly preserved verbatim. A wider scan therefore needs an allowlist for
+//    `target.source` on tombstoned records before it means anything, and an allowlist is a claim
+//    about which absolute URLs are legitimate that nobody has made yet. Until someone does, a check
+//    that states its real scope is worth more than one that overstates it: see
+//    .claude/rules/post-review-fixes-are-unreviewed.md on a probe answering a narrower question than
+//    its name implies, and reporting the narrow answer with the confidence of the broad one.
 // ---------------------------------------------------------------------------
 const NEEDLE = "archie.demo";
 let demoHits = 0;
@@ -312,13 +329,13 @@ for (const path of demoScanFiles) {
   const n = countOccurrences(textRead.text, NEEDLE);
   if (n > 0) {
     demoHits += n;
-    check(false, `archie.demo scan: ${path}`, `${n} occurrence(s) of "${NEEDLE}" — the authoring namespace leaked into the published tree`);
+    check(false, `archie.demo scan: ${path}`, `${n} occurrence(s) of "${NEEDLE}" — the authoring namespace leaked into an absolute-URL surface`);
   }
 }
 check(
   demoHits === 0,
-  "archie.demo scan: no occurrences anywhere in the served tree",
-  `scanned ${demoScanFiles.length} file(s), ${demoHits} total occurrence(s)`,
+  "archie.demo scan: the authoring namespace is absent from the four ABSOLUTE-URL surfaces (canonical, og:url, JSON-LD url, IIIF canvas ids)",
+  `scanned ${demoScanFiles.length} file(s) — the marker, the gallery, and each exhibit's manifest.json + index.html plus the landing page; ${demoHits} total occurrence(s). NOT a whole-tree scan: annotation pages are deliberately out of scope (a tombstone's target.source keeps its authored origin verbatim)`,
 );
 
 // ---------------------------------------------------------------------------
