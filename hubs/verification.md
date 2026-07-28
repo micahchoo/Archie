@@ -29,7 +29,7 @@ claim from the table below before reaching for a test framework at random.
 | publish got faster | `scripts/perf/publishrun.mjs` (end-to-end, real Chromium, no `--check`/budget — read the printed numbers) | a primitive bench misleads: tiling alone measured 19–37x, end-to-end 1.9–4.7x — [[perf-measure-the-flow]] |
 | reader arrival payload in budget | `scripts/perf/readerrun.mjs --check` vs `reader-budget.json` | raw transferred JS bytes on arrival, per route |
 | shipped workers actually boot | `scripts/perf/worker-smoke.mjs` (CI: perf-ratchets) | both call sites fall back to serial/inline SILENTLY on failure — only `bakeFallbackCount()` witnesses it — [[perf-measure-the-flow]], [[tauri-csp]] |
-| spine hot-path perf didn't regress | `head-index.perf.test.ts` (ratios vs a full-log pass) | a reverted `deleteNote` scan once passed a loose ms-threshold gate — [[perf-measure-the-flow]] |
+| spine hot-path perf didn't regress | `head-index.perf.test.ts` (ratios vs a full-log pass) | a reverted `deleteNote` scan once passed a loose ratio-threshold gate ("a fraction of a full projection" was too generous) — [[perf-measure-the-flow]] |
 | desktop fs backend keeps browser-parity guarantees | `fs/conformance.ts` + `tauri.test.ts` targeted hardening tests | conformance alone proves observable behavior only — stays green whether or not `close()` is atomic — [[tauri-fs-seam]] |
 | an injectable-fetch seam survives a real browser | brand-checking stub tests (`installBrandCheckedFetch`, `http.test.ts`/`load.test.ts`) | plain arrow-fn stubs are receiver-insensitive, can't catch `Illegal invocation` — [[bound-fetch-defaults]] |
 | a CSS-text import actually carries the tokens | `tokens.test.ts` content assertion | vitest silently resolved the id to `""` while the shipped bundle was correct — [[vitest-css-id-empty-string]] |
@@ -55,10 +55,10 @@ claim from the table below before reaching for a test framework at random.
 - Archie-676f — scale-check made `workflow_dispatch`-only by design: a multi-minute real-ingest drill must never gate an ordinary PR.
 
 ## Evidence
-- `.github/workflows/checks.yml` — enumerates the live gate set: typecheck, unit-scripts, test, astro-check, svelte-check, gh-pages-build, archie-viewer-artifact, embed-smoke, perf-ratchets, e2e.
+- `.github/workflows/checks.yml` — enumerates the live gate set: typecheck, unit-scripts, doclint, test, astro-check, svelte-check, gh-pages-build, archie-viewer-artifact, embed-smoke, perf-ratchets, e2e.
 - `recipes/smoke.mjs` header — documents its own two silent-failure preconditions (unbuilt fixtures, stale root `dist/`) and one still-unattributed flake (2026-07-26).
 
 ## Open & hazards
-- doclint wired into CI 2026-07-27 (job `doclint`). All 10 checks proven red-green same day; the allowlist (scripts/doclint-allow.json) carries ticket ids for its two deliberate deferrals (Archie-e149, Archie-1f60).
+- doclint wired into CI 2026-07-27 (job `doclint`). All 10 checks proven red-green same day; the allowlist (scripts/doclint-allow.json) carried ticket ids for its deliberate deferrals; both (Archie-e149 ledger migration, Archie-1f60 accretion rewrite) resolved later the same day and their allowlist entries are empty again.
 - Red-green discipline: inject the defect, confirm it fails for the reason you intended (not a precondition failure), then confirm clean — never trust an assertion you haven't watched fail.
 - Before citing a count or "N/N" figure from any of the above gates, reconcile it against a number the tool itself printed — see [[post-review-fixes-are-unreviewed]]'s counting traps.
