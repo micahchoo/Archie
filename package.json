@@ -15,10 +15,13 @@
     "bundle:check": "node scripts/bundle-size.mjs --check",
     "capabilities:check": "node scripts/check-tauri-capabilities.mjs",
     "sync-dist": "node scripts/sync-dist.mjs",
-    "sync-dist:check": "node scripts/sync-dist.mjs --check"
+    "sync-dist:check": "node scripts/sync-dist.mjs --check",
+    "a11y:check": "node scripts/a11y-check.mjs --check",
+    "a11y:baseline": "node scripts/a11y-check.mjs --update"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.3",
+    "axe-core": "^4.12.1",
     "http-proxy": "^1.18.1",
     "playwright": "^1.60.0",
     "typescript": "^5.6.3",

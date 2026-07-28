@@ -29,7 +29,8 @@
     "isomorphic-dompurify": "^3.18.0",
     "minisearch": "^7.2.0",
     "openseadragon": "^5.0.1",
-    "snarkdown": "^2.0.0"
+    "snarkdown": "^2.0.0",
+    "wavesurfer.js": "^7.12.7"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",

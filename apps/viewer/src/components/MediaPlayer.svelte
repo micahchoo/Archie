@@ -23,11 +23,12 @@
   //     `PrimaryWindow.jsx:46-70`, on the canvas alone.
   // So the note surface, the sheet, the lightbox and the rich prose renderer are shared components
   // here, not re-implementations: ONE note renderer (Archie-c982/dbbc), reached from a temporal spine.
-  import { parseMediaFragment, activeNoteIndex, transcriptTextOf, splitNoteMedia, stripMarkdown, tagsOfAnnotation as tagsOf, readingIdOf, geoOf, geoCenter, formatLngLat, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
+  import { parseMediaFragment, activeNoteIndex, transcriptTextOf, splitNoteMedia, metadataRows, stripMarkdown, tagsOfAnnotation as tagsOf, readingIdOf, geoOf, geoCenter, formatLngLat, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
   import ResizeDivider from "@render/svelte/ResizeDivider.svelte";
   import { clampSeekStart } from "../av-landing.js";
   import { loadAsideWidth, saveAside, type AsideState } from "../aside-persistence.js";
   import Credit from "./Credit.svelte";
+  import MetadataRun from "./MetadataRun.svelte";
   import NoteLightbox from "./NoteLightbox.svelte";
   import NotePopup from "./NotePopup.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
@@ -38,6 +39,7 @@
     object,
     annotations = [],
     rights,
+    exhibitRights,
     initialSeek,
     onlocus,
     onback,
@@ -55,6 +57,9 @@
     annotations?: W3CAnnotation[];
     /** The recording's credit/license (Q5) — AV is MUST-display too; shown by the title. */
     rights?: RightsFields;
+    /** The EXHIBIT's credit/license/metadata (Archie-36e6) — a single-object AV exhibit routes straight
+     *  here, so this is the only place its MUST-display requiredStatement can appear. */
+    exhibitRights?: RightsFields;
     /** Deep-link time offset (#/<slug>/a/<id>?t=…, Phase 3 / 4.7): on `loadedmetadata` the playhead seeks
      *  to this clamped offset PAUSED — section-142: landing seeks but must NOT auto-play, so this does NOT
      *  go through `seekTo` (which couples play()). Garbage / out-of-range → head (0). */
@@ -110,6 +115,9 @@
     /** Per-layer note count on THIS recording (null = base/General). Omitted ⇒ no counts render. */
     readingCount?: (id: string | null) => number;
   } = $props();
+
+  // The EXHIBIT-level metadata run, shown beside the credit stack (Archie-36e6).
+  const exhibitMeta = $derived(metadataRows(exhibitRights));
 
   const objectNav = $derived(
     !!siblings && siblings.length > 1 && !!currentId && !!onstep && !!onoverview,
@@ -282,6 +290,58 @@
   let asideWidth = $state<number | null>(loadAsideWidth(ASIDE_W_KEY));
 
   const isVideo = $derived(object.mediaType === "video");
+
+  // V50 (Archie-7b86): the audio object used to be an empty cream field with a browser-default
+  // scrubber. WaveSurfer draws the recording's shape and makes it click-to-seek.
+  //
+  // ATTACHED, NOT OWNING: `media: mediaEl` binds it to the <audio> element that is already here, so
+  // there is ONE media element and ONE clock — the existing `ontimeupdate`/`onplay` wiring, the
+  // transcript's `currentTime`, and the temporal map all keep working untouched. Letting WaveSurfer
+  // create its own element would have given the surface two clocks to disagree about.
+  //
+  // The import is dynamic on purpose: this component is already lazy, and a reader who never opens
+  // an AUDIO object should not pay for a waveform library. (It is still declared in the viewer's
+  // optimizeDeps.include — a lazy import is exactly the case that rule covers.)
+  //
+  // Failure is silent by design. A waveform is an enhancement over a working native player; if the
+  // decode fails or the library will not load, the reader still has the recording and its controls.
+  let waveformEl = $state<HTMLDivElement | null>(null);
+  let waveReady = $state(false);
+  $effect(() => {
+    if (isVideo || !waveformEl || !mediaEl || mediaError) return;
+    const container = waveformEl;
+    const media = mediaEl;
+    let ws: { destroy: () => void } | null = null;
+    let disposed = false;
+    void (async () => {
+      try {
+        const { default: WaveSurfer } = await import("wavesurfer.js");
+        if (disposed) return;
+        const instance = WaveSurfer.create({
+          container,
+          media,
+          height: 96,
+          // The reader's canvas palette, not Studio's editing one: quiet until played.
+          waveColor: "rgba(247,244,236,0.28)",
+          progressColor: "#3A8C5D",
+          cursorColor: "#846829",
+          cursorWidth: 2,
+          barWidth: 2,
+          barGap: 1,
+          barRadius: 2,
+          normalize: true,
+        });
+        ws = instance;
+        instance.on("ready", () => { if (!disposed) waveReady = true; });
+        instance.on("error", () => { if (!disposed) waveReady = false; });
+      } catch (e) {
+        console.warn("archie: the waveform could not be drawn; the player is unaffected", e);
+      }
+    })();
+    return () => { disposed = true; waveReady = false; try { ws?.destroy(); } catch { /* teardown races a failed init */ } };
+  });
+
+
   // Travel the recording to a moment and play from there — the one motion both read surfaces share
   // (a transcript line, or a mark on the strip). Clamped so a stray click on the track can't overrun.
   function seekTo(t: number) {
@@ -397,6 +457,12 @@
         <div class="audio-stage">
           <span class="now">Now playing</span>
           <h1>{object.label}</h1>
+          <!-- V50: the waveform. It ATTACHES to the <audio> below (WaveSurfer's `media` option) rather
+               than owning playback — one media element, one clock, and the native controls keep their
+               keyboard and assistive-tech behaviour. Purely additive: if it never loads, the stage is
+               exactly what it was. aria-hidden because it duplicates the scrubber's information in a
+               form a screen reader cannot use; the <audio> element remains the accessible control. -->
+          <div class="waveform" bind:this={waveformEl} aria-hidden="true" class:pending={!waveReady}></div>
           <audio bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} onloadedmetadata={onMeta} onplay={() => (playing = true)} onpause={() => (playing = false)} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></audio>
         </div>
       {/if}
@@ -479,7 +545,8 @@
     <p class="eyebrow">Transcript · {cues.length} {cues.length === 1 ? "line" : "lines"}</p>
     {#if isVideo}<h1 class="vid-label">{object.label}</h1>{/if}
     <p class="hint">Select any line to jump there in the recording and open its note. As it plays, the line being spoken lights up.</p>
-    <p class="credit-row"><Credit {rights} tone="paper" /></p>
+    <p class="credit-row"><Credit {rights} {exhibitRights} objectLevelLabel="This recording" tone="paper" /></p>
+    <MetadataRun rows={exhibitMeta} tone="paper" />
     {#if cues.length === 0}
       <p class="empty">No transcript for this recording.</p>
     {:else}
@@ -640,6 +707,10 @@
   .audio-stage .now { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-canvas-muted); }
   .audio-stage h1 { font-family: var(--font-display); font-weight: 300; font-size: 2.4rem; line-height: 1.15; margin: 0; color: var(--ink-canvas-primary); text-shadow: var(--shadow-text-haze); }
   .audio-stage audio { width: 100%; margin-top: var(--space-2); }
+  /* Reserved height whether or not the waveform draws, so the stage does not jump when it arrives —
+     and so a failed load leaves a calm gap rather than a collapse. */
+  .waveform { width: 100%; min-height: 96px; }
+  .waveform.pending { opacity: 0; }
   /* Broken-media fallback (empty/error gate): a missing/undecodable recording, on warm paper. */
   .media-failed { max-width: 32rem; font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-canvas-secondary); text-align: center; padding: var(--space-6); background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); }
   /* V29: a notice, not a failure — the recording still plays, it just has no picture. Sits above the

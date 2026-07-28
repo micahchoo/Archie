@@ -13,7 +13,7 @@
 
   let { readings, palette, onchange, onadd }: {
     readings: Reading[];
-    palette: string[];
+    palette: readonly string[]; // readonly: the swatch list is a shared constant, never mutated here
     onchange: (next: Reading[]) => void;
     /** A newly-added reading's id — the caller may make it the active filter. */
     onadd?: (id: string) => void;

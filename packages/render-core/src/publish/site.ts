@@ -26,13 +26,14 @@ import type { DziTileSource } from "../iiif/resolve.js";
 import type { PortableExhibit } from "./portable.js"; // type-only (erased) — the readings superset; type-cycle is harmless
 import { readExhibitTree, fsJsonSource } from "./read.js";
 import { libraryPageHtml, exhibitPageHtml, sitemapTxt, sitemapXml } from "./static-pages.js";
+import { citationCff } from "../cite/citation.js";
 import { readAnnotations } from "../spine/persist.js";
 import { writeStructure } from "../spine/structure-persist.js";
 import type { SectionLog } from "../spine/structure.js";
 import { asExhibitId, asLibraryId } from "../wadm/brand.js";
 import { toHistory } from "../spine/serialize.js";
 import { projectHeads } from "../spine/heads.js";
-import { headsPageFromRecords, headsPagesByReading, citationIdMap, targetSource } from "../spine/serialize.js";
+import { headsPageFromRecords, headsPagesByReading, citationIdMap, targetSource, recordsByLogicalId } from "../spine/serialize.js";
 import { stamp } from "../migrate/migrate.js";
 import { ARCHIE_LIBRARY_MARKER } from "./marker.js";
 import { mapLimit, PUBLISH_CONCURRENCY } from "../concurrency.js";
@@ -635,12 +636,31 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     // archie:-link rewrite the JSON heads pages get; the throwaway sink keeps the brokenLinks
     // advisory counts identical to the JSON path (canvas-matched refs already reported above).
     const htmlRecords = heads.map((h) => rewriteHeadBodies(h, exhibit.slug, rw, []));
-    await writeText(exDir, "index.html", exhibitPageHtml(exhibit, htmlRecords, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.renderBody !== undefined ? { renderBody: opts.renderBody } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
+    // `manifestExhibit`, NOT `exhibit` (Archie-5a15). The static page emits schema.org ImageObject
+    // `contentUrl` and resolves its og:image from `objects[].source`; the working model still holds
+    // the pre-publish path, so the shipped page advertised `/assets/01KX….JPG` — a URL that exists
+    // only in the author's OPFS. `manifestExhibit` is the same exhibit with the published asset
+    // triple (source / tileSource / thumbnail) already substituted, which is exactly what the
+    // manifest one line above is built from; the page and the manifest now agree by construction.
+    // Its `sections` also carry the resolved `archie:` cites, so section prose on the archival page
+    // stops shipping raw refs. Everything else the page reads (title, summary, rights,
+    // requiredStatement, readings, object labels and ids) is copied through untouched.
+    // The note biography (Archie-a1d4): the SAME grouping the history sidecar above was built from,
+    // so a rendered "v2" and the citation id minted for v2 cannot disagree.
+    const historyByLogical = recordsByLogicalId(log);
+    await writeText(exDir, "index.html", exhibitPageHtml(manifestExhibit, htmlRecords, { baseUrl, history: historyByLogical, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.renderBody !== undefined ? { renderBody: opts.renderBody } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
   });
   // Library landing + sitemap (ADR-0014): the human/crawler entry the data repo never had.
   await writeText(root, "index.html", libraryPageHtml(library, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
   // Crawler sitemaps: keep sitemap.txt (the simple, already-cited surface) AND add the standard
   // sitemap.xml (sitemaps.org 0.9) so search engines ingest it directly with <lastmod> (Q-8).
+  // CITATION.cff (Archie-321c): the file GitHub's "Cite this repository" widget reads, and the one a
+  // data-repo depositor is asked for. Written ONLY when the library records a creator — CFF 1.2.0
+  // makes `authors` required, so a creator-less library cannot produce a VALID file, and an invalid
+  // one is worse than none: it teaches every downstream tool a wrong fact with the repo's authority
+  // behind it. `citationCff` returns undefined in that case; no file, no stub.
+  const cff = citationCff({ title: library.title ?? "Library", url: baseUrl, rights: library, id: String(library.id), type: "webpage" });
+  if (cff) await writeText(root, "CITATION.cff", cff);
   await writeText(root, "sitemap.txt", sitemapTxt(library, baseUrl));
   await writeText(root, "sitemap.xml", sitemapXml(library, baseUrl, opts.publishedAt));
   // Library-level image index (ADR-0023, spike-0004): a cheap always-rewritten projection like

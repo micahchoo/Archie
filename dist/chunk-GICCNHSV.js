@@ -1,4 +1,4 @@
-import{N as S,P as L,u as A}from"./chunk-WWCTCNKS.js";function I(n,t){if(!t)return{html:"",media:[]};let o=n.find(a=>String(a.id)===t);if(!o)return{html:"",media:[]};let{media:d,text:l}=S(A(o));return{html:L(l),media:d}}var P=`
+import{N as S,P as L,u as A}from"./chunk-VILAHAFH.js";function I(n,t){if(!t)return{html:"",media:[]};let o=n.find(a=>String(a.id)===t);if(!o)return{html:"",media:[]};let{media:d,text:l}=S(A(o));return{html:L(l),media:d}}var P=`
   .archie-note-card {
     max-height: 100%; box-sizing: border-box; overflow: auto; padding: var(--space-4) var(--space-5);
     background: var(--surface-paper); color: var(--ink-paper-primary);

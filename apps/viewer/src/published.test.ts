@@ -6,7 +6,8 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ZipFilesystem, publishLibrary, appendNew, asClientId, asExhibitId, asLibraryId, asObjectId, type Library, type AnnotationLog, type ExhibitsJson } from "@render/core";
 import {
   openPortableLibrary, closePortableLibrary, isPortable, loadGallery, loadPublishedExhibit,
-  modeFromProbe, probeViewerMode, bootErrorMessage, openLibraryFromFile, openLibraryFromSrc, mergeGalleries, toServingOrigin, publishedAssetUrl } from "./published.js";
+  modeFromProbe, probeViewerMode, bootErrorMessage, openLibraryFromFile, openLibraryFromSrc, mergeGalleries, toServingOrigin, publishedAssetUrl,
+  setHostedTreeBase, hostedTreeBase } from "./published.js";
 import { BASE as CANONICAL_BASE } from "./published-base.js";
 
 // Hosted rebase (ADR-0010 portable read seam, tend Issue 16): the published manifest bakes asset URLs
@@ -267,5 +268,77 @@ describe("publishedAssetUrl — tree-relative refs need the serving base (V7)", 
     expect(publishedAssetUrl(null)).toBeUndefined();
     expect(publishedAssetUrl("")).toBeUndefined();
     expect(publishedAssetUrl("   ")).toBeUndefined();
+  });
+});
+
+// Archie-6d85 — `?src=` used to accept zip BYTES only, and the hosted tree read was pinned to this
+// deploy's own /published. So no URL existed that opened somebody else's published tree here. The
+// dispatch ported from the embed (archie-viewer/src/load.ts) makes a non-.zip src a TREE BASE.
+describe("?src= opens a published TREE, not only a zip (Archie-6d85)", () => {
+  const TREE = "https://elsewhere.example/lib";
+  /** A tree host: archie.json + exhibits.json under `base`, 404 for anything else. */
+  function serveTree(base: string, opts: { marker?: unknown; exhibits?: unknown } = {}) {
+    return vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      const path = url.startsWith(`${base}/`) ? url.slice(base.length + 1).split("?")[0] : null;
+      const body = path === "archie.json" ? (opts.marker ?? { format: "archie-library", version: 1 })
+        : path === "exhibits.json" ? (opts.exhibits ?? { library: { title: "Foreign" }, exhibits: [] })
+        : null;
+      if (body === null) return { ok: false, status: 404, headers: { get: () => null } } as unknown as Response;
+      return { ok: true, status: 200, headers: { get: () => null }, json: async () => body } as unknown as Response;
+    });
+  }
+
+  afterEach(() => { setHostedTreeBase(null); closePortableLibrary(); });
+
+  it("a non-.zip src repoints the hosted reader at that tree — and does NOT enter portable mode", async () => {
+    vi.stubGlobal("fetch", serveTree(TREE));
+    await openLibraryFromSrc(TREE);
+    expect(hostedTreeBase()).toBe(TREE);
+    expect(isPortable()).toBe(false); // a tree is read lazily over HTTP, not pulled down as one payload
+    expect((await loadGallery()).library.title).toBe("Foreign");
+  });
+
+  it("a trailing slash is normalised, so the tree's own links work either way", async () => {
+    vi.stubGlobal("fetch", serveTree(TREE));
+    await openLibraryFromSrc(`${TREE}/`);
+    expect(hostedTreeBase()).toBe(TREE);
+  });
+
+  it("a URL that is merely a WEBSITE fails, and does not strand the viewer on a dead tree", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 404, headers: { get: () => null } } as unknown as Response)));
+    await expect(openLibraryFromSrc("https://example.com/blog")).rejects.toThrow();
+    // The base must be restored — otherwise every subsequent hosted read would 404 against the
+    // failed URL and the viewer would look permanently broken rather than having refused one src.
+    expect(hostedTreeBase()).not.toBe("https://example.com/blog");
+  });
+
+  it("a WRONG-SCHEMA marker is refused (the ADR-0020 gate applies to a foreign tree too)", async () => {
+    vi.stubGlobal("fetch", serveTree(TREE, { marker: { format: "not-archie", version: 1 } }));
+    await expect(openLibraryFromSrc(TREE)).rejects.toThrow();
+    expect(hostedTreeBase()).not.toBe(TREE);
+  });
+
+  it("a .zip-LESS url that actually serves zip bytes still opens as a zip (the embed's fallback)", async () => {
+    const bytes = await buildArchiveBytes();
+    // No archie.json, no exhibits.json — the tree read fails; the body is a real zip.
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true, status: 200, headers: { get: () => String(bytes.byteLength) },
+      json: async () => { throw new Error("not json"); },
+      arrayBuffer: async () => bytes.slice().buffer,
+    } as unknown as Response)));
+    await openLibraryFromSrc("https://h/library-download");
+    expect(isPortable()).toBe(true);
+    expect((await loadGallery()).exhibits.map((e) => e.slug)).toContain(SLUG);
+  });
+
+  it("a .zip src is unaffected — it still opens as bytes, in portable mode", async () => {
+    const bytes = await buildArchiveBytes();
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true, status: 200, headers: { get: () => String(bytes.byteLength) }, arrayBuffer: async () => bytes.slice().buffer,
+    } as unknown as Response)));
+    await openLibraryFromSrc("https://h/x.archie.zip");
+    expect(isPortable()).toBe(true);
+    expect(hostedTreeBase()).not.toBe("https://h/x.archie.zip");
   });
 });

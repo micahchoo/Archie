@@ -9,6 +9,7 @@
 
 import type { Library, Exhibit, RightsFields } from "../model/model.js";
 import type { AnnotationRecord } from "../wadm/types.js";
+import { cslItemFor, citationText, apaText, bibtexText, type CslItem } from "../cite/citation.js";
 import { recordToAnnotation } from "../spine/serialize.js";
 import { targetSource } from "../spine/serialize.js";
 import { commentOfAnnotation, tagsOfAnnotation } from "../query/published.js";
@@ -24,6 +25,15 @@ export interface StaticPageOptions {
   /** The artifact's true publish time (ISO 8601). Threaded into JSON-LD `datePublished`/`dateModified`
    *  and the sitemap `<lastmod>`. Absent = those fields are omitted (the honest default). */
   publishedAt?: string;
+  /**
+   * A note's BIOGRAPHY: logicalId → every deduped record for it, oldest first (Archie-a1d4). Exactly
+   * what `recordsByLogicalId` returns and what the JSON history sidecar is built from — one grouping,
+   * so the rendered version numbers cannot drift from the citation ids.
+   *
+   * Absent = no version block, and the page is byte-identical to before. That matters: a publish
+   * without a log, and every pre-existing caller, must keep their current output.
+   */
+  history?: ReadonlyMap<string, readonly AnnotationRecord[]>;
 }
 
 /** The SEO head projection a page carries (Q-8): Open Graph + Twitter card + a canonical link + one
@@ -31,22 +41,70 @@ export interface StaticPageOptions {
 export interface PageMeta {
   title: string;
   description?: string;
-  /** ABSOLUTE og:image URL. */
-  ogImage: string;
+  /** ABSOLUTE og:image URL. OMITTED when the tree carries no image to point at — advertising a card
+   *  that was never written is worse than carrying no card (Archie-5a15: both static pages named
+   *  `og-card.png`, nothing in the repo ever wrote one, and it 404'd on the live site). */
+  ogImage?: string;
   /** ABSOLUTE canonical URL of this page. */
   canonical: string;
   /** og:type — "article" for an exhibit, "website" for the library landing. */
   ogType: "article" | "website";
   /** The schema.org object serialized into `<script type="application/ld+json">`. */
   jsonLd: Record<string, unknown>;
+  /** The CSL item this page is citable as (Archie-321c) — projected to `citation_*` + `DC.*` tags,
+   *  which is what Zotero's and Google Scholar's translators actually read. Absent = no tags. */
+  csl?: CslItem;
 }
 
-/** og:image for an exhibit: the cover if absolute, else the first object's absolute source, else the
- *  brand card at the publish base. Mirrors apps/viewer ogImageFor but works from the baseUrl render-core
- *  already holds (the viewer module reads archie.config.json — not importable cleanly into core). */
-function ogImageForExhibit(exhibit: Exhibit, baseUrl: string): string {
-  const abs = (u: string | undefined): string | undefined => (u && /^https?:\/\//.test(u) ? u : undefined);
-  return abs(exhibit.cover) ?? abs(exhibit.objects[0]?.source) ?? `${baseUrl}og-card.png`;
+/**
+ * The machine-citable head block (Archie-321c): Google Scholar's `citation_*` names plus the
+ * Dublin Core `DC.*` set. These are what a reference manager's page translator reads — Zotero's
+ * generic translator looks for exactly these, and finds neither OpenGraph nor schema.org JSON-LD
+ * sufficient for an item type + author + date.
+ *
+ * VALIDATE-AND-OMIT, per the decision: every tag is emitted only when its source field exists. In
+ * particular an unknown author degrades to OMITTED, never to "Anonymous" — a fabricated author is a
+ * false attribution carried into somebody's bibliography, which is worse than an incomplete record
+ * the citing scholar can see is incomplete.
+ */
+function citationTags(item: CslItem | undefined): string[] {
+  if (!item) return [];
+  const tag = (name: string, content: string): string => `<meta name="${esc(name)}" content="${esc(content)}">`;
+  const out: string[] = [tag("citation_title", item.title), tag("DC.title", item.title)];
+  for (const a of item.author ?? []) {
+    const full = a.given ? `${a.family}, ${a.given}` : a.family;
+    out.push(tag("citation_author", full), tag("DC.creator", full));
+  }
+  const year = item.issued?.["date-parts"]?.[0]?.[0];
+  if (year !== undefined) out.push(tag("citation_publication_date", String(year)), tag("DC.date", String(year)));
+  if (item.publisher) out.push(tag("citation_publisher", item.publisher), tag("DC.publisher", item.publisher));
+  if (item["container-title"]) out.push(tag("citation_inbook_title", item["container-title"]));
+  if (item.URL) out.push(tag("citation_public_url", item.URL), tag("DC.identifier", item.URL));
+  if (item.rights) out.push(tag("DC.rights", item.rights));
+  return out;
+}
+
+const abs = (u: string | undefined): string | undefined => (u && /^https?:\/\//.test(u) ? u : undefined);
+
+/** og:image for an exhibit: the cover if absolute, else the first object's absolute source, else NONE.
+ *  Mirrors apps/viewer ogImageFor but works from the baseUrl render-core already holds (the viewer
+ *  module reads archie.config.json — not importable cleanly into core).
+ *
+ *  There is deliberately no fallback. The old one named `${baseUrl}og-card.png`, which no code path in
+ *  this repo has ever written (Archie-5a15) — so every card-less exhibit advertised a 404 to every
+ *  crawler and social unfurler that asked. Callers must be handed the PUBLISHED object projection for
+ *  this to resolve: a working `/assets/…` path is not absolute and falls through to undefined. */
+function ogImageForExhibit(exhibit: Exhibit, _baseUrl: string): string | undefined {
+  return abs(exhibit.cover) ?? abs(exhibit.objects[0]?.source);
+}
+
+/** og:image for the library landing: the first listed exhibit that offers one. Same no-fallback rule. */
+function ogImageForLibrary(library: Library): string | undefined {
+  for (const e of library.exhibits) {
+    const img = abs(e.cover) ?? abs(e.objects[0]?.source);
+    if (img) return img;
+  }
+  return undefined;
 }
 
 const esc = (s: string): string =>
@@ -59,7 +117,14 @@ export const escapeBody = (md: string): string =>
 // One shared, deliberately minimal chrome: readable column, no script, archival tone.
 // Verdant Clearing palette (design/design.md v0.4): parchment ground, moss ink, hunter accent, amber
 // reading-label. System sans echoes LARAZ without shipping a webfont on this archival surface.
-const STYLE = `body{max-width:42rem;margin:2rem auto;padding:0 1rem;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55;color:#1A3C23;background:#F7F4EC}h1,h2{line-height:1.2}article{margin:1.5rem 0;padding:0.75rem 1rem;border-left:3px solid #2D5F3A;background:#EEF1E6}article .reading{font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;color:#9A7B39}article .tags,footer,.credit{color:#6B7D6A;font-size:0.9rem}a{color:#2D5F3A}dl.meta{margin:0.75rem 0;font-size:0.9rem}dl.meta dt{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;color:#6B7D6A}dl.meta dd{margin:0 0 0.5rem}`;
+// PALETTE NOTE (Archie-ea57): the muted text colour is #5C6B5B and the reading eyebrow #846829, not
+// the design palette's #6B7D6A / #9A7B39. Measured with axe over the built pages, those two failed
+// WCAG 2.1 AA contrast on this ground at 4.01:1 and 3.63:1 against the 4.5:1 requirement for normal
+// text — 676 violating nodes across the 8 published pages, all of them these two tokens. The
+// replacements clear AA on BOTH grounds this page uses (paper #F7F4EC: 5.15 and 4.78; the article
+// tint #EEF1E6: 4.95 and 4.60). Keep any future value here above 4.5:1 on #EEF1E6, the darker of
+// the two — `node scripts/a11y-check.mjs` is the gate.
+const STYLE = `body{max-width:42rem;margin:2rem auto;padding:0 1rem;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55;color:#1A3C23;background:#F7F4EC}h1,h2{line-height:1.2}article{margin:1.5rem 0;padding:0.75rem 1rem;border-left:3px solid #2D5F3A;background:#EEF1E6}article .reading{font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;color:#846829}article .tags,footer,.credit{color:#5C6B5B;font-size:0.9rem}a{color:#2D5F3A}dl.meta{margin:0.75rem 0;font-size:0.9rem}dl.meta dt{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;color:#5C6B5B}dl.meta dd{margin:0 0 0.5rem}details.versions{margin-top:0.5rem;font-size:0.85rem;color:#5C6B5B}details.versions summary{cursor:pointer}details.versions ol{margin:0.35rem 0 0;padding-left:1.25rem}details.cite{margin:1.5rem 0;font-size:0.9rem}details.cite summary{cursor:pointer}details.cite pre{white-space:pre-wrap;word-break:break-word;margin:0}`;
 
 /** The SEO head tags (Q-8): Open Graph + Twitter card + canonical + JSON-LD. Rendered only when a
  *  page supplies `meta`; the bare shell (no meta) keeps the minimal charset/viewport/title head. */
@@ -71,13 +136,16 @@ function metaTags(meta: PageMeta): string {
     `<meta property="og:title" content="${esc(meta.title)}">`,
     ...(meta.description ? [`<meta property="og:description" content="${esc(meta.description)}">`] : []),
     `<meta property="og:url" content="${esc(meta.canonical)}">`,
-    `<meta property="og:image" content="${esc(meta.ogImage)}">`,
-    `<meta name="twitter:card" content="summary_large_image">`,
+    ...(meta.ogImage ? [`<meta property="og:image" content="${esc(meta.ogImage)}">`] : []),
+    // `summary_large_image` REQUIRES an image; without one Twitter/X renders nothing at all, so the
+    // card type degrades with the image rather than advertising a large card over a blank.
+    `<meta name="twitter:card" content="${meta.ogImage ? "summary_large_image" : "summary"}">`,
     `<meta name="twitter:title" content="${esc(meta.title)}">`,
     ...(meta.description ? [`<meta name="twitter:description" content="${esc(meta.description)}">`] : []),
-    `<meta name="twitter:image" content="${esc(meta.ogImage)}">`,
+    ...(meta.ogImage ? [`<meta name="twitter:image" content="${esc(meta.ogImage)}">`] : []),
     // JSON.stringify already escapes the JSON; guard the one HTML-significant sequence that can break
     // out of a <script> element (`</` → `<\/`).
+    ...citationTags(meta.csl),
     `<script type="application/ld+json">${JSON.stringify(meta.jsonLd).replace(/<\//g, "<\\/")}</script>`,
   ];
   return lines.join("\n");
@@ -208,17 +276,41 @@ export function libraryPageHtml(library: Library, opts: StaticPageOptions): stri
       ...(e.summary ? { description: e.summary } : {}),
     })),
   };
+  const csl = cslItemFor({ title, url: `${opts.baseUrl}index.html`, rights: library, id: String(library.id), type: "webpage" });
   const meta: PageMeta = {
     title,
     ...(library.summary ? { description: library.summary } : {}),
-    ogImage: `${opts.baseUrl}og-card.png`,
+    ...(ogImageForLibrary(library) ? { ogImage: ogImageForLibrary(library)! } : {}),
     canonical: `${opts.baseUrl}index.html`,
     ogType: "website",
     jsonLd,
+    csl,
   };
   return pageShell(title, parts.join("\n"), meta);
 }
 
+
+/**
+ * The "Cite this" block (Archie-321c). Three renderings of ONE CSL item, so they cannot disagree:
+ * APA and a plain Chicago-ish line for a reader writing prose, and BibTeX for a reader with a
+ * bibliography file. Collapsed in a `<details>` — zero JS, like the version block — because a
+ * citation apparatus is a tool you reach for, not something that should push the exhibit down.
+ *
+ * The CSL-JSON itself is deliberately NOT printed: it is the interchange format, and the `citation_*`
+ * head tags already hand it to the reference managers that consume interchange.
+ */
+function citeBlock(item: CslItem): string {
+  return [
+    `<details class="cite">`,
+    `<summary>Cite this exhibit</summary>`,
+    `<dl class="meta">`,
+    `<dt>APA</dt><dd>${esc(apaText(item))}</dd>`,
+    `<dt>Chicago</dt><dd>${esc(citationText(item))}</dd>`,
+    `<dt>BibTeX</dt><dd><pre>${esc(bibtexText(item))}</pre></dd>`,
+    `</dl>`,
+    `</details>`,
+  ].join("\n");
+}
 /**
  * The per-exhibit archival page. `records` = the FULL heads projection (all readings — a
  * reading-scoped citation must resolve), with in-body `archie:` refs already rewritten to display
@@ -232,6 +324,44 @@ export function exhibitPageHtml(exhibit: Exhibit, records: AnnotationRecord[], o
     rid === undefined ? undefined : (readings.find((r) => r.id === rid)?.name ?? rid);
   const canvasIRI = (objId: string) => `${opts.baseUrl}${exhibit.slug}/canvas/${objId}`;
 
+  /**
+   * The version block: for a note past v1, a COLLAPSED list of its prior versions with a durable
+   * anchor each. Strictly additive to the frozen `#note-<logicalId>` grammar (decision P-1) — the
+   * article keeps its id and its existing children; this appends inside it, so every existing
+   * citation still resolves to the same element.
+   *
+   * `<details>` because it must be zero-JS: the disclosure is native, so a reader with scripting off
+   * (and a crawler) still reaches the content. Anchors are `note-<lid>@v<n>`; `@` is legal in a
+   * fragment and cannot collide with a logicalId, which is ULID-shaped.
+   *
+   * Prior versions carry the biography — when, and by whom when known — NOT their bodies. A page that
+   * reprinted every superseded body would bury the current reading under its own history, and the
+   * full record is one dereference away in the history sidecar this page's tree already ships.
+   */
+  const versionsHtml = (rec: AnnotationRecord): string => {
+    const all = opts.history?.get(rec.logicalId);
+    if (!all) return "";
+    const prior = all.filter((r) => r.version < rec.version);
+    if (prior.length === 0) return "";
+    const rows = prior.map((r) => {
+      const when = r.modifiedAt ? `<time datetime="${esc(r.modifiedAt)}">${esc(r.modifiedAt)}</time>` : "";
+      // "when available" is load-bearing: a solo library has no editor identity, and printing an
+      // empty by-line would read as a missing attribution rather than an absent concept.
+      const who = r.lastEditor ? `<span class="editor">${esc(r.lastEditor)}</span>` : "";
+      const sep = when && who ? " · " : "";
+      return `<li id="note-${esc(rec.logicalId)}@v${r.version}">v${r.version}${when || who ? " — " : ""}${when}${sep}${who}</li>`;
+    });
+    const n = prior.length;
+    return [
+      `<details class="versions">`,
+      `<summary>${n} earlier version${n === 1 ? "" : "s"}</summary>`,
+      `<ol>`,
+      ...rows,
+      `</ol>`,
+      `</details>`,
+    ].join("\n");
+  };
+
   const noteHtml = (rec: AnnotationRecord): string => {
     const ann = recordToAnnotation(rec, rec.logicalId);
     const comment = commentOfAnnotation(ann);
@@ -244,6 +374,7 @@ export function exhibitPageHtml(exhibit: Exhibit, records: AnnotationRecord[], o
       render(comment),
       ...(tags.length > 0 ? [`<div class="tags">${tags.map((t) => `#${esc(t)}`).join(" ")}</div>`] : []),
       ...(live ? [`<div class="tags"><a href="${esc(live)}">View on the image</a></div>`] : []),
+      ...(versionsHtml(rec) ? [versionsHtml(rec)] : []),
       `</article>`,
     ].join("\n");
   };
@@ -307,6 +438,18 @@ export function exhibitPageHtml(exhibit: Exhibit, records: AnnotationRecord[], o
     for (const r of rest) parts.push(noteHtml(r));
   }
 
+  // The citable projection of THIS exhibit (Archie-321c) — one CSL item feeding both the head's
+  // citation_*/DC.* tags and the on-page "Cite this" block, so the machine-readable and the
+  // human-readable citation cannot disagree.
+  const exhibitCsl = cslItemFor({
+    title: exhibit.title,
+    url: `${opts.baseUrl}${exhibit.slug}/index.html`,
+    rights: exhibit,
+    id: exhibit.slug,
+    type: "webpage",
+  });
+  parts.push(citeBlock(exhibitCsl));
+
   // schema.org CreativeWork (Q-8): map ONLY what the model carries. NO `author` — the model has no
   // structured author. `image`/`hasPart` carry REAL pixel dims; multi-object → hasPart array.
   const images = exhibit.objects.map(imageObjectFor);
@@ -324,10 +467,11 @@ export function exhibitPageHtml(exhibit: Exhibit, records: AnnotationRecord[], o
   const meta: PageMeta = {
     title: exhibit.title,
     ...(exhibit.summary ? { description: exhibit.summary } : {}),
-    ogImage: ogImageForExhibit(exhibit, opts.baseUrl),
+    ...(ogImageForExhibit(exhibit, opts.baseUrl) ? { ogImage: ogImageForExhibit(exhibit, opts.baseUrl)! } : {}),
     canonical: `${opts.baseUrl}${exhibit.slug}/index.html`,
     ogType: "article",
     jsonLd,
+    csl: exhibitCsl,
   };
   return pageShell(`${exhibit.title}${" — archival text"}`, parts.join("\n"), meta);
 }

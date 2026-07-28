@@ -60,6 +60,7 @@
     onopenbeat,
     oneditobject,
     onaddobject,
+    onimportmetadata,
     onback,
     onreorder,
     onstartnarrative,
@@ -110,6 +111,11 @@
      *  description / credit / remove) WITHOUT descending into the object editor. */
     oneditobject: (objId: string) => void;
     onaddobject: () => void;
+    /** Open the bulk metadata import (Archie-3754). OPTIONAL: a host that can't write omits it and the
+     *  control is absent rather than inert. Both halves of this prop matter — the type annotation AND the
+     *  destructuring above; a prop typed but not destructured renders nothing and no gate says so
+     *  (.claude/rules/svelte-no-typecheck-net.md). */
+    onimportmetadata?: () => void;
     onback: () => void;
     /** New reading order, by object id — the overview's reason to exist (Grid/Narrative sequence). */
     onreorder: (orderedIds: string[]) => void;
@@ -634,6 +640,15 @@
         title={canWrite ? "Add media to this exhibit" : READ_ONLY_MSG}>
         <span aria-hidden="true">＋</span> Add media
       </button>
+      <!-- The catalogue-spreadsheet door (Archie-3754), beside Add media because both grow this exhibit:
+           one adds the pictures, the other adds what is known about them. Absent when the host offers no
+           handler (read-only tabs), so it is never an inert control. -->
+      {#if onimportmetadata}
+        <button type="button" class="tb-add" onclick={() => onimportmetadata?.()}
+          title="Add titles, dates, creators and rights to these media items from a spreadsheet">
+          Import metadata…
+        </button>
+      {/if}
       <!-- Select toggle only — the row itself NEVER morphs (decision Archie-315e / audit W10: the old
            inline "N selected · Remove N · Clear" used to grow here beside Size/Sort). Entering select-mode
            now slides in a DISTINCT bottom tray (.selection-tray below) that carries the bulk actions;

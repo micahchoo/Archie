@@ -29,6 +29,9 @@ export * from "./session/session.js";
 // Publish primitive: assemble the full site data tree + the architectural zip (CONTEXT publish).
 export * from "./publish/site.js";
 export * from "./publish/ghpages.js";
+export * from "./publish/delta.js";
+// Pre-push preflight + rights coverage (Archie-0cd6 / Archie-8772) — the severity model lives there.
+export * from "./publish/preflight.js";
 // Portable read seam (ADR-0010): read a published tree out of an opened `.archie.zip`, media → blob URLs.
 export * from "./publish/portable.js";
 // ADR-0020: L1 `.archie.zip` self-ID marker — write (publishLibrary stamps archie.json) + read (validateArchieMarker).
@@ -50,6 +53,8 @@ export * from "./av/time.js";
 // Layer + tag filtering over Notes (CONTEXT Layers v1 / Tags). Archie filters; pure shows all.
 export * from "./query/filter.js";
 export * from "./query/marker-style.js";
+// The overlay contrast gate + the reading swatches it guards (Archie-eec7).
+export * from "./query/marker-contrast.js";
 // Published-shape (W3CAnnotation) accessors — the canonical home for the viewer's body/reading/overlay reads.
 export * from "./query/published.js";
 // The source-parameterized published-tree reader (the domino) — site/portable/viewer adapt over it.

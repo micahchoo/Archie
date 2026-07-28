@@ -101,6 +101,43 @@ describe("isMetadataEntry / sanitizeMetadataEntries — the read-boundary valida
       { label: "Shelfmark", value: "MS 408" }, // rebuilt to the known fields only
     ]);
   });
+  // Archie-d25f (policy decided in Archie-aafd). An EXCLUDED property collides with a native typed
+  // slot, so it must never survive as a typed entry — but the value is curator data and must not be
+  // lost. Before this, such an entry passed the guard, seeded an EDITABLE Studio row, and was then
+  // dropped on display by metadataRows rule 1: the curator could type into a field that rendered
+  // nowhere.
+  it("DEMOTES an excluded property to verbatim, keeping the value under its vocabulary label", () => {
+    expect(sanitizeMetadataEntries([{ property: "dcterms:title", value: "The Voynich Manuscript" }])).toEqual([
+      { label: "Title", value: "The Voynich Manuscript", sourceProperty: "dcterms:title" },
+    ]);
+  });
+
+  it("a demoted entry keeps the THIRD PARTY's own label when it carried one", () => {
+    expect(sanitizeMetadataEntries([{ property: "dcterms:title", label: "Work title", value: "MS 408" }])).toEqual([
+      { label: "Work title", value: "MS 408", sourceProperty: "dcterms:title" },
+    ]);
+  });
+
+  it("a NON-excluded property is untouched — demotion is not a blanket rewrite", () => {
+    expect(sanitizeMetadataEntries([{ property: "dcterms:creator", value: "Ada" }])).toEqual([
+      { property: "dcterms:creator", value: "Ada" },
+    ]);
+  });
+
+  // The round trip is the point, and it is what a demotion-only test would miss: code that computes
+  // the right display row while silently losing sourceProperty passes that test and fails this one.
+  it("ROUND TRIP: re-reading a demoted entry preserves sourceProperty (a 2nd save still re-exports)", () => {
+    const once = sanitizeMetadataEntries([{ property: "dcterms:title", value: "MS 408" }])!;
+    const twice = sanitizeMetadataEntries(once)!;
+    expect(twice).toEqual(once);
+    expect(twice[0]!.sourceProperty).toBe("dcterms:title");
+  });
+
+  it("never mints sourceProperty for an entry that arrived verbatim", () => {
+    const out = sanitizeMetadataEntries([{ label: "Shelfmark", value: "MS 408" }])!;
+    expect(out[0]).not.toHaveProperty("sourceProperty");
+  });
+
   it("sanitize returns undefined for non-arrays and all-invalid arrays (absent stays absent)", () => {
     expect(sanitizeMetadataEntries(undefined)).toBeUndefined();
     expect(sanitizeMetadataEntries("nope")).toBeUndefined();

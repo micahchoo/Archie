@@ -42,6 +42,13 @@ export default defineConfig({
         "openseadragon",
         "@annotorious/openseadragon",
         "@annotorious/plugin-tools",
+        // wavesurfer is reached only through MediaPlayer's LAZY import, which is exactly the case
+        // viewer-optimizedeps-bare-includes.md says still needs an entry: Astro's dev server has no
+        // index.html crawl, so anything absent from this list is discovered mid-session and bumps the
+        // browserHash under open tabs (504 "Outdated Optimize Dep"). Bare name only, and it is also a
+        // DIRECT dependency in package.json — pnpm doesn't hoist, so without that the include
+        // silently fails to resolve and the optimizer skips it.
+        "wavesurfer.js",
       ],
     },
   },

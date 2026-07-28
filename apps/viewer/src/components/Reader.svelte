@@ -13,6 +13,7 @@
   import SidebarObjectNav from "./SidebarObjectNav.svelte";
   import NotePopup from "./NotePopup.svelte";
   import Credit from "./Credit.svelte";
+  import MetadataRun from "./MetadataRun.svelte";
   import MetadataList from "./MetadataList.svelte";
   import { loadAsideWidth, loadAsideCollapsed, saveAside, type AsideState } from "../aside-persistence.js";
   import { navPosition, navRegionName, navStepName, noteIndexOpenMark } from "../product-copy.js";
@@ -42,6 +43,7 @@
     frame = null,
     onback,
     rights,
+    exhibitRights,
     initialSelected = null,
     initialRegion = null,
     onnotehover,
@@ -59,6 +61,10 @@
     annotations?: W3CAnnotation[];
     /** The object-level credit/license (Q5; falls back to the exhibit credit upstream). Shown by the label. */
     rights?: RightsFields;
+    /** The EXHIBIT's credit/license/metadata (Archie-36e6). A single-object exhibit routes straight
+     *  past the grid to this reader, so without this prop the exhibit's requiredStatement — a IIIF
+     *  MUST-display — was rendered nowhere in the SPA. Always shown, beside the object's own. */
+    exhibitRights?: RightsFields;
     /** The exhibit's Readings (ADR-0007) — drives the canvas legend. Empty = no legend. */
     readings?: Reading[];
     activeReading?: string | null;
@@ -144,6 +150,9 @@
   // and stacking made an expanded long value push the notes list below the fold. `rights` is the same
   // prop the credit line reads (metadata rides RightsFields), so this needs no new data path.
   const metaRows = $derived(metadataRows(rights));
+  // The EXHIBIT run: rendered beside the credit stack, NOT folded into the Details tab — Details is the
+  // object's own record, and mixing levels there is the drift this ticket is fixing.
+  const exhibitMeta = $derived(metadataRows(exhibitRights));
   const hasDetails = $derived(metaRows.length > 0);
   // The reader's CHOICE survives stepping to a sibling object (comparing one field across objects is
   // the reason to open Details at all); `tab` collapses it to Notes whenever this object has no
@@ -564,7 +573,8 @@
     <!-- The credit sits ABOVE the tab pair, visible from both tabs: the IIIF requiredStatement is a
          MUST-display, and it must never become a row of the Details list (rights are a typed slot,
          distinguished by FORM — tracked mono line vs. the list's hanging-key voice). -->
-    <p class="credit-row"><Credit {rights} tone="paper" /></p>
+    <p class="credit-row"><Credit {rights} {exhibitRights} objectLevelLabel="This image" tone="paper" /></p>
+    <MetadataRun rows={exhibitMeta} tone="paper" />
     {#if hasDetails}
       <!-- Real APG tablist (roving tabindex, automatic activation) — not styled divs. -->
       <div class="tabs" role="tablist" aria-label="About this image" bind:this={tablistEl}>

@@ -576,6 +576,7 @@
           object={activeData}
           annotations={annotationsOf(activeData.id)}
           rights={objectRightsOf(activeData.id)}
+          {exhibitRights}
           initialSeek={t}
           siblings={gridSiblings ?? undefined}
           currentId={activeData.id}
@@ -598,7 +599,7 @@
         <!-- Keyed like the grid-AV player: stepping the carousel between AV index objects must remount. -->
         {#key indexData.id}
           {#if MediaPlayerLazy.current}
-            <MediaPlayerLazy.current object={indexData} annotations={annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} initialSeek={t} onback={() => (indexObjectId = null)} onlocus={(l) => { locusNote = l.noteId; locusTime = l.t; }} onopenfinder={(tag) => openFinder(tag)} readings={data.readings} activeReading={activeReading} onreading={(id) => (activeReading = id)} readingCount={readingCountOf(indexData.id)} />
+            <MediaPlayerLazy.current object={indexData} annotations={annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} {exhibitRights} initialSeek={t} onback={() => (indexObjectId = null)} onlocus={(l) => { locusNote = l.noteId; locusTime = l.t; }} onopenfinder={(tag) => openFinder(tag)} readings={data.readings} activeReading={activeReading} onreading={(id) => (activeReading = id)} readingCount={readingCountOf(indexData.id)} />
           {/if}
         {/key}
       {:else}
@@ -614,6 +615,7 @@
             frame={frameFor(indexObject.id, indexData?.width, indexData?.height)}
             onback={() => (indexObjectId = null)}
             rights={objectRightsOf(indexObject.id)}
+            {exhibitRights}
             initialSelected={arrivedNote}
             initialRegion={arrivedRegion}
             onlocus={(l) => { locusNote = l.noteId; locusRegion = l.xywh; }}
@@ -676,6 +678,7 @@
         frame={frameFor(activeObject.id, activeData?.width, activeData?.height)}
         onback={isGrid ? () => (selectedObjectId = null) : undefined}
         rights={objectRightsOf(activeObject.id)}
+        {exhibitRights}
         initialSelected={arrivedNote}
         initialRegion={arrivedRegion}
         onlocus={(l) => { locusNote = l.noteId; locusRegion = l.xywh; }}

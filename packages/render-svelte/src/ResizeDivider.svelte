@@ -139,6 +139,11 @@
   /* A thin warm seam, not a hard rule — quiet until you reach for it (hover/focus lift the accent). */
   .resize-divider {
     position: relative; flex: 0 0 auto; width: 10px; align-self: stretch;
+    /* A 10px handle is comfortable with a mouse and unusable with a thumb. It cannot simply grow —
+       it takes its width from the panes it divides on EVERY pointer — so widen it to the WCAG 2.2
+       SC 2.5.8 floor only where the pointer is a finger (Archie-cf4a). The rule lives here rather
+       than in the app's global sheet because Svelte's scoped hash class outranks a bare
+       `.resize-divider` selector, so a global version silently lost. */
     cursor: col-resize; touch-action: none; user-select: none;
     display: flex; align-items: center; justify-content: center;
     background: transparent;
@@ -175,5 +180,9 @@
 
   @media (prefers-reduced-motion: reduce) {
     .grip, .collapse { transition: none; }
+  }
+
+  @media (pointer: coarse) {
+    .resize-divider { width: 24px; }
   }
 </style>

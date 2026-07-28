@@ -706,3 +706,29 @@ test.describe("Archie-4524 · the reading legend the AV surface did not have", (
     await expect(page.locator(".canvas-dock button.hide-toggle")).toHaveCount(1);
   });
 });
+
+// Archie-7b86 V50 — the audio object was "860x700 of empty cream with a browser-default scrubber".
+// The waveform is the fix. What matters is not that a library loaded but that the surface CARRIES it
+// and that adding it did not cost the reader the working player underneath.
+test.describe("the audio stage draws its recording (V50)", () => {
+  test("a sound object renders a waveform canvas, and keeps its native controls", async ({ page }) => {
+    // `{ media: true }` is load-bearing, and its absence cost a cycle: these specs run OFFLINE, so
+    // without a served recording the <audio> errors, `mediaError` flips, and the stage renders the
+    // failure notice instead — `.audio-stage` never exists and the waveform assertion fails for a
+    // reason that has nothing to do with the waveform. `withRecording` serves a real WAV.
+    await openAudioObject(page, { media: true });
+
+    const audio = page.locator(".audio-stage audio");
+    await expect(audio, "the native player must survive — the waveform is an enhancement, not a replacement").toHaveCount(1);
+    await expect(audio).toHaveAttribute("controls", "");
+
+    // WaveSurfer paints into a <canvas> inside the container it is given. Waiting for the CANVAS,
+    // not for a class or a tick count, is what makes this assert the drawing rather than the attempt.
+    await expect(page.locator(".audio-stage .waveform canvas").first()).toBeVisible({ timeout: 15_000 });
+  });
+
+  test("the waveform is hidden from assistive tech — the <audio> element is the control", async ({ page }) => {
+    await openAudioObject(page, { media: true });
+    await expect(page.locator(".audio-stage .waveform")).toHaveAttribute("aria-hidden", "true");
+  });
+});

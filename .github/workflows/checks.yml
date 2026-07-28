@@ -182,6 +182,17 @@ jobs:
       - name: App bundle size ratchet
         run: pnpm bundle:check
 
+      # Accessibility ratchet (Archie-ea57): axe-core, WCAG 2.1 A+AA, over the COMMITTED published
+      # static pages — the artifact a no-JS reader, a crawler and a depositing institution actually
+      # get. Same discipline as the bundle budgets: baseline in scripts/a11y-baseline.json, per-page
+      # so one page improving cannot mask another regressing, refreshed only via `pnpm a11y:baseline`
+      # in its own commit. Baseline is currently ZERO — the 676 nodes the first run found were two
+      # failing colour tokens, fixed rather than enshrined. `best-practice` rules are excluded on
+      # purpose: they are advice, not a standard, and a gate that fails for unagreed reasons gets
+      # switched off instead of fixed.
+      - name: Accessibility ratchet (published pages)
+        run: pnpm a11y:check
+
   # Both gates below were written, documented (ADR-0019 + README's maintainer TIP) and then run by
   # NOTHING — no workflow referenced them until now. They are deliberately scoped to what they
   # actually prove, and neither asserts dist is rebuilt from current source: this repo's cadence is

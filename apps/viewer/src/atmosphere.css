@@ -88,6 +88,21 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 }
 .soft-btn:hover { background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
 
+/* TOUCH TARGET FLOOR — WCAG 2.2 SC 2.5.8, Level AA (Archie-cf4a).
+   Every control is at least 24x24 CSS px. Stated ONCE here rather than as N per-component paddings,
+   because that is exactly how it drifted: measured at a 390px viewport, the reader chrome shipped
+   eleven controls between 19 and 23 px tall — object-nav arrows at 20x19, the reading toggles at 23,
+   "Hide all" at 19, "Hide notes" at 20x20 — each individually only a pixel or three short, and each
+   set by its own component's padding.
+   `min-height` rather than a padding change, so a control that is already comfortable is untouched
+   and nothing reflows. Inline text links are deliberately NOT covered: SC 2.5.8 exempts a control
+   laid out inside a run of text, and enlarging one would break the sentence around it. */
+button, [role="button"], [role="tab"], select { min-height: 24px; min-width: 24px; }
+/* …except a control that IS a piece of text in prose (`.text-link` is the inline counterpart of
+   .soft-btn, below), which the SC's inline exception covers. */
+button.text-link, a.text-link { min-height: 0; min-width: 0; }
+
+
 /* Clickable TEXT — the inline counterpart to .soft-btn, for a <button> or <a> sitting in a run of
    prose that must read as actionable without becoming a box. Kept byte-identical to the studio's
    copy (studio/src/atmosphere.css) — same tokens, same values; the two apps must not drift.

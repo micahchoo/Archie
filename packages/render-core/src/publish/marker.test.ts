@@ -109,6 +109,39 @@ describe("ADR-0020 L1 self-ID marker — read side (validateArchieMarker)", () =
     await expect(validateArchieMarker(fs)).rejects.toThrow(/version/i);
   });
 
+  // Archie-fc75: BOTH version directions refuse, but they are different problems and the advice a
+  // reader is given has to differ. A newer tree cannot be fixed by touching the file at all — only
+  // by updating Archie. An older tree is the migratable case (Archie-69f9); until that lands, the
+  // honest instruction is to re-publish. Asserting the ADVICE, not merely that something threw,
+  // is the point: the single `!==` check these replace told an author to re-publish a file they may
+  // not own, in the one direction where re-publishing cannot help.
+  it("a NEWER tree says to update Archie, never to re-publish", async () => {
+    const fs = new MemoryFilesystem();
+    await writeJson(fs, "archie.json", { format: "archie-library", version: SCHEMA_VERSION + 1, generator: "archie" });
+    await writeJson(fs, "exhibits.json", { library: { id: "x" }, exhibits: [] });
+    await expect(validateArchieMarker(fs)).rejects.toThrow(/update archie/i);
+    await expect(validateArchieMarker(fs)).rejects.not.toThrow(/re-publish/i);
+  });
+
+  it("an OLDER tree says to re-publish, never to update Archie", async () => {
+    const fs = new MemoryFilesystem();
+    // SCHEMA_VERSION is 1 today, so an older tree is v0 — unreachable in the wild right now, which is
+    // exactly why this branch needs a test rather than a measurement. It goes live on the first bump.
+    await writeJson(fs, "archie.json", { format: "archie-library", version: SCHEMA_VERSION - 1, generator: "archie" });
+    await writeJson(fs, "exhibits.json", { library: { id: "x" }, exhibits: [] });
+    await expect(validateArchieMarker(fs)).rejects.toThrow(/re-publish/i);
+    await expect(validateArchieMarker(fs)).rejects.not.toThrow(/update archie/i);
+  });
+
+  it("rejects a marker whose version is present but not a number", async () => {
+    const fs = new MemoryFilesystem();
+    // The `!==` check this replaces caught this case incidentally. Keep it caught deliberately —
+    // otherwise a forged `{ version: "1" }` would slip past a naive numeric comparison.
+    await writeJson(fs, "archie.json", { format: "archie-library", version: "1", generator: "archie" });
+    await writeJson(fs, "exhibits.json", { library: { id: "x" }, exhibits: [] });
+    await expect(validateArchieMarker(fs)).rejects.toThrow(/malformed/i);
+  });
+
   it("rejects a VALID marker when exhibits.json is missing/unparseable (corrupt marked tree)", async () => {
     const fs = new MemoryFilesystem();
     await writeJson(fs, "archie.json", ARCHIE_LIBRARY_MARKER);

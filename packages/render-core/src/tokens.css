@@ -206,20 +206,6 @@
  --neon-pink: #2D5F3A;
  --neon-yellow: #C9A96E;
  --soft-lavender: #C8D5C0;
- --pixel-unit: 4px;
- --grid-size: 40px;
- --border-pixel: 1px;
- --border-pixel-bold: 2px;
- --bg-grid: none;
- --shadow-pixel: var(--shadow-lift-low);
- --shadow-pixel-strong: var(--shadow-lift-mid);
- --shadow-pixel-cyan: var(--shadow-lift-low);
- --shadow-pixel-yellow: var(--shadow-lift-mid);
- --shadow-pixel-btn: var(--shadow-lift-low);
- --shadow-pixel-btn-pink: var(--shadow-lift-low);
- --shadow-pixel-btn-active: var(--shadow-lift-low);
- --text-shadow-hero: none;
- --text-shadow-stat: none;
 }
 
 * {
