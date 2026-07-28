@@ -44,7 +44,9 @@ export class NotAnArchieLibraryError extends Error {
  *
  *   • `archie.json` PRESENT → it MUST be a current-schema Archie marker: assert
  *     `format === "archie-library"` and `version === SCHEMA_VERSION` (a forged/foreign/wrong-version
- *     marker is rejected, as before).
+ *     marker is rejected, as before). A version mismatch refuses in BOTH directions, but with
+ *     different advice — newer tree: "Update Archie"; older tree: "Re-publish" (Archie-69f9 is the
+ *     ticket to make the older direction migrate instead of refuse).
  *   • `archie.json` ABSENT → accept iff the archive is STRUCTURALLY an Archie library: `collection.json`
  *     OR `exhibits.json` parses as JSON. Reject only if NEITHER exists/parses (a genuinely non-Archie zip).
  *
@@ -64,9 +66,35 @@ export async function validateArchieMarker(fs: Filesystem): Promise<void> {
         "This file isn't an Archie library. Choose a published .archie.zip exported from Archie.",
       );
     }
-    if (marker.version !== SCHEMA_VERSION) {
+    // Both version directions are still REFUSALS — see the note below on why an older tree is not
+    // simply accepted — but they are not the same problem and must not give the same advice.
+    if (typeof marker.version !== "number" || !Number.isFinite(marker.version)) {
       throw new NotAnArchieLibraryError(
-        `This library was made with a different version of Archie (schema v${String(marker.version)}, this viewer reads v${SCHEMA_VERSION}). Re-publish it from a current Archie.`,
+        "This file claims to be an Archie library but its version marker is malformed. Re-publish it from Archie.",
+      );
+    }
+    if (marker.version > SCHEMA_VERSION) {
+      // NEWER tree, older reader. ADR-0020:53 is explicit that this refuses cleanly, and it is the
+      // only direction that ADR sanctions. Nothing the author can do to the FILE helps here.
+      throw new NotAnArchieLibraryError(
+        `This library was made with a newer version of Archie (schema v${marker.version}, this reader understands v${SCHEMA_VERSION}). Update Archie to open it.`,
+      );
+    }
+    if (marker.version < SCHEMA_VERSION) {
+      // OLDER tree, newer reader — the migratable direction, and the one that is NOT yet solved.
+      //
+      // It is refused rather than migrated because there is nothing to migrate it WITH: `migrate()`
+      // in migrate/migrate.ts has no production caller (only `stamp`, `foldLayersIntoTags` and
+      // SCHEMA_VERSION are wired), and the runner it provides is per-annotation-doc, not per-tree —
+      // it cannot bring a v(n-1) `exhibits.json` / `collection.json` forward. Accepting here would
+      // trade a clean refusal for the downstream undebuggable parse failure ADR-0020 exists to
+      // prevent.
+      //
+      // LATENT TODAY, LIVE ON THE FIRST BUMP: SCHEMA_VERSION is 1 and MIGRATIONS is empty, so no
+      // published tree can currently reach this branch. The day someone appends `{ to: 2 }`, every
+      // tree already in the wild lands here. Wiring tree-level migration is Archie-69f9.
+      throw new NotAnArchieLibraryError(
+        `This library was published by an older version of Archie (schema v${marker.version}, this reader expects v${SCHEMA_VERSION}). Re-publish it from a current Archie.`,
       );
     }
     // The marker is cheap to forge; confirm the archive actually carries a parseable Gallery index —
