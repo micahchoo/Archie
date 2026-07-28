@@ -34,6 +34,11 @@ gate that matters is that suite plus `fs/conformance.ts` run against every backe
   ms threshold.
 
 ## Decisions
+- Archie-69f9 — an OLDER published tree now MIGRATES on read (`migrate/tree.ts` + `migratingJsonSource`
+  over the `JsonSource` seam), never rewritten in place; the marker gates accept `version <
+  SCHEMA_VERSION` ONLY where the registry covers every step, so a gap is still a clean refusal /
+  e0416f4. Remainder: `apps/viewer/src/published.ts` is the one unwired reader — Archie-5c8d, and it
+  must land before the first `SCHEMA_VERSION` bump.
 - Archie-cfc1 — `linearHead` now counts `mergeParents`; a resolved note was permanently
   uneditable/undeletable before this / b090066
 - Archie-6b8e — note→section attribution is a 7th content field, dropped on tombstone (non-revivable

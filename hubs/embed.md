@@ -2,7 +2,7 @@
 scope:
   - "packages/archie-viewer/**"
   - "recipes/**"
-updated: 2026-07-27
+updated: 2026-07-28
 ---
 # embed
 > *how does `<archie-viewer>` work and stay small?*
