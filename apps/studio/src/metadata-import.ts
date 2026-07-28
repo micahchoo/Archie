@@ -111,7 +111,7 @@ export interface ObjectFieldsPatch {
 
 /** One planned change, in the curator's words — what the preview table shows. */
 export interface PlannedChange {
-  /** The Archie field's display name ("Name", "Creator", "License"). */
+  /** The Archie field's display name, as the object's own editor says it ("Title", "Creator", "License"). */
   field: string;
   /** The stored value this would replace, absent when the field is empty today. */
   from?: string;
@@ -251,14 +251,16 @@ export function resolveLicense(cell: string): string | undefined {
   return /^https?:\/\/\S+$/i.test(v) ? v : undefined;
 }
 
-/** The display name a preview/report uses for a target. */
+/** The display name a preview/report uses for a target. These are the words the object's own editor
+ *  uses — Title / Description (DetailsEditor.svelte:143,148), License / Attribution / credit
+ *  (RightsEditor.svelte:50,60) — so one field is not named two things across two surfaces. */
 export function targetLabel(target: FieldTarget): string {
   if (target.kind === "ignore") return "";
   if (target.kind === "native") {
-    return target.field === "label" ? "Name"
+    return target.field === "label" ? "Title"
       : target.field === "summary" ? "Description"
       : target.field === "rights" ? "License"
-      : "Credit";
+      : "Attribution / credit";
   }
   return dctermsLabel(target.property) ?? target.property.slice("dcterms:".length);
 }
@@ -363,7 +365,7 @@ export function planMetadataImport(text: string, mapping: ColumnMapping, ctx: Me
   if (rows.length === 0) return { ...empty, refusal: "That file is empty." };
   const header = rows[0]!;
   if (mapping.matchColumn < 0 || mapping.matchColumn >= header.length) {
-    return { ...empty, refusal: "Pick the column that says which item each row is about." };
+    return { ...empty, refusal: "Pick the column that says which media item each row is about." };
   }
   const targets = mapping.targets;
   const mapped = targets.some((t) => t.kind !== "ignore");
@@ -387,11 +389,11 @@ export function planMetadataImport(text: string, mapping: ColumnMapping, ctx: Me
     const match = matchRow(index, cell(mapping.matchColumn));
     if (match.kind === "none") {
       const raw = cell(mapping.matchColumn);
-      skipped.push({ row: line, reason: raw === "" ? "no item named in the match column" : `no item matches “${raw}”` });
+      skipped.push({ row: line, reason: raw === "" ? "no media item named in the match column" : `no media item matches “${raw}”` });
       continue;
     }
     if (match.kind === "ambiguous") {
-      skipped.push({ row: line, reason: `“${cell(mapping.matchColumn)}” matches ${match.count} items — pick a column that names each one once` });
+      skipped.push({ row: line, reason: `“${cell(mapping.matchColumn)}” matches ${match.count} media items — pick a column that names each one once` });
       continue;
     }
     const object = byId.get(match.objectId)!;
@@ -438,7 +440,7 @@ function buildObjectPatch(
       case "label":
         if (value === object.label) break;
         patch.label = value;
-        changes.push({ field: "Name", from: object.label, to: value });
+        changes.push({ field: "Title", from: object.label, to: value });
         break;
       case "summary":
         if (value === object.summary) break;
@@ -462,7 +464,7 @@ function buildObjectPatch(
         // idiom (RightsEditor.svelte:24-31), not BulkRightsDialog's uniform-stamp divergence: a per-row
         // import writes per-object values, so there is no uniformity argument for overwriting the label.
         patch.requiredStatement = { label: current?.label || DEFAULT_ATTRIBUTION_LABEL, value };
-        changes.push({ field: "Credit", ...(current?.value ? { from: current.value } : {}), to: value });
+        changes.push({ field: "Attribution / credit", ...(current?.value ? { from: current.value } : {}), to: value });
         break;
       }
     }
@@ -549,7 +551,7 @@ export function summarizePlan(plan: MetadataImportPlan): { text: string; ok: boo
   if (plan.refusal) return { text: plan.refusal, ok: false };
   const parts: string[] = [];
   const n = plan.updates.length;
-  if (n > 0) parts.push(`Updated ${n} item${n === 1 ? "" : "s"} from your spreadsheet.`);
+  if (n > 0) parts.push(`Updated ${n} media item${n === 1 ? "" : "s"} from your spreadsheet.`);
   if (plan.unchanged > 0) parts.push(`${plan.unchanged} already matched the sheet.`);
   if (plan.skipped.length > 0) {
     const head = plan.skipped.slice(0, 3).map((s) => `line ${s.row}: ${s.reason}`).join("; ");

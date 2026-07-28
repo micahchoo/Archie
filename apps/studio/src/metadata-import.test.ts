@@ -134,7 +134,7 @@ describe("the patch is a KEYED PARTIAL — it carries only what a column was map
     // exactly the key that target owns. A patch that grew `rights` while only `label` was mapped — the
     // whole-RightsFields clobber metadata-rights-keyed-writebacks forbids — fails here.
     const cases: { target: FieldTarget; cell: string; keys: (keyof ObjectFieldsPatch)[] }[] = [
-      { target: { kind: "native", field: "label" }, cell: "New name", keys: ["label"] },
+      { target: { kind: "native", field: "label" }, cell: "New title", keys: ["label"] },
       { target: { kind: "native", field: "summary" }, cell: "New words", keys: ["summary"] },
       { target: { kind: "native", field: "rights" }, cell: "CC BY 4.0", keys: ["rights"] },
       { target: { kind: "native", field: "credit" }, cell: "Courtesy of X", keys: ["requiredStatement"] },
@@ -328,20 +328,20 @@ describe("a bad row is skipped and reported — never a whole-file refusal", () 
       { objects: OBJECTS },
     );
     expect(plan.updates.map((u) => u.objectId)).toEqual(["o1", "o2"]);
-    expect(plan.skipped).toEqual([{ row: 3, reason: "no item matches “not-a-plate”" }]);
+    expect(plan.skipped).toEqual([{ row: 3, reason: "no media item matches “not-a-plate”" }]);
   });
 
   it("an ambiguous row names the count instead of guessing", () => {
     const twins = [obj({ id: "a", label: "plate.tif" }), obj({ id: "b", label: "plate.jpg" })];
     const plan = planMetadataImport("file,Object Title\nplate,Which one?\n", mapping, { objects: twins });
     expect(plan.updates).toHaveLength(0);
-    expect(plan.skipped[0]!.reason).toContain("matches 2 items");
+    expect(plan.skipped[0]!.reason).toContain("matches 2 media items");
   });
 
   it("a blank match cell is a skip, not a match against the first object", () => {
     const plan = planMetadataImport("file,Object Title\n,Nameless\n", mapping, { objects: OBJECTS });
     expect(plan.updates).toHaveLength(0);
-    expect(plan.skipped).toEqual([{ row: 2, reason: "no item named in the match column" }]);
+    expect(plan.skipped).toEqual([{ row: 2, reason: "no media item named in the match column" }]);
   });
 
   it("an unusable license skips its row and says what a usable one looks like", () => {
@@ -378,7 +378,7 @@ describe("the two whole-file refusals — the cases where no row could be read e
   });
   it("a match column that isn't in the sheet", () => {
     const plan = planMetadataImport("file,Title\nplate-01,x\n", map([IGNORE, { kind: "native", field: "label" }], -1, "filename"), { objects: OBJECTS });
-    expect(plan.refusal).toContain("which item");
+    expect(plan.refusal).toContain("which media item");
   });
   it("nothing mapped at all", () => {
     const plan = planMetadataImport("file,Title\nplate-01,x\n", map([IGNORE, IGNORE], 0, "filename"), { objects: OBJECTS });
@@ -437,9 +437,9 @@ describe("suggestMapping opens the step filled in", () => {
 
 describe("summarizePlan", () => {
   it("a clean run reads as a success", () => {
-    const s = summarizePlan({ updates: [{ row: 2, objectId: "o1", objectLabel: "x", patch: { label: "y" }, changes: [] }], unchanged: 0, skipped: [] });
+    const s = summarizePlan({ updates: [{ row: 2, objectId: "o1", objectLabel: "x", patch: { label: "y" }, changes: [{ field: "Title", from: "x", to: "y" }] }], unchanged: 0, skipped: [] });
     expect(s.ok).toBe(true);
-    expect(s.text).toContain("Updated 1 item");
+    expect(s.text).toContain("Updated 1 media item");
   });
   it("a run with skips is NOT dressed as a success", () => {
     const s = summarizePlan({ updates: [], unchanged: 0, skipped: [{ row: 2, reason: "no item matches “x”" }] });
