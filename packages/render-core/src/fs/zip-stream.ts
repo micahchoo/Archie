@@ -29,6 +29,85 @@ function join(prefix: string, name: string): string {
   return prefix === "" ? name : `${prefix}/${name}`;
 }
 
+const EOCD_SIG = 0x06054b50;
+const ZIP64_EOCD_SIG = 0x06064b50;
+const ZIP64_LOCATOR_SIG = 0x07064b50;
+
+/**
+ * Rebuild the archive's TRAILING block ourselves (Archie-1cf0) — the classic End Of Central Directory
+ * record, preceded by a Zip64 EOCD Record + Locator once `entries` passes `maxClassicEntries`.
+ *
+ * fflate's own EOCD writer (`wzf`, traced in fflate 0.8.2) stores the entry count in an UNCHECKED
+ * 2-byte field: past 65,535 entries the byte-by-byte `wbytes` write for the count spills into the
+ * ADJACENT central-directory-size field, corrupting it too. We never read or trust fflate's own EOCD
+ * bytes for this reason — `cdOffset`/`cdSize` are values WE tracked independently (bytes emitted
+ * before this final chunk, and this chunk's own length), never parsed back out of fflate's tail.
+ *
+ * SCOPE: only the ENTRY-COUNT dimension of Zip64 is implemented here. Total archive bytes stay capped
+ * at `ZIP_FORMAT_LIMITS.maxBytes` (4 GiB, enforced in `commit()` below) — fflate's per-entry local/
+ * central-directory header offset fields are still classic 4-byte, so representing an offset PAST
+ * 4 GiB needs a per-entry Zip64 extra field, which this does not add. See zip.ts's `ZIP_FORMAT_LIMITS`
+ * doc for the citation and the decision to defer that dimension.
+ */
+function buildEocdTail(entries: number, cdSize: number, cdOffset: number, maxClassicEntries: number): Uint8Array {
+  const useZip64 = entries > maxClassicEntries;
+  const zip64Len = useZip64 ? 56 + 20 : 0; // Zip64 EOCD Record (56B, APPNOTE 4.3.14) + Locator (20B, 4.3.15)
+  const out = new Uint8Array(zip64Len + 22); // + classic EOCD (22B, APPNOTE 4.3.16)
+  const dv = new DataView(out.buffer);
+  let o = 0;
+  if (useZip64) {
+    const zip64RecordOffset = cdOffset + cdSize; // where this tail starts = where the zip64 record lands
+    dv.setUint32(o, ZIP64_EOCD_SIG, true);
+    o += 4;
+    dv.setBigUint64(o, 44n, true); // size of this record, excluding the sig + this 8-byte field itself
+    o += 8;
+    dv.setUint16(o, 45, true); // version made by (4.5+, i.e. Zip64-aware)
+    o += 2;
+    dv.setUint16(o, 45, true); // version needed to extract
+    o += 2;
+    dv.setUint32(o, 0, true); // disk number
+    o += 4;
+    dv.setUint32(o, 0, true); // disk where the central directory starts
+    o += 4;
+    dv.setBigUint64(o, BigInt(entries), true); // entries on this disk
+    o += 8;
+    dv.setBigUint64(o, BigInt(entries), true); // total entries
+    o += 8;
+    dv.setBigUint64(o, BigInt(cdSize), true); // size of the central directory
+    o += 8;
+    dv.setBigUint64(o, BigInt(cdOffset), true); // offset of the central directory's start
+    o += 8;
+    dv.setUint32(o, ZIP64_LOCATOR_SIG, true);
+    o += 4;
+    dv.setUint32(o, 0, true); // disk holding the zip64 EOCD record
+    o += 4;
+    dv.setBigUint64(o, BigInt(zip64RecordOffset), true); // offset of the zip64 EOCD record
+    o += 8;
+    dv.setUint32(o, 1, true); // total number of disks
+    o += 4;
+  }
+  dv.setUint32(o, EOCD_SIG, true);
+  o += 4;
+  dv.setUint16(o, 0, true); // disk number
+  o += 2;
+  dv.setUint16(o, 0, true); // disk where the central directory starts
+  o += 2;
+  // 0xFFFF sentinel (APPNOTE 4.4.4/4.4.21) tells a reader (incl. fflate's own unzipSync) to consult the
+  // zip64 record instead — cdSize/cdOffset stay REAL 4-byte values, not sentinelled: the byte-size cap
+  // above keeps them representable, and a real value here is spec-legal either way (only a field that
+  // is actually too small MUST be sentinelled — APPNOTE 4.4.1.4).
+  dv.setUint16(o, useZip64 ? 0xffff : entries, true); // entries on this disk
+  o += 2;
+  dv.setUint16(o, useZip64 ? 0xffff : entries, true); // total entries
+  o += 2;
+  dv.setUint32(o, cdSize, true); // size of the central directory
+  o += 4;
+  dv.setUint32(o, cdOffset, true); // offset of the central directory's start
+  o += 4;
+  dv.setUint16(o, 0, true); // comment length
+  return out;
+}
+
 function concat(chunks: Uint8Array[]): Uint8Array {
   if (chunks.length === 1) return chunks[0]!;
   const total = chunks.reduce((n, c) => n + c.byteLength, 0);
@@ -58,12 +137,30 @@ class StreamState {
     private readonly sink: ZipSink,
     private readonly limits: ZipFormatLimits = ZIP_FORMAT_LIMITS,
   ) {
-    this.zip = new Zip((err, chunk) => {
-      if (err) this.streamErr = err;
-      else if (chunk && chunk.length) {
-        this.written += chunk.length;
-        this.outbox.push(chunk);
+    this.zip = new Zip((err, chunk, final) => {
+      if (err) {
+        this.streamErr = err;
+        return;
       }
+      if (!chunk) return;
+      if (final) {
+        // fflate's own trailing block: [central directory entries][classic 22-byte EOCD]. Rebuild the
+        // EOCD ourselves (Archie-1cf0) from values WE tracked — `written` (bytes emitted so far = the
+        // central directory's offset) and this chunk's own length (minus the 22-byte EOCD = the
+        // central directory's size) — never from fflate's own count field, which silently corrupts an
+        // adjacent field past 65,535 entries. See `buildEocdTail`.
+        const cdOffset = this.written;
+        const cdSize = chunk.length - 22;
+        const cd = chunk.subarray(0, cdSize); // fflate's central-directory ENTRIES are unaffected by
+        // the count-overflow (only the trailing EOCD references the count) — kept as-is.
+        const tail = buildEocdTail(this.entries, cdSize, cdOffset, this.limits.maxEntries);
+        this.written += cd.length + tail.length;
+        this.outbox.push(cd, tail);
+        return;
+      }
+      if (!chunk.length) return;
+      this.written += chunk.length;
+      this.outbox.push(chunk);
     });
   }
 
@@ -73,15 +170,16 @@ class StreamState {
    * synchronously during `push(final)` (so no other entry can be mid-emission), and the drain awaits
    * the sink before the next commit runs. Resolves once this entry has been written to the sink.
    *
-   * Format guard: fflate's writer has NO overflow checks (see `ZIP_FORMAT_LIMITS`), so refuse — with
-   * the actionable steer — the entry that would breach the 2-byte entry count, and the archive whose
-   * emitted bytes have overflowed a 4-byte offset (checked AFTER emission: once `written` exceeds the
-   * ceiling, this and every later entry's central-directory offset is already unrepresentable).
+   * Format guard (Archie-1cf0): fflate's writer has NO overflow checks (see `ZIP_FORMAT_LIMITS`). Past
+   * `limits.maxEntries` the archive switches to Zip64 (`buildEocdTail`, at `finish()`) rather than
+   * refusing — that dimension has no cap here anymore. The BYTE dimension is still refused: once
+   * `written` exceeds `limits.maxBytes`, this and every later entry's central-directory offset would
+   * need a per-entry Zip64 extra field this sink does not write (checked AFTER emission, since only
+   * then is the true total known).
    */
   commit(path: string, bytes: Uint8Array): Promise<void> {
     const run = this.tail.then(async () => {
       if (this.streamErr) throw this.streamErr;
-      if (this.entries >= this.limits.maxEntries) throw zipFormatError("entries", this.limits);
       this.entries++;
       const entry = new ZipPassThrough(path);
       this.zip.add(entry);
