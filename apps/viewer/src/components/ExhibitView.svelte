@@ -760,6 +760,8 @@
     {#if SearchOverlayLazy.current}
       <SearchOverlayLazy.current
         data={{ annotationsByObject: data.annotationsByObject, readingAnnotationsByObject: data.readingAnnotationsByObject }}
+        objects={layout.objects}
+        sections={layout.type === "narrative" ? (layout.sections ?? null) : null}
         initialTag={finderTag}
         onselect={(id) => arriveAtNote(id)}
         onclose={() => (finderOpen = false)}
