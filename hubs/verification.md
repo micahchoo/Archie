@@ -35,7 +35,7 @@ claim from the table below before reaching for a test framework at random.
 | a CSS-text import actually carries the tokens | `tokens.test.ts` content assertion | vitest silently resolved the id to `""` while the shipped bundle was correct — [[vitest-css-id-empty-string]] |
 | real navigation / hit-testing | `apps/studio/e2e` (popstate re-entrancy), `apps/viewer/e2e` (built-output, non-localhost aborted) | static analysis can't see prop wiring or click hit-testing — CI job `e2e` |
 | ~70-object scale holds | `.github/workflows/scale-check.yml` (`workflow_dispatch` only) | real OPFS ingest via `scripts/seed-fixture.mjs`; deliberately never blocks a PR |
-| knowledge layer (rules/hubs/tickets) is consistent | `scripts/doclint.mjs` | written and red-greened at birth, **not yet wired into `checks.yml`** (verified 2026-07-27) — run it by hand until it is |
+| knowledge layer (rules/hubs/tickets) is consistent | `scripts/doclint.mjs` (CI job `doclint`, checks.yml) | needs full git history — the job checks out with `fetch-depth: 0`; a shallow local clone gives false reds on pointers/stale-hubs |
 
 ## Binding rules
 - [[a-green-run-is-one-sample]] — one red-green proves an assertion CAN fail, not that it passes reliably; order/timing-sensitive assertions need ~20 unchanged runs.
@@ -59,6 +59,6 @@ claim from the table below before reaching for a test framework at random.
 - `recipes/smoke.mjs` header — documents its own two silent-failure preconditions (unbuilt fixtures, stale root `dist/`) and one still-unattributed flake (2026-07-26).
 
 ## Open & hazards
-- `scripts/doclint.mjs` exists and is red-greened but has no CI step yet — the Q6 "can I trust the knowledge itself" gate is unenforced until it's wired into `checks.yml`.
+- doclint wired into CI 2026-07-27 (job `doclint`). All 10 checks proven red-green same day; the allowlist (scripts/doclint-allow.json) carries ticket ids for its two deliberate deferrals (Archie-e149, Archie-1f60).
 - Red-green discipline: inject the defect, confirm it fails for the reason you intended (not a precondition failure), then confirm clean — never trust an assertion you haven't watched fail.
 - Before citing a count or "N/N" figure from any of the above gates, reconcile it against a number the tool itself printed — see [[post-review-fixes-are-unreviewed]]'s counting traps.
