@@ -190,16 +190,4 @@ c367 (spec LD5).
 
 | Date | Role | Summary |
 |---|---|---|
-| 2026-07-28 | author | Q-15 was already minted (drive harness, 2026-07-22); the surface-shape decision renumbered to Q-15 throughout. |
-
-## Shape changes
-
-| Date | Role | Summary |
-|---|---|---|
-| 2026-07-28 | author | Q-15 was already minted (drive harness, 2026-07-22); the surface-shape decision renumbered to Q-15 throughout. |
-
-## Shape changes
-
-| Date | Role | Summary |
-|---|---|---|
 | 2026-07-28 | author | Q-14 was already minted (drive harness, 2026-07-22); the surface-shape decision renumbered to Q-15 throughout. |
