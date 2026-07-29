@@ -332,6 +332,13 @@ export function createIngestFlows(ctx: IngestContext) {
   function beginBatch(slug: string) {
     let pending: ObjectMeta[] = [];
     let lastId: string | null = null;
+    // The one blob this batch may seed — the LAST added object's, held until flush. Seeding per add was
+    // the ingest-reload defect (channel 212399b4): the master slot is SINGULAR, so every per-file
+    // seedMaster evicted the object on SCREEN (revoking its blob under live OSD), sourceReadyFor(current)
+    // went false, and the canvas tore down + re-minted per ingested file. Since Archie-4855 steers once
+    // at flush, only the steered-to object's seed is ever consumed — so the seed moves to the steer.
+    let lastSeed: { id: string; url: string } | null = null;
+    const dropSeed = () => { if (lastSeed) { URL.revokeObjectURL(lastSeed.url); lastSeed = null; } };
     const persistChunk = async (): Promise<void> => {
       if (pending.length === 0) return;
       const chunk = pending;
@@ -340,7 +347,10 @@ export function createIngestFlows(ctx: IngestContext) {
     };
     return {
       add(obj: ObjectMeta, blobUrl?: string): void {
-        if (blobUrl) ctx.seedMaster(slug, obj.id, blobUrl); // blob ready before `current` ever flips to it
+        // Keep at most ONE pending seed, and only if it belongs to the LAST object: seeding an older
+        // object's blob at flush would put a never-current object in the slot — the defect again.
+        dropSeed();
+        if (blobUrl) lastSeed = { id: obj.id, url: blobUrl };
         pending.push(obj);
         lastId = obj.id;
       },
@@ -352,7 +362,15 @@ export function createIngestFlows(ctx: IngestContext) {
        *  "persist THEN setCurrentObjectId" ordering, so `current` is never ahead of the reactive meta. */
       async flush(): Promise<void> {
         await persistChunk();
-        if (lastId && slug === ctx.currentSlug()) ctx.setCurrentObjectId(lastId);
+        if (lastId && slug === ctx.currentSlug()) {
+          // Seed THEN steer (Archie-9db6's ordering, now at steer-time): the blob is in the slot before
+          // `current` flips to it, so the canvas mounts against the blob, not the raw /assets/ path.
+          if (lastSeed && lastSeed.id === lastId) { ctx.seedMaster(slug, lastSeed.id, lastSeed.url); lastSeed = null; }
+          ctx.setCurrentObjectId(lastId);
+        }
+        // Steering skipped (user switched exhibits mid-import) — the seed must neither leak nor clobber
+        // whatever they are viewing now.
+        dropSeed();
       },
     };
   }

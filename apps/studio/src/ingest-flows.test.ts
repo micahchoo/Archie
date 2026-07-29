@@ -954,3 +954,51 @@ describe("import steers the view once, not per chunk (Archie-4855)", () => {
     expect(steerSpy).toHaveBeenLastCalledWith(objs[0]!.id);
   });
 });
+
+// ── The master slot is seeded ONCE per import, at the steer — never per file (channel 212399b4) ──
+// The bug: `beginBatch.add` called seedMaster per ingested file. The slot is SINGULAR, so each seed
+// evicted the object on SCREEN (revoking its blob URL under live OSD); sourceReadyFor(current) went
+// false, App's canvas mount gate dropped, ensureMaster re-minted, and the canvas reloaded once per
+// ingested object. Since Archie-4855 steers once at flush, only the steered-to object's seed is ever
+// consumed — these pin the seed to the steer: same count, same target, seed-before-steer (Archie-9db6).
+describe("import seeds the master slot once, at the steer (ingest-reload fix)", () => {
+  it("a 100-file drop seeds AT MOST once — the steered-to tail, and BEFORE the steer", async () => {
+    const { ctx, exhibits, switchTo } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    exhibits.push({ id: "ex-s", slug: "s", title: "S", objects: [] } as unknown as ExhibitMeta);
+    switchTo("s");
+    const seedSpy = vi.spyOn(ctx, "seedMaster");
+    const steerSpy = vi.spyOn(ctx, "setCurrentObjectId");
+    const files = Array.from({ length: 100 }, (_, i) => new File([new Uint8Array([0])], `f${i}.mp3`, { type: "audio/mpeg" }));
+
+    await flows.addFiles(files);
+
+    const objs = exhibits.find((e) => e.slug === "s")!.objects;
+    expect(objs.length).toBe(100); // the import really happened — otherwise 0 seeds passes vacuously
+    // Pre-fix this was 100 (one slot eviction per file). The contract: only the object the view will
+    // land on may touch the slot.
+    expect(seedSpy.mock.calls.length).toBeLessThanOrEqual(1);
+    if (seedSpy.mock.calls.length === 1) {
+      expect(seedSpy).toHaveBeenLastCalledWith("s", objs[objs.length - 1]!.id, expect.any(String));
+      // 9db6's ordering survives the move: blob in the slot BEFORE `current` flips to it.
+      expect(seedSpy.mock.invocationCallOrder[0]!).toBeLessThan(steerSpy.mock.invocationCallOrder[0]!);
+    }
+  });
+
+  it("a single-file add still seeds its object before the steer (the 9db6 race stays closed)", async () => {
+    const { ctx, exhibits, switchTo } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    exhibits.push({ id: "ex-t", slug: "t", title: "T", objects: [] } as unknown as ExhibitMeta);
+    switchTo("t");
+    const seedSpy = vi.spyOn(ctx, "seedMaster");
+    const steerSpy = vi.spyOn(ctx, "setCurrentObjectId");
+
+    await flows.addFiles([new File([new Uint8Array([0])], "one.mp3", { type: "audio/mpeg" })]);
+
+    const objs = exhibits.find((e) => e.slug === "t")!.objects;
+    expect(objs.length).toBe(1);
+    expect(seedSpy).toHaveBeenCalledTimes(1);
+    expect(seedSpy).toHaveBeenLastCalledWith("t", objs[0]!.id, expect.any(String));
+    expect(seedSpy.mock.invocationCallOrder[0]!).toBeLessThan(steerSpy.mock.invocationCallOrder[0]!);
+  });
+});
