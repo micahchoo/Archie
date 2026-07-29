@@ -39,7 +39,7 @@
   import { humanBytes } from "./archive-probe.js";
   import {
     BUCKET_CORS_NOTE, RCLONE_REMOTE_PLACEHOLDER, TIER_BLURB, TIER_LABEL,
-    chooseInitial, isPublishable, rcloneCommands, rowsFor,
+    chooseInitial, isPublishable, rcloneCommands, rowsFor, SITE_DESTINATIONS,
   } from "./export-surface.js";
   import type { CorruptLogFinding } from "./publish-warnings.js";
   import { blocksPublish, REPO_SIZE_SOFT_LIMIT_BYTES, type PreflightFinding } from "@render/core";
@@ -63,6 +63,7 @@
   // The artifact half of the surface (Q-15): "give me a file of this shape", kept off the destination
   // rows so two verbs never share one column.
   import ExportMenu from "./ExportMenu.svelte";
+  import SetupFlow from "./SetupFlow.svelte";
   import { folderSinkSupported } from "./folder-backend.js";
   import { SINGLE_FILE_MAX_BYTES } from "./publish-flows.svelte.js";
 
@@ -264,7 +265,17 @@
   function applyRecommendation(p: ArchiveProbe): void {
     const initial = chooseInitial(p);
     if (!initial) { destination = null; return; }
-    destination = initial.destination;
+    // The setup flow asks where the library LIVES, and a `.archie.zip` is not a place — it is an
+    // artifact, and it lives in the export menu now (Q-15). The probe can still recommend it (its
+    // verdict layer is destination-complete on purpose), so a zip recommendation must land on the
+    // first SITE destination that actually fits rather than pre-selecting a row this screen does not
+    // draw — an invisible selection is the greyed-row swap wearing a different hat.
+    if (!SITE_DESTINATIONS.includes(initial.destination)) {
+      const fallback = SITE_DESTINATIONS.find((id) => isPublishable(p, id, initial.tier));
+      destination = fallback ?? null;
+    } else {
+      destination = initial.destination;
+    }
     if (initial.tier !== tier) ontier?.(initial.tier);
   }
   function selectDestination(id: DestinationId): void {
@@ -621,113 +632,27 @@
       </div>
 
     {:else if menuPhase === "choose"}
-      <!-- ONE FLOW (Archie-c367). Four destinations, always all four, in a fixed order; the probe's
-           recommendation arrives pre-selected; an unavailable one is greyed and carries its own reason.
-           The old three-cards chooser is gone with its `local` sub-screen — three buttons that produced
-           the same artifact read as three features, which is what caused the confusion this closes. -->
-      <header>
-        <p class="eyebrow">Publish</p>
-        <h2>Publish your library</h2>
-        {#if probe}
-          <p class="lede">{probe.folder.mediaFiles.toLocaleString()} {probe.folder.mediaFiles === 1 ? "item" : "items"} across {exhibits.length} {exhibits.length === 1 ? "exhibit" : "exhibits"}. Archie builds the same finished site whichever you pick — the differences are below.</p>
-        {:else}
-          <p class="lede">Archie builds the same finished site whichever you pick.</p>
-        {/if}
-      </header>
-
-      {#if !probe && probing}
-        <p class="note probe-status" role="status">
-          <Spinner size={16} />
-          Sizing your library{#if probeTotal > 0} — {probeDone.toLocaleString()} of {probeTotal.toLocaleString()} items{/if}…
-        </p>
-      {:else if deadEnd && probe}
-        <!-- Nothing fits anywhere. A menu of four refusals is worse than one honest sentence, so the
-             probe's own blockers replace the list. Every one of them names a number. -->
-        <div class="broken blocker" role="alert">
-          <p class="b-head">There's no route out for a library this size yet</p>
-          {#each probe.blockers as b}<p class="b-sub">{b}</p>{/each}
-        </div>
-      {:else if probe}
-        <fieldset class="dests">
-          <legend>{probe.recommendation ? "Recommended for your archive" : "Where should this go?"}</legend>
-          {#if probe.recommendation}<p class="rec-why">{probe.recommendation.why}</p>{/if}
-          {#each rows as row (row.id)}
-            <!-- The greyed row is a real, visible row with its real reason. It is NEVER dropped and
-                 NEVER replaced by another destination — see export-surface.ts's header for the
-                 defect that decided it. -->
-            <label class="dest" class:unavailable={!row.available} class:chosen={destination === row.id}
-              data-destination={row.id} data-available={row.available}>
-              <input type="radio" name="destination" value={row.id} checked={destination === row.id}
-                disabled={!row.available} onchange={() => selectDestination(row.id)} />
-              <span class="d-main">
-                <span class="d-title">
-                  {row.label}
-                  {#if row.recommended}<span class="d-rec">Recommended</span>{/if}
-                </span>
-                <span class="d-reason" class:refusal={!row.available}>{row.reason}</span>
-                <span class="d-blurb">{row.blurb}</span>
-                {#if row.available}<span class="d-facts">{row.facts}</span>{/if}
-              </span>
-            </label>
-          {/each}
-        </fieldset>
-
-        <fieldset class="tiers">
-          <legend>Quality</legend>
-          {#each ["archival", "web"] as const as t}
-            <label class="tier" class:chosen={tier === t}>
-              <input type="radio" name="quality" value={t} checked={tier === t} onchange={() => selectTier(t)} />
-              <span class="d-main">
-                <span class="d-title">{TIER_LABEL[t]}{#if probe}<span class="t-size">{humanBytes(probe.tiers[t].publishedBytes)}</span>{/if}</span>
-                <span class="d-blurb">{TIER_BLURB[t]}</span>
-              </span>
-            </label>
-          {/each}
-        </fieldset>
-
-        {#if unscaledSelectors.length > 0}
-          <!-- The web tier's residual correctness finding (Archie-4b0a): a selector the scaler refused
-               to move rather than mangle. Rare, specific, and the author can act on it — so it is said
-               here, before they publish, rather than only in the console. -->
-          <div class="broken" role="status">
-            <p class="b-head">{unscaledSelectors.length} {unscaledSelectors.length === 1 ? "note lands" : "notes land"} in the wrong place at Web quality</p>
-            <p class="b-sub">These were drawn with a shape Archie can't resize exactly, so on a resized image they'll sit off their subject. Publishing at Archival quality places them correctly.</p>
-            <ul>
-              {#each unscaledSelectors.slice(0, 5) as u}<li><code>/{u.exhibitSlug}</code> · {u.reason}</li>{/each}
-              {#if unscaledSelectors.length > 5}<li class="more">…and {unscaledSelectors.length - 5} more</li>{/if}
-            </ul>
-          </div>
-        {/if}
-      {:else}
-        <!-- No probe seam at all (a host that did not wire one). A stated absence, not a fake menu. -->
-        <p class="note">Archie couldn't size your library, so there's no recommendation this time. Pick a destination and it will tell you if it doesn't fit.</p>
-        <div class="choices">
-          <button class="choice" onclick={enterWizard}><span class="c-title">GitHub Pages</span></button>
-          <button class="choice" onclick={openZipOptions}><span class="c-title">One .zip file</span></button>
-        </div>
-      {/if}
-
-      <div class="actions">
-        {#if previewtree}
-          <!-- Not a destination — a secondary action. Reads as "see it before you decide." -->
-          <button type="button" class="ghost" onclick={() => (menuPhase = "preview")}>Preview as reader</button>
-        {/if}
-        <button type="button" class="ghost" onclick={close}>Cancel</button>
-        {#if probe && !deadEnd}
-          <button class="primary" disabled={!canPublishHere} onclick={publishChosen}>Publish</button>
-        {/if}
-      </div>
-
-      {#if probe && !deadEnd && (ondeposit || onexportselfcontained)}
-        <!-- The wall no longer CARRIES the artifact actions (Q-15) — it points at them. Exports answer
-             "give me a file of this shape", the rows above answer "where does the site live"; one link
-             out is what keeps two verbs from sharing a column. -->
-        <div class="extras">
-          <button type="button" class="x-link" data-action="open-export-menu" onclick={openExportMenu}>
-            Export a copy instead — a working copy, a readable copy, or a deposit copy →
-          </button>
-        </div>
-      {/if}
+      <!-- FIRST RUN (Q-15): one question per screen, and the quality question asked only when its
+           answer changes something. The c367 wall this replaces put four destinations, two tiers, a
+           recommendation, a findings panel and two export actions on one surface, every time. -->
+      <SetupFlow
+        {probe}
+        {probing}
+        {probeDone}
+        {probeTotal}
+        {rows}
+        exhibitCount={exhibits.length}
+        {destination}
+        {tier}
+        {canPublishHere}
+        {unscaledSelectors}
+        onselectdestination={selectDestination}
+        onselecttier={selectTier}
+        onconfirm={publishChosen}
+        onexport={ondeposit || onexportselfcontained ? openExportMenu : undefined}
+        onpreview={previewtree ? () => (menuPhase = "preview") : undefined}
+        oncancel={close}
+      />
 
     {:else if menuPhase === "export"}
       <!-- `onfolderviewer` is always passed: `onfolder` is a required prop, so the folder row's
@@ -1385,38 +1310,6 @@
     border: 1px solid var(--border-paper); border-radius: var(--radius-lg);
     background: var(--surface-paper-hover);
   }
-  /* The one-flow option set (Archie-c367): four destination rows, always all four. */
-  .dests, .tiers {
-    display: flex; flex-direction: column; gap: var(--space-2);
-    border: none; margin: 0 0 var(--space-4); padding: 0; min-width: 0;
-  }
-  .dests legend, .tiers legend {
-    font-family: var(--font-ui); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.14em;
-    text-transform: uppercase; color: var(--ink-paper-muted); padding: 0; margin-bottom: var(--space-2);
-  }
-  .rec-why { font-family: var(--font-body); font-size: 0.875rem; line-height: 1.55; color: var(--ink-paper-secondary); margin: 0 0 var(--space-2); }
-  .dest, .tier {
-    display: flex; gap: var(--space-3); align-items: flex-start; cursor: pointer;
-    padding: var(--space-3) var(--space-4);
-    background: var(--surface-paper-card); border: 1px solid transparent; border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low);
-    transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
-  }
-  .dest:hover:not(.unavailable), .tier:hover { background: var(--surface-paper-hover); }
-  .dest.chosen, .tier.chosen { border-color: var(--accent-2); box-shadow: var(--shadow-lift-mid); }
-  /* GREYED WITH ITS REASON. Dimmed and not selectable — but still drawn, still legible, and its
-     reason line keeps full contrast, because the reason is the entire point of leaving it on screen. */
-  .dest.unavailable { cursor: not-allowed; opacity: 0.62; box-shadow: none; background: transparent; }
-  .dest input, .tier input { margin-top: 0.28rem; flex: none; accent-color: var(--accent-2); }
-  .d-main { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
-  .d-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 400; color: var(--ink-paper-primary); display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
-  .d-rec { font-family: var(--font-ui); font-size: 0.62rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-2); }
-  .t-size { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-paper-muted); }
-  .d-reason { font-family: var(--font-body); font-size: 0.9rem; line-height: 1.5; color: var(--ink-paper-primary); }
-  /* The refusal keeps FULL opacity against the dimmed row — the author must be able to read why. */
-  .d-reason.refusal { color: var(--semantic-error); opacity: 1; }
-  .d-blurb { font-family: var(--font-body); font-size: 0.82rem; line-height: 1.5; color: var(--ink-paper-secondary); }
-  .d-facts { font-family: var(--font-mono); font-size: 0.76rem; color: var(--ink-paper-muted); }
   .probe-status { display: flex; align-items: center; gap: var(--space-2); }
   .remote-field { text-transform: none; letter-spacing: normal; font-size: 0.8rem; }
 

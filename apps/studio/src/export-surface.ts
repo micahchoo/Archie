@@ -170,6 +170,46 @@ export function isPublishable(probe: ArchiveProbe, destination: DestinationId, t
   return probe.destinations.some((d) => d.destination === destination && d.tier === tier && d.fits);
 }
 
+/**
+ * Where a library can LIVE, as opposed to what you can carry away from it (Q-15).
+ *
+ * A `.archie.zip` is opened BY a viewer — it is an artifact, not a place that stays updated — so the
+ * setup flow's "where should this live?" must not offer it, or a file ends up in the answer set for a
+ * question about homes. It keeps its row in {@link rowsFor}: that function's contract is "every
+ * destination, always", and the export menu still needs the zip's verdict and facts.
+ *
+ * Declared as a subset of {@link ROW_ORDER} rather than a second list, so the setup flow inherits the
+ * best-first draw order instead of inventing one that can drift from it.
+ */
+export const SITE_DESTINATIONS: readonly DestinationId[] = ROW_ORDER.filter((id) => id !== "zip");
+
+/**
+ * Does the quality tier CHANGE anything at this destination?
+ *
+ * The tier used to be a permanent top-level control, asked on every publish whether or not the answer
+ * mattered. It matters when it decides one of two things, and otherwise it is a choice between two
+ * identical outcomes:
+ *
+ *   - **fit** — archival is refused where web is accepted (a mid-sized library on GitHub Pages). Skip
+ *     the question here and the author lands on a destination that cannot take their library.
+ *   - **cost** — object storage takes any size at either tier, so fit alone would say "don't ask",
+ *     but the monthly bill differs. A charge nobody chose is worse than one more screen.
+ *
+ * A folder on your own disk has neither, at any size, so the setup flow never asks there.
+ *
+ * Returns TRUE when a destination has no verdict at all. That is unreachable against `probeArchive`
+ * (it emits all four × both tiers), but if it ever happens the honest move is to ASK — defaulting a
+ * tier on evidence we do not have is the same error as pre-selecting a greyed row.
+ */
+export function qualityMatters(probe: ArchiveProbe, destination: DestinationId): boolean {
+  const at = (tier: QualityTier) => probe.destinations.find((d) => d.destination === destination && d.tier === tier);
+  const archival = at("archival");
+  const web = at("web");
+  if (!archival || !web) return true;
+  if (archival.fits !== web.fits) return true;
+  return (archival.estimatedMonthlyCostUsd ?? 0) !== (web.estimatedMonthlyCostUsd ?? 0);
+}
+
 // ---------------------------------------------------------------------------------------------
 // Object storage: the hand-off command
 // ---------------------------------------------------------------------------------------------

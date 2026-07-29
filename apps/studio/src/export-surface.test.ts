@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { probeArchive, type ProbedFile } from "./archive-probe.js";
 import {
-  ROW_ORDER, chooseInitial, factsFor, isPublishable, rcloneCommands, rowsFor,
+  ROW_ORDER, SITE_DESTINATIONS, chooseInitial, factsFor, isPublishable, qualityMatters, rcloneCommands, rowsFor,
 } from "./export-surface.js";
 
 // The export surface's decision layer (Archie-c367). The claim under test is the ticket's own rule:
@@ -160,5 +160,85 @@ describe("rcloneCommands — the marker lands last (Archie-c85f)", () => {
     const [sync, marker] = rcloneCommands("  ", "");
     expect(sync).toBe("rclone sync ./my-library r2:my-archive --exclude archie.json");
     expect(marker).toBe("rclone copyto ./my-library/archie.json r2:my-archive/archie.json");
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// The setup flow's two questions (Q-15)
+// ---------------------------------------------------------------------------------------------
+
+describe("SITE_DESTINATIONS — where a library can LIVE", () => {
+  it("is the destination list minus the zip, which is an artifact and not a home", () => {
+    // A `.archie.zip` is opened BY a viewer; it is not a place that stays updated. It keeps its row
+    // in `rowsFor` (the wall and any caller that wants all four still get all four) but the setup
+    // flow must not offer it as a home, or "where does this live?" has a file in the answer set.
+    expect(SITE_DESTINATIONS).toEqual(["github-pages", "object-storage", "folder"]);
+    expect(SITE_DESTINATIONS).not.toContain("zip");
+    // And it stays a SUBSET of the draw order, so the setup flow inherits best-first ordering rather
+    // than inventing a second one.
+    expect(ROW_ORDER.filter((id) => SITE_DESTINATIONS.includes(id))).toEqual([...SITE_DESTINATIONS]);
+  });
+});
+
+describe("qualityMatters — the setup flow asks about quality only where it changes something", () => {
+  const SMALL_LIB = probeArchive(SMALL);
+  const MID = probeArchive(images(600, 4000, 9_000_000)); // past GitHub at archival, fits at web
+  const BIG = probeArchive(HUGE);
+
+  it("is FALSE when both tiers fit and neither costs anything — the question would be noise", () => {
+    // A small library on GitHub Pages fits either way and is free either way. Asking the author to
+    // choose is asking them to pick between two identical outcomes.
+    expect(qualityMatters(SMALL_LIB, "github-pages")).toBe(false);
+  });
+
+  it("is TRUE when the tier decides whether the destination FITS AT ALL", () => {
+    // The case the control exists for: archival is refused, web is accepted. Skipping the question
+    // here would leave the author on a destination that cannot take their library.
+    expect(qualityMatters(MID, "github-pages")).toBe(true);
+  });
+
+  it("is TRUE when the tier changes what the destination COSTS", () => {
+    // Object storage fits at both tiers whatever the size, so fit alone would say "don't ask" — but
+    // the bill differs, and a monthly charge the author never chose is worse than one more screen.
+    expect(qualityMatters(BIG, "object-storage")).toBe(true);
+    expect(qualityMatters(SMALL_LIB, "object-storage")).toBe(false); // both $0 — nothing to decide
+  });
+
+  it("is FALSE for a folder on your own disk at any size — no cap, no bill", () => {
+    expect(qualityMatters(BIG, "folder")).toBe(false);
+    expect(qualityMatters(SMALL_LIB, "folder")).toBe(false);
+  });
+
+  it("is TRUE when a destination has no verdict at all, so the author is never silently defaulted", () => {
+    // Missing verdicts are unreachable against `probeArchive`; if one ever appears, ASK. Defaulting a
+    // tier on evidence we do not have is the same error as pre-selecting a greyed row.
+    const stripped = { ...BIG, destinations: BIG.destinations.filter((d) => d.destination !== "folder") };
+    expect(qualityMatters(stripped, "folder")).toBe(true);
+  });
+});
+
+describe("rowsFor re-states every number when the tier changes", () => {
+  // Moved here from `e2e/export-surface.spec.ts` when the tier stopped being a permanent control on
+  // the surface (Q-15: it is asked only where it changes something, and the e2e fixture is small
+  // enough that it never does). The claim is unchanged and is worth keeping: the web tier re-encodes
+  // every image at 2,400 px, so the same destination reports different bytes at each tier. A tier
+  // that moves nothing here is a tier the projection never heard — publish-flows keys its site cache
+  // on it (`cachedSiteTier`).
+  const probe = probeArchive(images(600, 4000, 9_000_000));
+
+  it("gives a destination different facts at archival and at web", () => {
+    const factsAt = (tier: "archival" | "web") =>
+      Object.fromEntries(rowsFor(probe, tier).map((r) => [r.id, r.facts]));
+    const archival = factsAt("archival");
+    const web = factsAt("web");
+    expect(archival["github-pages"]).not.toBe("");
+    expect(web["github-pages"]).not.toBe(archival["github-pages"]);
+    expect(web["object-storage"]).not.toBe(archival["object-storage"]);
+  });
+
+  it("and it is a two-way door — asking for archival again returns the archival numbers", () => {
+    const first = rowsFor(probe, "archival").map((r) => r.facts);
+    rowsFor(probe, "web");
+    expect(rowsFor(probe, "archival").map((r) => r.facts)).toEqual(first);
   });
 });

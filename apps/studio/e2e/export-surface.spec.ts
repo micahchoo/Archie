@@ -12,8 +12,9 @@ import { join } from "node:path";
 //   1. the probe's recommendation arrives PRE-SELECTED, and it is a destination that actually fits;
 //   2. an unavailable destination is GREYED WITH ITS REASON and is NEVER silently swapped — the
 //      centrepiece, and the one red-greened by forcing `showDirectoryPicker` away;
-//   3. switching quality re-states every number (the projection cache is keyed on the tier, so a
-//      control that moves nothing on screen is a control the engine never heard);
+//   3. the quality question is asked ONLY where its answer changes something (Q-15) — the
+//      "switching quality re-states every number" half moved to export-surface.test.ts, which can
+//      drive both tiers against a probe this small fixture cannot produce;
 //   4. the embed snippet is on the success panel, where a URL exists — and nowhere earlier.
 //
 // The fixture is the same one publish-empty.spec.ts uses: fork a seeded example with "Keep a copy",
@@ -52,7 +53,7 @@ async function openPublishOnAFork(page: Page) {
   const skip = page.getByRole("button", { name: /skip for now/i });
   if (await skip.isVisible().catch(() => false)) await skip.click();
   const dialog = page.getByRole("dialog", { name: "Publish" });
-  await expect(dialog.getByRole("heading", { name: /publish your library/i })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: /where should this library live/i })).toBeVisible();
   return dialog;
 }
 
@@ -60,9 +61,12 @@ test("the probe's recommendation arrives pre-selected, on a destination that fit
   await seedIdentity(page);
   const dialog = await openPublishOnAFork(page);
 
-  // The list itself: all four destinations, always. `toHaveCount` waits, so this cannot read 0 against
-  // an un-rendered surface (.claude/rules/playwright-count-does-not-wait.md).
-  await expect(dialog.locator("[data-destination]")).toHaveCount(4);
+  // The list itself: every SITE destination, always. Three, not four — the `.archie.zip` is an
+  // artifact rather than a home (Q-15) and has moved to the export menu; the zip row is asserted
+  // there instead. `toHaveCount` waits, so this cannot read 0 against an un-rendered surface
+  // (.claude/rules/playwright-count-does-not-wait.md).
+  await expect(dialog.locator("[data-destination]")).toHaveCount(3);
+  await expect(dialog.locator('[data-destination="zip"]')).toHaveCount(0);
 
   // Exactly one row carries the Recommended badge, and it is the checked one. Keyed on the badge
   // rather than on a position, so re-ordering the list cannot make this pass by accident.
@@ -102,7 +106,7 @@ test("an unavailable destination is greyed WITH ITS REASON, and nothing is swapp
   page.on("download", (d) => downloads.push(d.suggestedFilename()));
 
   const dialog = await openPublishOnAFork(page);
-  await expect(dialog.locator("[data-destination]")).toHaveCount(4);
+  await expect(dialog.locator("[data-destination]")).toHaveCount(3);
 
   for (const id of ["folder", "object-storage"]) {
     const row = dialog.locator(`[data-destination="${id}"]`);
@@ -187,36 +191,32 @@ test("Deposit a copy produces a real BagIt bag, and says what it is", async ({ p
   await expect(dialog.getByText(/manifest-sha256\.txt/)).toBeVisible();
 });
 
-test("switching quality re-states the numbers on the destinations", async ({ page }) => {
+test("the quality question is not asked when its answer changes nothing", async ({ page }) => {
+  // THE Q-15 CLAIM, and the inverse of what this test used to assert. The tier was a permanent
+  // top-level control on the c367 wall: asked on every publish, whether or not the two answers
+  // differed. For this fixture — a small library on GitHub Pages — archival and web both fit and both
+  // cost nothing, so the choice is between two identical outcomes and the flow does not pose it.
+  //
+  // WHAT MOVED, so nobody reads this as lost coverage: the old assertion here was "switching quality
+  // re-states every number on every row". That claim now lives in
+  // `src/export-surface.test.ts` ("rowsFor re-states every number when the tier changes"), which can
+  // exercise BOTH tiers against a probe of any size — something this fixture cannot do, since it is
+  // deliberately small enough to fit everywhere. The decision itself is pinned by `qualityMatters`'s
+  // own unit tests.
   await seedIdentity(page);
   const dialog = await openPublishOnAFork(page);
 
-  const zipFacts = dialog.locator('[data-destination="zip"] .d-facts');
-  const ghFacts = dialog.locator('[data-destination="github-pages"] .d-facts');
-  await expect(zipFacts).toBeVisible();
+  // No tier control on screen at all, and the primary button commits rather than advancing.
+  await expect(dialog.locator(".tier")).toHaveCount(0);
+  await expect(dialog.getByRole("radio", { name: /Archival/ })).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Publish", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Next", exact: true })).toHaveCount(0);
 
-  const archivalRadio = dialog.getByRole("radio", { name: /Archival/ });
-  const webRadio = dialog.getByRole("radio", { name: /^Web/ });
-
-  await archivalRadio.check();
-  await expect(archivalRadio).toBeChecked();
-  const archivalZip = (await zipFacts.textContent())!.trim();
-  const archivalGh = (await ghFacts.textContent())!.trim();
-  const archivalTierSize = (await dialog.locator(".tier .t-size").first().textContent())!.trim();
-  expect(archivalZip, "the zip row must state some numbers to compare").not.toBe("");
-
-  await webRadio.check();
-  await expect(webRadio).toBeChecked();
-  // The web tier re-encodes every image at 2,400 px, so the same destinations report different bytes.
-  // If the tier control moved nothing on screen, it moved nothing in the engine either — the
-  // projection cache is keyed on the tier (publish-flows `cachedSiteTier`).
-  await expect(zipFacts).not.toHaveText(archivalZip);
-  await expect(ghFacts).not.toHaveText(archivalGh);
-  expect(archivalTierSize).not.toBe("");
-
-  // And back — the control is a real two-way choice, not a one-way door.
-  await archivalRadio.check();
-  await expect(zipFacts).toHaveText(archivalZip);
+  // And the screen still carries what the author DOES need to decide: the destination rows and the
+  // recommendation's reasoning. A surface that asks nothing and says nothing would also pass the
+  // three assertions above, which is why this one is here.
+  await expect(dialog.locator("[data-destination]")).toHaveCount(3);
+  await expect(dialog.locator(".rec-why")).not.toBeEmpty();
 });
 
 test("the embed snippet is on the success panel, not on the chooser", async ({ page }) => {
@@ -241,8 +241,10 @@ test("the embed snippet is on the success panel, not on the chooser", async ({ p
   // wizard (which needs a network push): the .archie.zip has no address, so its panel carries the
   // ?src= share form — the snippet appears the moment a URL is supplied there, which is the same
   // "a URL exists first" rule stated in the other direction.
-  await dialog.getByRole("radio", { name: /One \.zip file/ }).check();
-  await dialog.getByRole("button", { name: "Publish", exact: true }).click();
+  // The zip is reached through the EXPORT MENU now (Q-15) — it is an artifact you carry away, not a
+  // home the library keeps. Two clicks, and the navigation doubles as the menu's wiring proof.
+  await dialog.locator('[data-action="open-export-menu"]').click();
+  await dialog.locator('[data-export="zip"]').click();
   await expect(dialog.getByRole("heading", { name: /share a working copy/i })).toBeVisible();
 
   const [download] = await Promise.all([

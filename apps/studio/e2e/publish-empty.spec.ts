@@ -57,8 +57,9 @@ test("forking an example clears the refusal — the destinations come back", asy
   if (await skip.isVisible().catch(() => false)) await skip.click();
 
   const dialog = page.getByRole("dialog", { name: "Publish" });
-  await expect(dialog.getByRole("heading", { name: /publish your library/i })).toBeVisible();
-  // All four destinations come back, and one of them arrives pre-selected from the probe.
-  await expect(dialog.locator("[data-destination]")).toHaveCount(4);
+  await expect(dialog.getByRole("heading", { name: /where should this library live/i })).toBeVisible();
+  // Every SITE destination comes back (three — the zip is an artifact and lives in the export
+  // menu since Q-15), and one of them arrives pre-selected from the probe.
+  await expect(dialog.locator("[data-destination]")).toHaveCount(3);
   await expect(dialog.locator("[data-destination]").filter({ hasText: "Recommended" })).toHaveCount(1);
 });
