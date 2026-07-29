@@ -8,23 +8,44 @@
 //
 // Storage shape and key are unchanged — `deploy-flows` re-exports these, so existing callers and the
 // persisted data both keep working.
-import { readJson, writeJson } from "../persisted.js";
+import { readJson, writeJson, safeRemove } from "../persisted.js";
 import type { DeployTarget } from "./types.js";
 
 const rememberKey = (libraryId: string) => `archie:deploy:${libraryId}`;
 
-/** Remember where this library last deployed, for the update-confirm return visit AND for the publish
- *  base. Stores `{ target, url }` ONLY — never the token/session. A persist failure is not worth
- *  failing a landed deploy over (writeJson swallows it); the remembered target is a convenience. */
+/** Where a library lives — its HOME (Q-15), not merely where it last deployed.
+ *
+ *  `publishedAt` is OPTIONAL and must stay so: every record written before Q-15 lacks it, and a
+ *  reader that assumes it strands every author who deployed before this shipped. Absent means
+ *  "we don't know when", which the publish sheet renders as nothing — never as "never". */
+export interface RememberedHome {
+  target: DeployTarget;
+  url: string;
+  publishedAt?: number;
+}
+
+/** Remember where this library last deployed, for the update-confirm return visit, the publish base,
+ *  AND the publish sheet's "last published" line. Stores `{ target, url, publishedAt }` ONLY — never
+ *  the token/session. A persist failure is not worth failing a landed deploy over (writeJson swallows
+ *  it); the remembered target is a convenience. */
 export function rememberTarget(libraryId: string, target: DeployTarget, url: string): void {
-  writeJson(rememberKey(libraryId), { target, url });
+  writeJson(rememberKey(libraryId), { target, url, publishedAt: Date.now() } satisfies RememberedHome);
 }
 
 /** The remembered target for a library, or null if it has never deployed (or the store is unreadable).
  *  No shape validation (trust-the-parse, matching the original behavior) — only absence/corruption
  *  collapse to null. */
-export function rememberedTarget(libraryId: string): { target: DeployTarget; url: string } | null {
-  return readJson<{ target: DeployTarget; url: string }>(rememberKey(libraryId));
+export function rememberedTarget(libraryId: string): RememberedHome | null {
+  return readJson<RememberedHome>(rememberKey(libraryId));
+}
+
+/** Disown the home — the publish surface's "Change where this publishes…" (Q-15).
+ *
+ *  This also resets `publishBaseFor` to `""`, which is the point rather than a side effect: ids must
+ *  not keep being baked against a URL the author has just disowned. A library with no home is a
+ *  no-op, so the caller never has to check first. */
+export function forgetTarget(libraryId: string): void {
+  safeRemove(rememberKey(libraryId));
 }
 
 /**

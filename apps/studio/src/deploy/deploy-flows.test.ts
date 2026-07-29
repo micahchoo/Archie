@@ -186,7 +186,11 @@ describe("deployToPages — orchestration", () => {
     const flows = await makeFlows();
     await flows.deployToPages(session, target, () => {});
     const raw = store.get("archie:deploy:lib-1")!;
-    expect(JSON.parse(raw)).toEqual({ target, url: "https://alice.github.io/my-exhibit/" });
+    expect(JSON.parse(raw)).toMatchObject({ target, url: "https://alice.github.io/my-exhibit/" });
+    // The stored KEY SET is the "never the token or session" guarantee — assert it exactly, so a
+    // future field has to be added here deliberately. `publishedAt` joined it for Q-15's publish
+    // sheet ("last published <when>"); it is a number, not a credential.
+    expect(Object.keys(JSON.parse(raw)).sort()).toEqual(["publishedAt", "target", "url"]);
     expect(raw).not.toContain("gho_secret_xyz");
     expect(raw).not.toContain("token");
   });

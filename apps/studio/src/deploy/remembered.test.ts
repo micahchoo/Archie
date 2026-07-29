@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { publishBaseFor, rememberTarget, rememberedTarget } from "./remembered.js";
+import { publishBaseFor, rememberTarget, rememberedTarget, forgetTarget } from "./remembered.js";
 import { WORKING_IRI_BASE } from "@render/core";
 
 // The publish base (decided 2026-07-26). A published id should say where the thing actually lives, or
@@ -63,7 +63,46 @@ describe("publishBaseFor", () => {
 describe("rememberedTarget round trip", () => {
   it("returns what was stored, and null for an unknown library", () => {
     rememberTarget("lib-1", target, "https://you.github.io/archive/");
-    expect(rememberedTarget("lib-1")).toEqual({ target, url: "https://you.github.io/archive/" });
+    expect(rememberedTarget("lib-1")).toMatchObject({ target, url: "https://you.github.io/archive/" });
     expect(rememberedTarget("lib-unknown")).toBeNull();
+  });
+});
+
+// The HOME the publish sheet reads (Q-15). The sheet says "last published <when>" and offers "Change
+// where this publishes…", so the store has to carry a timestamp and be clearable — neither of which
+// the deploy-only shape needed.
+describe("the remembered target as a HOME", () => {
+  it("stamps publishedAt when a deploy lands", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-28T12:00:00Z"));
+    rememberTarget("lib-1", target, "https://you.github.io/archive/");
+    expect(rememberedTarget("lib-1")?.publishedAt).toBe(Date.parse("2026-07-28T12:00:00Z"));
+    vi.useRealTimers();
+  });
+
+  it("forgetTarget clears the home — publishBaseFor goes back to relative with it", () => {
+    rememberTarget("lib-1", target, "https://you.github.io/archive/");
+    expect(rememberedTarget("lib-1")).not.toBeNull();
+    forgetTarget("lib-1");
+    expect(rememberedTarget("lib-1")).toBeNull();
+    // The base is derived from the same record, so forgetting a home must not leave publishes
+    // baking ids against a URL the author has disowned.
+    expect(publishBaseFor("lib-1")).toBe("");
+  });
+
+  it("forgetTarget on a library with no home is a no-op, not a throw", () => {
+    expect(() => forgetTarget("lib-never")).not.toThrow();
+    expect(rememberedTarget("lib-never")).toBeNull();
+  });
+
+  // Records written before Q-15 have no `publishedAt`. They must still load and still drive the
+  // publish base — the field is optional, and a reader that assumes it would strand every author who
+  // deployed before this shipped.
+  it("loads a LEGACY record that predates publishedAt", () => {
+    store.set("archie:deploy:lib-old", JSON.stringify({ target, url: "https://you.github.io/old/" }));
+    const got = rememberedTarget("lib-old");
+    expect(got).toMatchObject({ target, url: "https://you.github.io/old/" });
+    expect(got?.publishedAt).toBeUndefined();
+    expect(publishBaseFor("lib-old")).toBe("https://you.github.io/old/");
   });
 });
