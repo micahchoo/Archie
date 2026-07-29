@@ -70,7 +70,7 @@ visibility claim additionally needs a browser drive ([[svelte-no-typecheck-net]]
 
 ### Task 3: ExportMenu extraction [CHANGE SITE]
 
-**Orient:** Exports must stop sharing a wall with site publishing (R3) — this moves them, behavior-preserving, into their own component.
+**Orient:** Exports must stop sharing a wall with site publishing (R3) — this moves them, behavior-preserving, into their own component; the zip sheet keeps `ZipExportFields.svelte` and its handlers byte-for-byte (R7).
 **Flow position:** Wave 1: Publish.svelte router → **ExportMenu** → existing sinks (`downloadProjectZip`, `exportSelfContained`, deposit callback, `localPublishFolder` as one-off viewable copy).
 **Upstream contract:** Receives `probe: ArchiveProbe`, the sink callbacks Publish.svelte already holds (`ondeposit`, `onexportselfcontained`, zip handlers), and `onback`.
 **Downstream contract:** Calls the SAME `publish-flows` functions the wall calls today — no new sink logic.
@@ -96,7 +96,7 @@ visibility claim additionally needs a browser drive ([[svelte-no-typecheck-net]]
 
 ### Task 5: PublishSheet — the home card [CHANGE SITE]
 
-**Orient:** The ≤2-click publish (R1): home set → one compact sheet, one primary button.
+**Orient:** The ≤2-click publish (R1): home set → one compact sheet, one primary button. The machine's auth/progress/repo-picker states are entered, never modified (R7).
 **Flow position:** Wave 3: Publish.svelte router (home set) → **PublishSheet** → machine `update-confirm`/`publishing` states.
 **Upstream contract:** `rememberedTarget(libraryId)` (Task 2 shape) + `probe` facts.
 **Downstream contract:** [Publish changes] enters the machine exactly where the current re-deploy path does; "Change where this publishes…" calls `forgetTarget` then routes to SetupFlow; [View site] uses the machine's `openExternal` (hostname-pinned, Archie-2139).
@@ -112,7 +112,7 @@ visibility claim additionally needs a browser drive ([[svelte-no-typecheck-net]]
 **Orient:** One header button carries both verbs (LD4); today's button opens the wall directly.
 **Flow position:** Wave 4: editor header → **Publish ▾ menu** → Publish.svelte with an `intent` ("publish" | "export").
 **Skill:** `none` (wiring; drive-verified)
-**Files:** Modify: `apps/studio/src/App.svelte` (mount, `p.openPublish` call sites `:2797/:2820` area), the header component that renders the Publish button (locate via `grep -rn "openPublish" apps/studio/src` — flag if >2 files need edits), `apps/studio/src/Publish.svelte` (accept `intent` prop, default "publish")
+**Files:** Modify: `apps/studio/src/App.svelte` — the header entry is the `publish-signal` button at `:2280` (`onclick` → `ensurePub().then((p) => p.openMenu())`; `openMenu` is `publish-flows.svelte.ts:726`, a DIFFERENT function from `openPublish:834`). The `<Publish>` mount props sit near `:2797` (`onenterweb={p.openPublish}`). Locate by `grep -a -rn "publish-signal" apps/studio/src` — NOT by grepping `openPublish`, which never surfaces the button. Also modify: `apps/studio/src/Publish.svelte` (accept `intent` prop, default "publish"). NUL-byte warning: `publish-flows.svelte.ts` contains NUL bytes — plain `grep` returns zero matches on it; always `grep -a`.
 
 - [ ] Split-button: primary = Publish (sheet or setup), menu item = "Export a copy…" (ExportMenu).
 - [ ] Run gates + drive: both entries land on the right surface; a prop typed but not destructured is exactly the [[svelte-no-typecheck-net]] class — the drive is the gate, not svelte-check.
@@ -191,3 +191,4 @@ c367 (spec LD5).
 | Date | Role | Summary |
 |---|---|---|
 | 2026-07-28 | author | Q-14 was already minted (drive harness, 2026-07-22); the surface-shape decision renumbered to Q-15 throughout. |
+| 2026-07-28 | author | Review fixes: Task 6's entry point corrected to the `publish-signal` button (App.svelte:2280, `p.openMenu()`) — grepping `openPublish` never finds it; R7 tags added to Tasks 3/5; NUL-byte grep warning added for publish-flows.svelte.ts. Reviewer: 1 blocker, 2 notes, all other checks pass. |
