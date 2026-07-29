@@ -6,7 +6,7 @@ scope:
   - ".github/workflows/**"
   - "scripts/doclint.mjs"
   - "scripts/perf/**"
-updated: 2026-07-27
+updated: 2026-07-28
 ---
 # verification
 > *how do I prove a change works?*

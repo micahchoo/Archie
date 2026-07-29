@@ -1,32 +1,70 @@
-# HANDOFF — driving the non-map backlog (2026-07-27)
+# HANDOFF — non-map backlog + knowledge layer (deduped 2026-07-28)
 
-Branch **`fix/flaky-gates`**, off `main` @ `39f479a`. Goal: drive all current non-map tickets to
-completion. Everything below is committed; the tree is clean apart from pre-existing artifacts that
-are NOT mine (`.org.chromium.Chromium.*`, `Prior Art/`, `playwright-transform-cache-1000/`,
-`archie-loop-adAtKv/`, `docs/research/next-level-2026-07-26.md`).
+Primary checkout is branch **`fix/flaky-gates`** and it is **SHARED** — other sessions commit here,
+`main` has advanced onto this branch's commits, and agent worktrees hang off the same `.git`. All
+merges to `main` happen in `.claude/worktrees/merge-main` (main is checked out THERE, not here).
+`main` = `origin/main` = **`dff139b`**, CI fully green, pushed (user-authorized).
 
-*(The previous handoff covered the 2026-07-24 perf sweeps. That work is all in `main` now; its
-still-open follow-ups — the read-only mount port, concurrent `addFiles`, `toZip`'s 635 ms block —
-live in `ledgers/PERF-image-pipeline-2026-07-24.md` and `ledgers/PERF-annotation-spine-2026-07-24.md`,
-which remain the reference for them.)*
+*(2026-07-28 comb: this file had accreted ~8× duplicated table rows and 3× duplicated sections from
+append double-writes, plus whole sections superseded by later ones. Deduped and pruned; corrections
+kept in corrected form only; full history in `git log -- HANDOFF.md`.)*
 
-## READ THIS FIRST — two things that cost real time
+## Current state
 
-**1. The live backlog was uncommitted on a stale branch.** The session started on
-`perf/spine-and-image-pipeline`, which is **185 commits behind `main`** and whose only unmerged
-commit was mine. The real ticket list — 13 tickets `main` had never seen, plus 14 it still listed
-open — was sitting as an *unstaged modification* to `.seeds/issues.jsonl` there. It is now committed
-(`f7db724`), verified a strict superset first: no main-only record, no main-only status, and all 37
-content-drifted records newer on the restored side. **Check `git status` on `.seeds/` before trusting
-`sd list`.**
+- **Both wayfinder maps (c268 published-tree, 34a2 small-archive) are CLOSED; the goal loop is
+  stopped.** 16/17 + the last ticket (7e6f) landed via `feat/video-complete` @ `6f4c3cc`.
+- Backlog: **36 open, 6 in progress** (`sd stats`, 2026-07-28). `sd list` silently truncates at
+  `--limit 50` — reconcile against `sd stats` (rule: [[post-review-fixes-are-unreviewed]]).
+- Gates at branch `99b937a`: render-core 1243, studio 987, viewer 190, studio e2e 12/12, a11y 0,
+  svelte-check 0/0, tsc clean. On merged main the studio suite baseline is now **1227**.
+- Run tests PER APP (`pnpm exec vitest` inside the package). Typecheck is
+  `node ../../node_modules/typescript-native/bin/tsc --noEmit` (TS7); never bare `tsc`.
+  Viewer e2e: `pnpm run e2e -- <spec>` from `apps/viewer` (builds first, ~12s).
+  The Tauri debug binary is built, so `scripts/desktop-boot.sh` runs.
 
-**2. A `scripts/` file copied to `/tmp` computes `ROOT` from `$BASH_SOURCE/..`** and silently
-resolves it to `/`. A 20-run "baseline" measurement came back 20/20 FAIL for that reason alone and
-was nearly reported as a red-green proof. Run baseline copies from inside the repo.
+## Live items, in order of bite
 
-## Done — 24 tickets moved (16 fully closed)
+1. **Archie-1244/2865's CSS is NOT merged while the tracker says closed.** Verified again
+   2026-07-28: `task/1244-shadow-recal` (14 commits, tip `5b033ce`, worktree `/tmp/wt-1244-shadows`)
+   is on neither main nor this branch, but the ticket-close for both is committed (`da2c28f`).
+   Branch ref + objects live in the primary `.git`, so a `/tmp` wipe loses only the worktree
+   registration. Needs a merge with main before landing. Details + durable lessons below.
+2. **Archie-be3a's fix is ONLY on this branch** — main's `capabilities/default.json` still carries
+   the cleartext `http://**` grant. Merging `fix/flaky-gates` (or cherry-picking `7da8734`) closes it.
+3. **Archie-06fb** — viewer e2e RED on main: `selection.spec.ts:96` passes isolated (552 ms), times
+   out in the full suite. It is the only gate on the real-pointer hit path. Prior diagnosis on the
+   ticket (`53b5396`): bisection says NOT one poisoning spec; the drag delta reads `d=(0,0)`. Start
+   there.
+4. **Archie-eec7** — `axe-core` is declared at root `package.json:24` and wired into nothing. The
+   overlay-contrast half shipped (`665d605`, found a palette collapsing to ΔE 1.3 under
+   deuteranopia); the SR walk remains (needs ears). Sibling partial: **cf4a** (tap targets fixed,
+   design half — long-press, popover anchoring, hover-discovery — remains).
+5. **Archie-0c7f** (AV poster/duration/dims at ingest, `c592c4e`) — one step left: drive Studio e2e
+   (port 5198) with a real video, assert a non-black poster.
+6. **Archie-0c1d qualifies a CONTEXT rule.** §"Local view loop" says a template is not the author's
+   content; the decided publish opt-in makes that a per-publish choice. Update CONTEXT when building
+   it, or a later reader will "fix" it back.
+7. **`scripts/seed-fixture.mjs` would not seed the 70-object corpus as of 07-27** (0/0/0, then hung
+   in the dialog flow; suspects at `seed-fixture.mjs:121-140`). c74e's acceptance ran on its own
+   `scripts/accept/*` harness instead, so this is still unverified — it gates `scale-check.yml`.
+8. **Open user decision:** `.nojekyll` counterfactual push to the live repo was permission-refused;
+   needs explicit go-ahead or a scratch repo.
 
-Each code change is red-green proven by injecting the defect and watching the gate fail.
+**Needs a human, cannot move autonomously:** `9ece` (P0 packaged-Flatpak verification — blocks
+`623e` and the whole Tauri lane), `a09d`, `79be`/`87ba` (human-gate triage), `84af` (one breakpoint
+decision: rigid chips overflow at 1024px vs shrinkable chips that never fire the overflow menu; work
+built + measured, WIP preserved at `ledgers/probes/2026-07-27-84af-overflow-menu-WIP.svelte.txt`),
+`05e4` (palette walk).
+
+**Standing decisions from the grilling rounds** (recorded on tickets): parked tickets whose revive
+trigger hasn't fired get closed, triggers preserved; `96e6` UNPARKED, downstream of `3754`, must
+share one column-mapping component; `b9c4` folded into `c74e` (V8 heap excludes decoded surfaces /
+GPU textures — the very things a cache budget governs); **no lanes** — take anything, collisions
+accepted, check `git log --all --not HEAD` on the target file first.
+
+## 2026-07-27 backlog session — 24 tickets moved (16 closed)
+
+Each code change red-green proven by injecting the defect and watching the gate fail.
 
 | Ticket | Commit | Gate, and how it was proven |
 |---|---|---|
@@ -36,428 +74,105 @@ Each code change is red-green proven by injecting the defect and watching the ga
 | Archie-d25f | `c23cf48` | demotion-loses-provenance → 3 core fail; provenance-survives-edit → studio fail. |
 | Archie-15a5 | `c7b1631` | race-window probe: asserted fact ABSENT at the old wait's break point in **20/20** boots. |
 | Archie-a1d4 | `708e7bb` | not-rendered → 4 fail; head-in-prior-list → 2 fail. |
-| Archie-321c | `a027454` | "Anonymous" → 1 fail; CFF stub → 1 fail; tags dropped → 2 fail. **Held open** (needs Zotero). |
+| Archie-321c | `a027454` | "Anonymous" → 1 fail; CFF stub → 1 fail; tags dropped → 2 fail. Later closed by user decision — Zotero round-trip dropped as a gate; close reason states what is therefore unverified. |
 | Archie-6d85 | `836517c` | dispatch removed → 2 fail; base-not-restored → 2 fail. |
 | Archie-0cd6 | `83141b8` | severity model + preflight walk. Two weak tests rewritten before shipping (see below). |
 | Archie-8772 | `83141b8` | rights coverage as a `report`, keyed-read-only, never gates. |
-| Archie-7e2e | — | answered: opener chain verified plugin → `open` crate → `xdg-open` → OpenURI portal, **inside a real GNOME 49 sandbox**. |
+| Archie-7e2e | — | answered: opener chain verified plugin → `open` crate → `xdg-open` → OpenURI portal, inside a real GNOME 49 sandbox. |
 | Archie-e47d | — | answered by audit: all 9 anchors already intercept; no bare `target=_blank` remains. |
-| Archie-b5c2 | `8c0abc3` | **premise corrected, ticket left open** — see below. |
-| Archie-7e5b | `0d8f444` | S3a + S3b shipped ahead of the wiring; dedupe-removed → 1 fail, first-object-only → 1 fail. Ticket stays open for the caller. |
-| Archie-ea57 | `99b937a` | axe ratchet; **it found 676 real violations on its first run** and they were fixed, not baselined. Revert one token → 8 pages red, exit 1. |
-| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
-| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
-| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
-| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
-| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
-| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
-| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
-| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
-| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
-| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
-| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
-| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
-| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
-| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
-| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
-| Archie-7e5b | `0d8f444` | S3a + S3b shipped ahead of the wiring; dedupe-removed → 1 fail, first-object-only → 1 fail. Ticket stays open for the caller. |
-| Archie-ea57 | `99b937a` | axe ratchet; **it found 676 real violations on its first run** and they were fixed, not baselined. Revert one token → 8 pages red, exit 1. |
-| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
-| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
-| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
-| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
-| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
-| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
-| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
-| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
-| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
-| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
-| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
-| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
-| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
-| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
-| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
-| Archie-7e5b | `0d8f444` | S3a + S3b shipped ahead of the wiring; dedupe-removed → 1 fail, first-object-only → 1 fail. Ticket stays open for the caller. |
-| Archie-ea57 | `99b937a` | axe ratchet; **it found 676 real violations on its first run** and they were fixed, not baselined. Revert one token → 8 pages red, exit 1. |
-| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
-| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
-| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
-| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
-| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
-| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
-| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
-| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
-| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
-| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
-| Archie-eec7 | `665d605` | **partial** — overlay contrast gate shipped; it found a palette collapsing to ΔE 1.3 under deuteranopia. SR walk remains (needs ears). |
-| Archie-cf4a | `5defa37` | **partial** — 11 undersized tap targets → 0. Design half (long-press, popover anchoring, hover-discovery) remains. |
-| Archie-7b86 | `325de74` | **CLOSED** — V50 waveform shipped; V49/V53 were already fixed 2026-07-26 and the ticket body was a day stale. |
-| Archie-8150 | `—` | **CLOSED** — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
-| Archie-5582 | `—` | **CLOSED** — tldraw export read at source; de-scoping answer (Archie's page has zero @font-face, so the font embedder is moot). |
+| Archie-b5c2 | `8c0abc3` | premise corrected, ticket open — see below. |
+| Archie-7e5b | `0d8f444` | S3a + S3b shipped ahead of the wiring; dedupe-removed → 1 fail, first-object-only → 1 fail. Open for the caller. |
+| Archie-ea57 | `99b937a` | axe ratchet; **676 real violations on its first run**, fixed not baselined. Revert one token → 8 pages red, exit 1. |
+| Archie-eec7 | `665d605` | partial — see live item 4. |
+| Archie-cf4a | `5defa37` | partial — see live item 4. |
+| Archie-7b86 | `325de74` | CLOSED — V50 waveform shipped; V49/V53 already fixed 2026-07-26, ticket body a day stale. |
+| Archie-8150 | — | CLOSED — measured 0% duplication; 28% of sources ARE cross-exhibit but all remote IIIF. NO-GO with a stated flip condition. |
+| Archie-5582 | — | CLOSED — tldraw export read at source; Archie's page has zero @font-face, so the font embedder is moot. |
 
-### Three things I would not want lost
+Same session, later: `1474` narrative header (`9db0dec`, closed), `be3a` (`baa86a7`, closed — it was
+the `http:default` CAPABILITY, not the CSP), `fc75` closed / real gap filed as `69f9` (since closed
+too — migrate-on-read, `e0416f4`/`da5506b`; remainder Archie-5c8d also landed, `857e1fa`), `7eae`
+closed superseded,
+Flatpak unattended build (`scripts/build-flatpak.sh` — owns BOTH halves because the manifest
+installs a prebuilt binary; verified booting under Xvfb writing `library.json` through temp→rename
+inside confinement).
 
-1. **Archie-15a5's original flake did not reproduce.** The old script also passed 20/20 — on a
-   32-core box `sleep 2` still covers WebKit's flush. The race-window probe is what demonstrates the
+### Three things not to lose
+
+1. **Archie-15a5's original flake did not reproduce** — the old script also passed 20/20 (on a
+   32-core box `sleep 2` covers WebKit's flush). The race-window probe is what demonstrates the
    defect. Don't upgrade that to "proven red-green end to end".
-2. **Archie-b5c2's premise was wrong and is now corrected** (`docs/research/freecut-unverified-claims.md`
-   item 3). FSA `createWritable()` with no options starts the temp file EMPTY — there is no copy of
-   the existing file, so the per-save cost is proportional to bytes WRITTEN, not to the file being
-   replaced. The ticket stays OPEN: the remaining number needs a real folder handle, which needs a
-   user gesture. The ticket body now says exactly how to get it.
-3. **Two of my own tests could not fail and were rewritten** before shipping (0cd6): a severity
-   assertion that filtered a hand-written list of codes, and a size warn that never crossed its
-   threshold. Injecting the bug is what caught both.
-
-## Gates, all green at `99b937a`
-
-render-core **1243/1243** · studio **987/987** · viewer **190/190** · studio e2e **12/12** ·
-`pnpm a11y:check` 0 violations · svelte-check 0/0 both apps · `tsc --noEmit` clean everywhere.
-
-**The viewer e2e suite is RED on `main`, not from this work** — `selection.spec.ts:96` fails in the
-full suite and passes in isolation. Verified pre-existing by running the full suite on clean `main`
-in a separate worktree. Filed as **Archie-06fb**; it is the only gate on the real-pointer hit path.
-
-Run tests PER APP (`pnpm exec vitest` inside the package). Typecheck is
-`node ../../node_modules/typescript-native/bin/tsc --noEmit` (TS7); never bare `tsc`.
-Viewer e2e: `pnpm run e2e -- <spec>` from `apps/viewer` (it builds first — deterministic, ~12s).
-The Tauri debug binary is built (`src-tauri/target/debug/archie`), so `scripts/desktop-boot.sh` runs.
-
-## Where to pick up
-
-**52 non-map tickets open.** Four are NEW and pre-decided (see below); 12 are grills now written up
-as defaults-to-confirm in `docs/decisions/OPEN-GRILLS-2026-07-27.md`; 15 blocked; 7 parked by the user.
-
-### Shipped late in the session
-
-- **The Flatpak builds unattended.** `scripts/build-flatpak.sh` — owns BOTH halves (release build,
-  then package), because the manifest installs a prebuilt binary and running only the second half
-  against a stale one is a silent wrong-app. Verified: it installed, and the app booted under Xvfb
-  and wrote a **21,597-byte `library.json`** into `~/.var/app/` — the temp→rename→marker path
-  survives Flatpak confinement. That is `9ece`'s hardest row; `623e` (desktop release gate) is
-  closer.
-- **`321c` closed** by user decision — Zotero round-trip dropped as a gate. Its close reason states
-  plainly what is therefore unverified.
-- **Four new tickets, each already grilled and decided** (do not re-open the decision, build it):
-  `84af` reading-chip overflow menu · `8a5a` auto-hide fullscreen · `1474` pin-and-shrink the
-  narrative aside · `0c1d` viewer example partition + publish opt-in.
-
-### Two things in those tickets that will bite whoever picks them up
-
-1. **`1474` is partly a regression I caused.** Archie-36e6 added a `MetadataRun` directly above the
-   narrative aside's pane-toggle, and that header was ALREADY documented as too tall
-   (`NarrativeReader.svelte:315-329` — it forces boundary predicates in the scroll-spy). Shrinking
-   the header may let that workaround be reduced; check rather than leave dead compensation.
-2. **`0c1d` QUALIFIES a CONTEXT rule.** §"Local view loop" says a template is not the author's
-   content; the decided publish opt-in makes that a per-publish choice. Update CONTEXT or a later
-   reader will "fix" it back.
-
-### `b9c4` is BLOCKED on a broken fixture — do not trust a heap number without fixing this first
-
-`scripts/perf/heaprun.mjs` is written and committed (CDP `Runtime.getHeapUsage`, collect-first so
-samples are retained bytes). It has never produced a number, because the 70-object corpus will not
-seed:
-
-- first run: `ingest did not reach target counts (got 0/0/0, want 30/30/10)`
-- after `--fresh`: **hung** for ~35 min on "Ingesting all 3 exhibits", never reaching its own 180s
-  poll — so it is stuck BEFORE the count check, in the dialog flow.
-
-`seed-fixture.mjs:121-140` drives New exhibit → "From a media folder" → hidden input → `.path-actions
-button.btn-primary`. One of those selectors or the summary-enable wait is the suspect. **This also
-blocks `c74e` (prove 1,000 images end to end)**, so the fixture is worth fixing on its own account,
-not just for the heap number.
-
-When it does run: the V8 heap does NOT include decoded image surfaces or OSD tile textures — exactly
-what a cache budget governs. A small number is evidence about JS retention only.
-
-### Process lessons that cost real time here
-
-- **Never pipe a long run through `tail`** — it buffers, so you watch an empty file and then get only
-  `Terminated`.
-- **`timeout N` on a job whose slow half is a UI ingest** kills it mid-write and the persistent OPFS
-  profile does not roll back. That is what produced the `0/0/0`.
-- **Kill stray dev servers.** Two were left on 5173/5174; the seed script binds 5174 itself, so a
-  hand-started one is both redundant and the shared-port hazard.
-
-## Working notes carried forward
-
-- The discipline that paid off every single time: **inject the bug and watch the test fail** before
-  trusting a gate. It caught a vacuous wait in 3e2d, an off-by-one in a1d4, and an "Anonymous"
-  fallback in 321c — all three of which looked correct.
-- `.claude/rules/svelte-no-typecheck-net.md`'s table is real: a green suite over an artifact that
-  carries nothing is this repo's most-repeated failure. Archie-36e6's gate drives the built site for
-  exactly that reason, and Archie-5a15 shipped because a test asserted `typeof contentUrl ===
-  "string"` — which the broken value satisfied.
-
----
-
-## 2026-07-27 (late) — backlog session on `fix/flaky-gates`
-
-**Shipped**
-- `1474` viewer narrative header — sticky pane toggle + metadata fold (`9db0dec`). Closed.
-- `be3a` dropped the cleartext `http://**` grant — it was the `http:default` CAPABILITY, not the CSP (`baa86a7`). Closed.
-- `fc75` version-stamp — already existed; shipped the message split for the two version directions (`d265282`). Closed; real gap filed as `69f9`.
-- `7eae` closed as superseded (items 1/2/5 built, 3/4 are `69f9`).
-- `1244` partial — 14 dead 8-Bit Orbit tokens removed (`468f138`). Bulk still gated on `05e4`.
-- `0c7f` AV poster/duration/dims at ingest (`c592c4e`). **Open** — needs a browser drive.
-- All 12 grills decided and recorded on their tickets.
-
-**Next, in order of readiness**
-1. `0c7f` — one step left: drive Studio e2e (port 5198) with a real video, assert non-black poster.
-2. `19c5`+`3504` — ONE change now, both fully analysed on-ticket. Studio wiring (`App.svelte:203/294/1956`) + the projection-ordering bug (`openPublish` caches before the repo name exists). `fix/publish-base-wiring` is an EMPTY branch at main — nobody is on it.
-3. `69f9` — needs a tree-level migration shape designed; `migrate()` is per-doc and has no production caller.
-
-**Watch out**
-- This checkout is SHARED and busy. `main` has advanced ONTO this session's commits and another agent added `b240a0e` on top. `.seeds/issues.jsonl` is one file, so `git add .seeds/` sweeps others' ticket writes — one of mine (`5436ddb`) carries `Archie-7e6f`, created by someone else.
-- `sd list` silently truncates at `--limit 50`. Reconcile against `sd stats`.
-- Three tickets picked up today were substantially stale. Read the code before trusting a ticket's premise.
-
----
-
-## 2026-07-27 (late) — backlog session on `fix/flaky-gates`
-
-**Shipped**
-- `1474` viewer narrative header — sticky pane toggle + metadata fold (`9db0dec`). Closed.
-- `be3a` dropped the cleartext `http://**` grant — it was the `http:default` CAPABILITY, not the CSP (`baa86a7`). Closed.
-- `fc75` version-stamp — already existed; shipped the message split for the two version directions (`d265282`). Closed; real gap filed as `69f9`.
-- `7eae` closed as superseded (items 1/2/5 built, 3/4 are `69f9`).
-- `1244` partial — 14 dead 8-Bit Orbit tokens removed (`468f138`). Bulk still gated on `05e4`.
-- `0c7f` AV poster/duration/dims at ingest (`c592c4e`). **Open** — needs a browser drive.
-- All 12 grills decided and recorded on their tickets.
-
-**Next, in order of readiness**
-1. `0c7f` — one step left: drive Studio e2e (port 5198) with a real video, assert non-black poster.
-2. `19c5`+`3504` — ONE change now, both fully analysed on-ticket. Studio wiring (`App.svelte:203/294/1956`) + the projection-ordering bug (`openPublish` caches before the repo name exists). `fix/publish-base-wiring` is an EMPTY branch at main — nobody is on it.
-3. `69f9` — needs a tree-level migration shape designed; `migrate()` is per-doc and has no production caller.
-
-**Watch out**
-- This checkout is SHARED and busy. `main` has advanced ONTO this session's commits and another agent added `b240a0e` on top. `.seeds/issues.jsonl` is one file, so `git add .seeds/` sweeps others' ticket writes — one of mine (`5436ddb`) carries `Archie-7e6f`, created by someone else.
-- `sd list` silently truncates at `--limit 50`. Reconcile against `sd stats`.
-- Three tickets picked up today were substantially stale. Read the code before trusting a ticket's premise.
-
----
-
-## 2026-07-27 (late) — backlog session on `fix/flaky-gates`
-
-**Shipped**
-- `1474` viewer narrative header — sticky pane toggle + metadata fold (`9db0dec`). Closed.
-- `be3a` dropped the cleartext `http://**` grant — it was the `http:default` CAPABILITY, not the CSP (`baa86a7`). Closed.
-- `fc75` version-stamp — already existed; shipped the message split for the two version directions (`d265282`). Closed; real gap filed as `69f9`.
-- `7eae` closed as superseded (items 1/2/5 built, 3/4 are `69f9`).
-- `1244` partial — 14 dead 8-Bit Orbit tokens removed (`468f138`). Bulk still gated on `05e4`.
-- `0c7f` AV poster/duration/dims at ingest (`c592c4e`). **Open** — needs a browser drive.
-- All 12 grills decided and recorded on their tickets.
-
-**Next, in order of readiness**
-1. `0c7f` — one step left: drive Studio e2e (port 5198) with a real video, assert non-black poster.
-2. `19c5`+`3504` — ONE change now, both fully analysed on-ticket. Studio wiring (`App.svelte:203/294/1956`) + the projection-ordering bug (`openPublish` caches before the repo name exists). `fix/publish-base-wiring` is an EMPTY branch at main — nobody is on it.
-3. `69f9` — needs a tree-level migration shape designed; `migrate()` is per-doc and has no production caller.
-
-**Watch out**
-- This checkout is SHARED and busy. `main` has advanced ONTO this session's commits and another agent added `b240a0e` on top. `.seeds/issues.jsonl` is one file, so `git add .seeds/` sweeps others' ticket writes — one of mine (`5436ddb`) carries `Archie-7e6f`, created by someone else.
-- `sd list` silently truncates at `--limit 50`. Reconcile against `sd stats`.
-- Three tickets picked up today were substantially stale. Read the code before trusting a ticket's premise.
-
-### 2026-07-27 (late) — grilling round: four decisions, nine more closes
-
-**Decisions made by the maintainer.** All recorded on their tickets.
-
-1. **PARKED tickets → close when the revive trigger has not fired.** Closed `ac4c`, `f1e2`, `e2db`,
-   `b60c`, `f366`, `5ae6` (descriptions preserved, triggers intact). **`96e6` UNPARKED** — the user
-   reads `34a2` decision 12 as its trigger; I argued the opposite and was overruled, both readings on
-   the ticket. It is now downstream of `3754` and they must share one column-mapping component.
-2. **`b9c4` folded into `c74e`.** `heaprun.mjs` measures the V8 heap, which excludes decoded image
-   surfaces / OSD textures / GPU memory — the very things a cache budget is about. `c74e`'s acceptance
-   now carries peak memory (CDP `Memory`, not `getHeapUsage`), retention across a walk, and an LRU
-   verdict from OUR numbers, not freecut's.
-3. **`05e4`: token VALUES are stable.** So **`1244` is UNBLOCKED** — the ~50-selector shadow
-   recalibration is safe to do now. **This is the best next task: decided, no unknowns, no pending
-   input.** Six dead legacy colour aliases (`--void`, `--deep-navy`, `--neon-*`, `--soft-lavender`,
-   all zero uses) can go with it.
-4. **No lane.** Take anything; collisions accepted. Check `git log --all --not HEAD` on the target
-   file before starting.
-
-**`ebe7` closed free** — `0c7f` shipped its Option A decision the same day.
-
-**`84af` is BUILT, MEASURED, and stuck on one fork.** WIP refreshed at
-`ledgers/probes/2026-07-27-84af-overflow-menu-WIP.svelte.txt`. Won: chips 790→572px; and the flex
-pairing (`.legend {flex:1 1 auto}` + `.opts {flex:1 1 auto}` → 468px/2 chips; any other pairing gives
-173–306px/1 chip). **Correction: the feedback loop IS real — my earlier "not a feedback loop" note on
-that ticket was wrong.** Stuck because rigid chips make the menu work but overflow at 1024px, while
-shrinkable chips fix 1024px and stop the menu ever firing — two strategies that cannot both be on.
-Below ~1100px `.opts` measures 82px then **0px**; the legend is crushed by the bar, which is the
-allocation question deliberately left closed. Needs a breakpoint decision.
-
-**Count: 42 open, 33 non-map.**
-
-### 2026-07-27 (late) — grilling round: four decisions, nine more closes
-
-**Decisions made by the maintainer.** All recorded on their tickets.
-
-1. **PARKED tickets → close when the revive trigger has not fired.** Closed `ac4c`, `f1e2`, `e2db`,
-   `b60c`, `f366`, `5ae6` (descriptions preserved, triggers intact). **`96e6` UNPARKED** — the user
-   reads `34a2` decision 12 as its trigger; I argued the opposite and was overruled, both readings on
-   the ticket. It is now downstream of `3754` and they must share one column-mapping component.
-2. **`b9c4` folded into `c74e`.** `heaprun.mjs` measures the V8 heap, which excludes decoded image
-   surfaces / OSD textures / GPU memory — the very things a cache budget is about. `c74e`'s acceptance
-   now carries peak memory (CDP `Memory`, not `getHeapUsage`), retention across a walk, and an LRU
-   verdict from OUR numbers, not freecut's.
-3. **`05e4`: token VALUES are stable.** So **`1244` is UNBLOCKED** — the ~50-selector shadow
-   recalibration is safe to do now. **This is the best next task: decided, no unknowns, no pending
-   input.** Six dead legacy colour aliases (`--void`, `--deep-navy`, `--neon-*`, `--soft-lavender`,
-   all zero uses) can go with it.
-4. **No lane.** Take anything; collisions accepted. Check `git log --all --not HEAD` on the target
-   file before starting.
-
-**`ebe7` closed free** — `0c7f` shipped its Option A decision the same day.
-
-**`84af` is BUILT, MEASURED, and stuck on one fork.** WIP refreshed at
-`ledgers/probes/2026-07-27-84af-overflow-menu-WIP.svelte.txt`. Won: chips 790→572px; and the flex
-pairing (`.legend {flex:1 1 auto}` + `.opts {flex:1 1 auto}` → 468px/2 chips; any other pairing gives
-173–306px/1 chip). **Correction: the feedback loop IS real — my earlier "not a feedback loop" note on
-that ticket was wrong.** Stuck because rigid chips make the menu work but overflow at 1024px, while
-shrinkable chips fix 1024px and stop the menu ever firing — two strategies that cannot both be on.
-Below ~1100px `.opts` measures 82px then **0px**; the legend is crushed by the bar, which is the
-allocation question deliberately left closed. Needs a breakpoint decision.
-
-**Count: 42 open, 33 non-map.**
-
-### 2026-07-27 (late) — grilling round: four decisions, nine more closes
-
-**Decisions made by the maintainer.** All recorded on their tickets.
-
-1. **PARKED tickets → close when the revive trigger has not fired.** Closed `ac4c`, `f1e2`, `e2db`,
-   `b60c`, `f366`, `5ae6` (descriptions preserved, triggers intact). **`96e6` UNPARKED** — the user
-   reads `34a2` decision 12 as its trigger; I argued the opposite and was overruled, both readings on
-   the ticket. It is now downstream of `3754` and they must share one column-mapping component.
-2. **`b9c4` folded into `c74e`.** `heaprun.mjs` measures the V8 heap, which excludes decoded image
-   surfaces / OSD textures / GPU memory — the very things a cache budget is about. `c74e`'s acceptance
-   now carries peak memory (CDP `Memory`, not `getHeapUsage`), retention across a walk, and an LRU
-   verdict from OUR numbers, not freecut's.
-3. **`05e4`: token VALUES are stable.** So **`1244` is UNBLOCKED** — the ~50-selector shadow
-   recalibration is safe to do now. **This is the best next task: decided, no unknowns, no pending
-   input.** Six dead legacy colour aliases (`--void`, `--deep-navy`, `--neon-*`, `--soft-lavender`,
-   all zero uses) can go with it.
-4. **No lane.** Take anything; collisions accepted. Check `git log --all --not HEAD` on the target
-   file before starting.
-
-**`ebe7` closed free** — `0c7f` shipped its Option A decision the same day.
-
-**`84af` is BUILT, MEASURED, and stuck on one fork.** WIP refreshed at
-`ledgers/probes/2026-07-27-84af-overflow-menu-WIP.svelte.txt`. Won: chips 790→572px; and the flex
-pairing (`.legend {flex:1 1 auto}` + `.opts {flex:1 1 auto}` → 468px/2 chips; any other pairing gives
-173–306px/1 chip). **Correction: the feedback loop IS real — my earlier "not a feedback loop" note on
-that ticket was wrong.** Stuck because rigid chips make the menu work but overflow at 1024px, while
-shrinkable chips fix 1024px and stop the menu ever firing — two strategies that cannot both be on.
-Below ~1100px `.opts` measures 82px then **0px**; the legend is crushed by the bar, which is the
-allocation question deliberately left closed. Needs a breakpoint decision.
-
-**Count: 42 open, 33 non-map.**
-
----
-
-# HANDOFF §2 — wayfinder maps c268 + 34a2 drive (separate session, 2026-07-27 ~23:00)
-
-*(Appended by the map-drive session; the sections above belong to the fix/flaky-gates session.
-Do not merge or dedupe the two — different sessions, different branches.)*
-
-Goal (Stop-hook): drive **Archie-c268** (published-tree) and **Archie-34a2** (small-archive) to
-completion, worktrees + commit/merge cadence. **All merges happen in `.claude/worktrees/merge-main`**
-(main is checked out there, NOT in the primary checkout). Main @ **10c82ab**.
-
-## Score: 15/17 map tickets closed
-Closed+merged: 19c5, 3504, 86ff, 30ff, fde8, 3754, 1cf0, c85f, e09d, 8d3d, 039e, 7280, 53e3, 4b0a
-(+7e6f code merged @ b7494ce but ticket held open). Live site **micahchoo.github.io/test**
-republished self-contained (user's own library), live verify-publish 9/9, drive 6/6.
-
-## In flight (2 agents, base 10c82ab)
-- **export-surface** (Archie-c367, `feat/export-surface` @ agent-a4a34806d9bdd2e8a): one-flow
-  Publish.svelte rebuild — probe recommendation preselected, greyed-with-reason destinations,
-  tier control, success panel (embed snippet + rclone two-pass + Deposit-a-copy bag).
-- **thousand-images** (Archie-c74e, `accept/thousand-images` @ agent-ab5ef23c0320521ab): 1,000-image
-  end-to-end acceptance, both tiers, reconcile vs probe estimate 0.54GB web, GitHub-fit verdict.
-On landing: verify file scope vs claim, `merge --no-ff` in merge-main, re-run combined suites
-(baselines: render-core 1394, studio 1177), reconcile counts, `sd close`.
-
-## Open user decisions (batch these to Micah at wind-down)
-1. **7e6f**: declare `codecs-extra` Flatpak extension? (GNOME 49 runtime has NO H.264 either way).
-2. **7e6f**: accept leaving Chromium WebCodecs video path unbuilt? (no AAC encoder in Chromium;
-   would need `mediabunny`). Both recorded on the ticket.
-3. Optional: `.nojekyll` counterfactual push to the live repo was permission-refused; needs explicit
-   go-ahead or a scratch repo.
-
-## Gotchas re-learned this session
-- Concurrent session also merges into main — reconcile test counts against its merges before
-  suspecting a regression.
-- Agent-transcript `gitBranch` metadata can be stale/wrong; trust `git -C <worktree> branch
-  --show-current` (verified both agents on correct branches despite metadata saying otherwise).
-- Only push authorized: micahchoo/test (done). Main not pushed; that's the user's call.
-
----
-
-## 2026-07-27 (latest) — Archie-1244 + Archie-2865, code stranded on a branch
-
-**The code is NOT on main.** `task/1244-shadow-recal`, **14 commits**, tip `5b033ce`, checked out at
-`/tmp/wt-1244-shadows`. The ticket-CLOSE for both 1244 and 2865 is already committed on
-`fix/flaky-gates` (`da2c28f`) — **so the tracker says done and the CSS is not merged.** Reconcile
-those two before trusting either.
-
-The branch ref and its objects live in the primary `.git`, so a `/tmp` wipe loses only the worktree
-registration, not the work (`git worktree add` somewhere durable, or `git worktree prune` then
-re-add). Base is behind `main` @ `10c82ab`; needs a merge before landing.
-
-### What 1244 actually did
-5c1d's Option C, both halves. Half 1: recalibrated the lift pair in
+2. **Archie-b5c2's premise was wrong and is corrected**
+   (`docs/research/freecut-unverified-claims.md` item 3): FSA `createWritable()` with no options
+   starts the temp file EMPTY, so per-save cost is proportional to bytes WRITTEN, not the file being
+   replaced. Open: the remaining number needs a real folder handle → user gesture; the ticket says
+   how.
+3. **Two of my own tests could not fail and were rewritten** before shipping (0cd6). Injecting the
+   bug is what caught both.
+
+## Maps session verdicts (c268 + 34a2, closed)
+
+- **c74e acceptance PASSED**, merged @ `14b380d` (harness-only, 21 files): pipeline survives 1,000
+  images (8.52GB); web tier fits GitHub at 63% (~39min first publish, republish ~free via 53e3);
+  archival does NOT (549%). Tile arithmetic exact (243,500 predicted = on disk). Findings ticketed:
+  **Archie-6a99** (16.9GB peak RSS — uncapped per-exhibit fan-out in web-tier publish, P2),
+  `d7a3`, `7f6d`. Ledger: `ledgers/ACCEPT-thousand-images-2026-07-27.md`.
+- **7e6f finding that contradicted the brief, proven by measurement:** codecs-extra needs NO
+  Flatpak manifest stanza — the GNOME 49 runtime declares the extension point itself (generated
+  ld.so.conf.d); H.264 already present in the packaged app. Follow-up **Archie-e870** (P2): no video
+  was ever actually encoded — jsdom mocks WebCodecs; needs one real Chromium encode.
+- 7e6f tripped the studio bundle ratchet (mediabunny is a LAZY chunk, eager +14KB); accepted via
+  deliberate `pnpm bundle:baseline` (`dff139b`).
+
+## 1244/2865 details (the stranded branch)
+
+**What 1244 did:** 5c1d's Option C, both halves — recalibrated the lift pair in
 `packages/render-core/src/tokens.css` (`0 24px 48px -24px` → `0 1px 2px`; `0 40px 80px -32px` →
-`0 2px 6px -1px`) — **alpha drops WITH the blur on purpose**, 0.30 over 48px is a wash, over 2px a
-hard line. Half 2: 145 lift sites across 47 files, in 8 committed phases; **34 survive, every one an
-annotated keep.** `apps/studio/src/tokens.css` was deleted on main by `ecf4`, so half 1 is one file.
+`0 2px 6px -1px`; alpha drops WITH the blur on purpose) + 145 lift sites across 47 files in 8
+phases; 34 survive, every one an annotated keep. **5c1d's work list was wrong in both directions**
+(65 → 145 real sites; and stale entries) — re-derive a prior ticket's site list, don't inherit it.
 
-**5c1d's work list was wrong in both directions** — it undercounted (65 → 145; it enumerated Studio
-only, the viewer holds a third) and it was stale (`.load-hint .hint` no longer exists). Don't take a
-prior ticket's site list as the denominator; re-derive it.
+**Two hazard classes invisible to every gate** (candidates for a rule if they bite again):
+1. `outline: none` + `box-shadow` is a FOCUS RING wearing an elevation token — deleting the
+   declaration deletes keyboard focus, and nothing complains (3 instances).
+2. A lift LAYERED with a non-elevation layer (4 instances, incl. a drag-drop indicator).
+Both reduce to: **grep the DECLARATION, not the token** — svelte-check can't see CSS, Svelte hashes
+scoped selectors in built output. And stripping a shadow can leave `{ }` — empty CSS is valid, so a
+destructive button lost its hover feedback at 0/0 green.
 
-### Two hazard classes, both invisible to every gate — the durable lesson
-1. **`outline: none` + `box-shadow` is a FOCUS RING wearing an elevation token.** Three instances.
-   `.object:focus-visible` (ObjectGrid) had the lift as its *only* declaration — deleting the
-   declaration deletes keyboard focus from every object tile, and nothing complains.
-2. **A lift LAYERED with a non-elevation layer.** Four instances, incl. `.plate.over`'s
-   `-4px 0 0 var(--accent)` — the drag-and-drop drop indicator.
+**2865 (release gate, shipped):** `release-artifact.yml`, tag-triggered, red-green-green proven.
+The durable diagnosis: **dist staleness is created by MERGES, not careless PRs** — both parents can
+be fresh and the merge still ships stale bytes, so a per-PR gate is structurally incapable
+(measured at `84bab01`; a fail-on-main gate would redden ~73% of source merges, refused at
+`checks.yml:200`). Tag-time is the boundary.
 
-Both reduce to: **grep the DECLARATION, not the token.** `svelte-check` cannot see CSS at all, and
-Svelte hashes scoped selectors in the built output (`.tile.svelte-84v3nd:focus-visible`), so a naive
-grep of the artifact returns empty and reads as "not shipped".
+## Knowledge-layer session (2026-07-28)
 
-Also: stripping a shadow can leave `{ }`. It did, on `.del:hover` — a destructive button with no
-hover feedback, **passed svelte-check at 0/0 because empty CSS is valid.** Scan for empty rules after
-any CSS-strip pass, scoped to `<style>` blocks (an unscoped regex matches JS object literals).
+- **Hub scope-push symlinks WORK** (hubs arrive in context via `.claude/rules/hub-*.md`); CI doclint
+  job green on GitHub runners (first run in anger).
+- Sha-citation audit on main: two hub citations re-cited to cherry-picked equivalents
+  (e149 → `4f7636f`, doclint → `a3fd4d8`); three branch-only closures flagged inline.
+- Design §2 retirements executed on main: `docs/architecture/` removed, `.scratch/` shadow docs
+  deleted, README pointers fixed. TRACKERS' 4 UNMAPPED rows resolved (Issues 14/16 →
+  **Archie-d895 / Archie-59c4**, created on THIS checkout's tracker).
+- **Prior-art deep pass LANDED on main** (`1e7809d`, then `1795fff`): clover/mirador/UV promoted to
+  clone-verified pages. A standing correction was itself refuted — UV's suite DOES touch the network
+  (jest-puppeteer, live manifests); the citation-discipline rule's catalogue row on MAIN records the
+  double-refutation (this branch's copy is stale — take main's side on merge).
+- **Archie-d73f filed**: check tool modes against the annotorious SVG-selector NaN round-trip
+  (Ellipse/Line die in upstream serialize→parse; prerequisite for v1.1 ellipse work).
+- `.seeds/issues.jsonl` here holds uncommitted edits from live sessions — whoever commits it next:
+  declare the id set ([[shared-worktree-agent-collisions]]).
 
-### Archie-2865 — the release gate
-`.github/workflows/release-artifact.yml`, tag-triggered (`v*`), no `permissions:` block, no bot
-commits. Rebuilds from tagged source and diffs the three dist mirrors. Red-green-green proven.
+## Process lessons that cost real time (not yet in any rule)
 
-**The diagnosis is the durable part: dist staleness is created by MERGES, not by careless PRs.**
-Measured at `84bab01` (merge of `2699f3f` + `c27aa95`): the tip's `dist/archie-viewer.js` was
-byte-identical to parent `2699f3f`'s while the merge took 3 source files from `c27aa95`. Both PRs can
-be perfectly fresh and the merge still ships stale bytes — **a per-PR gate is structurally incapable
-of catching this.** A fail-on-main gate would redden main on ~73% of source merges (8 of the last 11
-source-touching commits didn't rebuild), which is why `checks.yml:200` already refused it. Tag-time
-is the boundary. (An earlier "~69 commits of drift" figure was wrong — derived from how far the
-branch trailed main and misattributed to dist. Corrected everywhere it landed.)
-
-### Recommended next slate (presented, not yet chosen)
-1. Land `task/1244-shadow-recal` — blocked only on `main` being held in `merge-main`.
-2. **Stale-ticket audit.** `7280` (6 commits), `a09d` (6), `9ece` (4), `69f9`, `7e5b`, `eec7`, `cf4a`
-   all have merged work on main while sitting open. Four tickets closed this way already today.
-3. **`06fb`** — viewer e2e red on main *now*, measured on unmodified main in a separate worktree.
-   `selection.spec.ts:96` passes isolated (552 ms), times out in the full suite (15.4 s).
-   Prior diagnosis is on the ticket (`53b5396`): **bisection says it is not one poisoning spec, and
-   the drag delta reads `d=(0,0)`.** Start there, not from scratch.
-4. **`eec7`** — `axe-core` is declared at root `package.json:24` and **wired into nothing** in
-   `apps/` or `packages/`. Plus the three focus-ring regressions above as live evidence.
-5. `69f9` — tree-level schema migration; self-contained, no user input.
-
-**Needs a human, cannot be moved autonomously:** `9ece` (P0, packaged Flatpak verification — blocks
-`623e`, so the whole Tauri lane sits behind it), `a09d`, `79be`/`87ba` (human-gate triage),
-`84af` (one decision: rigid chips overflowing at 1024px vs shrinkable chips that make the overflow
-menu never fire — work is built and preserved in `ledgers/probes/`), `05e4` (palette walk).
+- A `scripts/` file copied to `/tmp` computes `ROOT` from `$BASH_SOURCE/..` and silently resolves it
+  to `/` — a 20-run "baseline" came back 20/20 FAIL for that reason alone. Run baseline copies from
+  inside the repo.
+- Never pipe a long run through `tail` — it buffers; you watch an empty file, then get `Terminated`.
+- `timeout N` on a job whose slow half is a UI ingest kills it mid-write and the persistent OPFS
+  profile does not roll back (that produced the `0/0/0` seed corpus).
+- Kill stray dev servers — the seed script binds 5174 itself.
+- Agent-transcript `gitBranch` metadata can be stale; trust `git -C <worktree> branch --show-current`.
+- Tickets go stale fast here: three in one session had wrong premises. Read the code before trusting
+  a ticket's premise.
