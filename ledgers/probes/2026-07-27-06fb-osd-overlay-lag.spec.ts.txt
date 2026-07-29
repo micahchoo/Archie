@@ -1,0 +1,99 @@
+Archie-06fb — the probe that measured OSD's overlay re-render lag.
+
+PRESERVED AS EVIDENCE, NOT AS A GATE. Kept with a `.txt` suffix and outside `apps/viewer/e2e/` so
+Playwright cannot collect it; nothing imports it and it is never run in CI. It is here so the claim
+in `selection.spec.ts:96`'s header — "late in 3 trials of 6" — is reproducible by the next reader
+rather than taken on faith.
+
+TO RUN IT: copy to `apps/viewer/e2e/zz-06fb-probe.spec.ts`, then
+    cd apps/viewer && VIEWER_E2E_PORT=<your own port> pnpm exec playwright test \
+      --config e2e/playwright.config.ts zz-06fb-probe.spec.ts
+Use a port nobody else is on and confirm the log shows a fresh `gen-published` + `astro build`
+(`.claude/rules/viewer-e2e-shared-port.md`). Delete the copy afterwards.
+
+WHAT IT FOUND, against main @ 10c82ab at 1280x720, 6 trials:
+
+  canvas h  399.2 -> 557.0  at the read instant in 6 of 6   (the DOM resize is always DONE)
+  frame     stale in 3 of 6                                  (OSD's overlay re-render is late)
+  when stale, it still had dy=+75.0 to travel, against a mark 62.9px tall
+  when settled, the frame had RESCALED 1.0808x (h 1150.7 -> 1243.6, x 34.8 -> 2.9)
+
+The second line is the defect the ticket reported. The fourth is a separate one: the spec's header
+claimed "a pure TRANSLATION, no rescale" and corrected by a single offset, which lands 31.9px off in
+x and survived only because this particular halo is 747.8px wide.
+
+Note what the ticket's own `d=(0,0)` clue actually was: a sample of the STALE world taken from a run
+that PASSED. A stale read is harmless on its own, because when the frame is stale the mark is stale
+too and an uncorrected click still hits. The failure needs OSD's re-render to land in the window
+BETWEEN the frame read and the mouse click.
+
+--- 8< --- the probe itself ---
+
+import { test, expect } from "@playwright/test";
+import { CANVAS, FRAME, HALO, aHaloNote, boxOf, goOffline, openPaintedNote } from "./offline.js";
+
+for (let trial = 1; trial <= 6; trial++) {
+  test(`PROBE trial ${trial}: canvas + frame, docked -> at-read -> settled`, async ({ page, baseURL }) => {
+    const note = await aHaloNote(baseURL!);
+    await goOffline(page);
+    await openPaintedNote(page, note.ulid);
+
+    await expect(page.locator(FRAME)).toHaveCount(1);
+    const halo = (await boxOf(page, HALO))!;
+    const openFrame = (await boxOf(page, FRAME))!;
+    const dockedCanvas = (await boxOf(page, CANVAS))!;
+    const dockBox = await boxOf(page, ".note-dock");
+
+    await page.keyboard.press("Escape");
+    await expect(page.locator(HALO)).toHaveCount(0);
+    await expect(page.locator(".note-pop")).toHaveCount(0);
+    await expect(page.locator(".note-dock")).toHaveCount(0);
+
+    // The spec's read instant.
+    const readFrame = (await boxOf(page, FRAME))!;
+    const readCanvas = (await boxOf(page, CANVAS))!;
+
+    // Then settle, entirely in-page so no Playwright round trip perturbs the timing — which is the
+    // whole hazard here: two diagnostic round trips were enough to make the suite go green.
+    const settled = await page.evaluate(
+      async ([frameSel, canvasSel]) => {
+        await new Promise((r) => setTimeout(r, 1500));
+        const f = document.querySelector(frameSel as string)?.getBoundingClientRect();
+        const c = document.querySelector(canvasSel as string)?.getBoundingClientRect();
+        return {
+          fy: f ? +f.y.toFixed(1) : null, fx: f ? +f.x.toFixed(1) : null, fh: f ? +f.height.toFixed(1) : null,
+          ch: c ? +c.height.toFixed(1) : null,
+        };
+      },
+      [FRAME, CANVAS] as const,
+    );
+
+    console.log(
+      `TRIAL ${trial} | dock h=${dockBox ? dockBox.height.toFixed(1) : "none"} | ` +
+        `canvas h docked=${dockedCanvas.height.toFixed(1)} read=${readCanvas.height.toFixed(1)} settled=${settled.ch} | ` +
+        `frame y open=${openFrame.y.toFixed(1)} read=${readFrame.y.toFixed(1)} settled=${settled.fy} | ` +
+        `frame h open=${openFrame.height.toFixed(1)} read=${readFrame.height.toFixed(1)} settled=${settled.fh} | ` +
+        `SCALE at read=${(readFrame.height / openFrame.height).toFixed(4)} settled=${settled.fh ? (settled.fh / openFrame.height).toFixed(4) : "?"} | ` +
+        `MOVES AFTER READ dy=${settled.fy !== null ? (settled.fy - readFrame.y).toFixed(1) : "?"} ` +
+        `(halo h=${halo.height.toFixed(1)})`,
+    );
+  });
+}
+
+--- 8< --- raw output, 2026-07-27, main @ 10c82ab ---
+
+TRIAL 1 | dock h=157.8 | canvas h docked=399.2 read=557.0 settled=557 | frame y open=263.7 read=263.7 settled=338.7 | frame h open=1150.7 read=1150.7 settled=1243.6 | SCALE at read=1.0000 settled=1.0808 | MOVES AFTER READ dy=75.0 (halo h=62.9)
+TRIAL 2 | dock h=157.8 | canvas h docked=399.2 read=557.0 settled=557 | frame y open=263.7 read=338.7 settled=338.7 | frame h open=1150.7 read=1243.6 settled=1243.6 | SCALE at read=1.0808 settled=1.0808 | MOVES AFTER READ dy=0.0 (halo h=62.9)
+TRIAL 3 | dock h=157.8 | canvas h docked=399.2 read=557.0 settled=557 | frame y open=263.7 read=263.7 settled=338.7 | frame h open=1150.7 read=1150.7 settled=1243.6 | SCALE at read=1.0000 settled=1.0808 | MOVES AFTER READ dy=75.0 (halo h=62.9)
+TRIAL 4 | dock h=157.8 | canvas h docked=399.2 read=557.0 settled=557 | frame y open=263.7 read=338.7 settled=338.7 | frame h open=1150.7 read=1243.6 settled=1243.6 | SCALE at read=1.0808 settled=1.0808 | MOVES AFTER READ dy=0.0 (halo h=62.9)
+TRIAL 5 | dock h=157.8 | canvas h docked=399.2 read=557.0 settled=557 | frame y open=263.7 read=263.7 settled=338.7 | frame h open=1150.7 read=1150.7 settled=1243.6 | SCALE at read=1.0000 settled=1.0808 | MOVES AFTER READ dy=75.0 (halo h=62.9)
+TRIAL 6 | dock h=157.8 | canvas h docked=399.2 read=557.0 settled=557 | frame y open=263.7 read=338.7 settled=338.7 | frame h open=1150.7 read=1243.6 settled=1243.6 | SCALE at read=1.0808 settled=1.0808 | MOVES AFTER READ dy=0.0 (halo h=62.9)
+
+--- 8< --- and the fix's own measurement, same day, same build ---
+
+With the arrival wait in place, the derived click point over 10 repeats of the real assertion:
+
+  06FB-POINT cx=430.0 cy=392.5 anchorClosedH=1243.6 anchorOpenH=1150.7     (x10, identical)
+
+392.5 is the settled world. The stale world derives cy=313.5. The 79px between them is the miss,
+against a mark 62.9px tall.
