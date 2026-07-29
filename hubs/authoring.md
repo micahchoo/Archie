@@ -25,6 +25,11 @@ check`. Neither alone is sufficient — see below.
 - [[tauri-fs-seam]] — desktop fs backend needs atomic temp+rename writes and name containment that plugin-fs doesn't give for free; both are studio write paths (autosave, resident store).
 
 ## Decisions
+- Archie-e09d — self-contained trees wired into Studio's site sinks (folder destination / GitHub
+  push / desktop deploy write `_viewer/` + `viewer.html`; zip and folder AUTOSAVE stay lean) via the
+  SAME `@render/archie-viewer/single?raw` IIFE `exportSelfContained` ships — the parked spike's
+  +304.9KB-gz duplication is gone (one lazy chunk serves both); trade: the tree's viewer eager-loads
+  278KB gz instead of ~39KB lazy / 64c8f62
 - Archie-7e6f — video transcode CLOSED: browser WebCodecs path via mediabunny wired into the
   web-tier publish with pinned fallback counters (both routes); H.264 empirically proven present in
   the Flatpak, so no codecs-extra manifest stanza needed / 6f4c3cc

@@ -9,7 +9,7 @@ import {
   MemoryFilesystem, ZipFilesystem, publishLibrary, collectFiles, publishToGitHub, pagesUrlFor, renderMarkdown, readStructureReport, asExhibitId,
   preflightTree, rightsCoverageFinding, blocksPublish, writeBag, type PreflightFinding,
   type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type MissingAsset, type GitHubTarget, type PublishProgress, type IncrementalScope, type SectionLog, type PublishResult,
-  type SelectorScale, type UnscaledSelector,
+  type SelectorScale, type UnscaledSelector, type ViewerBundleFiles,
 } from "@render/core";
 import { probeArchive, type ArchiveProbe } from "./archive-probe.js";
 import { libraryInventory } from "./archive-inventory.js";
@@ -43,6 +43,13 @@ export interface FolderWritePlan {
   incremental?: IncrementalScope;
   removedExhibits?: string[];
   removedObjects?: { slug: string; objId: string; assetName?: string }[];
+  /** Ship the embed under `_viewer/` so the written tree carries its own reader (Archie-e09d).
+   *
+   *  TRUE for the folder DESTINATION (a site someone visits), FALSE for the binding store's folder
+   *  autosave — which uses the same writer but is the author's working copy, and paying +959 KB on
+   *  every autosave for a reader nobody opens there would be a real regression for no benefit.
+   *  Deliberately NOT a `PublishOptions` field pass-through: it is stripped before the spread. */
+  withViewer?: boolean;
 }
 
 /** The Publish dialog's working-copy export options: a custom `.archie.zip` file name (the OS save
@@ -316,6 +323,54 @@ export function createPublishFlows(deps: PublishDeps) {
   /** One resolution point for the publish base, so the three sinks cannot disagree. `override` is the
    *  first-deploy case (the URL is known from owner+repo before we stage). */
   const baseFor = (override?: string) => override ?? deps.publishBase();
+
+  /**
+   * THE SELF-CONTAINED TREE (Archie-e09d), default ON for the destinations that produce a SITE.
+   *
+   * `getViewerBundle` makes `publishLibrary` write the embed under `{root}/_viewer/` plus a
+   * `viewer.html` and a `.nojekyll` beside it, so the published tree opens in a browser with no
+   * hosted Archie anywhere in the picture.
+   *
+   * THE BUNDLE IS THE IIFE SINGLE-FILE BUILD — the SAME `@render/archie-viewer/single?raw` module
+   * `exportSelfContained` already ships, not a second ESM copy. The spike this replaces
+   * (`spike/self-contained-studio-wiring`) pulled in the multi-file `dist/` build via a virtual
+   * module and measured **+304.9 KB gz on Studio's own dist**, because Studio then carried the same
+   * viewer twice. Sharing one copy makes Studio's cost for this feature zero. The trade: the tree's
+   * `viewer.html` eager-loads the whole viewer (~950 KB raw, 278 KB gz measured) instead of the ESM
+   * build's ~39 KB gz lazy arrival — acceptable for a self-contained tree, and an IIFE has no
+   * sibling chunks to 404. `viewer.html` loads the entry via `<script type="module">`; an IIFE is
+   * valid module code, so the same file serves both this tree and the file:// single-file export.
+   *
+   * WHICH SINKS. The folder and GitHub sinks get it — they produce a site someone visits. The `.zip`
+   * deliberately does NOT: an `.archie.zip` is opened BY a viewer (Studio, or the embed via `?src=`),
+   * so carrying one inside it is a megabyte of redundancy. That split is e09d's own recommendation.
+   * The deposit bag inherits the zip's opts and so is likewise lean, which is right — a bag is
+   * payload for a repository, not a browsable site.
+   *
+   * LAZY, and it must stay lazy: the bundle is ~950 KB of text, and a static import would put every
+   * byte of it in Studio's startup chunk. Same shape and the same reason as
+   * `import("@render/archie-viewer/single?raw")` in `exportSelfContained` — it IS that import, so
+   * both features resolve to one chunk in Studio's dist.
+   *
+   * Returning `null` on failure is the degradation `site.ts` documents: the tree then links to the
+   * hosted `viewerBase` exactly as if the callback had never been supplied, rather than shipping a
+   * `viewer.html` whose `_viewer/` is empty.
+   */
+  async function loadViewerBundle(): Promise<ViewerBundleFiles | null> {
+    try {
+      const mod = (await import("@render/archie-viewer/single?raw")) as { default: string };
+      const text = mod.default;
+      // `ViewerBundleFiles` is a Map keyed by the FLAT name the file takes under `_viewer/` — the
+      // entry name is the one `viewer.html` loads by contract (`site.ts` rejects anything else).
+      return text ? new Map([["archie-viewer.js", text]]) : null;
+    } catch (e) {
+      console.warn("Publish: the embedded viewer bundle could not be loaded — the published tree will link to the hosted viewer instead", e);
+      return null;
+    }
+  }
+  /** The `getViewerBundle` option for a SITE sink. Spread, so a null bundle is an absent key rather
+   *  than a present callback that returns nothing. */
+  const viewerBundleOpt = { getViewerBundle: loadViewerBundle } as const;
   /** The same, for the quality tier — one resolution point so no sink can publish at a tier the
    *  cache key was not computed from.
    *
@@ -422,7 +477,7 @@ export function createPublishFlows(deps: PublishDeps) {
     return { library: proj.library, rescaled: proj.rescaled, scaleSelectors, getAsset: read(readAssetBlob), getThumbnail: read(readThumbBytes) };
   }
 
-  async function projectSite(withOriginals: boolean, baseOverride?: string, tierOverride?: QualityTier): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; missingAssets: MissingAsset[]; corruptLogs: CorruptLogFinding[]; tierRescaled: TierRescale[]; unscaledSelectors: UnscaledSelector[]; tierFallbacks: number }> {
+  async function projectSite(withOriginals: boolean, baseOverride?: string, tierOverride?: QualityTier, withViewer = false): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; missingAssets: MissingAsset[]; corruptLogs: CorruptLogFinding[]; tierRescaled: TierRescale[]; unscaledSelectors: UnscaledSelector[]; tierFallbacks: number }> {
     // Torn-store advisory (Archie-a690): the annotation findings come back from the loadAllLogs pass
     // (which just warned on them); the structure findings are collected as publishLibrary reads each
     // exhibit's section log via this per-run `collect` sink. Combined, they feed the dialog advisory.
@@ -431,7 +486,7 @@ export function createPublishFlows(deps: PublishDeps) {
     const annotationCorruption = deps.annotationCorruption?.() ?? [];
     const fs = new MemoryFilesystem();
     const run = await tierRun(tierFor(tierOverride), deps.buildFullLibrary());
-    const { brokenLinks, incompleteCanvases, missingAssets, unscaledSelectors, danglingRefs } = await publishLibrary(fs, run.library, (id: string) => logs[id] ?? [], { baseUrl: baseFor(baseOverride), getAsset: run.getAsset, getThumbnail: run.getThumbnail, scaleSelectors: run.scaleSelectors, tileObject, tileRemote, getStructure: makeGetStructure((f) => structureCorruption.push(f)), ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
+    const { brokenLinks, incompleteCanvases, missingAssets, unscaledSelectors, danglingRefs } = await publishLibrary(fs, run.library, (id: string) => logs[id] ?? [], { baseUrl: baseFor(baseOverride), getAsset: run.getAsset, getThumbnail: run.getThumbnail, scaleSelectors: run.scaleSelectors, tileObject, tileRemote, getStructure: makeGetStructure((f) => structureCorruption.push(f)), ...STATIC_PAGE_OPTS, ...(withViewer ? viewerBundleOpt : {}), ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
     if (incompleteCanvases.length > 0) console.warn(`Publish: ${incompleteCanvases.length} image object(s) publishing with no width/height (IIIF Pres 3 §5.3)`, incompleteCanvases);
     if (missingAssets.length > 0) console.warn(`Publish: ${missingAssets.length} imported image(s) have no stored bytes — they publish as broken references`, missingAssets);
@@ -479,7 +534,7 @@ export function createPublishFlows(deps: PublishDeps) {
     if (reusable) {
       fs = cachedSiteFs!;
     } else {
-      fs = (await projectSite(withOriginals, base, tier)).fs;
+      fs = (await projectSite(withOriginals, base, tier, true)).fs;
       // Only the no-originals tree is the shareable one openPublish caches; an originals projection is
       // a one-off (opt-in, rare) and must not become the tree a later plain push reuses.
       //
@@ -560,9 +615,10 @@ export function createPublishFlows(deps: PublishDeps) {
   // wrongly degrade a valid cite in the dirty exhibit to plain text. Reading histories is cheap; re-tiling
   // was the cost we cut.
   async function writeTree(fs: Filesystem, plan: FolderWritePlan = {}) {
+    const { withViewer = false, ...writeOpts } = plan;
     const logs = await deps.loadAllLogs();
     const run = await tierRun(tierFor(), deps.buildFullLibrary());
-    const result = await publishLibrary(fs, run.library, (id: string) => logs[id] ?? [], { baseUrl: baseFor(), getAsset: run.getAsset, getThumbnail: run.getThumbnail, scaleSelectors: run.scaleSelectors, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS, ...plan });
+    const result = await publishLibrary(fs, run.library, (id: string) => logs[id] ?? [], { baseUrl: baseFor(), getAsset: run.getAsset, getThumbnail: run.getThumbnail, scaleSelectors: run.scaleSelectors, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS, ...(withViewer ? viewerBundleOpt : {}), ...writeOpts });
     warnTier(run.rescaled, result.unscaledSelectors);
   }
   /** Download the library as .archie.zip. False = the user declined/cancelled. Chromium streams to
@@ -756,7 +812,7 @@ export function createPublishFlows(deps: PublishDeps) {
       await deps.flushExhibit();
       // `baseUrl` is the deploy path's known destination (pagesUrlFor, before staging). Absent for
       // every other caller, which then resolves through `publishBase()`.
-      const { fs, brokenLinks, incompleteCanvases, missingAssets, corruptLogs, tierRescaled, unscaledSelectors, tierFallbacks } = await projectSite(false, baseUrl);
+      const { fs, brokenLinks, incompleteCanvases, missingAssets, corruptLogs, tierRescaled, unscaledSelectors, tierFallbacks } = await projectSite(false, baseUrl, undefined, true);
       s.brokenLinks = brokenLinks;
       s.incompleteCanvases = incompleteCanvases;
       s.missingAssets = missingAssets;
@@ -793,7 +849,7 @@ export function createPublishFlows(deps: PublishDeps) {
       // surface after this warm projection has already run.
       const warmBase = baseFor();
       const warmTier = tierFor();
-      void projectSite(false, warmBase, warmTier).then(({ fs, brokenLinks: bl, incompleteCanvases: ic, missingAssets: ma, corruptLogs: cl, tierRescaled: tr, unscaledSelectors: us, tierFallbacks: tf }) => {
+      void projectSite(false, warmBase, warmTier, true).then(({ fs, brokenLinks: bl, incompleteCanvases: ic, missingAssets: ma, corruptLogs: cl, tierRescaled: tr, unscaledSelectors: us, tierFallbacks: tf }) => {
         cachedSiteFs = fs;
         cachedSiteBase = warmBase;
         cachedSiteTier = warmTier;
@@ -820,7 +876,7 @@ export function createPublishFlows(deps: PublishDeps) {
       await deps.flushExhibit(); // flush current edits so the published tree is current
       const fb = await pickFolderBinding();
       if (!fb) return null;
-      await writeTree(fb.fs);
+      await writeTree(fb.fs, { withViewer: true });
       return fb.name;
     },
     /** Local flow (non-Chromium, no folder picker): save the project zip; returns its filename. */
