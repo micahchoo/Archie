@@ -364,7 +364,8 @@ async function captureStudioStates(browser, viewport) {
     }
   });
 
-  // studio-publish — the Publish dialog. `button.publish-signal` ("Publish & share…") lives in the
+  // studio-publish — the Publish dialog. `button.publish-signal` ("Publish", the primary half of the
+  // Q-15 split entry; "Export a copy…" is its sibling) lives in the
   // EDITOR view header (App.svelte view === "editor"; the `{:else}` block at the exhibit/object
   // crumb), so descend into the object editor first, then click it.
   await studioEditorOne(browser, viewport, "studio-publish", async (page) => {

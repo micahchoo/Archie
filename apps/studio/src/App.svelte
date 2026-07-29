@@ -2277,7 +2277,14 @@
     <SafetyState readOnly={tabReadOnly} sessDirty={sess.storeReady && sess.dirty} saveHealth={saveStatus.health}
       bindingKind={bnd.binding.kind} bindingDirty={bnd.dirty} bindingBusy={bnd.busy} bindingError={bnd.error}
       hasRealWork={safetyHasRealWork} onflush={requestSave} />
-    <button class="publish-signal" onclick={() => maybePromptIdentity(() => void ensurePub().then((p) => p.openMenu()))}>Publish & share…</button>
+    <!-- ONE entry point, two verbs (Q-15): the primary publishes the library to its home (or runs the
+         first-run setup); the menu reaches the artifact exports. They were one dialog carrying both,
+         which is what made that surface unreadable. -->
+    <div class="publish-entry">
+      <button class="publish-signal" onclick={() => maybePromptIdentity(() => void ensurePub().then((p) => p.openMenu("publish")))}>Publish</button>
+      <button class="publish-more" data-action="export-a-copy" aria-label="Export a copy"
+        onclick={() => maybePromptIdentity(() => void ensurePub().then((p) => p.openMenu("export")))}>Export a copy…</button>
+    </div>
     <HelpMenu ontutorial={() => (tutorialOpen = true)} onshortcuts={() => (helpOpen = true)}
       onsettings={() => (settingsOpen = true)} />
   </header>
@@ -2808,6 +2815,7 @@
       suggestedZipName={suggestedZipName}
       library={deployLibrary}
       deviceFlowAvailable={dp?.deviceFlowAvailable ?? false}
+      intent={p.intent}
       remembered={dp?.remembered ?? null}
       initialSession={initialSession}
       signIn={dp?.signIn}
@@ -2907,8 +2915,11 @@
   header > button:hover { color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); }
   header > button:disabled { color: var(--ink-canvas-muted); border-color: var(--border-canvas); background: var(--surface-canvas-raised); box-shadow: none; cursor: default; }
   /* The ONE rationed signal on the editor surface: Publish & Share. */
-  header > button.publish-signal { background: var(--accent); color: var(--ink-on-accent); border: none; box-shadow: var(--shadow-signal-glow); }
-  header > button.publish-signal:hover { background: var(--accent-hover); color: var(--ink-on-accent); box-shadow: var(--shadow-signal-glow); }
+  .publish-entry { display: flex; align-items: stretch; gap: 1px; }
+  .publish-entry > button.publish-signal { background: var(--accent); color: var(--ink-on-accent); border: none; box-shadow: var(--shadow-signal-glow); }
+  .publish-entry > button.publish-signal:hover { background: var(--accent-hover); color: var(--ink-on-accent); box-shadow: var(--shadow-signal-glow); }
+  /* Secondary by design: exporting a file is the rarer verb, and it must not compete with publishing. */
+  .publish-entry > button.publish-more { background: transparent; border: 1px solid var(--border-strong, currentColor); font-size: 0.85em; }
   /* The save indicator + Save button are the shared <SafetyState> now (Archie-0b7b / Archie-c76d) — its
      styles live in SafetyState.svelte; the old .savestate rules are retired with the span it styled. */
   /* The ? shortcuts button — a round, quiet affordance for the cheat-sheet. */

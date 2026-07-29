@@ -123,6 +123,10 @@ const EAGER_ZIP_CEILING_BYTES = 1024 * 1024 * 1024; // 1 GiB
  *  a greyed row disagree with the guard behind it. */
 export const SINGLE_FILE_MAX_BYTES = 50 * 1024 * 1024; // ~50 MB in, ~68 MB out, under a second to open
 
+/** Which half of the publish surface the author asked for (Q-15): a SITE (a place that stays
+ *  updated) or a FILE (an artifact you carry away). One entry point, two verbs. */
+export type PublishIntent = "publish" | "export";
+
 /** What the single-file export reports back. `too-large` carries the size so the UI can say the number. */
 export type SelfContainedResult = { ok: true } | { ok: false; reason: "too-large"; mb: number };
 
@@ -130,8 +134,9 @@ export function createPublishFlows(deps: PublishDeps) {
   // ONE open flag (Archie-1921 — PublishDialog + the Publish wizard merged into one scrimmed surface):
   // the old `dialogOpen`/`publishOpen` pair (one per dialog, toggled in lockstep by the chooser's
   // "Publish to the web" card) is gone now that there's only one surface to show or hide.
-  const s = $state<{ open: boolean; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; corruptLogs: CorruptLogFinding[]; missingAssets: MissingAsset[]; preflight: PreflightFinding[]; tierRescaled: TierRescale[]; unscaledSelectors: UnscaledSelector[]; tierFallbacks: number; tier: QualityTier | null; probe: ArchiveProbe | null; probing: boolean }>({
+  const s = $state<{ open: boolean; intent: PublishIntent; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; corruptLogs: CorruptLogFinding[]; missingAssets: MissingAsset[]; preflight: PreflightFinding[]; tierRescaled: TierRescale[]; unscaledSelectors: UnscaledSelector[]; tierFallbacks: number; tier: QualityTier | null; probe: ArchiveProbe | null; probing: boolean }>({
     open: false, // the merged Publish & Share surface
+    intent: "publish" as PublishIntent, // which half of the surface the author asked for (Q-15)
     brokenLinks: [], // intra-Library links that degrade to plain text on publish (dialog advisory)
     incompleteCanvases: [], // Image objects publishing with no width/height (IIIF Pres 3 §5.3; dialog advisory)
     corruptLogs: [], // torn annotation/structure stores publishing under-represented (Archie-a690; dialog advisory)
@@ -634,6 +639,10 @@ export function createPublishFlows(deps: PublishDeps) {
   return {
     // — reactive chrome state —
     get open(): boolean { return s.open; },
+    /** Which half the entry point asked for — the surface opens on the export menu for "export" and
+     *  on the home card / setup flow for "publish". Read on OPEN only; the surface navigates freely
+     *  afterwards. */
+    get intent(): PublishIntent { return s.intent; },
     get brokenLinks(): BrokenLink[] { return s.brokenLinks; },
     get incompleteCanvases(): IncompleteCanvas[] { return s.incompleteCanvases; },
     get corruptLogs(): CorruptLogFinding[] { return s.corruptLogs; },
@@ -726,7 +735,7 @@ export function createPublishFlows(deps: PublishDeps) {
       if (name === null) return { saved: false };
       return { saved: true, name, oxum: result.oxum, payloadFiles: result.payloadFiles };
     },
-    openMenu() { s.open = true; },
+    openMenu(intent: PublishIntent = "publish") { s.intent = intent; s.open = true; },
     close() { s.open = false; },
 
     /**

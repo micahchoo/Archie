@@ -92,6 +92,7 @@
     // --- desktop device-flow seams (App.svelte wires these from deploy-flows in Task 13) ---
     library = { id: "", title: "" },
     deviceFlowAvailable = false,
+    intent = "publish",
     remembered = null,
     initialSession = null,
     signIn,
@@ -152,7 +153,10 @@
     suggestedZipName?: string;
     library?: { id: string; title: string };
     deviceFlowAvailable?: boolean;
-    remembered?: { target: DeployTarget; url: string } | null;
+    /** Which half the entry point asked for (Q-15). Read on OPEN only — once the surface is up the
+     *  author navigates it freely, so this must not keep forcing a phase. */
+    intent?: import("./publish-flows.svelte.js").PublishIntent;
+    remembered?: { target: DeployTarget; url: string; publishedAt?: number } | null;
     initialSession?: DeploySession | null;
     signIn?: (onCode: (c: { userCode: string; verificationUri: string; expiresIn: number }) => void) => Promise<DeploySession>;
     persistSession?: (s: DeploySession) => Promise<boolean>;
@@ -367,7 +371,10 @@
       // re-read the home itself, because a deploy that landed since the last open wrote one.
       changingHome = false; homeNonce += 1;
       machine.open();
-      menuPhase = isResumableState(machine.state) ? "wizard" : "choose";
+      // Resumable machine state wins over any intent: a device code pending or a publish in flight is
+      // real progress, and dropping the author onto the export menu instead would discard it
+      // (Archie-7d9b). Otherwise the entry point decides which half opens.
+      menuPhase = isResumableState(machine.state) ? "wizard" : intent === "export" ? "export" : "choose";
       // Probe the library on every open (Archie-c367). Not once-ever: the author edits between opens,
       // and a recommendation computed against a library three imports ago is worse than none. The pass
       // is chunked and yields (archive-inventory.ts), so this cannot wedge the surface while it opens.

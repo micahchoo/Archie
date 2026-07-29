@@ -191,15 +191,18 @@ test.describe("Studio core loop: create → autosave → publish (Archie-c9ac)",
     // downloaded a zip — the fallback collision Archie-c367 removed. The route now says what it is:
     // pick "One .zip file" from the one-flow list, press Publish, name it, save. Same sink, same
     // artifact (openOpfsStagedZipSave → an <a download> anchor), which is what this suite reads.
-    await page.getByRole("button", { name: /Publish & share/ }).click();
+    // The zip is an ARTIFACT, not a home, so it is reached through "Export a copy…" (Q-15) — the
+    // header's second entry point, which opens the surface straight on the export menu. Same sink,
+    // same artifact (openOpfsStagedZipSave → an <a download> anchor), one fewer screen than the old
+    // destination-radio route.
+    await page.locator('[data-action="export-a-copy"]').click();
     const dialog = page.getByRole("dialog", { name: "Publish" });
     await expect(dialog).toBeVisible();
-    // The probe runs on open; wait for a row rather than counting, so hydration timing cannot make
-    // this vacuous (.claude/rules/playwright-count-does-not-wait.md).
-    const zipRow = dialog.getByRole("radio", { name: /One \.zip file/ });
+    // Wait for a real element rather than counting, so hydration timing cannot make this vacuous
+    // (.claude/rules/playwright-count-does-not-wait.md).
+    const zipRow = dialog.locator('[data-export="zip"]');
     await expect(zipRow).toBeEnabled();
-    await zipRow.check();
-    await dialog.getByRole("button", { name: "Publish", exact: true }).click();
+    await zipRow.click();
 
     const [download] = await Promise.all([
       page.waitForEvent("download"),
