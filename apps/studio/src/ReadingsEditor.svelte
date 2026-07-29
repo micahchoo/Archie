@@ -21,10 +21,14 @@
 
   let newName = $state("");
 
-  /** Drop an empty description rather than storing "". */
+  /** Drop empty description/prose rather than storing "" (byte-stable absence, either field). */
   const clean = (r: Reading): Reading => {
-    const { description, ...rest } = r;
-    return description?.trim() ? { ...rest, description: description.trim() } : rest;
+    const { description, prose, ...rest } = r;
+    return {
+      ...rest,
+      ...(description?.trim() ? { description: description.trim() } : {}),
+      ...(prose?.trim() ? { prose: prose.trim() } : {}),
+    };
   };
   const patch = (id: string, fields: Partial<Reading>) =>
     onchange(readings.map((r) => (r.id === id ? clean({ ...r, ...fields }) : r)));
@@ -63,6 +67,11 @@
     <textarea rows="2" placeholder="Describe this reading in a sentence or two"
       value={r.description ?? ""} aria-label="Description for {r.name}"
       onchange={(e) => patch(r.id, { description: e.currentTarget.value })}></textarea>
+    <!-- The reading's full voice — shown as WALL TEXT when a visitor enters the reading (the one-line
+         description above stays the fallback). Markdown, same convention as note bodies. -->
+    <textarea rows="5" class="prose" placeholder="Wall text — the full introduction a visitor reads on entering this reading (markdown)"
+      value={r.prose ?? ""} aria-label="Wall text for {r.name}"
+      onchange={(e) => patch(r.id, { prose: e.currentTarget.value })}></textarea>
   </section>
 {/each}
 <form class="add" onsubmit={(e) => { e.preventDefault(); add(); }}>
