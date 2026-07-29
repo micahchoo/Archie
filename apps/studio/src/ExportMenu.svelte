@@ -12,12 +12,15 @@
   // writeToFolder / depositBag) are untouched.
   import { humanBytes } from "./archive-probe.js";
   import type { ArchiveProbe } from "./archive-probe.js";
+  import { SINGLE_FILE_MAX_BYTES } from "./publish-flows.svelte.js";
+
+  /** Stated in the row rather than discovered on refusal — the cap is a fact about the format, and
+   *  the author can plan around it. ONE definition (publish-flows), never a copied literal. */
+  const SINGLE_FILE_CAP_MB = Math.round(SINGLE_FILE_MAX_BYTES / (1024 * 1024));
 
   let {
     probe = null,
     canFolder = false,
-    singleFileMb = null,
-    singleFileCapMb = null,
     depositing = false,
     onzip,
     onsinglefile,
@@ -30,11 +33,6 @@
     probe?: ArchiveProbe | null;
     /** Whether this browser can write to a folder at all (folder-backend's `folderSinkSupported`). */
     canFolder?: boolean;
-    /** The library's size in MB as the single-file export would see it, and the cap it refuses past.
-     *  Both null ⇒ Archie could not size it, so the row stays enabled and the export's own guard
-     *  answers — a greyed row must never be a guess. */
-    singleFileMb?: number | null;
-    singleFileCapMb?: number | null;
     /** True while the deposit bag is being built (the only row with a long in-place action). */
     depositing?: boolean;
     onzip: () => void;
@@ -45,18 +43,24 @@
     onback: () => void;
   } = $props();
 
-  /** The single-file refusal, pre-empted (R6). The export's own guard is still the authority — this
-   *  only greys the row when we can already prove it will refuse, so the author is never sent into a
-   *  flow that cannot finish. The message names its SIBLING rather than dead-ending: the folder export
-   *  carries the same viewer and has no size ceiling (Archie-e09d). */
-  const singleFileTooBig = $derived(
-    singleFileMb !== null && singleFileCapMb !== null && singleFileMb > singleFileCapMb,
-  );
-  const singleFileReason = $derived(
-    singleFileTooBig
-      ? `This library is about ${Math.round(singleFileMb!)} MB — too big for one file, which would open on a blank screen for several seconds. Export the folder with a built-in viewer instead; it carries the same reader and has no size limit.`
-      : "",
-  );
+  /* WHY THE SINGLE-FILE ROW IS NEVER PRE-GREYED.
+   *
+   * The obvious move is to grey it once the library is past the export's cap. It was written that
+   * way and the drive caught it: the only size a probe has is the PUBLISHED tree's
+   * (`tiers.archival.publishedBytes`, which includes tiles and derivatives), while the guard measures
+   * RAW ASSET BYTES on disk (`publish-flows` estimateLibraryBytes). The published figure is the
+   * larger one, so the row greyed for a fixture the guard would have accepted — a refusal the author
+   * could not act on and could not appeal.
+   *
+   * `probe.folder.mediaBytes` is closer but still not the same set (it counts media the guard skips).
+   * Two measures that disagree is exactly how a greyed row comes to contradict the guard behind it,
+   * so this row stays ENABLED and the export's own guard answers with its own number. Its refusal
+   * names this row's sibling — "export the folder with the reader built in" — so the author lands on
+   * the route that works rather than on a dead end (R6).
+   *
+   * The folder row IS greyed, and that is not the same call: `canFolder` is a capability
+   * (`folderSinkSupported()`), not an estimate. It cannot be wrong about itself.
+   */
   const totalBytes = $derived(probe?.tiers?.archival?.publishedBytes ?? null);
 </script>
 
@@ -83,11 +87,9 @@
     <div class="pair">
       <p class="p-head">A copy someone can read — the library and a reader together</p>
       {#if onsinglefile}
-        <button type="button" class="x-btn" class:unavailable={singleFileTooBig} data-export="single-file"
-          data-available={!singleFileTooBig} disabled={singleFileTooBig} onclick={onsinglefile}>
+        <button type="button" class="x-btn" data-export="single-file" data-available="true" onclick={onsinglefile}>
           <span class="x-title">One <code>.html</code> file</span>
-          <span class="x-desc">Opens by double-click — no server, no account, no internet. Best for a USB stick or an attachment. Search isn't in it.</span>
-          {#if singleFileTooBig}<span class="x-reason">{singleFileReason}</span>{/if}
+          <span class="x-desc">Opens by double-click — no server, no account, no internet. Best for a USB stick or an attachment. Search isn't in it. Past about {SINGLE_FILE_CAP_MB} MB Archie will point you at the folder below instead.</span>
         </button>
       {/if}
       {#if onfolderviewer}

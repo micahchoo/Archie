@@ -2,15 +2,18 @@
 /**
  * @surface {dialog}
  * @composes {Spinner, ZipExportFields, publish-machine, modality helper}
- * @variants {step 1 one-flow chooser (choose/zip-options/working/done-folder/done-object/done-download/done-deposit/error), wizard}
+ * @variants {choose (PublishSheet | SetupFlow), export (ExportMenu), zip-options/working/done-folder/done-object/done-download/done-deposit/error, wizard, preview}
  * @constraint {single-scrim invariant; surface is mounted for app lifetime, machine state survives close; in-surface "← Back" for nested flow}
  */
   // Publish & Share — the ONE merged surface (Archie-1921, decision Archie-7d9b) for every "Library → the
   // world" path. Formerly two dialogs that opened one behind the other (PublishDialog.svelte → Publish.svelte);
   // now a single scrimmed surface with an in-surface step sequence:
-  //   Step 1 (`menuPhase === "choose"`) — the destination chooser: web / local folder / zip download. This is
-  //   PublishDialog.svelte's old content, folded in unchanged (Local/zip destinations are unchanged per spec).
-  //   Choosing "Publish to the web" enters the GitHub wizard (`menuPhase === "wizard"`) IN THE SAME surface —
+  //   Step 1 (`menuPhase === "choose"`) — the SITE half, and which screen it draws depends on whether the
+  //   library already has a home (Q-15): `PublishSheet` states the remembered destination and offers one
+  //   button, `SetupFlow` asks where it should live when there is no home yet. `menuPhase === "export"` is
+  //   the ARTIFACT half (`ExportMenu`) — reached from the header's "Export a copy…" or from either site
+  //   screen's link. This file is the shell and the router; the three screens own their own copy.
+  //   Choosing GitHub Pages enters the wizard (`menuPhase === "wizard"`) IN THE SAME surface —
   //   no second modal opens over/behind the first. The wizard's entry screens (intro-desktop / web-intro) get
   //   an in-surface "← Back" that returns to step 1 — the modality contract's nested-flow rule (CONTEXT.md →
   //   Surfaces: "opening one from inside another replaces it — in-surface back affordance if the flow is
@@ -70,7 +73,6 @@
   // as long as the import takes. `deploy/remembered.ts` exists to be readable without that bundle.
   import { rememberedTarget, forgetTarget } from "./deploy/remembered.js";
   import { folderSinkSupported } from "./folder-backend.js";
-  import { SINGLE_FILE_MAX_BYTES } from "./publish-flows.svelte.js";
 
   let {
     open = false,
@@ -449,15 +451,7 @@
   // === the export menu (Q-15) =========================================================================
   // The facts the menu needs to grey a row BEFORE the author enters a flow that cannot finish. Both are
   // read-only projections of things that already exist — no new probe, no new guard.
-  const SINGLE_FILE_CAP_MB = Math.round(SINGLE_FILE_MAX_BYTES / (1024 * 1024));
   const folderSupported = folderSinkSupported();
-  /** The library's size as the single-file export measures it. The probe's ARCHIVAL total is the same
-   *  quantity the guard estimates (the zip carries originals, so the web tier's smaller number would
-   *  understate it and grey too late). Null when there is no probe — then the row stays enabled and the
-   *  export's own guard answers, because a greyed row must never be a guess. */
-  const singleFileSizeMb = $derived(
-    probe ? probe.tiers.archival.publishedBytes / (1024 * 1024) : null,
-  );
   function openExportMenu() { destErrorMsg = ""; menuPhase = "export"; }
 
   // === the home (Q-15) ================================================================================
@@ -501,7 +495,7 @@
       // A refusal, not a failure. The error phase is the honest home for it (it has the Back
       // affordance), but the copy must STEER rather than apologise — the author has a working
       // route, it just isn't this one.
-      destErrorMsg = `This library is about ${r.mb} MB. A single file that size opens on a blank screen for several seconds, which reads as broken — so Archie doesn't make one. Use “Locally” or “Share a working copy” instead, or link large media by URL so the library references it rather than copying it in.`;
+      destErrorMsg = `This library is about ${r.mb} MB. A single file that size opens on a blank screen for several seconds, which reads as broken — so Archie doesn't make one. Export the folder with the reader built in instead: it carries the same reader, it has no size limit, and you can put it on any web host or hand over the whole folder.`;
       menuPhase = "error";
     } catch (e) { destErrorMsg = e instanceof Error ? e.message : "Couldn't build the single-file export."; menuPhase = "error"; }
   }
@@ -721,8 +715,6 @@
       <ExportMenu
         {probe}
         canFolder={folderSupported}
-        singleFileMb={singleFileSizeMb}
-        singleFileCapMb={SINGLE_FILE_CAP_MB}
         {depositing}
         onzip={openZipOptions}
         onsinglefile={onexportselfcontained ? exportSelfContained : undefined}

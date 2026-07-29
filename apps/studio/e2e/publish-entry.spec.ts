@@ -64,3 +64,32 @@ test("the two entries are independent — each visit honours the button that ope
   await page.locator('[data-action="export-a-copy"]').click();
   await expect(dialog.getByRole("heading", { name: /export a copy/i })).toBeVisible();
 });
+
+test("the single-file row and its folder sibling are presented together", async ({ page }) => {
+  // R6. An author whose library is too big for one file must be able to SEE the route that works,
+  // not be told no. The two carry the same reader (Archie-e09d put them on one deduped bundle) and
+  // differ only in whether it comes back as a file you double-click or a folder you serve — so they
+  // sit in one group, and the greyed single-file row names the folder in its own reason line.
+  await page.locator('[data-action="export-a-copy"]').click();
+  const dialog = page.getByRole("dialog", { name: "Publish" });
+
+  const single = dialog.locator('[data-export="single-file"]');
+  const folder = dialog.locator('[data-export="folder-viewer"]');
+  await expect(single).toBeVisible();
+  await expect(folder).toBeVisible();
+  // Adjacent, in one group — not scattered among unrelated artifacts.
+  const pair = dialog.locator(".pair");
+  await expect(pair.locator("[data-export]")).toHaveCount(2);
+
+  // The single-file row is NEVER pre-greyed: the only size a probe has is the published tree's, and
+  // the export's guard measures raw asset bytes, so pre-empting greyed the row for a library the
+  // guard would have accepted. (Measured here — this assertion was written as `false` on the
+  // assumption the fixture was small, and the drive proved the two measures disagree. See
+  // ExportMenu.svelte's note.) The guard answers with its own number; the row states the cap up
+  // front so the author can plan.
+  await expect(single).toHaveAttribute("data-available", "true");
+  await expect(single).toBeEnabled();
+  await expect(single).toContainText(/50 MB/);
+  // The folder row's greying IS legitimate, because `canFolder` is a capability and not an estimate.
+  await expect(folder).toHaveAttribute("data-available", "true"); // Chromium has the picker
+});
