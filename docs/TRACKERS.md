@@ -35,7 +35,6 @@ Three id spaces: `Issue N` (ISSUES.md, FROZEN), `Archie-xxxx` (.seeds, canonical
 | Q-14 | docs/decisions/archie.md:26 | — |
 
 <!-- hand-corrections below this line are preserved by scripts/trackers-gen.mjs -->
-<<<<<<< HEAD
 
 ## Hand corrections (2026-07-28): the four UNMAPPED rows resolved
 
@@ -47,5 +46,3 @@ Three id spaces: `Issue N` (ISSUES.md, FROZEN), `Archie-xxxx` (.seeds, canonical
 - **Issue 14** — still queued; now carried by seeds ticket **Archie-d895** (created 2026-07-28 on
   the `fix/flaky-gates` tracker — the generated table above maps it after that branch merges).
 - **Issue 16** — still queued; now carried by seeds ticket **Archie-59c4** (same tracker note).
-=======
->>>>>>> fix/flaky-gates
