@@ -64,6 +64,11 @@
   // rows so two verbs never share one column.
   import ExportMenu from "./ExportMenu.svelte";
   import SetupFlow from "./SetupFlow.svelte";
+  import PublishSheet from "./PublishSheet.svelte";
+  // The LIGHT home store — deliberately not read through `deployProps`, which is null until the lazy
+  // deploy bundle loads. Routing on that would show an author who HAS a home the first-run setup for
+  // as long as the import takes. `deploy/remembered.ts` exists to be readable without that bundle.
+  import { rememberedTarget, forgetTarget } from "./deploy/remembered.js";
   import { folderSinkSupported } from "./folder-backend.js";
   import { SINGLE_FILE_MAX_BYTES } from "./publish-flows.svelte.js";
 
@@ -358,6 +363,9 @@
     if (!open) return;
     untrack(() => {
       destErrorMsg = ""; zipUrl = ""; copied = false; copiedWc = false; copiedEmbed = false;
+      // Changing the home is a decision about THIS visit, never a mode the surface stays in — and
+      // re-read the home itself, because a deploy that landed since the last open wrote one.
+      changingHome = false; homeNonce += 1;
       machine.open();
       menuPhase = isResumableState(machine.state) ? "wizard" : "choose";
       // Probe the library on every open (Archie-c367). Not once-ever: the author edits between opens,
@@ -444,6 +452,36 @@
     probe ? probe.tiers.archival.publishedBytes / (1024 * 1024) : null,
   );
   function openExportMenu() { destErrorMsg = ""; menuPhase = "export"; }
+
+  // === the home (Q-15) ================================================================================
+  /** True once the author has pressed "Change where this publishes…" — routes to SetupFlow for the rest
+   *  of this visit even though a home still exists. Reset on every open, because changing the home is a
+   *  decision about THIS visit, not a mode the surface stays in. */
+  let changingHome = $state(false);
+  /** Re-read on every open rather than derived once: a deploy that lands while the surface is open
+   *  updates the store, and the next visit must see it. */
+  let homeNonce = $state(0);
+  const home = $derived.by(() => {
+    homeNonce; // re-read trigger
+    return library.id ? rememberedTarget(library.id) : null;
+  });
+  /** The sheet is shown only when there IS a home and the author has not asked to change it. Everything
+   *  else — first run, or a home just disowned — is the setup flow. */
+  const showSheet = $derived(!!home && !changingHome);
+  function changeHome() {
+    if (library.id) forgetTarget(library.id);
+    homeNonce += 1;
+    changingHome = true;
+    destErrorMsg = "";
+  }
+  /** "Publish changes" — straight to the home's own flow. GitHub enters the wizard, which computes
+   *  `update-confirm` from the remembered target (publish-machine `computeInitial`); a folder home
+   *  re-picks the folder, because a directory handle cannot be persisted across a reload. */
+  function publishToHome() {
+    if (!home) return;
+    if (home.target.repo) { void enterWizard(); return; }
+    void chooseFolder("done-folder");
+  }
   // The single-file export reuses the working/error phases the other destinations use — same shape,
   // same recovery. `false` means the size guard declined, which already told the author why: return
   // to the chooser rather than showing a second, emptier message.
@@ -630,6 +668,21 @@
       <div class="actions">
         <button type="button" class="ghost" onclick={close}>Close</button>
       </div>
+
+    {:else if menuPhase === "choose" && showSheet && home}
+      <!-- THE RETURN VISIT (Q-15): the destination was decided once and remembered, so this states
+           where the library lives and offers one button. The ≤2-click publish. -->
+      <PublishSheet
+        {home}
+        {probe}
+        canPublish={!blocksPublish(preflight)}
+        onpublish={publishToHome}
+        onviewsite={home.url ? () => void machine.openExternal(home.url) : undefined}
+        onchangehome={changeHome}
+        onexport={ondeposit || onexportselfcontained ? openExportMenu : undefined}
+        onpreview={previewtree ? () => (menuPhase = "preview") : undefined}
+        oncancel={close}
+      />
 
     {:else if menuPhase === "choose"}
       <!-- FIRST RUN (Q-15): one question per screen, and the quality question asked only when its
