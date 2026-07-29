@@ -46,7 +46,7 @@ visibility claim additionally needs a browser drive ([[svelte-no-typecheck-net]]
 **Skill:** `none`
 **Files:** Modify: `docs/decisions/archie.md`
 
-- [ ] Read `docs/decisions/archie.md`, confirm next free Q-N. Verified 2026-07-28: highest existing is Q-15 (drive harness) — mint Q-15.
+- [ ] Read `docs/decisions/archie.md`, confirm next free Q-N. Verified 2026-07-28: highest existing is Q-14 (drive harness) — mint Q-15.
 - [ ] Add Q-15: "Publish surface = remembered-home card + export menu (spec LD1–LD5); rules out per-run destination choice and the one-wall dialog."
 - [ ] Run: `node scripts/doclint.mjs` Expected: PASS. Commit `docs(decisions): Q-15 publish surface shape`.
 
