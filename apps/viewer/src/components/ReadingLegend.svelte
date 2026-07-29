@@ -6,8 +6,9 @@
   // one intent line shown (principle #1), kept compact. Rendered inside Reader's relative container.
   import { readingMarkerStyle } from "@render/core";
   import type { Reading } from "@render/core";
+  import { visibleReadings } from "../reading-walltext.js";
 
-  let { readings, active, onselect, hidden = false, onhiddenchange, count }: {
+  let { readings, active, onselect, hidden = false, onhiddenchange, count, oninfo }: {
     readings: Reading[];
     active: string | null;
     onselect: (id: string | null) => void;
@@ -18,12 +19,17 @@
     /** Per-layer note count on the CURRENT object (id = null → General/base notes; else a reading's id).
      *  Optional — omitted ⇒ no counts render. The host re-mints it per active object so counts stay live. */
     count?: (id: string | null) => number;
+    /** Reopen the active reading's wall text (its full voice) — the (i) beside the radios. Gated on the
+     *  handler like `onhiddenchange` below: a host that doesn't wire it ships no dead door. */
+    oninfo?: () => void;
   } = $props();
 
   // Picking a layer always means "show me markers" — un-hide, then select (the approved restore path).
   const pick = (id: string | null): void => { if (hidden) onhiddenchange?.(false); onselect(id); };
 
-  const activeDesc = $derived(active ? readings.find((r) => r.id === active)?.description : undefined);
+  // Only readings with notes on THIS object get a chip (amendment 1, plan 2026-07-29) — except the
+  // active one, whose radio state must never vanish under the reader. Logic + tests in reading-walltext.ts.
+  const visible = $derived(visibleReadings(readings, active, count));
 </script>
 
 <!-- V47 (Archie-52a0) — the swatch IS the mark, drawn from the same `readingMarkerStyle` call the
@@ -45,7 +51,7 @@
   </svg>
 {/snippet}
 
-{#if readings.length > 0}
+{#if visible.length > 0}
   <!-- aside = complementary landmark (axe region rule: overlay content must live in a landmark) -->
   <aside class="legend" aria-label="Readings">
     <span class="title">Readings</span>
@@ -54,13 +60,18 @@
       <button type="button" role="radio" aria-checked={active === null} class="opt" class:on={active === null && !hidden} style="--rd: var(--ink-canvas-muted)" onclick={() => pick(null)}>
         {@render swatch("var(--ink-canvas-muted)")}<span class="nm">General notes</span>{#if count}<span class="ct" title="{count(null)} notes on this image">{count(null)}</span>{/if}
       </button>
-      {#each readings as r (r.id)}
+      {#each visible as r (r.id)}
         <button type="button" role="radio" aria-checked={active === r.id} class="opt" class:on={active === r.id && !hidden} style="--rd:{r.colour ?? 'var(--accent)'}" onclick={() => pick(r.id)}>
           {@render swatch(r.colour ?? "var(--accent)")}<span class="nm">{r.name}</span>{#if count}<span class="ct" title="{count(r.id)} notes on this image">{count(r.id)}</span>{/if}
         </button>
       {/each}
     </div>
-    {#if activeDesc && !hidden}<p class="desc">{activeDesc}</p>{/if}
+    <!-- The active reading's voice moved OFF the bar: it used to be a one-line gloss clipped at 28ch
+         here (`.desc`), which made the description a truncated caption. The full prose now lives in
+         the wall text shown at the threshold (ReadingWallText); this (i) is the way back to it. -->
+    {#if active !== null && oninfo && !hidden}
+      <button type="button" class="info" onclick={() => oninfo()} aria-label="About this reading">i</button>
+    {/if}
     <!-- Hide-all: a declutter toggle, separate from the layer radios (visibility ≠ which reading).
 
          GATED ON THE HANDLER (Archie-4524), and the gate is the point rather than defensive coding.
@@ -140,18 +151,18 @@
   /* Per-layer note count on the current image — a quiet tabular figure pinned to the trailing edge
      (flex:none so it never shrinks or gets pushed out). Tabular nums so multi-digit counts don't jitter. */
   .ct { flex: none; padding-left: var(--space-3); font-family: var(--font-mono), monospace; font-variant-numeric: tabular-nums; font-size: 0.78rem; color: var(--ink-canvas-muted); }
-  /* The active reading's one intent line (principle #1). In a row it sits after the radios behind a
-     hairline, and it is allowed to be the thing that wraps. */
-  .desc {
-    margin: 0; padding-left: var(--space-3);
-    border-left: 1px solid var(--border-canvas);
-    font-family: var(--font-body), sans-serif;
-    font-size: 0.82rem; font-style: italic; line-height: 1.5; color: var(--ink-canvas-secondary);
-    min-width: 0; max-width: 28ch;
-    /* One line, clipped: this is a gloss on the active layer, not the note. Letting it wrap would put
-       the bar back to two rows and take the height straight off the image. */
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* The (i) — reopen the active reading's wall text. A quiet circled glyph in the bar's UI voice;
+     the reading's identity is the CHIP, so this stays neutral rather than taking the reading colour. */
+  .info {
+    flex: none; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+    padding: 0; cursor: pointer; background: none;
+    border: 1px solid var(--border-canvas-emphasis); border-radius: 999px;
+    font-family: var(--font-display-2, serif); font-style: italic; font-weight: 600; font-size: 0.72rem;
+    color: var(--ink-canvas-secondary);
+    transition: color 160ms ease, border-color 160ms ease;
   }
+  .info:hover { color: var(--ink-canvas-primary); border-color: var(--ink-canvas-secondary); }
+  .info:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 1px; }
   /* Hide-all toggle — a quiet footer action under a hairline rule, distinct from the layer radios.
      Pressed (notes hidden) flips to the rationed cord-blue connector accent so the off-state reads. */
   .hide-toggle {

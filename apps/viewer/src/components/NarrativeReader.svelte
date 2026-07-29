@@ -59,6 +59,7 @@
     onhiddenchange,
     onindex,
     onopenfinder,
+    onreadinginfo,
   }: {
     /** The exhibit's slug — scopes the per-exhibit collapse key (Archie-c5cb). */
     slug?: string;
@@ -96,6 +97,8 @@
     /** Hide-all (ReadingLegend declutter): canvas draws no markers except the SELECTED one. */
     notesHidden?: boolean;
     onhiddenchange?: (hidden: boolean) => void;
+    /** Reopen the active reading's wall text — threaded to the legend's (i) (gated on the handler there). */
+    onreadinginfo?: () => void;
     /** Open the object grid as an index (ADR-0016 keystone): the narrative leads, but the grid stays
      *  reachable behind it — precision-in/escape-out (§137), never a dead-end takeover. Absent = hide it. */
     onindex?: () => void;
@@ -657,7 +660,7 @@
     <!-- Canvas chrome, DOCKED: readings at the leading end, section nav + escapes + readout trailing. -->
     <div class="canvas-dock">
       {#if onreading && readings.length > 0}
-        <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} count={readingCount} />
+        <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} count={readingCount} oninfo={onreadinginfo} />
       {:else}
         <span class="dock-spacer"></span>
       {/if}

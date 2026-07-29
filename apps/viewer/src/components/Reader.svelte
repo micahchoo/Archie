@@ -56,6 +56,7 @@
     onstep,
     onoverview,
     readingCount,
+    onreadinginfo,
   }: {
     object: { source: string; canvasId: string; label: string; summary?: string; tileSource?: TileSourceDescriptor };
     annotations?: W3CAnnotation[];
@@ -105,6 +106,8 @@
     /** Per-reading note count on THIS object (ExhibitView computes it for the active object) — threaded
      *  straight to the ReadingLegend so each layer shows how many notes it adds to this image. */
     readingCount?: (id: string | null) => number;
+    /** Reopen the active reading's wall text — threaded to the legend's (i) (gated on the handler there). */
+    onreadinginfo?: () => void;
   } = $props();
 
   // Show the sidebar footer only with real siblings AND the wiring to drive it. When present it owns
@@ -394,7 +397,7 @@
          shadow or a contrast floor against arbitrary imagery (V42/Archie-de08 closes obviated). -->
     <div class="canvas-dock">
       {#if onreading && readings.length > 0}
-        <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} count={readingCount} />
+        <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} count={readingCount} oninfo={onreadinginfo} />
       {:else}
         <span class="dock-spacer"></span>
       {/if}

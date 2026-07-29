@@ -11,7 +11,10 @@
     isWholeObjectFor, wholeObjectFlagOf, emphasisOf, readingMarkerStyle,
     routeToHash, logicalIdOf, citationFor, encodeContentState,
     type Exhibit, type LayoutDescriptor, type RightsFields, type W3CAnnotation, type ViewerRoute,
+    type Reading,
   } from "@render/core";
+  import { wallTextFor, wallTextSeenKey } from "../reading-walltext.js";
+  import ReadingWallText from "./ReadingWallText.svelte";
   import { loadPublishedExhibit, type PublishedExhibit } from "../published.js";
   import { canvasIdFor } from "../published-base.js";
   import { resolveNoteArrival } from "../note-arrival.js";
@@ -81,6 +84,43 @@
   let sectionMissing = $state(false);
   let activeReading = $state<string | null>(null); // ADR-0007 / Q16: base-only by default; null = base
   let notesHidden = $state(false); // ReadingLegend "Hide all" — declutter the canvas to the bare basemap/image
+
+  // ---- Reading wall text (plan 2026-07-29): the reading's full voice at the THRESHOLD. Raised on
+  // first entry per visit via the legend radios; NEVER by the A0 note-arrival seam (the note is the
+  // destination — `arriveAtNote` assigns `activeReading` directly, bypassing `openReading`, by design).
+  let wallReading = $state<Reading | null>(null);
+  // sessionStorage can throw (privacy modes). Degrade both ways to "never block": unreadable → treat
+  // as seen (no dialog), unwritable → the reading re-introduces itself next activation. Never an error.
+  const wallSeen = (rid: string): boolean => {
+    try { return sessionStorage.getItem(wallTextSeenKey(slug, rid)) === "1"; } catch { return true; }
+  };
+  /** Every legend radio routes through here — activation is where the threshold is. */
+  function openReading(id: string | null) {
+    activeReading = id;
+    wallReading = wallTextFor(id, data?.readings ?? [], wallSeen);
+  }
+  /** Seen is recorded on DISMISS, not open — a reload mid-read shows the text again, not loses it. */
+  function dismissWallText() {
+    if (wallReading) { try { sessionStorage.setItem(wallTextSeenKey(slug, wallReading.id), "1"); } catch { /* degrade */ } }
+    wallReading = null;
+  }
+  /** The legend's (i): reread on demand — ignores seen (silence rules live in wallTextFor's cases). */
+  function reopenWallText() {
+    const r = data?.readings.find((x) => x.id === activeReading);
+    if (r) wallReading = r;
+  }
+  // Exhibit-wide stats for the wall text's meta line — the threshold speaks for the whole pass,
+  // unlike the legend's per-object counts.
+  const wallStats = $derived.by(() => {
+    let notes = 0, sources = 0;
+    if (wallReading && data) {
+      for (const o of data.objects) {
+        const n = data.readingAnnotationsByObject[o.id]?.[wallReading.id]?.length ?? 0;
+        if (n > 0) { notes += n; sources += 1; }
+      }
+    }
+    return { notes, sources };
+  });
   // Grid-index escape (ADR-0016 keystone): when a narrative LEADS, the object grid stays reachable BEHIND
   // it as an index (§137 precision-in/escape-out; §223 anti-trap) — not a dead-end takeover. `narrativeIndex`
   // opens that grid over the read; `indexObjectId` is an object opened FROM the index (its own Reader).
@@ -585,7 +625,7 @@
           onopenfinder={(tag) => openFinder(tag)}
           readings={data.readings}
           activeReading={activeReading}
-          onreading={(id) => (activeReading = id)}
+          onreading={openReading}
           readingCount={readingCountOf(activeData.id)}
         />
       {/if}
@@ -599,7 +639,7 @@
         <!-- Keyed like the grid-AV player: stepping the carousel between AV index objects must remount. -->
         {#key indexData.id}
           {#if MediaPlayerLazy.current}
-            <MediaPlayerLazy.current object={indexData} annotations={annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} {exhibitRights} initialSeek={t} onback={() => (indexObjectId = null)} onlocus={(l) => { locusNote = l.noteId; locusTime = l.t; }} onopenfinder={(tag) => openFinder(tag)} readings={data.readings} activeReading={activeReading} onreading={(id) => (activeReading = id)} readingCount={readingCountOf(indexData.id)} />
+            <MediaPlayerLazy.current object={indexData} annotations={annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} {exhibitRights} initialSeek={t} onback={() => (indexObjectId = null)} onlocus={(l) => { locusNote = l.noteId; locusTime = l.t; }} onopenfinder={(tag) => openFinder(tag)} readings={data.readings} activeReading={activeReading} onreading={openReading} readingCount={readingCountOf(indexData.id)} />
           {/if}
         {/key}
       {:else}
@@ -609,7 +649,8 @@
             annotations={annotationsOf(indexObject.id)}
             readings={data.readings}
             activeReading={activeReading}
-            onreading={(id) => (activeReading = id)}
+            onreading={openReading}
+            onreadinginfo={reopenWallText}
             readingCount={readingCountOf(indexObject.id)}
             styleOf={readingStyleOf(indexObject.id)}
             frame={frameFor(indexObject.id, indexData?.width, indexData?.height)}
@@ -652,7 +693,8 @@
           rights={exhibitRights}
           readings={data.readings}
           activeReading={activeReading}
-          onreading={(id) => (activeReading = id)}
+          onreading={openReading}
+          onreadinginfo={reopenWallText}
           styleFor={readingStyleOf}
           frameFor={(objectId) => { const o = data?.objects.find((x) => x.id === objectId); return frameFor(objectId, o?.width, o?.height); }}
           initialSelected={arrivedNote}
@@ -672,7 +714,8 @@
         annotations={annotationsOf(activeObject.id)}
         readings={data.readings}
         activeReading={activeReading}
-        onreading={(id) => (activeReading = id)}
+        onreading={openReading}
+        onreadinginfo={reopenWallText}
         readingCount={readingCountOf(activeObject.id)}
         styleOf={readingStyleOf(activeObject.id)}
         frame={frameFor(activeObject.id, activeData?.width, activeData?.height)}
@@ -748,6 +791,11 @@
     </button>
   </div>
 
+  <!-- The reading's wall text — its full voice at the threshold (single-scrim: opens only from the
+       legend's chrome, never from inside another scrimmed surface). Dismissal IS entry. -->
+  {#if wallReading}
+    <ReadingWallText reading={wallReading} noteCount={wallStats.notes} sourceCount={wallStats.sources} onclose={dismissWallText} />
+  {/if}
   {#if citeOpen && CitePanelLazy.current}
     <CitePanelLazy.current
       label={citeData.label}
