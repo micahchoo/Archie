@@ -453,7 +453,6 @@
     padding: 2px var(--space-2);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
     border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-lift-low);
   }
   .carousel .cnav {
     /* 1.5rem = 24px: the WCAG 2.2 SC 2.5.8 floor (Archie-cf4a). Was 1.25rem/20px, which beat
@@ -489,7 +488,6 @@
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
     border: none; border-left: 3px solid var(--accent-2);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low);
     font-family: var(--font-body), sans-serif; font-size: 0.8125rem;
   }
   .degrade .seal { color: var(--accent-2); }
@@ -507,7 +505,7 @@
     color: var(--semantic-error);
     border: 1px solid var(--border-canvas-emphasis);
     border-radius: var(--radius-sm);
-    background: var(--surface-canvas-raised); box-shadow: var(--shadow-lift-low);
+    background: var(--surface-canvas-raised);
   }
   /* Chrome + resting underline from .text-link. It kept the uppercase/0.14em eyebrow recipe — the same
      one the INERT "GALLERY · N EXHIBITS" label uses — painted in --ink-canvas-secondary, so the only

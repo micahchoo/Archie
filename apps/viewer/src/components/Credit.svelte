@@ -112,7 +112,7 @@
     display: flex; flex-direction: column; gap: var(--space-2);
     padding: var(--space-3) var(--space-4);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low);
+    border-radius: var(--radius-md);
   }
   .panel p { margin: 0; display: flex; flex-direction: column; gap: 2px; font-family: var(--font-body), sans-serif; font-size: 0.82rem; line-height: 1.6; }
   .panel .k { font-family: var(--font-ui), monospace; font-size: 0.62rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-paper-muted); opacity: 0.62; }

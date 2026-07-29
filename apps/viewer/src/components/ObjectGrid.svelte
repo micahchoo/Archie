@@ -101,7 +101,7 @@
 
   /* Density segmented toggle — a quiet two-step control on warm paper; the active step is filled, the
      other recedes. Discrete steps, one tap (audience surface). Sits under the credit in the header. */
-  .density { display: inline-flex; margin-top: var(--space-4); border-radius: var(--radius-sm); overflow: hidden; box-shadow: var(--shadow-lift-low); }
+  .density { display: inline-flex; margin-top: var(--space-4); border-radius: var(--radius-sm); overflow: hidden; }
   .density button {
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
     border: none; padding: var(--space-2) var(--space-4); cursor: pointer;
@@ -124,12 +124,14 @@
     display: flex; flex-direction: column; width: 100%; padding: 0; cursor: pointer; text-align: left;
     background: var(--surface-canvas-raised); color: inherit;
     border: none; border-radius: var(--radius-md); overflow: hidden;
-    box-shadow: var(--shadow-lift-low);
-    transition: transform 200ms ease, box-shadow 200ms ease;
+    transition: transform 200ms ease;
   }
-  .object:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift-mid); }
+  .object:hover { transform: translateY(-3px); }
   /* Quiet selected/active signal — a rationed accent left-border, not a loud fill. */
-  .object:focus-visible { outline: none; box-shadow: var(--shadow-lift-mid); }
+  /* `outline: none` means this box-shadow IS the focus indicator — it was the rule's ONLY
+     declaration, so deleting it would have removed keyboard focus outright. Swapped for a real
+     ring, matching the rest of the codebase. (Archie-1244) */
+  .object:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent); }
 
   /* The plate (image · video poster · audio waveform · map motif) lives in MediaThumbnail — it owns the
      4/3 box, contain/cover, and the type badge; the card just clips it to the corner radius. */

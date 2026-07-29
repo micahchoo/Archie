@@ -465,10 +465,14 @@
   border: 1px solid var(--border-paper-emphasis);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: box-shadow 160ms ease;
+  transition: background 160ms ease, border-color 160ms ease;
  }
+ /* Hover was a lift and nothing else; Archie-1244 removed it and left this rule EMPTY, i.e. a
+    destructive button with no hover feedback at all. Restored on the two channels a destructive
+    control should use — a warmer fill and the error hue moving from the ink to the border. */
  .del:hover {
-  box-shadow: var(--shadow-lift-low);
+  background: var(--surface-paper-hover);
+  border-color: var(--semantic-error);
  }
  /* Note-editor action row — Done (commit + close the popover) beside Delete. */
  .wadm-actions {

@@ -858,7 +858,6 @@
     border: none;
     border-left: 3px solid var(--accent-2);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low);
     font-family: var(--font-body), sans-serif; font-size: 0.8125rem;
     letter-spacing: 0; text-transform: none;
   }
@@ -878,11 +877,11 @@
     padding: var(--space-2) var(--space-4);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
     border: none; border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low); cursor: pointer;
+    cursor: pointer;
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); letter-spacing: 0.04em;
-    transition: color 160ms ease, box-shadow 160ms ease;
+    transition: color 160ms ease;
   }
-  .finder-trigger:hover { color: var(--accent-2); box-shadow: var(--shadow-lift-mid); }
+  .finder-trigger:hover { color: var(--accent-2); }
   /* Beside the finder pill in the same docked bar — the leading end of the row. */
   .cite-trigger {
     flex: none; align-self: center;
@@ -891,9 +890,9 @@
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
     border: none; border-radius: var(--radius-md); cursor: pointer;
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); letter-spacing: 0.04em;
-    transition: color 160ms ease, box-shadow 160ms ease;
+    transition: color 160ms ease;
   }
-  .cite-trigger:hover { color: var(--accent-2); box-shadow: var(--shadow-lift-mid); }
+  .cite-trigger:hover { color: var(--accent-2); }
   .cite-trigger .mark { font-size: 1rem; line-height: 1; }
   .finder-trigger .glass { font-size: 1rem; line-height: 1; }
   .finder-trigger .kbd { font-family: var(--font-mono), monospace; font-size: 0.65rem; letter-spacing: 0.1em; color: var(--ink-canvas-muted); }

@@ -92,8 +92,8 @@
   .eyebrow { margin: 0; }
   h2 { margin: 0; font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; line-height: 1.3; color: var(--ink-paper-primary); }
   .lead { margin: 0 0 var(--space-2); font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-paper-secondary); }
-  .side { text-align: left; cursor: pointer; padding: var(--space-3); border: 1px solid var(--border-canvas); border-left: 3px solid transparent; border-radius: var(--radius-sm); background: var(--surface-paper); display: flex; flex-direction: column; gap: var(--space-1); transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
-  .side:hover { border-left-color: var(--accent); background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-low); }
+  .side { text-align: left; cursor: pointer; padding: var(--space-3); border: 1px solid var(--border-canvas); border-left: 3px solid transparent; border-radius: var(--radius-sm); background: var(--surface-paper); display: flex; flex-direction: column; gap: var(--space-1); transition: background 0.2s ease, border-color 0.2s ease; }
+  .side:hover { border-left-color: var(--accent); background: var(--surface-paper-hover); }
   .who { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); }
   .text { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink-paper-primary); }
 </style>

@@ -50,10 +50,11 @@
     position: relative; cursor: zoom-in; padding: 0; overflow: hidden;
     width: 132px; height: 92px; border-radius: var(--radius-sm);
     background: var(--surface-canvas-raised); border: none;
-    box-shadow: var(--shadow-lift-low);
-    transition: transform 160ms ease, box-shadow 160ms ease;
+    transition: transform 160ms ease;
   }
-  .tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
+  /* No lift: the tile sits IN the note's flow. Raised fill at rest, 2px rise on hover — both
+     already here. (Archie-1244 / 5c1d Option C) */
+  .tile:hover { transform: translateY(-2px); }
   .tile img, .tile video { width: 100%; height: 100%; object-fit: cover; display: block; }
   /* Broken-media fallback: a quiet label instead of the browser's broken-image glyph. */
   .tile-failed { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-family: var(--font-ui); font-size: var(--text-ui-xs); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-canvas-muted); }
@@ -67,6 +68,10 @@
     position: absolute; bottom: 6px; right: 7px;
     font-family: var(--font-ui, monospace); font-size: 0.72rem; line-height: 1; padding: 3px 7px; border-radius: var(--radius-sm);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
+    /* KEPT (Archie-1244): this badge is absolutely positioned OVER image pixels it cannot
+       predict, so its solid fill can coincide with the photo's own tones. Same category as
+       App.svelte's sticky .rail-pos and ExhibitOverview's .selection-tray — the lift survives
+       where a surface sits over content it does not control, not merely because it is a card. */
     box-shadow: var(--shadow-lift-low);
   }
 </style>

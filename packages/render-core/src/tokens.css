@@ -175,9 +175,26 @@
  --radius-md: 16px;
  --radius-lg: 20px;
 
- /* ── Soft blur shadows (wide, low-opacity, moss — never a hard offset; kept from Soft Static) ── */
- --shadow-lift-low: 0 24px 48px -24px rgba(26, 60, 35, 0.30);
- --shadow-lift-mid: 0 40px 80px -32px rgba(26, 60, 35, 0.38);
+ /* ── Shadows ──
+     Two families live here and only ONE of them is elevation. Archie-5c1d's Option C decision, taken
+     from `.interface-design/system.md` § Depth: "1–2px subtle shadows only where a surface floats
+     above the canvas (popup, drawer); No heavy card shadows, no material-style elevation ramps."
+
+     RECALIBRATED 2026-07-27 (Archie-1244). The lift pair was `0 24px 48px -24px` / `0 40px 80px
+     -32px`, inherited from Soft Static and described here as "wide, low-opacity, moss" — which is
+     the material-style elevation ramp the spec forbids, at ~160 use sites. The alpha drops WITH the
+     blur on purpose: 0.30 spread over 48px is a faint wash, and the same 0.30 over 2px is a hard
+     line. Recalibrating the token is what makes every one of those sites spec-compliant at once;
+     restricting WHICH selectors may wear a lift at all is the separate half of 1244.
+
+     The other three are not elevation and are deliberately NOT recalibrated — moving them would be
+     finishing a job that was never started:
+       · signal-glow — a rationed attention bloom on the one primary action per surface. The Verdant
+         thesis asks for bloom; this is it. Not a plane cue.
+       · text-haze   — a display-type rendering flourish on headings.
+       · inset-fog   — a DEPRESSION cue (moss translucency), the opposite of lift. */
+ --shadow-lift-low: 0 1px 2px rgba(26, 60, 35, 0.14);
+ --shadow-lift-mid: 0 2px 6px -1px rgba(26, 60, 35, 0.20);
  --shadow-signal-glow: 0 18px 60px -12px rgba(58, 140, 93, 0.50);
  --shadow-text-haze: 0 2px 24px rgba(26, 60, 35, 0.18);
  --shadow-inset-fog: inset 0 0 120px 40px rgba(168, 230, 207, 0.30);

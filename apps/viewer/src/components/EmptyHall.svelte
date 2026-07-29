@@ -186,6 +186,5 @@
     color: var(--ink-canvas-primary);
     background: var(--surface-canvas-raised);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-mid);
   }
 </style>

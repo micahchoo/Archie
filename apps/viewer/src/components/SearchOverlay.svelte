@@ -191,7 +191,6 @@
     padding: var(--space-3) var(--space-4);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
     border: none; border-left: 3px solid transparent; border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low);
     font-family: var(--font-body); font-size: 1rem; line-height: 1.45;
     transition: background 160ms ease, border-color 160ms ease;
   }
