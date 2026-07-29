@@ -266,6 +266,10 @@ export interface Reading {
   name: string;
   /** One-line description — makes the reading's intent legible in the legend (UX principle #1). */
   description?: string;
+  /** The reading's full voice — markdown prose shown as the wall text when the reading is entered
+   *  (same authored-markdown convention as `Section.prose`; DISPLAY goes through `renderMarkdown`).
+   *  Absent → the wall text falls back to `description`. */
+  prose?: string;
   /** Visual identity (legend swatch / marker accent). */
   colour?: string;
 }

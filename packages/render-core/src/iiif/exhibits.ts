@@ -103,7 +103,9 @@ export function toReadingCollection(reading: Reading, id: string): W3CAnnotation
     id,
     type: "AnnotationCollection",
     label: { en: [reading.name] },
-    ...(reading.description ? { summary: { en: [reading.description] } } : {}),
+    // The reading's own voice: full prose when authored, else the one-line description. Raw markdown,
+    // like note bodies in the pages — a pure IIIF consumer treats summary as plain-ish text either way.
+    ...(reading.prose || reading.description ? { summary: { en: [reading.prose ?? reading.description!] } } : {}),
   };
 }
 

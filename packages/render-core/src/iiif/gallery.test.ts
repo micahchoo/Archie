@@ -125,6 +125,13 @@ describe("toReadingCollection (ADR-0007 per-Reading AnnotationCollection header)
       summary: { en: ["The decipherment."] },
     });
   });
+  it("prefers `prose` over `description` for `summary` — the full voice wins when both exist", () => {
+    const coll = toReadingCollection(
+      { id: "cipher", name: "Cipher", description: "One line.", prose: "The **full** wall text.\n\nTwo paragraphs." },
+      "x",
+    );
+    expect(coll.summary).toEqual({ en: ["The **full** wall text.\n\nTwo paragraphs."] });
+  });
   it("omits `summary` when the Reading has no description (byte-stable absence)", () => {
     const coll = toReadingCollection({ id: "r1", name: "Plain" }, "x");
     expect(coll).toEqual({
