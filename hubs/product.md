@@ -7,7 +7,7 @@ scope:
   - "docs/adr/**"
   - "docs/decisions/**"
   - "docs/guide/**"
-updated: 2026-07-27
+updated: 2026-07-28
 ---
 # product
 > *what is Archie and why is it shaped this way?*
@@ -30,6 +30,10 @@ cycle reverts. Architecture changes additionally require a same-commit ADR or de
   open the file and grep usage, don't cite from memory.
 
 ## Decisions
+- Q-15 — the publish surface is split by AUTHOR INTENT, not by sink: publishing a SITE (a place that
+  stays updated, opened on a remembered home) and exporting a FILE (an artifact you carry away) are
+  different verbs behind one entry point. Rules out the c367 one-wall dialog, per-run destination
+  choice, and a global quality setting / 58bd8e1
 - Archie-ebe7 — AV posters: canvas frame-grab now, `mediabunny` deferred until rotation/audio
   bites / dc012e9
 - Archie-5fb5 — untrusted-archive import validates marker + structure only, not content

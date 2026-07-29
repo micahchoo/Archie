@@ -25,6 +25,12 @@ check`. Neither alone is sufficient — see below.
 - [[tauri-fs-seam]] — desktop fs backend needs atomic temp+rename writes and name containment that plugin-fs doesn't give for free; both are studio write paths (autosave, resident store).
 
 ## Decisions
+- Q-15 / Archie-5aee..bce2 — publish surface split by AUTHOR INTENT: `Publish` opens the site half
+  (`PublishSheet` when the library has a remembered home, `SetupFlow` first-run, quality asked only
+  where `qualityMatters`), `Export a copy…` opens the artifact half (`ExportMenu`, with the
+  single-file/folder viewable PAIR adjacent). Retired the c367 one-wall chooser. Finding worth
+  keeping: a pre-greyed single-file row is a FALSE REFUSAL — the probe only knows published-tree
+  bytes, the guard measures raw asset bytes / 5f9a495
 - Archie-e09d — self-contained trees wired into Studio's site sinks (folder destination / GitHub
   push / desktop deploy write `_viewer/` + `viewer.html`; zip and folder AUTOSAVE stay lean) via the
   SAME `@render/archie-viewer/single?raw` IIFE `exportSelfContained` ships — the parked spike's
