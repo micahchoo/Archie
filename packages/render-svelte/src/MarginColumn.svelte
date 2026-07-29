@@ -127,7 +127,6 @@
     padding: 4px 10px; cursor: pointer;
     background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
     color: var(--ink-canvas-secondary);
-    box-shadow: var(--shadow-lift-low);
     transition: background 160ms ease, color 160ms ease;
   }
   .gutter:hover { background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); }

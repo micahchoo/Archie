@@ -1,0 +1,87 @@
+# The published bundle must match the source it claims to be built from (Archie-2865).
+#
+# WHY A SEPARATE WORKFLOW, AND WHY ONLY ON TAGS.
+#
+# `dist/` and `packages/archie-viewer/dist/` are committed, CDN-served artifacts. checks.yml already
+# has `sync-dist:check`, but that compares the two MIRRORS to each other — never to the source. Both
+# being equally stale passes it, which is exactly the state main is usually in.
+#
+# The staleness is created by MERGES, not by careless PRs. Measured 2026-07-27 at origin/main
+# (84bab01, a merge of 2699f3f + c27aa95): the tip's dist/archie-viewer.js was BYTE-IDENTICAL to
+# parent 2699f3f's while the merge took 3 source files from parent c27aa95. Nobody rebuilt after.
+# So both PRs can be perfectly fresh and the merge still ships stale bytes — a per-PR gate is
+# structurally incapable of catching this.
+#
+# A post-merge gate on main WOULD catch it, and was rejected on measurement rather than taste: over
+# the last 40 first-parent commits on main, 8 of the 11 that touched embed/render-core source did
+# not rebuild dist. A fail-on-main gate would therefore redden main on ~73% of source merges, for
+# something mechanical. checks.yml:200 already recorded the same conclusion from the earlier era's
+# numbers ("only 2 of 11 archie-viewer src commits ever carried dist ... freshness belongs at the
+# release boundary, not here"). This workflow IS that release boundary.
+#
+# What this does and does not promise:
+#   DOES     — a tagged release cannot ship an artifact that differs from its own source.
+#   DOES NOT — keep main's HEAD fresh. main may drift between releases, by design.
+#
+# Consumers pinning a tag on jsDelivr (`/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js`) get what
+# this gate protects. Consumers pinning a branch get main's drift, which is the accepted trade.
+#
+# The build is deterministic — two consecutive builds of identical source produce byte-identical
+# output, verified by md5sum of dist/archie-viewer.js plus the sorted file listing — so this cannot
+# flake. If it ever does, suspect the build, not the gate.
+
+name: Release artifact
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release-artifact-is-fresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Rebuild from the tagged source, then mirror to root dist/ exactly as a developer would.
+      # `build.mjs` writes bundle-size.json only under --update, so a plain build cannot move the
+      # size ratchet's baseline (archie-viewer-eager-closure.md) — this step is read-only in that
+      # sense despite writing dist/.
+      - name: Rebuild the embed from the tagged source
+        run: |
+          pnpm --filter @render/archie-viewer build
+          pnpm sync-dist
+
+      - name: The tagged dist/ must equal what the tagged source builds
+        run: |
+          if ! git diff --exit-code --stat -- \
+                dist \
+                packages/archie-viewer/dist \
+                packages/archie-viewer/dist-single; then
+            echo "::error title=Stale release artifact::The committed dist/ does not match what this tag's source builds."
+            echo ""
+            echo "This tag would publish a bundle that is not the source it claims to be."
+            echo "Fix it on the release branch, then re-tag:"
+            echo ""
+            echo "    pnpm --filter @render/archie-viewer build"
+            echo "    pnpm sync-dist"
+            echo "    git add dist packages/archie-viewer/dist packages/archie-viewer/dist-single"
+            echo "    git commit -m 'chore: regenerate dist/ for release'"
+            echo ""
+            exit 1
+          fi
+          echo "dist/ matches the tagged source."

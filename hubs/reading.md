@@ -5,7 +5,7 @@ scope:
   - "apps/viewer/src/lib/**"
   - "apps/viewer/e2e/**"
   - "apps/viewer/astro.config.mjs"
-updated: 2026-07-27
+updated: 2026-07-28
 ---
 # reading
 > *how do readers experience things? (the Viewer app)*
@@ -54,6 +54,9 @@ Chromium — jsdom/vitest cannot hit-test or catch hydration timing.
 - Archie-7b86 — AV reading surface: live client-side waveform via WaveSurfer attached to the existing `<audio>` element (V50; baked peaks were the road NOT taken — Studio's cache is keyed on the working store), note surface restored (V53), temporal
   map clears the item strip (V49) / 325de74, 17fd2e5, 5b08f9a
 - Archie-9eeb — finder result states where it lives, not just what matched (V106) / e7716be
+- Archie-06fb — selection.spec's order-dependent failure was TWO defects: OSD overlay re-render
+  lags the DOM resize under load, and the spec's "pure translation" premise was false (frame
+  rescales 1.0808x) — the spec now records the mark as a FRACTION of the frame and awaits arrival / b376aa8
 - Archie-4524 / d37d — AV note card gets a reading legend; cite-trigger occlusion fixed once the dock
   landed / 27d02e4 (1cdf706 was the fixture half only, ticket stayed open there)
 - Archie-5185 — flip-and-read stepper stays removed with the note-card redesign (decided, not reverted)

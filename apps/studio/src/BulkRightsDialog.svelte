@@ -301,7 +301,7 @@
     cursor: pointer;
     border-radius: var(--radius-sm);
     border: 1px solid transparent;
-    transition: background 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+    transition: background 160ms ease, opacity 160ms ease;
   }
   .btn-primary {
     background: var(--accent);
@@ -309,7 +309,6 @@
   }
   .btn-primary:hover:not(:disabled) {
     background: var(--accent-hover);
-    box-shadow: var(--shadow-lift-low);
   }
   .btn-primary:disabled {
     opacity: 0.4;

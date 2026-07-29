@@ -471,7 +471,7 @@
   .picker {
     margin-top: var(--space-1);
     background: var(--surface-paper-card); border: 1px solid var(--border-paper);
-    border-radius: var(--radius-sm); box-shadow: var(--shadow-lift-low);
+    border-radius: var(--radius-sm);
     padding: var(--space-2); display: flex; flex-direction: column; gap: var(--space-1);
   }
   .picker-search {

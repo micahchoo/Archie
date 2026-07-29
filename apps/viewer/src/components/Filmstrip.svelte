@@ -103,7 +103,7 @@
     padding: var(--space-1) var(--space-4);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
     border: none; border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low); cursor: pointer;
+    cursor: pointer;
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); font-weight: 500;
     letter-spacing: 0.1em; text-transform: uppercase;
     transition: color 160ms ease;

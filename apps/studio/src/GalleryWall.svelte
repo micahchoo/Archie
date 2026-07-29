@@ -52,10 +52,15 @@
   .tile {
     display: flex; flex-direction: column; gap: var(--space-2); width: 100%; padding: var(--space-2); cursor: pointer; text-align: left;
     background: var(--surface-canvas-raised); color: inherit; border: none; border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low); transition: transform 160ms ease, box-shadow 160ms ease;
+    transition: transform 160ms ease;
   }
-  .tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
-  .tile:focus-visible { outline: none; box-shadow: var(--shadow-lift-mid), 0 0 0 2px var(--accent); }
+  /* No lift on a tile (Archie-1244 / 5c1d Option C — a grid tile sits ON the wall, it does not float
+     above it). The raised fill separates it at rest and the 2px rise is the hover affordance; both
+     were already here, with the shadow layered on top as a third cue. */
+  .tile:hover { transform: translateY(-2px); }
+  /* The lift is gone but the FOCUS RING must not be — it was the second layer of this same
+     box-shadow, and dropping the whole declaration would silently delete keyboard focus. */
+  .tile:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent); }
   .cap { display: flex; flex-direction: column; gap: 1px; padding: 0 var(--space-1) var(--space-1); }
   .cap .t { font-family: var(--font-display); font-size: 1rem; font-weight: 400; line-height: 1.15; color: var(--ink-canvas-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cap .ex { font-family: var(--font-mono); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-canvas-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

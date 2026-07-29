@@ -1231,12 +1231,11 @@
     border: 1px solid var(--border-canvas);
     border-radius: var(--radius-md);
     cursor: pointer;
-    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    transition: border-color 160ms ease, transform 160ms ease;
   }
   .path-card:hover,
   .path-card:focus-visible {
     border-color: var(--accent);
-    box-shadow: var(--shadow-lift-low);
     transform: translateY(-1px);
   }
   .path-card .glyph {
@@ -1444,7 +1443,6 @@
     flex: none;
     border-radius: 4px;
     background: linear-gradient(160deg, #d8cfbd, #b9ae95);
-    box-shadow: var(--shadow-lift-low);
   }
   .manifest-preview .mp-text {
     display: flex;
@@ -1621,7 +1619,7 @@
     cursor: pointer;
     border-radius: var(--radius-sm);
     border: 1px solid transparent;
-    transition: background 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+    transition: background 160ms ease, opacity 160ms ease;
   }
   .btn-primary {
     background: var(--accent);
@@ -1629,7 +1627,6 @@
   }
   .btn-primary:hover:not(:disabled) {
     background: var(--accent-hover);
-    box-shadow: var(--shadow-lift-low);
   }
   .btn-primary:disabled {
     opacity: 0.4;

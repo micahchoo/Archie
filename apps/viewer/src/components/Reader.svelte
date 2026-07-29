@@ -707,7 +707,6 @@
     display: inline-flex; align-items: center; gap: var(--space-2);
     padding: var(--space-1) var(--space-2);
     background: var(--surface-canvas-raised); border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low);
   }
   .cn-step {
     display: inline-flex; align-items: center; justify-content: center;
@@ -751,7 +750,6 @@
     padding: var(--space-5) var(--space-5) var(--space-6);
     background: var(--surface-paper); color: var(--ink-paper-primary);
     border-left: 1px solid var(--border-canvas);
-    box-shadow: var(--shadow-lift-low);
   }
   /* Collapsed = give the canvas the whole width (image-first close looking). Divider stays (anti-trap). */
   aside.collapsed { width: 0; min-width: 0; padding: 0; border-left: 0; box-shadow: none; overflow: hidden; }
@@ -788,14 +786,13 @@
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
     border: none; border-left: 3px solid transparent;
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low);
     font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45;
-    transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    transition: background 160ms ease, border-color 160ms ease;
   }
-  li > button:hover { background: var(--surface-paper-hover); border-left-color: var(--accent); box-shadow: var(--shadow-lift-mid); }
+  li > button:hover { background: var(--surface-paper-hover); border-left-color: var(--accent); }
   /* Selected note (parity with the narrative's active-section mark): the open list shows which note the
      floating card currently holds. */
-  li > button.active { background: var(--accent-muted); box-shadow: var(--shadow-lift-mid); }
+  li > button.active { background: var(--accent-muted); }
   /* 3-line preview clamp + a per-card tag row — the documented scan contract (system.md §Craft Notes):
      a dense list scans by shape, and tags (the cross-cutting discovery affordance) surface on the card. */
   .card-preview { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }

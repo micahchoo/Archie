@@ -773,9 +773,9 @@
     font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; cursor: pointer;
     padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas);
-    transition: border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    transition: border-color 160ms ease, color 160ms ease;
   }
-  .librights:hover { border-color: var(--border-canvas-emphasis); color: var(--ink-canvas-primary); box-shadow: var(--shadow-lift-low); }
+  .librights:hover { border-color: var(--border-canvas-emphasis); color: var(--ink-canvas-primary); }
 
   /* Your-name field (Archie-2bf1) — DetailsEditor's field idiom, one level up (library scope, not a form). */
   .identity-field { display: flex; flex-direction: column; gap: var(--space-1); margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-paper); }
@@ -810,11 +810,11 @@
   .save-error { margin: var(--space-2) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-md, 0.75rem); color: var(--semantic-error); }
 
   /* Lost-binding recovery — warm warning (a missing folder is recoverable, not destructive). */
-  .binding-error { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--surface-canvas-overlay); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low), inset 3px 0 0 var(--semantic-warning); }
+  .binding-error { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--surface-canvas-overlay); border-radius: var(--radius-md); box-shadow: inset 3px 0 0 var(--semantic-warning); }
   .binding-error .msg { font-family: var(--font-body); font-size: var(--text-ui-sm, 0.8125rem); color: var(--ink-canvas-primary); }
   .err-actions { display: flex; align-items: center; gap: var(--space-2); }
-  .err-actions button { font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); letter-spacing: 0.02em; padding: var(--space-1) var(--space-3); cursor: pointer; background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: background 160ms ease, box-shadow 160ms ease; }
-  .err-actions button:hover { background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
+  .err-actions button { font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); letter-spacing: 0.02em; padding: var(--space-1) var(--space-3); cursor: pointer; background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: background 160ms ease; }
+  .err-actions button:hover { background: var(--surface-canvas-overlay); }
   .err-actions .x { border: none; background: none; font-size: 1rem; color: var(--ink-canvas-muted); padding: 0 var(--space-2); }
   .err-actions .x:hover { background: none; box-shadow: none; color: var(--ink-canvas-primary); }
 
@@ -823,12 +823,12 @@
   .recents { max-width: 60rem; margin: var(--space-2) auto 0; }
   .recents ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
   .recents li { display: flex; align-items: stretch; }
-  .recent { display: flex; flex-direction: column; gap: 2px; text-align: left; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-sm) 0 0 var(--radius-sm); box-shadow: var(--shadow-lift-low); transition: background 160ms ease, box-shadow 160ms ease; }
-  .recent:hover:not(:disabled) { background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-mid); }
+  .recent { display: flex; flex-direction: column; gap: 2px; text-align: left; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-sm) 0 0 var(--radius-sm); transition: background 160ms ease; }
+  .recent:hover:not(:disabled) { background: var(--surface-canvas-overlay); }
   .recent:disabled { opacity: 0.5; cursor: default; }
   .r-name { font-family: var(--font-body); font-size: 0.8rem; color: var(--ink-canvas-primary); }
   .r-meta { font-family: var(--font-mono); font-size: var(--text-ui-xs, 0.7rem); color: var(--ink-canvas-secondary); }
-  .forget { cursor: pointer; padding: 0 var(--space-2); background: var(--surface-canvas-raised); color: var(--ink-canvas-muted); border: none; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; box-shadow: var(--shadow-lift-low); transition: color 160ms ease; }
+  .forget { cursor: pointer; padding: 0 var(--space-2); background: var(--surface-canvas-raised); color: var(--ink-canvas-muted); border: none; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; transition: color 160ms ease; }
   .forget:hover { color: var(--semantic-error); }
 
   .grid { list-style: none; margin: 0 auto; padding: 0; max-width: 60rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-5); }
@@ -838,10 +838,9 @@
     padding: var(--space-5);
     background: var(--surface-canvas-raised); color: inherit;
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low);
-    transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+    transition: background 160ms ease, transform 160ms ease;
   }
-  .card:hover { background: var(--surface-canvas-overlay); transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
+  .card:hover { background: var(--surface-canvas-overlay); transform: translateY(-2px); }
   /* Per-card pencil (Archie-79be): a quiet glyph button over the card's top-right corner. Faint at rest so
      the grid stays calm (and still visible on touch, where there's no hover), brightening on hover/focus. */
   .card-wrap { position: relative; }
@@ -857,7 +856,7 @@
   .title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 400; line-height: 1.15; color: var(--ink-canvas-primary); padding-right: calc(var(--space-3) + 1.85rem); }
   .meta { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-muted); }
   /* Example (template) marker — a soft warm dashed edge + quiet warning label (transient, not yours-yet). */
-  .card.template { box-shadow: var(--shadow-lift-low), inset 0 0 0 1px var(--border-canvas-emphasis); }
+  .card.template { box-shadow: inset 0 0 0 1px var(--border-canvas-emphasis); }
   .badge { align-self: flex-start; font-family: var(--font-ui); font-size: 0.6rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--semantic-warning); border: 1px solid var(--semantic-warning); border-radius: var(--radius-sm); padding: 1px var(--space-2); }
   /* Freshness badge (Archie-abf9) — a calm collaboration signal, not a warning, so it borrows the
      quiet accent-2 family (Publish's "leading choice" hairline) instead of the Example badge's amber. */
@@ -906,7 +905,7 @@
 
   /* Selection summary bar: the count + Select-all/Clear + a reserved actions slot (bulk delete/rights land
      there next — Archie-ddaa / Archie-d2cc). Mirrors ExhibitOverview's .selection-tray look. */
-  .selection-bar { max-width: 60rem; margin: 0 auto var(--space-5); display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); }
+  .selection-bar { max-width: 60rem; margin: 0 auto var(--space-5); display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-md); }
   .sel-count { font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; letter-spacing: 0.02em; color: var(--ink-canvas-primary); }
   .sel-btn {
     font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.02em; cursor: pointer;
@@ -922,13 +921,16 @@
      hover and on the armed second-click guard — the toolbar echo of DetailsEditor's per-exhibit .remove (3f4c). */
   .sel-btn.danger { color: var(--semantic-error); }
   .sel-btn.danger:hover:not(:disabled) { color: var(--ink-on-accent); background: var(--semantic-error); border-color: transparent; }
-  .sel-btn.danger.confirming { color: var(--ink-on-accent); background: var(--semantic-error); border-color: transparent; font-weight: 600; box-shadow: var(--shadow-lift-mid); }
+  .sel-btn.danger.confirming { color: var(--ink-on-accent); background: var(--semantic-error); border-color: transparent; font-weight: 600; }
   /* Reserved slot for bulk actions (Archie-ddaa / Archie-d2cc) — pushes future buttons to the trailing edge. */
   .sel-actions { margin-left: auto; display: inline-flex; align-items: center; gap: var(--space-2); }
 
   /* Selected card: the same 2px accent ring ExhibitOverview draws on a selected plate. */
-  .card.selected { box-shadow: var(--shadow-lift-low), 0 0 0 2px var(--accent); }
-  .card.selected:hover { box-shadow: var(--shadow-lift-mid), 0 0 0 2px var(--accent); }
+  .card.selected { box-shadow: 0 0 0 2px var(--accent); }
+  /* No `.card.selected:hover` rule any more: it existed ONLY to re-assert this ring over the lift
+     that `.card:hover` used to set. `.card:hover` no longer touches box-shadow, so the ring above
+     survives hover on its own. If a shadow is ever put back on `.card:hover`, this rule has to come
+     back with it or selection will vanish under the cursor. (Archie-1244) */
   /* Select-mode checkbox (top-left) — identical to ExhibitOverview's .checkbox. */
   .checkbox { position: absolute; top: var(--space-2); left: var(--space-2); z-index: 1; width: 1.15rem; height: 1.15rem; border-radius: var(--radius-sm); border: 2px solid var(--border-canvas-emphasis); background: var(--surface-canvas-raised); }
   .checkbox.checked { background: var(--accent); border-color: var(--accent); }
