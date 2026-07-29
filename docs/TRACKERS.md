@@ -32,7 +32,7 @@ Three id spaces: `Issue N` (ISSUES.md, FROZEN), `Archie-xxxx` (.seeds, canonical
 | Q-11 | docs/decisions/archie.md:23 | — |
 | Q-12 | docs/decisions/archie.md:24 | — |
 | Q-13 | docs/decisions/archie.md:25 | — |
-| Q-14 | docs/decisions/archie.md:26 | — |
+| Q-14 | docs/decisions/archie.md:26 | Archie-5aee |
 
 <!-- hand-corrections below this line are preserved by scripts/trackers-gen.mjs -->
 
