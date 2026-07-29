@@ -118,7 +118,10 @@ const EAGER_ZIP_CEILING_BYTES = 1024 * 1024 * 1024; // 1 GiB
 // It never crashed — atob is cheap and linear (636 ms at 300 MB). Document parse is the cost and it
 // is superlinear. So the ceiling is patience, not capacity, which is exactly why proceed-anyway is
 // the wrong shape: a 22-second blank window reads as a broken file, not a slow one.
-const SINGLE_FILE_MAX_BYTES = 50 * 1024 * 1024; // ~50 MB in, ~68 MB out, under a second to open
+/** Exported so the export MENU can grey the single-file row before the author enters a flow that
+ *  cannot finish (Q-15). One definition — a UI copy of this literal is exactly the drift that makes
+ *  a greyed row disagree with the guard behind it. */
+export const SINGLE_FILE_MAX_BYTES = 50 * 1024 * 1024; // ~50 MB in, ~68 MB out, under a second to open
 
 /** What the single-file export reports back. `too-large` carries the size so the UI can say the number. */
 export type SelfContainedResult = { ok: true } | { ok: false; reason: "too-large"; mb: number };

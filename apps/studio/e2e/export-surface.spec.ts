@@ -141,10 +141,16 @@ test("Deposit a copy produces a real BagIt bag, and says what it is", async ({ p
   });
   const dialog = await openPublishOnAFork(page);
 
-  // Addressed by `data-action`, not by accessible name: the button's name is its title AND its
+  // The deposit bag lives in the EXPORT MENU now (Q-15) — artifacts are a different verb from
+  // destinations, so they no longer share the destination wall. Getting there is one click, and this
+  // navigation IS the wiring proof: a menu that renders but does not route would fail right here.
+  await dialog.locator('[data-action="open-export-menu"]').click();
+  await expect(dialog.getByRole("heading", { name: /export a copy/i })).toBeVisible();
+
+  // Addressed by `data-export`, not by accessible name: the button's name is its title AND its
   // description, so an anchored name match cannot hit it and an unanchored one would also match the
   // success panel's prose.
-  const deposit = dialog.locator('[data-action="deposit"]');
+  const deposit = dialog.locator('[data-export="deposit"]');
   await expect(deposit).toBeVisible();
 
   const [download] = await Promise.all([page.waitForEvent("download"), deposit.click()]);

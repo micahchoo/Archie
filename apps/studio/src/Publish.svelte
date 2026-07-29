@@ -60,6 +60,11 @@
   import archieConfig from "../../../archie.config.json";
   import ZipExportFields from "./ZipExportFields.svelte";
   import { allSelected, baseNameOf, canExport, exportOpts } from "./zip-export-opts.js";
+  // The artifact half of the surface (Q-15): "give me a file of this shape", kept off the destination
+  // rows so two verbs never share one column.
+  import ExportMenu from "./ExportMenu.svelte";
+  import { folderSinkSupported } from "./folder-backend.js";
+  import { SINGLE_FILE_MAX_BYTES } from "./publish-flows.svelte.js";
 
   let {
     open = false,
@@ -227,7 +232,7 @@
   // turned "to a local folder" into a .zip download — the fallback collision that made two buttons
   // produce the identical file on Firefox and Safari, and the thing this ticket exists to kill. The
   // folder row is now greyed with its reason instead, and nothing anywhere swaps a destination.
-  type MenuPhase = "choose" | "zip-options" | "working" | "done-folder" | "done-object" | "done-download" | "done-deposit" | "error" | "wizard" | "preview";
+  type MenuPhase = "choose" | "export" | "zip-options" | "working" | "done-folder" | "done-object" | "done-download" | "done-deposit" | "error" | "wizard" | "preview";
   let menuPhase = $state<MenuPhase>("choose");
   let folderName = $state("");
   let destErrorMsg = $state("");
@@ -414,6 +419,20 @@
   /** In-surface "← Back" from the wizard's entry screens to step 1 (the modality contract's nested-flow
    *  rule) — NOT a close, so it never touches machine state. */
   function backToChooser() { menuPhase = "choose"; }
+
+  // === the export menu (Q-15) =========================================================================
+  // The facts the menu needs to grey a row BEFORE the author enters a flow that cannot finish. Both are
+  // read-only projections of things that already exist — no new probe, no new guard.
+  const SINGLE_FILE_CAP_MB = Math.round(SINGLE_FILE_MAX_BYTES / (1024 * 1024));
+  const folderSupported = folderSinkSupported();
+  /** The library's size as the single-file export measures it. The probe's ARCHIVAL total is the same
+   *  quantity the guard estimates (the zip carries originals, so the web tier's smaller number would
+   *  understate it and grey too late). Null when there is no probe — then the row stays enabled and the
+   *  export's own guard answers, because a greyed row must never be a guess. */
+  const singleFileSizeMb = $derived(
+    probe ? probe.tiers.archival.publishedBytes / (1024 * 1024) : null,
+  );
+  function openExportMenu() { destErrorMsg = ""; menuPhase = "export"; }
   // The single-file export reuses the working/error phases the other destinations use — same shape,
   // same recovery. `false` means the size guard declined, which already told the author why: return
   // to the chooser rather than showing a second, emptier message.
@@ -700,25 +719,32 @@
       </div>
 
       {#if probe && !deadEnd && (ondeposit || onexportselfcontained)}
-        <!-- ADDITIONAL EXPORT ACTIONS, deliberately not destination rows (this ticket's charting).
-             They answer "give me a file of a particular shape", not "where does the site go" — folding
-             them into the radio list would put four wheres and two whats in one column. -->
+        <!-- The wall no longer CARRIES the artifact actions (Q-15) — it points at them. Exports answer
+             "give me a file of this shape", the rows above answer "where does the site live"; one link
+             out is what keeps two verbs from sharing a column. -->
         <div class="extras">
-          <p class="x-head">Also, whenever you need one:</p>
-          {#if ondeposit}
-            <button type="button" class="x-btn" data-action="deposit" disabled={depositing} onclick={deposit}>
-              <span class="x-title">{depositing ? "Building the deposit copy…" : "Deposit a copy"}</span>
-              <span class="x-desc">Every published file with a checksum beside it, in the BagIt layout repositories ask for. What you hand an archive when they need to prove nothing changed.</span>
-            </button>
-          {/if}
-          {#if onexportselfcontained}
-            <button type="button" class="x-btn" data-action="single-file" onclick={exportSelfContained}>
-              <span class="x-title">One <code>.html</code> file</span>
-              <span class="x-desc">The library <em>and</em> a reader in a single file that opens by double-click — no server, no account, no internet. Search isn't in it. Best for a USB stick or an attachment.</span>
-            </button>
-          {/if}
+          <button type="button" class="x-link" data-action="open-export-menu" onclick={openExportMenu}>
+            Export a copy instead — a working copy, a readable copy, or a deposit copy →
+          </button>
         </div>
       {/if}
+
+    {:else if menuPhase === "export"}
+      <!-- `onfolderviewer` is always passed: `onfolder` is a required prop, so the folder row's
+           availability is decided by `canFolder` (can this browser write a folder at all), never by a
+           missing handler — an unavailable row still renders, carrying its own reason. -->
+      <ExportMenu
+        {probe}
+        canFolder={folderSupported}
+        singleFileMb={singleFileSizeMb}
+        singleFileCapMb={SINGLE_FILE_CAP_MB}
+        {depositing}
+        onzip={openZipOptions}
+        onsinglefile={onexportselfcontained ? exportSelfContained : undefined}
+        onfolderviewer={() => void chooseFolder("done-folder")}
+        ondeposit={ondeposit ? deposit : undefined}
+        onback={backToChooser}
+      />
 
     {:else if menuPhase === "preview" && previewtree}
       <ViewerPreview {previewtree} onback={backToChooser} />
@@ -1397,12 +1423,9 @@
   /* The additional export actions — deliberately quieter than a destination row, because they answer a
      different question ("a file of this shape") rather than a different where. */
   .extras { margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--border-paper); display: flex; flex-direction: column; gap: var(--space-2); }
-  .x-head { font-family: var(--font-ui); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); margin: 0; }
-  .x-btn { display: flex; flex-direction: column; gap: var(--space-1); text-align: left; cursor: pointer; padding: var(--space-3) var(--space-4); background: transparent; border: 1px solid var(--border-paper); border-radius: var(--radius-md); }
-  .x-btn:hover:not(:disabled) { background: var(--surface-paper-hover); }
-  .x-btn:disabled { cursor: progress; opacity: 0.7; }
-  .x-title { font-family: var(--font-display); font-size: 1rem; color: var(--ink-paper-primary); }
-  .x-desc { font-family: var(--font-body); font-size: 0.82rem; line-height: 1.5; color: var(--ink-paper-secondary); }
+  /* The artifact rows moved to ExportMenu.svelte (Q-15); what remains here is the one link out to it. */
+  .x-link { font-family: var(--font-body); font-size: 0.85rem; text-align: left; cursor: pointer; padding: var(--space-2) 0; background: transparent; border: 0; color: var(--ink-paper-secondary); text-decoration: underline; text-underline-offset: 3px; }
+  .x-link:hover { color: var(--ink-paper-primary); }
 
   .choices { display: flex; flex-direction: column; gap: var(--space-3); }
   .choice {
