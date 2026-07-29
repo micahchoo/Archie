@@ -39,16 +39,16 @@ visibility claim additionally needs a browser drive ([[svelte-no-typecheck-net]]
 
 ---
 
-### Task 1: Decision record — mint Q-14
+### Task 1: Decision record — mint Q-15
 
 **Orient:** Downstream plans must be able to cite the surface shape as a stable constraint, not prose.
 **Flow position:** Wave 0, no code flow — governs all later tasks.
 **Skill:** `none`
 **Files:** Modify: `docs/decisions/archie.md`
 
-- [ ] Read `docs/decisions/archie.md`, confirm next free Q-N (Q-12/Q-13 exist; verify nothing later was minted).
-- [ ] Add Q-14: "Publish surface = remembered-home card + export menu (spec LD1–LD5); rules out per-run destination choice and the one-wall dialog."
-- [ ] Run: `node scripts/doclint.mjs` Expected: PASS. Commit `docs(decisions): Q-14 publish surface shape`.
+- [ ] Read `docs/decisions/archie.md`, confirm next free Q-N. Verified 2026-07-28: highest existing is Q-15 (drive harness) — mint Q-15.
+- [ ] Add Q-15: "Publish surface = remembered-home card + export menu (spec LD1–LD5); rules out per-run destination choice and the one-wall dialog."
+- [ ] Run: `node scripts/doclint.mjs` Expected: PASS. Commit `docs(decisions): Q-15 publish surface shape`.
 
 ### Task 2: Home memory — `forgetTarget` + `publishedAt`
 
@@ -134,7 +134,7 @@ visibility claim additionally needs a browser drive ([[svelte-no-typecheck-net]]
 ## Execution waves
 
 - Wave 0: Tasks [1, 2] (parallel) — no dependencies
-- Wave 1: Task [3] — depends on Wave 0 (Q-14 citable; no code dependency on Task 2)
+- Wave 1: Task [3] — depends on Wave 0 (Q-15 citable; no code dependency on Task 2)
 - Wave 2: Task [4] — depends on Wave 1 (router shape)
 - Wave 3: Task [5] — depends on Wave 2 (SetupFlow exists for Change-where) and Task 2
 - Wave 4: Task [6] — depends on Waves 1–3 (both surfaces exist)
@@ -159,7 +159,7 @@ Every wave lands green on all gates before the next starts (≤5 files per wave,
 <!-- PLAN_MANIFEST_START -->
 | File | Action | Marker |
 |------|--------|--------|
-| `docs/decisions/archie.md` | patch | `Q-14` |
+| `docs/decisions/archie.md` | patch | `Q-15` |
 | `apps/studio/src/deploy/remembered.ts` | patch | `forgetTarget` |
 | `apps/studio/src/ExportMenu.svelte` | create | `viewable copy` |
 | `apps/studio/src/SetupFlow.svelte` | create | `qualityMatters` |
@@ -178,10 +178,28 @@ Task 7 = Archie-bce2. Deps mirror the waves; `sd ready` currently offers the two
 
 | Decision ID | Title (short) | Applied in |
 |---|---|---|
-| Q-14 (minted, Task 1) | Publish surface = home card + export menu | Tasks 3–7 |
+| Q-15 (minted, Task 1) | Publish surface = home card + export menu | Tasks 3–7 |
 | Q-12 | Desktop GitHub token persists in OS keyring | Task 5 (reuses machine auth unchanged) |
 | Q-13 | Deploy upload is single-pack git2 push | untouched — constraint that Task 5 adds no new upload path |
 
 Non-Q constraints carried: single-scrim invariant (`Publish.svelte:6`), resume set Archie-7d9b
 (`publish-machine.svelte.ts:50`), hostname-pinned `openExternal` Archie-2139, greyed-with-reason
 c367 (spec LD5).
+
+## Shape changes
+
+| Date | Role | Summary |
+|---|---|---|
+| 2026-07-28 | author | Q-15 was already minted (drive harness, 2026-07-22); the surface-shape decision renumbered to Q-15 throughout. |
+
+## Shape changes
+
+| Date | Role | Summary |
+|---|---|---|
+| 2026-07-28 | author | Q-15 was already minted (drive harness, 2026-07-22); the surface-shape decision renumbered to Q-15 throughout. |
+
+## Shape changes
+
+| Date | Role | Summary |
+|---|---|---|
+| 2026-07-28 | author | Q-14 was already minted (drive harness, 2026-07-22); the surface-shape decision renumbered to Q-15 throughout. |
