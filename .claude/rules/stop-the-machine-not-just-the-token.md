@@ -10,9 +10,9 @@ source: hand-written
 
 # Clearing the flag is not cancelling the thing — and three paths can be right by luck
 
-**Measured 2026-07-26, `Archie-0d6c`, in the commit that was fixing a related defect.** A guard muted
-an IntersectionObserver while a programmatic scroll owned the column. A reader's own input was meant
-to abandon that ownership immediately, so the handler did the obvious thing:
+**Measured 2026-07-26, `Archie-0d6c`, in the commit fixing a related defect** (written post-review,
+not red-greened — [[post-review-fixes-are-unreviewed]]). A guard muted an IntersectionObserver while
+a programmatic scroll owned the column; the reader's own input was meant to abandon that ownership:
 
 ```ts
 function onColumnInput() {
@@ -20,23 +20,17 @@ function onColumnInput() {
 }
 ```
 
-That clears the **token**. It does not stop the **animation**. So the programmatic scroll kept running
-with the observer un-muted, and the observer dutifully reported every beat the animation swept past:
-**ten spurious section changes in ~300 ms**, each closing the open note and swapping the canvas object.
-Precisely the defect the guard existed to prevent, reintroduced by the code meant to make it polite.
+That clears the **token**. It does not stop the **animation**. The programmatic scroll kept running
+with the observer un-muted: **ten spurious section changes in ~300 ms**, each closing the open note
+and swapping the canvas object — precisely the defect the guard existed to prevent.
 
-## The part worth internalising: three of the four inputs were correct by accident
+**The part worth internalising: three of the four cancel inputs were correct by accident.**
+`wheel`/`touchstart`/`keydown` behaved perfectly for weeks only because **Chromium cancels a
+programmatic smooth scroll when a real scroll GESTURE arrives** — an undocumented dependency nobody
+had stated. `pointerdown` is not a scroll gesture, so the moment it was added (for good reason: a
+scrollbar drag emits `scroll` with none of the other three), the latent dependency became the bug.
 
-`wheel`, `touchstart` and `keydown` had been in the cancel list for weeks and behaved perfectly.
-**Chromium cancels a programmatic smooth scroll when a real scroll GESTURE arrives**, so for those
-three the column had genuinely stopped by the time the observer went live. The code was relying on
-browser behaviour it never stated and its author did not know about.
-
-`pointerdown` is not a scroll gesture. Nothing cancelled the animation, and the latent dependency
-became a visible bug the moment a fourth input was added — for a good reason (a scrollbar drag emits
-`scroll` without wheel/touch/key, so it was the realistic path to the wedge being fixed).
-
-The fix is to stop the machine yourself, which also makes the other three honest rather than lucky:
+The fix stops the machine yourself, which also makes the other three honest rather than lucky:
 
 ```ts
 function onColumnInput() {
@@ -49,27 +43,20 @@ function onColumnInput() {
 ## How to apply
 
 - **When you cancel a state token, ask what the token was describing.** If it describes an in-flight
-  process — an animation, a transition, a fetch, a timer, a worker — cancel the process too. A flag is
-  a claim about the world, not a lever on it.
-- **A guard that works because of undocumented browser behaviour is a guard that will break when the
-  input set changes.** If you find one, either state the dependency in a comment or remove it by doing
-  the work explicitly. Prefer the second.
-- **`endIntent()`-style single exits.** Give any state with an associated timer/animation exactly one
-  teardown function and route every path through it, so a backstop can never fire against a later
-  incarnation of the state.
+  process — animation, transition, fetch, timer, worker — cancel the process too. A flag is a claim
+  about the world, not a lever on it.
+- **A guard that works because of undocumented browser behaviour breaks when the input set changes.**
+  Either state the dependency in a comment or remove it by doing the work explicitly. Prefer the
+  second.
+- **`endIntent()`-style single exits**: any state with an associated timer/animation gets exactly one
+  teardown, every path routed through it, so a backstop can never fire against a later incarnation.
 
 ## Testing it
 
-The existing "does not bounce the reader through the beats in between" test could not see this,
-because it never pressed the pointer. The regression test that can dispatches a **synthetic
-`pointerdown` on the column** — deliberately not `page.mouse.down()`, because a real press at a
-coordinate lands on whatever the scrolling column has moved under the cursor (see
-[[playwright-emulation-and-scroll-traps]]).
-
-Record what the test does NOT cover, in the test. Dropping `"pointerdown"` from the input list leaves
-it **green** — that removes the trigger rather than the bug. The test pins the scroll-stop, and saying
-so is what stops a future reader treating it as broader coverage than it is.
-
-Sibling rules: [[wall-clock-quiet-is-a-load-sensitive-gate]] for the guard this lives inside, and
-[[post-review-fixes-are-unreviewed]] for why this shipped at all — it was written after sign-off, in
-the commit addressing the review, and was not red-greened because "it's just the fix they asked for."
+The regression test dispatches a **synthetic `pointerdown` on the column** — deliberately not
+`page.mouse.down()`, because a real press at a coordinate lands on whatever the scrolling column has
+moved under the cursor ([[playwright-emulation-and-scroll-traps]]). And record what the test does
+NOT cover, in the test: dropping `"pointerdown"` from the input list leaves it green — that removes
+the trigger, not the bug. The test pins the scroll-stop; saying so stops a future reader treating it
+as broader coverage. Sibling: [[wall-clock-quiet-is-a-load-sensitive-gate]] — the guard this lives
+inside.

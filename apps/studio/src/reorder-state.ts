@@ -27,3 +27,23 @@ export function reorderBlockedMessage(sortMode: OverviewSortMode, search: string
   if (sortActive) return "Reordering is off while sort is active — switch back to reading order to turn it back on.";
   return "";
 }
+
+/** True when "make this the reading order" is offered: a sort IS active (otherwise it is a no-op) and
+ *  no search is filtering the view (Archie-3b9f).
+ *
+ *  The search half is the load-bearing one. A filtered view is a SUBSET, so committing it would have to
+ *  decide what happens to the objects you cannot see — either silently dropping them or interleaving
+ *  them by some rule nobody asked for. Both are destructive in a way the author can't preview, which is
+ *  exactly the hazard `isReorderable`'s own comment is about. Disabling is the honest option, and it
+ *  keeps ONE rule for "a filtered view can't be turned into an order". */
+export function canCommitSort(sortMode: OverviewSortMode, search: string): boolean {
+  return sortMode !== "reading" && search.trim() === "";
+}
+
+/** Why the commit action is unavailable, or "" when it is available — same channel and same voice as
+ *  `reorderBlockedMessage`, so the two never drift into describing the same state differently. */
+export function commitSortBlockedMessage(sortMode: OverviewSortMode, search: string): string {
+  if (search.trim() !== "") return "Clear the search first — a filtered view is only part of the exhibit, so committing it would move objects you can't see.";
+  if (sortMode === "reading") return "This already IS the reading order.";
+  return "";
+}

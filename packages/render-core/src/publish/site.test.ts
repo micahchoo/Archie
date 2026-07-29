@@ -544,6 +544,96 @@ describe("publishLibrary — incremental scope (spike-0002)", () => {
     expect(Object.keys(await collectFiles(await fs.root())).some((k) => k.startsWith("r/r1_files/"))).toBe(false);
   });
 
+  it("a JSON-only pass over a JUST-ADDED asset object emits NO ref to a file it never wrote (Archie-19d7)", async () => {
+    // The live defect: a repeating 404 on `{slug}/assets-thumb/{name}`. Its shape is why the two
+    // neighbouring tests above could not see it — one covers "full pass, no bytes → stripped", the other
+    // "incremental → preserved", and this is "PRESERVED AND THE BYTES ARE ABSENT", which is a third thing.
+    //
+    // Mechanism: an object added since the last publish has no entry in the published manifest, so the
+    // recovery map cannot supply its asset triple. Without the self-heal it fell through to the MODEL,
+    // whose refs (`/assets/{name}`, `/assets-thumb/{name}`) are working-store paths — and a pass with
+    // `reassets` empty writes neither file.
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, libPQ, logsFor(log0), fullOpts()); // baseline: p1 published, bytes on disk
+
+    // p2 is added to the SAME exhibit and carries a working thumbnail ref, exactly like a fresh import.
+    const objP2 = { id: asObjectId("p2"), source: "/assets/second.jpg", label: "Second", width: 20, height: 15, thumbnail: "/assets-thumb/second.jpg" };
+    const libAdded: Library = { ...libPQ, exhibits: [{ ...exP, objects: [objP, objP2] }, exQ] };
+    await publishLibrary(fs, libAdded, logsFor(log0), {
+      ...fullOpts(),
+      getAsset: async (_slug, name) => (name === "second.jpg" ? new Uint8Array([7, 7, 7]).buffer : assetBytes),
+      incremental: { exhibits: new Set(["p"]), reassets: new Set() }, // p NOT in reassets — the JSON-only pass
+    });
+
+    const tree = await collectFiles(await fs.root());
+    const text = (tree["p/manifest.json"] as { text: string }).text;
+
+    // The INVARIANT, not the symptom: every published ref under this exhibit resolves to a real file.
+    // Stated over the manifest's own text so it holds for a source, a thumbnail, or any future third ref —
+    // the specific one that 404'd is not privileged.
+    // Match EVERY asset-ish string, not only the published-looking ones. The first version of this
+    // assertion anchored on `${INC_BASE}` and was vacuous for exactly that reason: the defect emits the
+    // MODEL's ref, `"/assets/second.jpg"` — a bare working-store path with no base — so an INC_BASE-anchored
+    // regex cannot see the one string it exists to catch, and p1's two good refs made `refs.length > 0`
+    // pass. Measured against the injected defect: it stayed green at 33/33.
+    const refs = [...new Set([...text.matchAll(/"([^"]*\/assets(?:-thumb)?\/[^"]*)"/g)].map((m) => m[1]!))];
+    const dangling = refs.filter((r) => !r.startsWith(INC_BASE) || tree[r.slice(INC_BASE.length)] === undefined);
+    // Print the SUBJECT: a run that matched no refs at all would pass this vacuously.
+    expect(refs.length, `no asset refs found in the manifest at all — the regex or the fixture is wrong: ${text.slice(0, 400)}`).toBeGreaterThan(0);
+    expect(
+      dangling,
+      `manifest carries refs that are not published files — either a working-store path or a missing byte. ` +
+        `refs=${JSON.stringify(refs)} tree=${JSON.stringify(Object.keys(tree).filter((k) => k.startsWith("p/assets")))}`,
+    ).toEqual([]);
+
+    // And the added object is genuinely there, so "no dangling refs" can't be satisfied by dropping it.
+    const ids = objectsFromManifest(JSON.parse(text)).map((o) => o.id);
+    expect(ids).toEqual(["p1", "p2"]);
+  });
+
+  it("REPORTS a stale ref the JSON-only path mirrors forward — the hole the self-heal cannot close (Archie-19d7)", async () => {
+    // 19d7's second hole, and why the closing invariant exists rather than a second write-time guard.
+    // Here the added-object self-heal does not fire: every object HAS a published projection. But the
+    // projection itself carries a thumbnail ref whose file is gone from the tree, and the recovery path
+    // mirrors `p.thumbnail` forward verbatim — correctly, by its own contract (it must mirror absences,
+    // so it must equally mirror presences). It writes no bytes and inspects no files, so nothing on that
+    // path CAN notice. Only a check over the finished manifest can.
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, libPQ, logsFor(log0), fullOpts()); // p1 published WITH a thumbnail
+
+    // The thumb file goes missing behind the publisher's back (a partial sync, a hand-edited tree, a
+    // torn write — the cause doesn't matter, only that the manifest still names it).
+    await (await (await fs.root()).getDirectory("p")).getDirectory("assets-thumb").then((d) => d.remove("photo.jpg"));
+
+    const log1 = appendNew(log0, { target: canvasP1, body: { type: "TextualBody", value: "second" }, lastEditor: alice, modifiedAt: "t1", now: 2 }).log;
+    const res = await publishLibrary(fs, libPQ, logsFor(log1), {
+      ...fullOpts(),
+      incremental: { exhibits: new Set(["p"]), reassets: new Set() }, // JSON-only: no byte pass to notice
+    });
+
+    expect(res.danglingRefs).toEqual([
+      { exhibitSlug: "p", objectId: "p1", field: "thumbnail", ref: `${INC_BASE}p/assets-thumb/photo.jpg` },
+    ]);
+    // And the ref really is still in the shipped manifest — the invariant REPORTS, it does not silently
+    // rewrite. Asserting this keeps the test honest about what was actually fixed: the publisher now
+    // hears about it. Dropping the ref would be a behaviour change with its own tradeoffs (a viewer that
+    // derives a thumbnail at runtime is better off without it; a transient sync gap is better off with).
+    const text = ((await collectFiles(await fs.root()))["p/manifest.json"] as { text: string }).text;
+    expect(text).toContain("assets-thumb/photo.jpg");
+  });
+
+  it("reports NOTHING for a clean publish — the invariant is not just always-on noise (Archie-19d7)", async () => {
+    // The other direction, and the one that makes the two tests above mean anything: a full publish with
+    // every byte written must report an EMPTY danglingRefs. Without this, a check that reported every ref
+    // unconditionally would pass both tests above.
+    const fs = new MemoryFilesystem();
+    const res = await publishLibrary(fs, libPQ, logsFor(log0), fullOpts());
+    expect(res.danglingRefs).toEqual([]);
+    // libPQ's q1 is a REMOTE source (https://img/q.jpg) — proof the invariant skips refs it doesn't own
+    // rather than reporting every non-asset URL as missing.
+    expect(libPQ.exhibits[1]!.objects[0]!.source).toMatch(/^https:\/\/img\//);
+  });
+
   it("prunes a removed exhibit's whole directory — on a FULL write too (removals decoupled from scope, defect 1)", async () => {
     const fs = new MemoryFilesystem();
     await publishLibrary(fs, libPQ, logsFor(log0), fullOpts());

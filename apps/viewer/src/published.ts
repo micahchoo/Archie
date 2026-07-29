@@ -12,6 +12,7 @@ import {
   // ADR-0020-marker-validate + capped-fetch logic used to be copy-pasted here and in
   // packages/archie-viewer/src/load.ts — both now compose these instead of redefining them.
   openArchieLibrary, openArchieLibraryFromUrl, looksLikeZip, SRC_MAX_BYTES, fsJsonSource, FailedReadError, assertArchieTreeMarker,
+  migratingJsonSource,
   // V7/V11: ONE rule for resolving a tree-relative asset ref against its library base.
   assetUrlAgainst,
   type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit, type ImageIndex, type NoteTransform,
@@ -150,6 +151,55 @@ export function isPortable(): boolean {
 // deployment simply never finds the store — the probe quietly returns false and the Viewer behaves
 // exactly as before. Live is additive, never load-bearing.
 let liveFs: MemoryFilesystem | null = null;
+
+// Archie-f34b: a LIVE (OPFS-fronted) exhibit's gallery cover and wall thumbnails are TREE-RELATIVE
+// refs (`{slug}/assets-thumb/{name}`) into `liveFs`, an in-memory tree that no server hosts. The
+// gallery ran them through `publishedAssetUrl`, which resolves a relative ref against the PUBLISHED
+// root — so a live exhibit asked the network for a file that only exists in this tab's memory, and
+// rendered the broken-cover fallback. `publishedAssetUrl`'s own doc asserted the opposite ("a
+// live/OPFS-fronted exhibit already hands us a usable URL"); measured, it does not.
+//
+// Bytes are already in memory, so minting is cheap: `URL.createObjectURL` over a Blob the tree
+// already holds costs a URL-table entry, not a copy and not a decode — the decode happens only when
+// an <img> actually loads one. That is why this is a plain cache rather than the observer-bounded
+// pattern Studio's GalleryThumb needs (which mints from OPFS, where the read itself is the cost).
+const liveAssetUrls = new Map<string, string>();
+function revokeLiveAssetUrls(): void {
+  for (const u of liveAssetUrls.values()) URL.revokeObjectURL(u);
+  liveAssetUrls.clear();
+}
+/**
+ * A usable `src` for a tree-relative ref into an in-memory tree: mint (and cache) a blob URL for the
+ * bytes. An ABSOLUTE ref of any kind — scheme, protocol-relative, or root-absolute — is returned
+ * untouched, because a remote IIIF cover needs no help and a root-absolute path is already servable.
+ * `undefined` when the bytes aren't in the tree, so the caller's own fallback still fires.
+ *
+ * Exported and fs-parameterized purely so it can be tested: the live source is reached through
+ * `navigator.storage.getDirectory()` and nothing in this suite could stand that up, which is exactly
+ * why Archie-f34b shipped unnoticed. Taking the tree as an argument makes the RULE testable against a
+ * MemoryFilesystem even while the end-to-end live path stays uncovered.
+ */
+export async function treeAssetBlobUrl(
+  fs: Filesystem | null,
+  ref: string | undefined,
+  cache: Map<string, string>,
+): Promise<string | undefined> {
+  if (!ref || !fs || /^([a-z][a-z0-9+.-]*:|\/\/|\/)/i.test(ref)) return ref; // absolute → as-is
+  const hit = cache.get(ref);
+  if (hit) return hit;
+  try {
+    const parts = ref.split("/");
+    let dir = await fs.root();
+    for (let i = 0; i < parts.length - 1; i++) dir = await dir.getDirectory(parts[i]!);
+    const bytes = await (await dir.getFile(parts[parts.length - 1]!)).readable();
+    const url = URL.createObjectURL(new Blob([bytes]));
+    cache.set(ref, url);
+    return url;
+  } catch {
+    return undefined; // absent in the live tree — let the caller's own fallback fire
+  }
+}
+const liveAssetUrl = (ref: string | undefined): Promise<string | undefined> => treeAssetBlobUrl(liveFs, ref, liveAssetUrls);
 let liveSlugs: ReadonlySet<string> = new Set();
 let liveRevoke: (() => void) | null = null;
 let liveSeq = 0; // mirrors portableSeq — guards the live-source revoke handle against the same load race
@@ -175,6 +225,7 @@ export async function initLiveSource(): Promise<boolean> {
       console.info("Archie: no local working library here — showing published exhibits only");
       return false;
     }
+    revokeLiveAssetUrls(); // a re-probe replaces the tree; the old tree's blob URLs are now dead
     const mem = new MemoryFilesystem();
     // baseUrl = WORKING_IRI_BASE — the SAME namespace Studio mints its annotation targets against (NOT the
     // published base / real deploy origin): publishLibrary groups annotations by `targetSource(h) ===
@@ -189,6 +240,7 @@ export async function initLiveSource(): Promise<boolean> {
     return true;
   } catch (e) {
     console.warn("Archie: live-source probe failed — showing published exhibits only", e);
+    revokeLiveAssetUrls();
     liveFs = null;
     liveSlugs = new Set();
     return false;
@@ -337,8 +389,8 @@ async function openHostedTree(base: string): Promise<void> {
   closePortableLibrary();
   setHostedTreeBase(base);
   try {
-    await assertArchieTreeMarker(httpSource);
-    await httpSource.get<ExhibitsJson>("exhibits.json");
+    rememberHostedSchema(await assertArchieTreeMarker(httpSource));
+    await hostedSource().get<ExhibitsJson>("exhibits.json");
   } catch (e) {
     setHostedTreeBase(previous === OWN_TREE ? null : previous); // don't strand the viewer on a dead tree
     throw e;
@@ -396,11 +448,12 @@ export async function loadGallery(): Promise<ExhibitsJson> {
   // that read — and every subsequent content fetch this session — is keyed `?g=<generation>`; a republish
   // caught here (refreshLive re-invokes loadGallery) clears the stale session cache.
   const marker = await assertArchieTreeMarker(httpSource);
+  rememberHostedSchema(marker); // Archie-5c8d: reads below go through hostedSource(), which migrates
   syncHostedGeneration(marker?.generation ?? null);
   let hosted: ExhibitsJson | null = null;
   let hostedErr: unknown = null;
   try {
-    hosted = await fetchJson<ExhibitsJson>("exhibits.json");
+    hosted = await hostedSource().get<ExhibitsJson>("exhibits.json");
   } catch (e) {
     hostedErr = e; // only fatal when there's no live source to carry the hall
   }
@@ -408,7 +461,16 @@ export async function loadGallery(): Promise<ExhibitsJson> {
     if (hosted) return hosted;
     throw hostedErr;
   }
-  return mergeGalleries(await loadPortableGallery(liveFs), hosted);
+  // Archie-f34b: rewrite the LIVE cards' covers to blob URLs before they reach the gallery, so a
+  // tree-relative ref into the in-memory tree never reaches `publishedAssetUrl` (which would resolve
+  // it against the published root — a file that does not exist for a live-only exhibit). Bounded by
+  // exhibit COUNT, not object count.
+  const live = await loadPortableGallery(liveFs);
+  const liveCards = await Promise.all(live.exhibits.map(async (e) => {
+    const cover = await liveAssetUrl(e.cover);
+    return cover === e.cover ? e : cover === undefined ? (({ cover: _drop, ...rest }) => rest)(e) : { ...e, cover };
+  }));
+  return mergeGalleries({ ...live, exhibits: liveCards }, hosted);
 }
 
 /** The library-level image index (ADR-0023) — the Gallery wall's ONE-fetch source. Returns null when the
@@ -422,7 +484,7 @@ export async function loadImageIndex(): Promise<ImageIndex | null> {
     // FAILED read (5xx / torn body) throws `FailedReadError` → the outer catch degrades the wall to null
     // (a broken index safely hides the wall, cards still work). Don't use fetchJson (it error-logs a
     // user-facing message for every old tree that legitimately has no images.json).
-    const hosted = await fetchJsonOptional<ImageIndex>("images.json");
+    const hosted = await hostedSource().getOptional<ImageIndex>("images.json");
     // STALENESS st3: front the LIVE working-store wall over the hosted one, dropping hosted entries for a
     // slug the live source FRONTS (so a colliding-slug wall tile can't route to the live exhibit with a
     // stale hosted object id — the dead-link mergeGalleries left open). The live projection wrote its own
@@ -430,6 +492,15 @@ export async function loadImageIndex(): Promise<ImageIndex | null> {
     // hosted wall stands alone.
     if (liveFs) {
       const live = await fsJsonSource(liveFs).getOptional<ImageIndex>("images.json");
+      // Archie-f34b, same rule one level down: the wall's per-object thumbnails are tree-relative into
+      // the live tree. Minting is per-entry and lazy in COST (a URL entry over a Blob already in
+      // memory), so a large working library pays URL-table entries, not decodes.
+      if (live) {
+        live.images = await Promise.all(live.images.map(async (im) => {
+          const thumb = await liveAssetUrl(im.thumbnail);
+          return thumb === im.thumbnail ? im : { ...im, ...(thumb !== undefined ? { thumbnail: thumb } : {}) };
+        }));
+      }
       return mergeImageIndex(live, hosted, liveSlugs);
     }
     return hosted;
@@ -532,6 +603,24 @@ export function publishedAssetUrl(ref: string | undefined | null): string | unde
 /** HTTP byte source for the shared reader — GETs tree-relative paths under `${PUBLISHED}`. */
 const httpSource: JsonSource = { get: fetchJson, getOptional: fetchJsonOptional };
 
+// Archie-5c8d / Archie-69f9: the schema version the hosted tree declared, learned by the ADR-0020 gate
+// and remembered so every subsequent read migrates. `null` = not yet gated (or no marker), which reads
+// as "nothing to migrate".
+//
+// Why a module-level accessor and not a wrap at the gate's call site: the hosted content reads do NOT
+// all go through `httpSource` — `loadGallery` calls `fetchJson` directly and `loadImageIndex` calls
+// `fetchJsonOptional`, so wrapping the object one call site holds would have covered two of four
+// readers and silently missed the other two, including `readExhibitTree` (every manifest and
+// annotation page). One accessor is the only shape where a new reader can't forget.
+let hostedSchemaFrom: number | null = null;
+function hostedSource(): JsonSource {
+  return hostedSchemaFrom === null ? httpSource : migratingJsonSource(httpSource, hostedSchemaFrom);
+}
+/** Remember what the gate found, so reads after it migrate. Absent/malformed marker → no migration. */
+function rememberHostedSchema(marker: { version?: number } | null): void {
+  hostedSchemaFrom = typeof marker?.version === "number" && Number.isFinite(marker.version) ? marker.version : null;
+}
+
 export async function loadPublishedExhibit(slug: string): Promise<PublishedExhibit> {
   // Portable: read the opened zip via the core seam; free the previous exhibit's blob URLs before
   // minting the next (the revoke lifecycle — browser-verify owed for RAM peak, ADR-0010).
@@ -561,7 +650,7 @@ export async function loadPublishedExhibit(slug: string): Promise<PublishedExhib
   // Served from the session cache on revisit (the published tree is immutable until a reload).
   const cached = hostedCache.get(slug);
   if (cached) return cached;
-  const exhibit = await readExhibitTree(httpSource, slug, hostedRebase);
+  const exhibit = await readExhibitTree(hostedSource(), slug, hostedRebase); // Archie-5c8d
   hostedCache.set(slug, exhibit);
   return exhibit;
 }

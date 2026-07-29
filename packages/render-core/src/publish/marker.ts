@@ -8,6 +8,7 @@
 import type { Filesystem } from "../fs/seam.js";
 import { fsJsonSource } from "./read.js";
 import { SCHEMA_VERSION } from "../migrate/migrate.js";
+import { treeMigrationsSince, migrationGapMessage } from "../migrate/tree.js";
 import type { ExhibitsJson } from "../iiif/exhibits.js";
 
 /** The marker shape written to the published tree's root `archie.json`. `version` tracks the on-disk
@@ -55,7 +56,7 @@ export class NotAnArchieLibraryError extends Error {
  * `exhibits.json`, no `archie.json`) must still open — rejecting it on the missing marker alone was a
  * regression. Throws `NotAnArchieLibraryError` with a clear message otherwise; resolves (void) when valid.
  */
-export async function validateArchieMarker(fs: Filesystem): Promise<void> {
+export async function validateArchieMarker(fs: Filesystem): Promise<number> {
   const src = fsJsonSource(fs);
   const marker = await src.getOptional<Partial<ArchieMarker>>("archie.json");
 
@@ -81,21 +82,17 @@ export async function validateArchieMarker(fs: Filesystem): Promise<void> {
       );
     }
     if (marker.version < SCHEMA_VERSION) {
-      // OLDER tree, newer reader — the migratable direction, and the one that is NOT yet solved.
+      // OLDER tree, newer reader — the MIGRATABLE direction (Archie-69f9). Accepted iff the tree
+      // migration registry can actually carry it forward; the caller then reads through
+      // `migratingJsonSource(src, version)`.
       //
-      // It is refused rather than migrated because there is nothing to migrate it WITH: `migrate()`
-      // in migrate/migrate.ts has no production caller (only `stamp`, `foldLayersIntoTags` and
-      // SCHEMA_VERSION are wired), and the runner it provides is per-annotation-doc, not per-tree —
-      // it cannot bring a v(n-1) `exhibits.json` / `collection.json` forward. Accepting here would
-      // trade a clean refusal for the downstream undebuggable parse failure ADR-0020 exists to
-      // prevent.
-      //
-      // LATENT TODAY, LIVE ON THE FIRST BUMP: SCHEMA_VERSION is 1 and MIGRATIONS is empty, so no
-      // published tree can currently reach this branch. The day someone appends `{ to: 2 }`, every
-      // tree already in the wild lands here. Wiring tree-level migration is Archie-69f9.
-      throw new NotAnArchieLibraryError(
-        `This library was published by an older version of Archie (schema v${marker.version}, this reader expects v${SCHEMA_VERSION}). Re-publish it from a current Archie.`,
-      );
+      // The gate is loosened exactly as far as the registry reaches and not one version further. A
+      // GAP is still a clean refusal, which is tldraw's rule too (`StoreSchema.mjs:108` returns
+      // `Result.err("Incompatible schema?")` for a persisted version absent from its sequence). That
+      // is what keeps ADR-0020's guarantee intact: accepting an old marker no longer risks the
+      // downstream undebuggable parse failure, because acceptance now MEANS "I have the migrations".
+      const resolved = treeMigrationsSince(marker.version, SCHEMA_VERSION);
+      if (!resolved.ok) throw new NotAnArchieLibraryError(migrationGapMessage(marker.version, resolved.gap));
     }
     // The marker is cheap to forge; confirm the archive actually carries a parseable Gallery index —
     // the load path's first read, so an empty/corrupt tree is rejected here, not mid-read.
@@ -106,15 +103,18 @@ export async function validateArchieMarker(fs: Filesystem): Promise<void> {
         "This Archie library is missing or has a corrupt exhibits index. Re-publish it from Archie.",
       );
     }
-    return;
+    return marker.version;
   }
 
   // No marker → accept iff the zip is STRUCTURALLY an Archie library: `collection.json` OR
   // `exhibits.json` parses. This keeps pre-marker real exports openable (the regression this fixes).
   const exhibits = await src.getOptional<ExhibitsJson>("exhibits.json");
-  if (exhibits !== null) return;
+  // No marker → no version to migrate FROM. Report the current version: a pre-marker tree predates
+  // versioning entirely, and guessing v0 would send it through a migration chain designed for trees
+  // that actually declared v0. Lenient-on-absent means lenient, not speculative.
+  if (exhibits !== null) return SCHEMA_VERSION;
   const collection = await src.getOptional<unknown>("collection.json");
-  if (collection !== null) return;
+  if (collection !== null) return SCHEMA_VERSION;
   throw new NotAnArchieLibraryError(
     "This file isn't an Archie library. Choose a published .archie.zip exported from Archie.",
   );

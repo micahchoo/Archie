@@ -36,6 +36,11 @@ gate that matters is that suite plus `fs/conformance.ts` run against every backe
   ms threshold.
 
 ## Decisions
+- Archie-69f9 — an OLDER published tree now MIGRATES on read (`migrate/tree.ts` + `migratingJsonSource`
+  over the `JsonSource` seam), never rewritten in place; the marker gates accept `version <
+  SCHEMA_VERSION` ONLY where the registry covers every step, so a gap is still a clean refusal /
+  e0416f4. The remainder landed same-day: Archie-5c8d wired the hosted-tree reader
+  (`apps/viewer/src/published.ts`) to the same seam / 857e1fa — every reader now migrates.
 - Archie-01c9 — minimal signals layer (`state/`: atom/computed/transact, 322 code lines, tldraw-cited)
   ADOPTED per grill 2026-07-28; `workingAnnotations` is a computed over a revision atom, Δ 0.0KB in the
   embed's eager chunk, perf ratchet live 13/13; the learn-ledger's "transact batches recomputation"

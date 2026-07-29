@@ -1,4 +1,4 @@
-import{c as y,d as g}from"./chunk-NFWLTOWU.js";import{P as h}from"./chunk-VILAHAFH.js";var E=`
+import{c as y,d as g}from"./chunk-HHYMLMGP.js";import{Q as h}from"./chunk-YWAGNAIN.js";var E=`
   .nr-aside { display: flex; flex-direction: column; min-height: 100%; padding: var(--space-5); box-sizing: border-box; font-family: var(--font-body); color: var(--ink-paper-primary); }
   .nr-eyebrow { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-paper-secondary); margin: 0 0 var(--space-2); }
   .nr-title { font-family: var(--font-display-2); font-weight: 400; font-size: 1.35rem; margin: 0 0 var(--space-4); }

@@ -7,7 +7,7 @@ scope:
   - "scripts/perf/publish*"
   - "scripts/perf/worker-smoke.mjs"
   - ".github/workflows/deploy.yml"
-updated: 2026-07-27
+updated: 2026-07-28
 ---
 # publishing
 > *How does authored become published?*
@@ -50,8 +50,16 @@ end-to-end wall-clock over a real library (`scripts/perf/publishrun.mjs`), not a
 - Archie-039e — BagIt-shaped deposit export with a fixity manifest, validated against `bagit-python`
   / `b0c73f4`.
 - Archie-c85f — object-storage publish probe (rclone, two-pass marker-last ordering) / `d7ae26f`.
+- Archie-19d7 — a published manifest may not reference an asset file the tree lacks; enforced as a
+  CLOSING invariant over the finished manifest (`PublishResult.danglingRefs`), because the JSON-only
+  recovery path writes no bytes and so cannot check its own output / 896a92f, 2c997fe
 - Archie-fde8 — post-publish verification (`verify-publish.mjs`, reads the tree back through the
   REAL render-core readers) / `7fbd87d`. Not present on this branch's tree — merged via `main`.
+- Archie-c367 — one-flow export surface (probe recommendation, greyed-with-reason sinks, tier
+  control, deposit bag) shipped / f63a90f (on `main`).
+- Archie-c74e — 1,000-image acceptance PASSED: web tier fits GitHub at 63%, archival does not
+  (549%); tile arithmetic exact; peak-RSS finding ticketed Archie-6a99 / 14b380d (harness and the
+  ACCEPT-thousand-images ledger live on `main`, not this branch).
 
 ## Evidence
 - `ledgers/PERF-image-pipeline-2026-07-24.md` — DZI tiling per-image 19x at shipped concurrency=48
@@ -64,11 +72,5 @@ end-to-end wall-clock over a real library (`scripts/perf/publishrun.mjs`), not a
   hard-fails (run 28698550063).
 
 ## Open & hazards
-- Archie-69f9 (open) — an OLDER published tree (schema version behind) currently refuses to open;
-  ADR-0020 sanctions only the newer-tree-refuses direction, older-tree-migrates is the deferred fix.
-- Archie-c367 — CLOSED mid-review: the one-flow export surface (probe recommendation,
-  greyed-with-reason sinks, tier control, deposit bag) shipped and merged to main @ f63a90f.
-- Archie-c74e (open) — the 1,000-image acceptance harness (`scripts/accept/*`, commit `8007e80`)
-  measured both-tier publish + GitHub-limits fit at real scale; its scripts live ONLY on branch
-  `accept/thousand-images` (never merged to main — verified `git branch --all --contains 8007e80`);
-  check that branch before re-deriving scale numbers.
+- Archie-6a99 (open, P2) — web-tier publish peaked at **16.9GB RSS** in the 1,000-image acceptance
+  run: the per-exhibit fan-out inside `publishLibrary` is uncapped; found by c74e / 14b380d.

@@ -37,9 +37,8 @@ twice already.
   commit point**, 100% of authored work lost with the UI showing "Retry save" / 25e6d67
 - Archie-7b48 — scope globs don't match dot-led path components (`.bake-schema`,
   `.archie-cache/`); asset saves rejected AFTER bytes landed, misreported as "free some space" / 891e6f7
-- Archie-be3a — `http:default` cleartext `http://**` grant removal ratified; native-http bridge is
-  `https://**` only, refusal falls back cleanly to the webview path / fix is 7da8734 on
-  `fix/flaky-gates`, unmerged — **main's `capabilities/default.json` still carries the grant**
+- Archie-be3a — `http:default` cleartext `http://**` grant removed; native-http bridge is
+  `https://**` only, refusal falls back cleanly to the webview path / baa86a7
 - Archie-2139 — "Open my site" and every external link were silently dead (opener scope covered
   only the login URL); `openExternal` now pins hostnames itself, since the capability glob can't / 4730681 (glob), 6f3630d (the pinning itself)
 - Archie-fada — remote images + IIIF `info.json` now route through the native-http bridge on

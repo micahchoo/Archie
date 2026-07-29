@@ -15,6 +15,7 @@ import {
   ZipFilesystem,
   collectFiles,
   validateArchieMarker,
+  SCHEMA_VERSION,
   asExhibitId,
   asLibraryId,
   asObjectId,
@@ -59,7 +60,9 @@ describe("previewTree — the in-Studio preview source", () => {
 
   it("the tree PASSES the same marker gate the element applies (the two halves compose)", async () => {
     const { fs } = await createPublishFlows(deps()).previewTree();
-    await expect(validateArchieMarker(fs)).resolves.toBeUndefined();
+    // Archie-69f9: the gate now RETURNS the schema version to migrate FROM (was void). A freshly
+    // published preview tree is at the current version, so nothing migrates.
+    await expect(validateArchieMarker(fs)).resolves.toBe(SCHEMA_VERSION);
   });
 
   it("does NOT take the eager-zip path — no second full copy for a preview", async () => {

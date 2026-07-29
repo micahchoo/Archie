@@ -3,7 +3,10 @@
 // Mirrors bake.ts exactly, with OffscreenCanvas in place of document.createElement("canvas") (there is
 // no DOM here). The dimension math is the SAME imported core seam (fitWithin / exceedsCap), so the two
 // implementations cannot drift on the part that decides what gets stored.
-import { fitWithin, exceedsCap } from "@render/core";
+// The DOM-FREE subpath, deliberately — NOT the "@render/core" barrel, which re-exports
+// text/sanitize.ts and dies on import in a worker (no DOM for DOMPurify to attach to).
+// See packages/render-core/src/worker.ts for the measurement and the failing line.
+import { fitWithin, exceedsCap } from "@render/core/worker";
 
 interface MasterMsg { kind: "master"; id: number; file: Blob; maxDim: number; mime: string; quality: number }
 interface ThumbMsg { kind: "thumb"; id: number; master: Blob; dim: number; mime: string; quality: number }

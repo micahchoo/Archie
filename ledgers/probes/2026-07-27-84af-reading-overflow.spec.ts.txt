@@ -1,0 +1,86 @@
+import { test, expect } from "@playwright/test";
+import { goOffline } from "./offline.js";
+
+// Archie-84af — the reading chips no longer scroll sideways; the ones that do not fit collapse into
+// a `+N` popover.
+//
+// This gate has to defend BOTH sides of the original trade, because the scroll it removes was
+// deliberate and measured (ReadingLegend.svelte: wrapping the chips cost 151px of a 698px stage —
+// 22% — against 34px for one scrolling row, and the bar's height comes straight out of the image).
+// So "no scroll" alone is not the fix: a wrap would also have no scroll and would be worse. Every
+// test here asserts the height too.
+
+const NARROW = { width: 760, height: 800 };
+const WIDE = { width: 1600, height: 900 };
+
+/** The legend's own box. Kept small is the whole point — see the header. */
+async function legendBox(page: import("@playwright/test").Page) {
+  const box = await page.locator("aside.legend").boundingBox();
+  expect(box, "the readings legend did not render at all").not.toBeNull();
+  return box!;
+}
+
+test.describe("the readings row: no sideways scroll, no height tax (Archie-84af)", () => {
+  test.beforeEach(async ({ page }) => {
+    await goOffline(page);
+  });
+
+  test("at a narrow width the row does not scroll sideways, and stays one line", async ({ page }) => {
+    await page.setViewportSize(NARROW);
+    await page.goto("./#/voynich-reading");
+    await expect(page.locator("aside.legend")).toBeVisible();
+
+    const opts = page.locator("aside.legend .opts");
+    // The defect, stated directly: an internal horizontal scrollbar. `scrollWidth > clientWidth` is
+    // what a scrolling row has and a collapsing one does not.
+    const over = await opts.evaluate((el) => ({ scrollW: el.scrollWidth, clientW: el.clientWidth }));
+    expect(over.scrollW, `the chip row still scrolls sideways (${over.scrollW} > ${over.clientW})`)
+      .toBeLessThanOrEqual(over.clientW + 1);
+
+    // …and it did not achieve that by wrapping onto a second line, which is the regression the
+    // original scroll existed to prevent.
+    const box = await legendBox(page);
+    expect(box.height, `the readings bar grew to ${Math.round(box.height)}px — a wrap, not a collapse`)
+      .toBeLessThan(64);
+  });
+
+  test("a reading reachable ONLY via +N can still be activated", async ({ page }) => {
+    await page.setViewportSize(NARROW);
+    await page.goto("./#/voynich-reading");
+    await expect(page.locator("aside.legend")).toBeVisible();
+
+    const more = page.locator("aside.legend .more");
+    // ASSERTED, never skipped. If this fixture stops overflowing at 760px the test has stopped
+    // testing anything, and that is a failure worth seeing rather than a silent pass
+    // (.claude/rules/playwright-count-does-not-wait.md).
+    await expect(more, "no +N button at 760px — the fixture no longer overflows, so this test is vacuous").toBeVisible();
+
+    await more.click();
+    const menu = page.locator("aside.legend .more-menu");
+    await expect(menu).toBeVisible();
+
+    const hidden = menu.locator('[role="radio"]').first();
+    const label = (await hidden.locator(".nm").textContent())?.trim() ?? "";
+    expect(label.length, "the overflow menu rendered a radio with no name").toBeGreaterThan(0);
+
+    await hidden.click();
+    // It became the active reading — the menu is a real control, not a decoration.
+    await expect(menu).toBeHidden();
+    const chosen = page.locator(`aside.legend [role="radio"]`, { hasText: label }).first();
+    await expect(chosen).toHaveAttribute("aria-checked", "true");
+  });
+
+  test("the +N button appears only when it is needed", async ({ page }) => {
+    // Wide enough for every chip: collapsing anything there would be a bug in the fit maths, and this
+    // is the assertion that would catch a measurement stuck at zero (which collapses everything).
+    await page.setViewportSize(WIDE);
+    await page.goto("./#/voynich-reading");
+    await expect(page.locator("aside.legend")).toBeVisible();
+    // Wait for a chip before concluding anything about counts — an unhydrated island has none.
+    await expect(page.locator("aside.legend .opt").first()).toBeVisible();
+    await expect(page.locator("aside.legend .more")).toHaveCount(0);
+
+    const box = await legendBox(page);
+    expect(box.height).toBeLessThan(64);
+  });
+});

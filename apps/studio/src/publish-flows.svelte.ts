@@ -431,10 +431,16 @@ export function createPublishFlows(deps: PublishDeps) {
     const annotationCorruption = deps.annotationCorruption?.() ?? [];
     const fs = new MemoryFilesystem();
     const run = await tierRun(tierFor(tierOverride), deps.buildFullLibrary());
-    const { brokenLinks, incompleteCanvases, missingAssets, unscaledSelectors } = await publishLibrary(fs, run.library, (id: string) => logs[id] ?? [], { baseUrl: baseFor(baseOverride), getAsset: run.getAsset, getThumbnail: run.getThumbnail, scaleSelectors: run.scaleSelectors, tileObject, tileRemote, getStructure: makeGetStructure((f) => structureCorruption.push(f)), ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
+    const { brokenLinks, incompleteCanvases, missingAssets, unscaledSelectors, danglingRefs } = await publishLibrary(fs, run.library, (id: string) => logs[id] ?? [], { baseUrl: baseFor(baseOverride), getAsset: run.getAsset, getThumbnail: run.getThumbnail, scaleSelectors: run.scaleSelectors, tileObject, tileRemote, getStructure: makeGetStructure((f) => structureCorruption.push(f)), ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
     if (incompleteCanvases.length > 0) console.warn(`Publish: ${incompleteCanvases.length} image object(s) publishing with no width/height (IIIF Pres 3 §5.3)`, incompleteCanvases);
     if (missingAssets.length > 0) console.warn(`Publish: ${missingAssets.length} imported image(s) have no stored bytes — they publish as broken references`, missingAssets);
+    // Archie-19d7: a manifest ref with no file behind it — the repeating-404 class. Deliberately a
+    // console warning and not a Publish-panel banner: unlike missingAssets (the author can fix it by
+    // re-adding the image), this one means the PUBLISHED TREE disagrees with itself, which is a bug
+    // report about the publisher rather than a task for the author. The console is where the defect was
+    // originally reported from, so it is where the signal belongs until someone can act on it in the UI.
+    if (danglingRefs.length > 0) console.warn(`Publish: ${danglingRefs.length} manifest ref(s) point at files the published tree does not contain — this is a publisher bug, please report it (Archie-19d7)`, danglingRefs);
     warnTier(run.rescaled, unscaledSelectors);
     return { fs, brokenLinks, incompleteCanvases, missingAssets, corruptLogs: [...annotationCorruption, ...structureCorruption], tierRescaled: run.rescaled, unscaledSelectors, tierFallbacks: tierFallbackCount() };
   }
