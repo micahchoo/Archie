@@ -6,7 +6,7 @@
 // undebuggable parse failure deep in the tree reader.
 
 import type { Filesystem } from "../fs/seam.js";
-import { fsJsonSource } from "./read.js";
+import { fsJsonSource, FailedReadError } from "./read.js";
 import { SCHEMA_VERSION } from "../migrate/migrate.js";
 import { treeMigrationsSince, migrationGapMessage, type TreeMigrationGap } from "../migrate/tree.js";
 import type { ExhibitsJson } from "../iiif/exhibits.js";
@@ -95,7 +95,9 @@ export class NotAnArchieLibraryError extends Error {
  *     foreign / malformed / newer / older-gap are rejected, current / older-migratable accepted. A
  *     version mismatch refuses in BOTH directions, but with different advice — newer tree: "Update
  *     Archie"; older tree: "Re-publish" (Archie-69f9 is the ticket to make the older direction migrate
- *     instead of refuse).
+ *     instead of refuse). A PRESENT-but-unreadable marker (torn body / read fault — a FailedReadError,
+ *     not absence) is likewise refused with the marker's steer: the drop claims to be an Archie
+ *     library, so a raw unclassified read fault must not leak through the seam (probe D13).
  *   • `archie.json` ABSENT → accept iff the archive is STRUCTURALLY an Archie library: `collection.json`
  *     OR `exhibits.json` parses as JSON. Reject only if NEITHER exists/parses (a genuinely non-Archie zip).
  *
@@ -106,7 +108,20 @@ export class NotAnArchieLibraryError extends Error {
  */
 export async function validateArchieMarker(fs: Filesystem): Promise<number> {
   const src = fsJsonSource(fs);
-  const marker = await src.getOptional<Partial<ArchieMarker>>("archie.json");
+  // A PRESENT-but-torn marker (the file exists, its bytes/JSON can't be read) is a marker REFUSAL,
+  // not an unclassified read fault (probe D13): the drop claims to be an Archie library, so the
+  // marker's steer applies — never a raw "failed to read archie.json" surfacing through the seam.
+  let marker: Partial<ArchieMarker> | null;
+  try {
+    marker = await src.getOptional<Partial<ArchieMarker>>("archie.json");
+  } catch (e) {
+    // getOptional classifies absent vs failed: only a FAILED read (FailedReadError — torn body,
+    // read fault) escapes it; a genuine bug stays loud rather than being mislabelled a foreign zip.
+    if (!(e instanceof FailedReadError)) throw e;
+    throw new NotAnArchieLibraryError(
+      "This file claims to be an Archie library but its marker could not be read. Re-publish it from Archie.",
+    );
+  }
 
   if (marker) {
     // Marker present → it MUST be a valid current-schema Archie marker (forged/foreign zips rejected).

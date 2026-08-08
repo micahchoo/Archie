@@ -3,8 +3,9 @@
 // (fflate). On non-Chromium the zip IS the canonical file: explicit Save = download the zip,
 // Open = pick it (the "Word-doc 2003" model). Directories are implicit (zip path prefixes).
 
-import { zipSync, unzipSync, strToU8, type Zippable, type ZipOptions } from "fflate";
+import { zipSync, unzipSync, strToU8, type Unzipped, type Zippable, type ZipOptions } from "fflate";
 import type { Filesystem, FsDirectory, FsFile, FsWritable } from "./seam.js";
+import { assertSafeName } from "./names.js";
 
 /** Store (no deflate). */
 const STORED: ZipOptions = { level: 0 };
@@ -213,6 +214,11 @@ class ZipDir implements FsDirectory {
     private readonly prefix: string,
   ) {}
   async getDirectory(name: string, opts?: { create?: boolean }): Promise<FsDirectory> {
+    // Name containment, same placement as HttpDir/Tauri (fs/names.ts): a zip entry named "../x",
+    // "/abs/x", "a\\b" or "a/../b" decodes as an inert in-memory map key but MUST NOT be
+    // addressable — a later copy-tree re-join of an entries() name re-joins it through the guarded
+    // tauri/node/http backends, so the zip backend cannot be the unguarded one (probe A2).
+    assertSafeName(name);
     const p = join(this.prefix, name);
     if (opts?.create !== true) {
       const exists = [...this.store.files.keys()].some((k) => k === p || k.startsWith(`${p}/`));
@@ -221,6 +227,7 @@ class ZipDir implements FsDirectory {
     return new ZipDir(this.store, p);
   }
   async getFile(name: string, opts?: { create?: boolean }): Promise<FsFile> {
+    assertSafeName(name);
     const p = join(this.prefix, name);
     if (!this.store.files.has(p)) {
       if (opts?.create !== true) throw new Error(`no such file: ${name}`);
@@ -254,6 +261,22 @@ class ZipDir implements FsDirectory {
       }
     }
   }
+}
+
+/**
+ * Friendly decode-failure message for a corrupt/truncated `.archie.zip` — the same steer the open
+ * seam surfaces ("That file couldn't be opened…"), with the underlying detail kept for diagnosis.
+ * Deliberately NOT fflate's raw message on its own ("invalid zip data", "unknown compression
+ * type 99"): a user dropping a garbage zip deserves the steer (probe A3), and `openError` rethrows
+ * any Error verbatim, so fromZip must carry the friendly message itself. The cap refusals
+ * (strategy 5.1) keep their own exact text — this wrap is ONLY for fflate's own decode failures
+ * and the torn-body verification below.
+ */
+function zipDecodeError(detail: string): Error {
+  return new Error(
+    `That file couldn't be opened: this doesn't look like a valid .archie.zip (${detail}). ` +
+      `Choose a published .archie.zip exported from Archie.`,
+  );
 }
 
 export class ZipFilesystem implements Filesystem {
@@ -292,6 +315,15 @@ export class ZipFilesystem implements Filesystem {
    * decompression ratio is implausibly high. The checks run from the central directory (fflate's
    * `filter`, invoked per entry BEFORE decompression), so a bomb is refused without inflating it.
    *
+   * Two further fail-closed guarantees on top of the caps:
+   *   • A DECODE failure (corrupt/truncated zip, unsupported compression method, torn body) throws
+   *     the friendly open steer (`zipDecodeError`) instead of fflate's raw message — the cap
+   *     refusals keep their own exact text.
+   *   • Every decoded entry's bytes are verified against the size its central-directory entry
+   *     DECLARED: a truncated STORED entry would otherwise decode to short bytes (fflate's slice
+   *     clamps at EOF, mixing in trailing bytes) — the corrupt≠empty trap (probe A5). A mismatch
+   *     is a refusal, never silent short bytes.
+   *
    * `limits` defaults to the canonical `ZIP_LIMITS` — the untrusted-open seam (`open.ts`) always
    * calls `fromZip(raw)` with the default. It is injectable ONLY so tests can drive the enforcement
    * cheaply (a tiny ceiling) instead of building a production-cap-sized real archive; production
@@ -301,37 +333,66 @@ export class ZipFilesystem implements Filesystem {
     const fs = new ZipFilesystem();
     let entries = 0;
     let totalBytes = 0;
-    // fflate calls `filter` once per central-directory entry, before decompressing. We don't drop
-    // anything (always extract); we use it purely as a pre-decompression gate that throws on breach.
-    const unzipped = unzipSync(bytes, {
-      filter: (file) => {
-        entries++;
-        if (entries > limits.maxEntries) {
-          throw new Error(
-            `archie.zip rejected: too many entries (> ${limits.maxEntries.toLocaleString()}) — possible zip bomb`,
-          );
-        }
-        const declared = file.originalSize; // uncompressed size from the directory header
-        const compressed = file.size;
-        // Per-entry ratio: a small compressed blob declaring a huge uncompressed size is the classic
-        // single-file bomb. Guard only when there's something to compare against (compressed > 0).
-        if (compressed > 0 && declared / compressed > limits.maxRatio) {
-          throw new Error(
-            `archie.zip rejected: entry "${file.name}" has an implausible compression ratio ` +
-              `(${Math.round(declared / compressed)}× > ${limits.maxRatio}×) — possible zip bomb`,
-          );
-        }
-        totalBytes += declared;
-        if (totalBytes > limits.maxTotalBytes) {
-          throw new Error(
-            `archie.zip rejected: total uncompressed size exceeds the ` +
-              `${(limits.maxTotalBytes / (1024 * 1024)).toFixed(0)} MB cap — possible zip bomb`,
-          );
-        }
-        return true;
-      },
-    });
-    for (const [k, v] of Object.entries(unzipped)) fs.store.set(k, v);
+    // Declared UNCOMPRESSED size per entry name, captured by `filter` from the central directory
+    // (the same metadata the caps gate on). Verified against the decoded bytes after unzipSync —
+    // see the torn-body note in the doc above.
+    const declaredSize = new Map<string, number>();
+    // A cap refusal thrown by `filter` is OUR error — it must survive the decode-failure wrap below
+    // with its exact text (the probe pins it); only fflate's own decode errors get the friendly wrap.
+    let capRefusal: Error | null = null;
+    let unzipped: Unzipped;
+    try {
+      // fflate calls `filter` once per central-directory entry, before decompressing. We don't drop
+      // anything (always extract); we use it purely as a pre-decompression gate that throws on breach.
+      unzipped = unzipSync(bytes, {
+        filter: (file) => {
+          entries++;
+          if (entries > limits.maxEntries) {
+            capRefusal = new Error(
+              `archie.zip rejected: too many entries (> ${limits.maxEntries.toLocaleString()}) — possible zip bomb`,
+            );
+            throw capRefusal;
+          }
+          const declared = file.originalSize; // uncompressed size from the directory header
+          const compressed = file.size;
+          // Per-entry ratio: a small compressed blob declaring a huge uncompressed size is the classic
+          // single-file bomb. Guard only when there's something to compare against (compressed > 0).
+          if (compressed > 0 && declared / compressed > limits.maxRatio) {
+            capRefusal = new Error(
+              `archie.zip rejected: entry "${file.name}" has an implausible compression ratio ` +
+                `(${Math.round(declared / compressed)}× > ${limits.maxRatio}×) — possible zip bomb`,
+            );
+            throw capRefusal;
+          }
+          totalBytes += declared;
+          if (totalBytes > limits.maxTotalBytes) {
+            capRefusal = new Error(
+              `archie.zip rejected: total uncompressed size exceeds the ` +
+                `${(limits.maxTotalBytes / (1024 * 1024)).toFixed(0)} MB cap — possible zip bomb`,
+            );
+            throw capRefusal;
+          }
+          declaredSize.set(file.name, declared);
+          return true;
+        },
+      });
+    } catch (e) {
+      // A cap refusal is a deliberate, already-friendly refusal — rethrow its EXACT text. Anything
+      // else is fflate's own decode failure: surface the friendly steer, keeping the underlying
+      // detail for diagnosis.
+      if (capRefusal) throw capRefusal;
+      throw zipDecodeError(e instanceof Error ? e.message : String(e));
+    }
+    for (const [k, v] of Object.entries(unzipped)) {
+      // Torn-body verification: a decoded entry must actually hold what its directory declared. A
+      // mismatch means the archive's body doesn't match its index — corruption, never an empty/short
+      // file. Well-formed entries (every real .archie.zip) match, so this only fires on the lie.
+      const declared = declaredSize.get(k);
+      if (declared !== undefined && v.length !== declared) {
+        throw zipDecodeError(`entry "${k}" is truncated (declares ${declared} bytes, holds ${v.length})`);
+      }
+      fs.store.set(k, v);
+    }
     return fs;
   }
 }

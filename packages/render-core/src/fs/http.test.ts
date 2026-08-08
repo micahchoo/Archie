@@ -63,6 +63,42 @@ describe("HttpFilesystem reads", () => {
   });
 });
 
+describe("HttpFilesystem base-URL join (query/fragment-carrying bases)", () => {
+  it("joins segments into the PATH when the base carries a query — segments never land inside it", async () => {
+    const { fetchImpl, requested } = stub({
+      ["https://host/tree/exhibits.json?g=gen"]: () => new Response('{"ok":true}'),
+    });
+    const fs = new HttpFilesystem("https://host/tree?g=gen", { fetch: fetchImpl });
+    expect(await readText(fs, "exhibits.json")).toBe('{"ok":true}');
+    expect(requested).toEqual(["https://host/tree/exhibits.json?g=gen"]);
+  });
+
+  it("keeps a fragment as a suffix after the path (client-side only — the server never sees it)", async () => {
+    const { fetchImpl, requested } = stub({
+      ["https://host/tree/a.json#frag"]: () => new Response("x"),
+    });
+    const fs = new HttpFilesystem("https://host/tree#frag", { fetch: fetchImpl });
+    expect(await readText(fs, "a.json")).toBe("x");
+    expect(requested).toEqual(["https://host/tree/a.json#frag"]);
+  });
+
+  it("keeps both query and hash, in order, after the joined path", async () => {
+    const { fetchImpl, requested } = stub({
+      ["https://host/tree/a.json?g=gen#frag"]: () => new Response("x"),
+    });
+    const fs = new HttpFilesystem("https://host/tree?g=gen#frag", { fetch: fetchImpl });
+    expect(await readText(fs, "a.json")).toBe("x");
+    expect(requested).toEqual(["https://host/tree/a.json?g=gen#frag"]);
+  });
+
+  it("a no-query base joins exactly as before (regression guard)", async () => {
+    const { fetchImpl, requested } = stub({ [`${BASE}/a.json`]: () => new Response("x") });
+    const fs = new HttpFilesystem(BASE, { fetch: fetchImpl });
+    expect(await readText(fs, "a.json")).toBe("x");
+    expect(requested).toEqual([`${BASE}/a.json`]);
+  });
+});
+
 describe("HttpFilesystem absent vs failed (data-integrity contract #2)", () => {
   it("404 → the seam's canonical no-such-file error (absent, NOT a FailedReadError)", async () => {
     const { fetchImpl } = stub({});
@@ -156,6 +192,63 @@ describe("HttpFilesystem capped reads (SRC_MAX_BYTES posture)", () => {
     const { fetchImpl } = stub({ [`${BASE}/fits.json`]: () => new Response("12345678") });
     const fs = new HttpFilesystem(BASE, { fetch: fetchImpl, maxBytes: 8 });
     expect(await readText(fs, "fits.json")).toBe("12345678");
+  });
+});
+
+describe("HttpFilesystem relative base (the viewer's OWN_TREE — '/published', import.meta.env.BASE_URL + 'published')", () => {
+  // The base-join hardening must NOT require an absolute base: the viewer's hosted read path passes a
+  // ROOT-RELATIVE base with no origin to parse against in an env-agnostic core. new URL('/published')
+  // throws in Node AND browsers (no base argument) — the string-join path keeps relative bases working
+  // while still splicing segments before any ?/# suffix (regression caught by the composition gate:
+  // probe-staleness + gallery-view went 9-red on the first absolute-only implementation).
+  it("reads through a root-relative base — segments join the path, no origin required", async () => {
+    const { fetchImpl, requested } = stub({ "/published/exhibits.json": () => new Response('{"ok":true}') });
+    const fs = new HttpFilesystem("/published", { fetch: fetchImpl });
+    expect(await readText(fs, "exhibits.json")).toBe('{"ok":true}');
+    expect(requested).toEqual(["/published/exhibits.json"]);
+  });
+
+  it("keeps a query on a relative base as a suffix AFTER the joined path", async () => {
+    const { fetchImpl, requested } = stub({ "/published/exhibits.json?g=gen": () => new Response('{"ok":true}') });
+    const fs = new HttpFilesystem("/published?g=gen", { fetch: fetchImpl });
+    expect(await readText(fs, "exhibits.json")).toBe('{"ok":true}');
+    expect(requested).toEqual(["/published/exhibits.json?g=gen"]);
+  });
+});
+
+describe("HttpFilesystem fetch timeout (AbortSignal — a hung server must not hang the read)", () => {
+  it("aborts a hung read after timeoutMs → FailedReadError (never a forever-hang)", async () => {
+    const hung = (async (_input: unknown, init?: RequestInit) => {
+      const signal = init?.signal;
+      return new Promise<Response>((_resolve, reject) => {
+        signal?.addEventListener("abort", () => reject(signal.reason));
+      });
+    }) as unknown as typeof fetch;
+    const fs = new HttpFilesystem(BASE, { fetch: hung, timeoutMs: 50 });
+    const err = await readText(fs, "hang.json").then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(err).toBeInstanceOf(FailedReadError);
+    expect((err as FailedReadError).path).toBe("hang.json");
+    expect((err as FailedReadError).cause).toBeInstanceOf(Error); // the abort reason, not a raw string
+  });
+
+  it("a fast response under a long timeout is unaffected", async () => {
+    const { fetchImpl } = stub({ [`${BASE}/fast.json`]: () => new Response("ok") });
+    const fs = new HttpFilesystem(BASE, { fetch: fetchImpl, timeoutMs: 10_000 });
+    expect(await readText(fs, "fast.json")).toBe("ok");
+  });
+
+  it("timeoutMs: 0 attaches no signal (the documented escape hatch — no deadline)", async () => {
+    let seenInit: RequestInit | undefined;
+    const spy = (async (_input: unknown, init?: RequestInit) => {
+      seenInit = init;
+      return new Response("ok");
+    }) as unknown as typeof fetch;
+    const fs = new HttpFilesystem(BASE, { fetch: spy, timeoutMs: 0 });
+    expect(await readText(fs, "no-deadline.json")).toBe("ok");
+    expect(seenInit?.signal).toBeUndefined();
   });
 });
 

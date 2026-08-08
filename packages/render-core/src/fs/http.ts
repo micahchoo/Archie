@@ -35,6 +35,10 @@ import { assertSafeName } from "./names.js";
 import { SRC_MAX_BYTES } from "../limits.js";
 import { FailedReadError } from "../errors.js";
 
+/** Per-read deadline before a read is classified FAILED (a hung server must not hang the read stack
+ *  forever — probe case 1). 0 disables the timeout for callers that want none. */
+const DEFAULT_TIMEOUT_MS = 30_000;
+
 /** A mutating operation was attempted on a read-only backend. Named so callers can distinguish
  *  "this store can't be written" from a failed write. */
 export class ReadOnlyFilesystemError extends Error {
@@ -46,10 +50,16 @@ export class ReadOnlyFilesystemError extends Error {
 
 /** Shared per-instance config, threaded to every handle. */
 interface HttpFsConfig {
-  /** Base URL, normalized to a trailing slash. */
+  /** Base URL minus its query/fragment, normalized to a trailing slash (`${origin}${pathname}/`). */
   readonly base: string;
+  /** The base URL's query + fragment, re-appended AFTER the joined path — so caller-supplied
+   *  segments land in the PATH, never inside the query (`?src=`-carrying bases are REACHABLE:
+   *  published.ts's applyGen never double-keys a URL that already has '?'). */
+  readonly suffix: string;
   readonly fetchImpl: typeof fetch;
   readonly maxBytes: number;
+  /** Per-read abort deadline in ms; 0 = no timeout (the escape hatch). */
+  readonly timeoutMs: number;
 }
 
 class HttpFile implements FsFile {
@@ -66,9 +76,14 @@ class HttpFile implements FsFile {
   private async fetchBytes(): Promise<ArrayBuffer> {
     let res: Response;
     try {
-      res = await this.cfg.fetchImpl(this.cfg.base + this.encodedPath);
+      // Segments join the PATH; the base's query/fragment stays a suffix AFTER them (see config).
+      // The abort signal (built inside the try so even a construction throw classifies as FAILED)
+      // turns a hung server into a FailedReadError instead of a forever-hang.
+      const init: RequestInit = {};
+      if (this.cfg.timeoutMs > 0) init.signal = AbortSignal.timeout(this.cfg.timeoutMs);
+      res = await this.cfg.fetchImpl(this.cfg.base + this.encodedPath + this.cfg.suffix, init);
     } catch (e) {
-      throw new FailedReadError(this.path, e); // network fault — FAILED, never absent
+      throw new FailedReadError(this.path, e); // network fault / timeout abort — FAILED, never absent
     }
     if (res.status === 404) throw new Error(`no such file: ${this.name}`); // absent — canonical seam phrasing
     if (!res.ok) throw new FailedReadError(this.path, new Error(`HTTP ${res.status}`), { status: res.status });
@@ -151,16 +166,47 @@ class HttpDir implements FsDirectory {
 /** A read-only Filesystem over a published tree at `base` (any plain static HTTP(S) host). */
 export class HttpFilesystem implements Filesystem {
   private readonly cfg: HttpFsConfig;
-  constructor(base: string, opts?: { fetch?: typeof fetch; maxBytes?: number }) {
-    this.cfg = {
-      base: base.endsWith("/") ? base : `${base}/`,
-      // BOUND, never bare `fetch`: cfg stores this and `fetchBytes` invokes it as `this.cfg.fetchImpl(…)`
-      // — a method call whose receiver is `cfg`, not `Window`. Browsers brand-check the receiver and
-      // throw "Illegal invocation"; Node's fetch doesn't, so vitest is structurally blind to the
-      // difference (recipes/smoke.mjs is the browser gate). See .claude/rules/bound-fetch-defaults.md.
-      fetchImpl: opts?.fetch ?? globalThis.fetch.bind(globalThis),
-      maxBytes: opts?.maxBytes ?? SRC_MAX_BYTES,
-    };
+  constructor(base: string, opts?: { fetch?: typeof fetch; maxBytes?: number; timeoutMs?: number }) {
+    // Split the base so segments join the PATH, keeping any query/fragment as a suffix AFTER them —
+    // appending segments to the raw string instead lands them INSIDE the query/fragment, which a
+    // static host reads as a missing file (absent, not a fault; probe 8a/8b). Two base shapes:
+    //   • ABSOLUTE (`https://host/tree?g=gen`) — parse via `new URL`: segments splice into the
+    //     pathname, origin preserved. Trailing-slash normalization comes from the pathname splice.
+    //   • RELATIVE (`/published` — the viewer's OWN_TREE, `import.meta.env.BASE_URL` + 'published'):
+    //     no origin to parse against in an env-agnostic core, so split the raw string at the first
+    //     `?`/`#`; the browser resolves the joined relative URL against the page origin naturally.
+    const firstSplit = base.search(/[?#]/);
+    const head = firstSplit === -1 ? base : base.slice(0, firstSplit);
+    const suffix = firstSplit === -1 ? "" : base.slice(firstSplit);
+    if (/^[a-z][a-z0-9+.-]*:/i.test(head)) {
+      // Absolute — parse via `new URL` (segments splice into the pathname, origin preserved).
+      // Scheme-prefixed but unparseable is a broken base — fail loud.
+      const parsed = new URL(head);
+      const pathBase = parsed.pathname.endsWith("/") ? parsed.pathname : `${parsed.pathname}/`;
+      this.cfg = {
+        base: `${parsed.origin}${pathBase}`,
+        suffix,
+        // BOUND, never bare `fetch`: cfg stores this and `fetchBytes` invokes it as `this.cfg.fetchImpl(…)`
+        // — a method call whose receiver is `cfg`, not `Window`. Browsers brand-check the receiver and
+        // throw "Illegal invocation"; Node's fetch doesn't, so vitest is structurally blind to the
+        // difference (recipes/smoke.mjs is the browser gate). See .claude/rules/bound-fetch-defaults.md.
+        fetchImpl: opts?.fetch ?? globalThis.fetch.bind(globalThis),
+        maxBytes: opts?.maxBytes ?? SRC_MAX_BYTES,
+        timeoutMs: opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+      };
+    } else {
+      // RELATIVE (`/published` — the viewer's OWN_TREE, `import.meta.env.BASE_URL` + 'published'):
+      // no origin to parse against in an env-agnostic core, so join the raw string (the suffix split
+      // above already kept ?/# out of the path); the browser resolves it against the page origin.
+      const pathBase = head.endsWith("/") ? head : `${head}/`;
+      this.cfg = {
+        base: pathBase,
+        suffix,
+        fetchImpl: opts?.fetch ?? globalThis.fetch.bind(globalThis),
+        maxBytes: opts?.maxBytes ?? SRC_MAX_BYTES,
+        timeoutMs: opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+      };
+    }
   }
   async root(): Promise<FsDirectory> {
     return new HttpDir(this.cfg, "", "");

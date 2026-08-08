@@ -65,6 +65,18 @@ describe("open seam — openArchieLibrary (bytes/Blob → validated Filesystem)"
   it("normalizes a non-Error throw to the generic message (defensive — fromZip/validateArchieMarker only ever throw Error today)", async () => {
     await expect(openArchieLibrary(new Uint8Array([1, 2, 3]))).rejects.toThrow(Error);
   });
+
+  it("refuses in-hand bytes over the cap BEFORE decoding (Blob.size and Uint8Array.byteLength)", async () => {
+    await expect(openArchieLibrary(new Uint8Array(8), { maxBytes: 4 })).rejects.toThrow(/too large to open/i);
+    await expect(openArchieLibrary(new Blob([new Uint8Array(8)]), { maxBytes: 4 })).rejects.toThrow(/too large to open/i);
+  });
+
+  it("accepts in-hand bytes at the cap (boundary — the cap is strictly greater-than)", async () => {
+    const bytes = await buildArchiveBytes();
+    const fs = await openArchieLibrary(bytes, { maxBytes: bytes.byteLength });
+    const gallery = await readJson<ExhibitsJson>(fs, "exhibits.json");
+    expect(gallery.exhibits.map((e) => e.slug)).toContain("a");
+  });
 });
 
 describe("open seam — looksLikeZip (pure magic-byte sniff)", () => {
@@ -116,6 +128,21 @@ describe("open seam — fetchArchieLibraryBytes (capped fetch, no decode/validat
     );
   });
 
+  it("classifies a torn body (arrayBuffer() rejects mid-transfer) as the friendly couldn't-open error", async () => {
+    const res = {
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      arrayBuffer: async () => {
+        throw new Error("aborted mid-transfer");
+      },
+    } as unknown as Response;
+    const fakeFetch = vi.fn(async () => res) as unknown as typeof fetch;
+    await expect(fetchArchieLibraryBytes("https://host/cut.zip", { fetch: fakeFetch })).rejects.toThrow(
+      /couldn't open the library/i,
+    );
+  });
+
   it("defaults maxBytes to SRC_MAX_BYTES when not given", async () => {
     const bytes = new Uint8Array(10);
     const fakeFetch = vi.fn(async () => new Response(new Blob([bytes as BlobPart]), { status: 200 })) as unknown as typeof fetch;
@@ -144,6 +171,19 @@ describe("open seam — fetchZipBytesIfAny (the shared zip-fallback byte sniff)"
       throw new Error("offline");
     }) as unknown as typeof fetch;
     expect(await fetchZipBytesIfAny("https://host/down", { fetch: fakeFetch })).toBeNull();
+  });
+
+  it("SWALLOWS a torn body (arrayBuffer() rejects mid-transfer) to null — a network fault like any other", async () => {
+    const res = {
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      arrayBuffer: async () => {
+        throw new Error("aborted mid-transfer");
+      },
+    } as unknown as Response;
+    const fakeFetch = vi.fn(async () => res) as unknown as typeof fetch;
+    expect(await fetchZipBytesIfAny("https://host/cut", { fetch: fakeFetch })).toBeNull();
   });
 
   it("SWALLOWS a non-OK response to null — same reason", async () => {

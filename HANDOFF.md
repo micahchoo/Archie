@@ -1,3 +1,59 @@
+# HANDOFF — 2026-08-08 (later): the deepening is COMMITTED (`8341381`), and TWO sessions are live in this checkout
+
+Read this before touching `packages/render-core/src/fs/http.ts` or `publish/open.ts`.
+
+- **Another session is working this same checkout right now**, on the same read-seam findings. It wrote
+  the tests for findings D/E/G/H/I and the `http.ts` implementation (timeout + base split). I wrote the
+  `publish/open.ts` half. Nothing was lost, but an `Edit` of mine was rejected mid-flight
+  ("modified since read") — that is the tell. `[[shared-worktree-agent-collisions]]` applies: explicit
+  paths only, no `add -A`, no path-level reverts.
+- **Uncommitted, and whose:** `publish/open.ts` (mine — findings D/E, green), `fs/http.ts` +
+  `fs/http.test.ts` + `publish/open.test.ts` (the other session's). Backup of my open.ts at
+  `/tmp/open.ts.mine-backup`.
+- **STAGED by me** (declared per the shared-tracker rule): `ledgers/PROBE-read-seam-adversarial-2026-08-08.md`
+  and the two `scripts/probe/read-path-*-adversarial.mts`. If you commit without explicit paths you
+  will sweep them.
+- **`8341381` shipped a red suite and a red doclint.** Measured: 7 failing render-core tests (the
+  D/E/G/H/I tests, committed without their implementations) and 8 hubs stale against their own scope.
+  Both are now fixed in the working tree (hub closure lines written, `doclint` PASS 12/12); the test
+  half is fixed only for D/E/G/H/I.
+- **Open review finding against the other session's in-flight `http.ts`:** it parses the base with
+  `new URL(base)`, which throws on a RELATIVE base — and the viewer's real base is relative
+  (`apps/viewer/src/published.ts:31` → `/published`). Driven directly: `THROWS base="/published" ->
+  TypeError: Invalid URL`, while `https://host/published` is fine. Every `HttpFilesystem` test uses an
+  absolute base, so **render-core stays green while every hosted read in the viewer throws at
+  construction**. A string-level split (`base.search(/[?#]/)`) has no such dependency.
+- **Still open from the probes** (no tests yet): A zip name gate, B raw fflate decode text, C silently
+  short truncated STORED entries, F torn-marker surface (a real decision, not an obvious fix — see the
+  ledger).
+
+---
+
+# HANDOFF — 2026-08-08: read-path adversarial sweep (api-testing skill) — COORDINATION NOTE
+
+A parallel session is working the SAME read-path probes in this shared checkout
+(its staged `ledgers/PROBE-read-seam-adversarial-2026-08-08.md` + staged probe
+files + hubs/ closure-line edits are ITS work — do not clobber). Its ledger
+contains two claims that are DISPROVEN — correct them before any commit of it:
+
+1. **"main shipped a RED suite" is FALSE.** Clean detached checkout of
+   `8341381` runs render-core `fs/http.test.ts` + `publish/open.test.ts`
+   **38/38 green** (the adversarial tests do not exist in that commit). The
+   observed "7 failing" was the transient red-before-green phase of the fix
+   agents in the SHARED WORKING TREE (tests landed before implementations,
+   ~20 min apart) — not a property of the commit.
+2. **Findings A/B/C/F marked "open — no test yet" are ALL FIXED** with
+   regression tests in the worktree (zip.test.ts 23/23, marker.test.ts 20/20,
+   http.test.ts 27/27, open.test.ts 24/24) and tickets closed. Full state:
+   render-core 1544/1544, viewer 281/281, all dependent packages at baseline;
+   transport probe 43/43, in-core probe 82/82. Tickets (declared id set):
+   **Archie-e2d4, Archie-0f07, Archie-9d0f, Archie-b436, Archie-7e30,
+   Archie-d2dc, Archie-7c77, Archie-3bd0** (created + closed with fix refs).
+   My ledger: `ledgers/PROBE-read-path-adversarial-2026-08-08.md`; probes:
+   `scripts/probe/read-path-{transport,in-core}-adversarial.mts`.
+
+---
+
 # HANDOFF — 2026-08-08: architecture deepening landed in the WORKING TREE, uncommitted
 
 Primary checkout is `main` @ **`b7fb4ec`** (2026-07-28). The 08-07

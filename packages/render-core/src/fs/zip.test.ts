@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { zipSync, type Zippable, type ZipOptions } from "fflate";
 import { ZipFilesystem, ZIP_LIMITS } from "./zip.js";
+import { tryResolveFile } from "./resolve.js";
 import { writeAnnotations, readAnnotations } from "../spine/persist.js";
 import { appendNew, appendEdit } from "../spine/log.js";
 import { asClientId } from "../wadm/brand.js";
@@ -244,5 +245,136 @@ describe("ZipFilesystem — toZip entry-count format guard", () => {
     await write(fs, "c.json");
     expect(() => fs.toZip({ maxEntries: 2, maxBytes: 0xffff_ffff })).toThrow(/publish to a folder/i);
     expect(() => fs.toZip({ maxEntries: 3, maxBytes: 0xffff_ffff })).not.toThrow(); // at the limit — fine
+  });
+});
+
+// Hostile ENTRY NAMES (read-path adversarial case A2): a zip can carry entry names that would
+// escape a path-joining backend ("../x", "/abs/x", "a\\b", "a/../b"). They decode as inert in-memory
+// map keys — but the containment gate every OTHER backend applies to caller-supplied segments must
+// hold here too, or a later copy-tree re-join of an entries() name re-joins an unguarded segment
+// onto the guarded tauri/node/http backends. The zip's store can't escape itself, so the gate is
+// defense-in-depth (same trust boundary as the untrusted-archive open seam): getFile/getDirectory
+// refuse a hostile segment with the shared fs wording "unsafe path segment" (fs/names.ts).
+describe("ZipFilesystem — hostile entry-name containment (assertSafeName gate)", () => {
+  const enc = (s: string) => new TextEncoder().encode(s);
+
+  it("refuses hostile names on getFile with the unsafe-path-segment gate", async () => {
+    const fs = ZipFilesystem.fromZip(
+      zipSync({ "../x": enc("esc1"), "/abs/x": enc("esc2"), "a\\b": enc("bs"), "a/../b": enc("dotdot") }),
+    );
+    const root = await fs.root();
+    await expect(root.getFile("../x")).rejects.toThrow(/unsafe path segment/);
+    await expect(root.getFile("/abs/x")).rejects.toThrow(/unsafe path segment/);
+    await expect(root.getFile("a\\b")).rejects.toThrow(/unsafe path segment/);
+    await expect(root.getFile("a/../b")).rejects.toThrow(/unsafe path segment/);
+  });
+
+  it("refuses hostile names on getDirectory with the unsafe-path-segment gate", async () => {
+    const fs = ZipFilesystem.fromZip(zipSync({ "a/../b": enc("dotdot"), "a\\b": enc("bs") }));
+    const root = await fs.root();
+    await expect(root.getDirectory("..")).rejects.toThrow(/unsafe path segment/);
+    await expect(root.getDirectory("a\\b")).rejects.toThrow(/unsafe path segment/);
+  });
+
+  it("the read-stack walk (tryResolveFile) refuses a hostile path too", async () => {
+    const fs = ZipFilesystem.fromZip(zipSync({ "a/../b": enc("dotdot"), "a\\b": enc("bs") }));
+    // "a/../b".split("/") → ["a", "..", "b"]: the ".." segment trips the gate mid-walk.
+    await expect(tryResolveFile(fs, "a/../b".split("/"))).rejects.toThrow(/unsafe path segment/);
+    // "/abs/x".split("/") → ["", "abs", "x"]: the empty leading segment is gated too.
+    await expect(tryResolveFile(fs, "/abs/x".split("/"))).rejects.toThrow(/unsafe path segment/);
+  });
+
+  it("safe names still resolve (the gate is containment, not a false positive)", async () => {
+    const fs = ZipFilesystem.fromZip(zipSync({ "deep/nested/file.json": enc("{}") }));
+    const root = await fs.root();
+    // Segments are gated one at a time — a legitimate path walks directory-by-directory, so
+    // "nested/file.json" must be reached as getDirectory("deep") → getDirectory("nested") → getFile("file.json").
+    const bytes = new TextDecoder().decode(
+      await (await (await (await root.getDirectory("deep")).getDirectory("nested")).getFile("file.json")).readable(),
+    );
+    expect(bytes).toBe("{}");
+  });
+});
+
+// Friendly DECODE failures + torn-body verification (read-path adversarial cases A3/A5). Two
+// distinct fromZip defects:
+//   • A corrupt/truncated/unsupported-method zip surfaced fflate's raw messages ("invalid zip data",
+//     "unknown compression type 99") verbatim through the open seam (openError rethrows any Error).
+//     A dropped garbage zip deserves the friendly steer, with the raw detail kept for diagnosis.
+//   • A truncated STORED entry decoded silently to SHORT bytes: fflate's stored slice clamps at EOF
+//     (mixing in trailing bytes), so an EOCD-declared size was never verified against actual bytes —
+//     the corrupt≠empty trap. fromZip must refuse a declared-vs-actual mismatch, never serve the
+//     short bytes. Real zips are unaffected: well-formed entries match their declared sizes.
+describe("ZipFilesystem.fromZip — hostile/truncated archives (friendly decode failures)", () => {
+  const enc = (s: string) => new TextEncoder().encode(s);
+  const STORED: ZipOptions = { level: 0 };
+  /** Rewrite every uncompressed-size field (central dir +0x18, local header +0x16) to `f()`. */
+  function patchUncompressedSizes(zip: Uint8Array, f: () => number): Uint8Array {
+    const out = zip.slice();
+    const dv = new DataView(out.buffer, out.byteOffset, out.byteLength);
+    for (let i = 0; i + 4 <= out.length; i++) {
+      const sig = dv.getUint32(i, true);
+      if (sig === 0x02014b50 && i + 0x18 + 4 <= out.length) dv.setUint32(i + 0x18, f() >>> 0, true); // central dir: uncompressed size @ +0x18
+      else if (sig === 0x04034b50 && i + 0x16 + 4 <= out.length) dv.setUint32(i + 0x16, f() >>> 0, true); // local header: uncompressed size @ +0x16
+    }
+    return out;
+  }
+  /** Rewrite every compression-method field (local header +0x08, central dir +0x0A) to `method`. */
+  function patchMethods(zip: Uint8Array, method: number): Uint8Array {
+    const out = zip.slice();
+    const dv = new DataView(out.buffer, out.byteOffset, out.byteLength);
+    for (let i = 0; i + 4 <= out.length; i++) {
+      const sig = dv.getUint32(i, true);
+      if (sig === 0x02014b50 && i + 0x0a + 2 <= out.length) dv.setUint16(i + 0x0a, method, true); // central dir: method @ +0x0A
+      else if (sig === 0x04034b50 && i + 0x08 + 2 <= out.length) dv.setUint16(i + 0x08, method, true); // local header: method @ +0x08
+    }
+    return out;
+  }
+
+  it("wraps fflate's raw decode errors in the friendly open steer (PK-prefixed garbage)", () => {
+    // PK\x03\x04 + garbage with no EOCD: fflate throws "invalid zip data" — the user must see the
+    // friendly steer ("That file couldn't be opened… a valid .archie.zip"), never the raw message.
+    const garbage = new Uint8Array([0x50, 0x4b, 0x03, 0x04, ...Array(64).fill(7)]);
+    expect(() => ZipFilesystem.fromZip(garbage)).toThrow(/couldn't be opened/i);
+    expect(() => ZipFilesystem.fromZip(garbage)).toThrow(/\.archie\.zip/i);
+    // The raw fflate message must not BE the message (it may appear only as a parenthetical detail).
+    expect(() => ZipFilesystem.fromZip(garbage)).not.toThrow(/^invalid zip data/);
+  });
+
+  it("wraps an unsupported compression method in the same friendly steer", () => {
+    // Method 99 — fflate throws "unknown compression type 99"; the friendly steer leads, the raw
+    // detail is retained for diagnosis.
+    const m99 = patchMethods(zipSync({ "m.txt": [enc("x"), STORED] }), 99);
+    expect(() => ZipFilesystem.fromZip(m99)).toThrow(/couldn't be opened/i);
+    expect(() => ZipFilesystem.fromZip(m99)).toThrow(/unknown compression type 99/);
+  });
+
+  it("refuses a truncated STORED entry whose decoded bytes fall short of its declared size (never silent short bytes)", () => {
+    // A STORED entry whose directory declares 100 uncompressed bytes while the payload holds 6:
+    // fflate's stored slice clamps at EOF, so the decoded entry would be short — silent corruption
+    // unless fromZip verifies declared vs actual (the corrupt≠empty trap).
+    const bytes = patchUncompressedSizes(zipSync({ "t.txt": [enc("short!"), STORED] }), () => 100);
+    expect(() => ZipFilesystem.fromZip(bytes)).toThrow(/couldn't be opened/i);
+    expect(() => ZipFilesystem.fromZip(bytes)).toThrow(/truncated|declares/i);
+  });
+
+  it("the cap refusals keep their exact text through the decode-failure wrap", () => {
+    // The friendly wrap must never swallow a cap refusal — A18 pins the exact cap messages.
+    const tree: Zippable = {};
+    for (let i = 0; i <= 5; i++) tree[`f/${i}.b`] = [enc("x"), STORED]; // 6 entries over the injected cap of 5
+    const fewEntries = { maxTotalBytes: 4 * 1024 * 1024 * 1024, maxEntries: 5, maxRatio: 100 };
+    expect(() => ZipFilesystem.fromZip(zipSync(tree), fewEntries)).toThrow(
+      "archie.zip rejected: too many entries (> 5) — possible zip bomb",
+    );
+  });
+
+  it("a well-formed zip still round-trips (declared sizes verified, not second-guessed)", async () => {
+    const fs = new ZipFilesystem();
+    const w = await (await (await fs.root()).getFile("ok.txt", { create: true })).writable();
+    await w.write("hello");
+    await w.close();
+    const reopened = ZipFilesystem.fromZip(fs.toZip());
+    const got = new TextDecoder().decode(await (await (await reopened.root()).getFile("ok.txt")).readable());
+    expect(got).toBe("hello");
   });
 });

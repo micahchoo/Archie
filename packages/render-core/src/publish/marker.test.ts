@@ -1,6 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { publishLibrary, libraryToZipFs } from "./site.js";
-import { validateArchieMarker, classifyArchieMarker, ARCHIE_LIBRARY_MARKER, type ArchieMarker } from "./marker.js";
+import {
+  validateArchieMarker,
+  classifyArchieMarker,
+  ARCHIE_LIBRARY_MARKER,
+  NotAnArchieLibraryError,
+  type ArchieMarker,
+} from "./marker.js";
+import { FailedReadError } from "./read.js";
 import { SCHEMA_VERSION } from "../migrate/migrate.js";
 import { treeMigrationsSince } from "../migrate/tree.js";
 import { MemoryFilesystem } from "../fs/memory.js";
@@ -148,6 +155,23 @@ describe("ADR-0020 L1 self-ID marker — read side (validateArchieMarker)", () =
     await writeJson(fs, "archie.json", ARCHIE_LIBRARY_MARKER);
     // no exhibits.json at all
     await expect(validateArchieMarker(fs)).rejects.toThrow(/archie library/i);
+  });
+
+  it("rejects a PRESENT but torn archie.json as NotAnArchieLibraryError, never the raw read fault", async () => {
+    // Present-but-torn: the file exists, its body is truncated JSON — a read FAULT (FailedReadError),
+    // not absence. It must surface as the marker's refusal steer (a corrupt marker), because the drop
+    // claims to be an Archie library — the raw "failed to read archie.json" would leak an unclassified
+    // read fault through the open seam (probe D13).
+    const fs = new MemoryFilesystem();
+    const f = await (await fs.root()).getFile("archie.json", { create: true });
+    const w = await f.writable();
+    await w.write('{"format":"archie-library","version":1'); // truncated — no closing brace
+    await w.close();
+    const err = await validateArchieMarker(fs).catch((e) => e);
+    expect(err).toBeInstanceOf(NotAnArchieLibraryError);
+    expect((err as Error).message).toMatch(/could not be read/i);
+    // never the raw unclassified read fault
+    expect(err).not.toBeInstanceOf(FailedReadError);
   });
 });
 

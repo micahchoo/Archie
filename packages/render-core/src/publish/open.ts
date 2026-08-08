@@ -62,8 +62,20 @@ export function looksLikeZip(bytes: Uint8Array): boolean {
  * Ordering: `ZipFilesystem.fromZip` (its own zip-bomb cap checks) runs BEFORE `validateArchieMarker` —
  * a decode failure ("not a zip" / cap breach) and a marker failure ("valid zip, wrong schema") are
  * distinct failure modes and must not be conflated.
+ *
+ * The `maxBytes` cap applies to bytes IN HAND, not only fetched ones. `SRC_MAX_BYTES` is documented as
+ * the cap on untrusted bytes "in hand or fetched", and the in-hand half was missing: a >1 GiB dropped
+ * file reached `fromZip` uncapped, because `ZIP_LIMITS` bounds only what the archive DECLARES — stored
+ * (uncompressed) entries and trailing bytes are declared honestly and can be arbitrarily large. Checked
+ * off `Blob.size` before `arrayBuffer()`, so an over-cap drop is refused without materializing it.
  */
-export async function openArchieLibrary(bytes: Uint8Array | Blob): Promise<Filesystem> {
+export async function openArchieLibrary(
+  bytes: Uint8Array | Blob,
+  opts?: { maxBytes?: number },
+): Promise<Filesystem> {
+  const maxBytes = opts?.maxBytes ?? SRC_MAX_BYTES;
+  const inHand = bytes instanceof Blob ? bytes.size : bytes.byteLength;
+  if (inHand > maxBytes) throw new Error("That library is too large to open here.");
   const raw = bytes instanceof Blob ? new Uint8Array(await bytes.arrayBuffer()) : bytes;
   let fs: ZipFilesystem;
   try {
@@ -98,7 +110,16 @@ export async function fetchArchieLibraryBytes(
   }
   const declared = Number(res.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > maxBytes) throw new Error("That library is too large to open here.");
-  const bytes = new Uint8Array(await res.arrayBuffer());
+  // The BODY read is a second transport step and fails on its own terms (a reset connection, a socket
+  // closed mid-body). Un-wrapped it escaped as the raw transport error ("terminated"), so the caller
+  // surfaced fetch's internals; a torn transfer is the same failure class as a dead link.
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(await res.arrayBuffer());
+  } catch (e) {
+    console.error(`open: the transfer from ${url} was cut short —`, e);
+    throw new Error("Couldn't open the library. The link may be broken or the file unavailable.");
+  }
   if (bytes.byteLength > maxBytes) throw new Error("That library is too large to open here.");
   return bytes;
 }
@@ -130,7 +151,12 @@ export async function fetchZipBytesIfAny(
   if (!res.ok) return null; // non-OK — same
   const declared = Number(res.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > maxBytes) throw new Error("That library is too large to open here.");
-  const bytes = new Uint8Array(await res.arrayBuffer());
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(await res.arrayBuffer());
+  } catch {
+    return null; // torn transfer — this path's whole contract is to swallow network faults (see above)
+  }
   if (!looksLikeZip(bytes)) return null;
   if (bytes.byteLength > maxBytes) throw new Error("That library is too large to open here.");
   return bytes;
@@ -143,5 +169,5 @@ export async function openArchieLibraryFromUrl(
   url: string,
   opts?: { fetch?: typeof fetch; maxBytes?: number },
 ): Promise<Filesystem> {
-  return openArchieLibrary(await fetchArchieLibraryBytes(url, opts));
+  return openArchieLibrary(await fetchArchieLibraryBytes(url, opts), { maxBytes: opts?.maxBytes ?? SRC_MAX_BYTES });
 }
