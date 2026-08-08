@@ -4,24 +4,15 @@ Copy-paste examples for dropping an Archie exhibit into a third-party page (a mu
 WordPress/Ghost, an LMS, a plain HTML file). Each recipe is a complete, minimal page you can
 copy, swap the placeholder URLs, and ship.
 
-> ## Honest status banner — READ THIS FIRST
+> ## Status — all phases shipped
 >
-> **The `<archie-viewer>` element is being built in phases.** These recipes target the **v1
-> public contract** locked in **ADR-0021** (`docs/adr/0021-archie-viewer-target-contract.md`).
-> The element ships incrementally — see `docs/plans/EMBED-VIEWER-IMPLEMENTATION-STRATEGY.md`:
->
-> | Phase | What works | Recipes it unlocks |
-> |-------|-----------|--------------------|
-> | **0** | Read-only render path (keystone — no element yet) | — |
-> | **1** | The `<archie-viewer>` element + local-zip **drop** | `03-local-drop` |
-> | **2** | **`src`** (hosted zip / hosted tree) + **`offline`** | `01`, `02`, `05` |
-> | **3** | **`target`** (full cite ladder + degrade-upward) | `04` |
-> | **4** | **Multiple instances** on one page | `08` |
->
-> So: these recipes are written against the **finished v1 contract**, and they double as
-> **integration fixtures** for the phases that deliver each attribute. If you try a recipe before
-> its phase lands, it won't work yet — that's expected, not a bug. The contract (attribute names,
-> route grammar) is frozen, so a recipe written today stays correct once its phase ships.
+> **The `<archie-viewer>` element is shipped, not in progress.** Phases 0–4 of the build plan
+> (`docs/plans/EMBED-VIEWER-IMPLEMENTATION-STRATEGY.md`) are all done: the element, local-zip
+> drop, `src` (hosted zip / hosted tree), `offline`, the full `target` cite ladder with
+> degrade-upward, and multiple instances on one page. The runtime is published on jsDelivr at the
+> pinned **`@v1`** tag (ADR-0019). These recipes target the **finished v1 public contract** locked
+> in **ADR-0021** (`docs/adr/0021-archie-viewer-target-contract.md`) — copy, swap the placeholder
+> URLs, and ship.
 
 ---
 
@@ -174,7 +165,7 @@ When `src` points at **another origin** than the host page (the common case — 
 | `05-offline.html` | The `offline` attribute (no remote fetch). |
 | `06-wordpress.md` | Paste into a Custom HTML block; iframe fallback. |
 | `07-ghost.md` | An HTML card; iframe fallback. |
-| `08-multiple-on-one-page.html` | Two embeds on one page (multi-instance = **Phase 4**). |
+| `08-multiple-on-one-page.html` | Two embeds on one page (multi-instance). |
 
 **Replace if you fork** (the recipes resolve live against `micahchoo.github.io/Archie/viewer/published/`):
 `micahchoo.github.io/Archie` (your own GitHub Pages published-tree base),

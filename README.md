@@ -130,7 +130,7 @@ git lfs install         # one-time per machine, if you haven't already
 pnpm install            # install the whole workspace
 sh qa/hooks/install.sh  # wire up the repo's git hooks (LFS safety net)
 pnpm typecheck          # type-check every package + app
-pnpm test               # run the test suite (~1150 tests)
+pnpm test               # run the test suite (~3570 tests)
 ```
 
 > [!IMPORTANT]
@@ -325,13 +325,13 @@ graph TD
 - **The data model:** `packages/render-core/src/wadm/types.ts` — the W3C annotation types every module speaks.
 - **The annotation spine (the core innovation, [ADR-0003](docs/adr/0003-annotation-spine-append-only-version-dag.md)):** `spine/log.ts` (append-only log), `spine/heads.ts` (multi-head projection), `spine/merge.ts` (three-way merge), `session/session.ts` (transactional CRUD).
 - **How it wires together:** `packages/render-core/src/index.ts` (barrel export), `fs/seam.ts` (three storage backends, one interface), `apps/studio/src/binding.ts` (the three-config persistence system), `publish/site.ts` (the publishing engine).
-- **The map medium (geo-annotation, [ADR-0015](docs/adr/0015-map-medium-bounded-extent.md)):** `geometry/geo.ts` (lng/lat ↔ world-pixel, bounded extent), `iiif/resolve.ts` (XYZ tile source), with the `archie:geo` anchor threaded through the spine and the IIIF manifest; `apps/studio/src/AddMapModal.svelte` is the add-map flow.
+- **The map medium (geo-annotation, [ADR-0015](docs/adr/0015-map-medium-bounded-extent.md)):** `geometry/geo.ts` (lng/lat ↔ world-pixel, bounded extent), `iiif/resolve.ts` (XYZ tile source), with the `archie:geo` anchor threaded through the spine and the IIIF manifest; `apps/studio/src/CreateExhibitDialog.svelte` is the add-map flow (Map path; it absorbed `AddMapModal.svelte`).
 
 **Additional maps:** [`hubs/`](hubs/) (question-named territory pages, [`hubs/INDEX.md`](hubs/INDEX.md)), [`docs/adr/`](docs/adr/) (ADRs 0001–0026), and [`docs/decisions/`](docs/decisions/) (Q-N decision records).
 
 ## Status & roadmap
 
-**Tests:** ~1150 across the workspace (714 `@render/core`, 116 `@render/mount`, 7 `@render/svelte`, 154 `@archie/studio`, 63 `@archie/viewer`, 98 `@render/archie-viewer`). Run `pnpm test`.
+**Tests:** ~3570 across the workspace (1544 `@render/core`, 222 `@render/mount`, 15 `@render/svelte`, 1293 `@archie/studio`, 281 `@archie/viewer`, 218 `@render/archie-viewer`). Run `pnpm test`.
 
 **v1 — complete and dogfooded.** The data layer, both apps, and all major features are built and verified on the Voynich (Beinecke MS 408) demo and a real Bidar fieldwork project. Both apps build clean.
 
@@ -350,7 +350,7 @@ graph TD
 
 ```bash
 pnpm typecheck          # type-check every package + app
-pnpm test               # run the full suite (~1150 tests)
+pnpm test               # run the full suite (~3570 tests)
 pnpm --filter @render/core test     # target one workspace
 pnpm --filter @render/core test src/spine/log.test.ts   # one file (path is a vitest filter)
 ```

@@ -22,9 +22,11 @@
 //      (ADR-0019: OSD is bundled IN, "a CDN consumer has no build step"). A pixel route would have
 //      to invent a renderer; this one reuses the shipped one.
 //   2. The data problem is already solved by an EXISTING public seam. `ArchieViewerElement.openFile`
-//      (element.ts:350) takes a `Blob` — the drag-drop vector — and `load.ts:93 openLibraryFromFile`
-//      composes `@render/core`'s canonical `openArchieLibrary`, whose `loadPortableExhibit` rewrites
-//      every asset ref to a `blob:` URL (load.ts:57-60). So a `.archie.zip` carried as base64 in the
+//      (element.ts:327) takes a `Blob` — the drag-drop vector — and `load.ts:98 openLibraryFromFile`
+//      composes `@render/core`'s canonical `openArchieLibrary` (publish/open.ts), whose
+//      `loadPortableExhibit` (publish/portable.ts) rewrites every asset ref to a `blob:` URL —
+//      the rewrite moved out of load.ts with the read-path deepening. So a `.archie.zip` carried
+//      as base64 in the
 //      document yields images with no fetch of any kind. No new API, no relaxed trust boundary
 //      (.claude/rules/untrusted-archive-open-seam.md holds — this composes the seam, it does not
 //      copy it).

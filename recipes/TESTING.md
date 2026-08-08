@@ -33,10 +33,11 @@ Open <http://localhost:8000/recipes/try.html>.
 the live one):
 
 - **Deep-link** — `target="#/voynich/o/o1"` opens straight to a real object (folio
-  `o1`). A note deep-link `target="#/voynich/a/0000000001SEBWXFTSHHP00TVY"` uses a
-  real note logicalId but **degrades upward** to the object grid on this published
-  tree (its inline notes carry only full-URL ids — no inline `archie:logicalId` —
-  and the hash router can't carry a slashed URL; ADR-0021 degrade, never an error).
+  `o1`). A note deep-link `target="#/voynich/a/0000000001SEBWXFTSHHP00TVY"` opens
+  straight to that note: the baked tree's inline notes carry `archie:logicalId`
+  (see `apps/viewer/public/published/voynich/manifest.json`), and the element
+  matches on it (`target-resolve.ts`'s `logicalIdOf`). A target that genuinely
+  cannot be resolved degrades upward — ADR-0021, never an error.
 - **Offline** — add the boolean `offline` attribute. The gallery/grid still render
   from the local tree; opening an object whose tiles are remote shows the offline
   notice instead of fetching.
@@ -45,7 +46,7 @@ the live one):
 - **Production CDN** — replace the local `<script>` with the jsDelivr line
   (`https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js`).
 
-  For production integrity (optional), add `integrity="sha384-2kT6KuVJkm08Btoug0L+OxGYjUhlH7ro/4VY4nLSB9Ysc0youBLptzrp7A4UevNl" crossorigin="anonymous"` — the SHA-384 of v1.1's `dist/archie-viewer.js`. An SRI hash must be re-computed if the bundle is re-released.
+  For production integrity (optional), add `integrity="sha384-2kT6KuVJkm08Btoug0L+OxGYjUhlH7ro/4VY4nLSB9Ysc0youBLptzrp7A4UevNl" crossorigin="anonymous"` — the SHA-384 of v1.1's `dist/archie-viewer.js` (verified against the `v1.1` tag; a fresh build from HEAD produces a different hash). An SRI hash must be re-computed at each tagged release.
 
 ---
 

@@ -1,31 +1,21 @@
-# HANDOFF — 2026-08-08 (later): the deepening is COMMITTED (`8341381`), and TWO sessions are live in this checkout
+# HANDOFF — 2026-08-08 (later): read-path + deepening COMMITTED; 08-08 docs-freshness sweep uncommitted
 
-Read this before touching `packages/render-core/src/fs/http.ts` or `publish/open.ts`.
+Read this before touching `packages/render-core/src/fs/http.ts`, `publish/open.ts`, or any doc the
+sweep touched (git diff names them). `[[shared-worktree-agent-collisions]]` applies: explicit paths
+only, no `add -A`, no path-level reverts.
 
-- **Another session is working this same checkout right now**, on the same read-seam findings. It wrote
-  the tests for findings D/E/G/H/I and the `http.ts` implementation (timeout + base split). I wrote the
-  `publish/open.ts` half. Nothing was lost, but an `Edit` of mine was rejected mid-flight
-  ("modified since read") — that is the tell. `[[shared-worktree-agent-collisions]]` applies: explicit
-  paths only, no `add -A`, no path-level reverts.
-- **Uncommitted, and whose:** `publish/open.ts` (mine — findings D/E, green), `fs/http.ts` +
-  `fs/http.test.ts` + `publish/open.test.ts` (the other session's). Backup of my open.ts at
-  `/tmp/open.ts.mine-backup`.
-- **STAGED by me** (declared per the shared-tracker rule): `ledgers/PROBE-read-seam-adversarial-2026-08-08.md`
-  and the two `scripts/probe/read-path-*-adversarial.mts`. If you commit without explicit paths you
-  will sweep them.
-- **`8341381` shipped a red suite and a red doclint.** Measured: 7 failing render-core tests (the
-  D/E/G/H/I tests, committed without their implementations) and 8 hubs stale against their own scope.
-  Both are now fixed in the working tree (hub closure lines written, `doclint` PASS 12/12); the test
-  half is fixed only for D/E/G/H/I.
-- **Open review finding against the other session's in-flight `http.ts`:** it parses the base with
-  `new URL(base)`, which throws on a RELATIVE base — and the viewer's real base is relative
-  (`apps/viewer/src/published.ts:31` → `/published`). Driven directly: `THROWS base="/published" ->
-  TypeError: Invalid URL`, while `https://host/published` is fine. Every `HttpFilesystem` test uses an
-  absolute base, so **render-core stays green while every hosted read in the viewer throws at
-  construction**. A string-level split (`base.search(/[?#]/)`) has no such dependency.
-- **Still open from the probes** (no tests yet): A zip name gate, B raw fflate decode text, C silently
-  short truncated STORED entries, F torn-marker surface (a real decision, not an obvious fix — see the
-  ledger).
+- **Committed:** the read-path hardening landed as `caa3736` (findings D/E/G/H/I tests + the `http.ts`
+  timeout & base split + zip/marker/open hardening; the probes
+  `scripts/probe/read-path-{transport,in-core}-adversarial.mts` are tracked too). The deepening is
+  `8341381` (9 phases P1-P9, whole tree). HEAD = `caa3736`.
+- **The `http.ts` relative-base finding is FIXED** in `caa3736` — `base.search(/[?#]/)` string split
+  before any `new URL`, so the viewer's relative `/published` base works. Probes A/B/C/F are fixed
+  with regression tests (zip 23/23, marker 20/20, http 27/27, open 24/24); the "8341381 shipped a red
+  suite" claim was transient worktree state, disproven.
+- **Uncommitted, and whose (declared):** the 08-08 docs-freshness sweep (40 files, doc edits only —
+  this session), the hub closure lines (8 hubs + INDEX — the other session's), and the STAGED
+  `ledgers/PROBE-read-seam-adversarial-2026-08-08.md` (other session's; an unstaged RESOLVED section
+  was appended). Commit with explicit paths, never `add -A`.
 
 ---
 
@@ -43,7 +33,7 @@ contains two claims that are DISPROVEN — correct them before any commit of it:
    agents in the SHARED WORKING TREE (tests landed before implementations,
    ~20 min apart) — not a property of the commit.
 2. **Findings A/B/C/F marked "open — no test yet" are ALL FIXED** with
-   regression tests in the worktree (zip.test.ts 23/23, marker.test.ts 20/20,
+   regression tests committed in `caa3736` (zip.test.ts 23/23, marker.test.ts 20/20,
    http.test.ts 27/27, open.test.ts 24/24) and tickets closed. Full state:
    render-core 1544/1544, viewer 281/281, all dependent packages at baseline;
    transport probe 43/43, in-core probe 82/82. Tickets (declared id set):
@@ -54,19 +44,14 @@ contains two claims that are DISPROVEN — correct them before any commit of it:
 
 ---
 
-# HANDOFF — 2026-08-08: architecture deepening landed in the WORKING TREE, uncommitted
+# HANDOFF — 2026-08-08: architecture deepening — COMMITTED as `8341381`
 
-Primary checkout is `main` @ **`b7fb4ec`** (2026-07-28). The 08-07
-`improve-codebase-architecture` sweep + 9-phase deepening (plan +
-abstractive analysis + execution record:
-`docs/plans/ARCHITECTURE-DEEPENING-2026-08-07.md`) is **UNCOMMITTED** in the
-working tree: 137 tracked files changed (+3913/−7038; 116 M + 21 D — the D's
-are old embed dist chunks + github.rs) plus 74 new files, verified gate-by-gate on
-2026-08-08 — all green after three fixes (see the doc's "Verification record"
-section): Publish.svelte publishBlocked predicate, root `dist/` resync,
-2 unused imports. **Whoever commits next: commit the whole working tree**
-(the doc's file counts are pre-verification; the 3 extra changes are the fixes
-+ resynced dist). Do NOT cherry-pick — the phases compose.
+Superseded (updated 2026-08-08): the deepening and its three verification fixes (Publish.svelte
+publishBlocked predicate, root `dist/` resync, 2 unused imports) are committed as `8341381`; HEAD is
+`caa3736` (read-path hardening on top). The "commit the whole working tree" instruction is done — do
+NOT cherry-pick; the phases compose. Gate matrix lives in
+`docs/plans/ARCHITECTURE-DEEPENING-2026-08-07.md`'s "Verification record" (render-core 1544, studio
+1293, viewer 281, doclint 12/12).
 
 - Branch/map state is as recorded below (fix/flaky-gates work already merged
   into main per HANDOFF history; no maps open).

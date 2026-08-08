@@ -5,7 +5,7 @@ scope:
   - ".seeds/**"
   - "ledgers/**"
   - "docs/agents/**"
-updated: 2026-07-28
+updated: 2026-08-08
 ---
 # process
 > *how do agents work in this repo?*
@@ -26,6 +26,12 @@ the mechanical check over the knowledge layer itself (see `ledgers/DESIGN-knowle
 - [[prior-art-citation-discipline]] — a citation that reads plausibly and is never re-opened is the recurring failure (7 bad ones caught in one session); open the file, grep where a thing is USED not just defined, cite to the line.
 
 ## Decisions
+- (arch deepening, no ticket) / 8341381 — 9 orthogonal phases in one sweep, ordered so the read seam
+  landed FIRST and every later phase composed it. The gates caught 6 regressions the phases
+  themselves introduced (OSD Rect→Box in a merged `applyFitBounds`, a mount-barrel OSD drag into a
+  headless test, Tauri's `__cmd__` path, a `publishBlocked` predicate, a stale root `dist/`, 2 unused
+  imports) — the phase discipline works, and its cost is recorded honestly: the same commit shipped
+  a red suite and 8 stale hubs, both found by the next reader, not by its own report / `ledgers/PROBE-read-seam-adversarial-2026-08-08.md`
 - Archie-1f60 — first exercise of the accretion rewrite: svelte-no-typecheck-net cut ~110→61 lines, evidence kept, correction-narrative dropped; the doclint accretion exemption list is empty again.
 - Archie-1a47 — worktree "drift" was a measurement artifact (diffed against a stale ref); 11 merged checkouts pruned, prune criterion recorded in `ledgers/AUDIT-worktrees-2026-07-27.md`.
 - (prior-art deep pass, no ticket) / 1e7809d — clover-iiif/mirador/universalviewer promoted from three chrome-placement rows to full clone-verified pages; **a standing correction of ours was itself refuted** ("universalviewer's suite never touches the network" — it is puppeteer-driven against live remote manifests). A correction outlives the error it replaced and nobody re-opens it: re-verify corrections on the same terms as claims.
@@ -33,10 +39,10 @@ the mechanical check over the knowledge layer itself (see `ledgers/DESIGN-knowle
 - Archie-098f — toolchain & docs pipeline tend epic closed; its children are the process-tooling ratchets below.
 - Archie-9140 / 7a07cd9 — harness consolidation: two rotted drive-and-shoot verifiers deleted with coverage proof (behavior moved to unit + e2e), one shared driver.mjs kept.
 - Archie-b975 / 329ee4d — screenshot capture gate wired with no exit-0 escape (zero skips, per-viewport, size floor); wiring it exposed month-old rot the old gate had stopped catching.
-- (doclint itself, no ticket) / a3fd4d8 — deterministic knowledge-layer gate shipped, 10 checks, born red on 2 real standing findings (undated ledgers, svelte rule 4x accretion) — proves the gate can fail before being trusted, per this design's own §2 Q6.
+- (doclint itself, no ticket) / a3fd4d8 — deterministic knowledge-layer gate shipped, 12 checks (TRACKERS drift and evidence-path existence were added later, keeping the count at 12), born red on 2 real standing findings (undated ledgers, svelte rule 4x accretion) — proves the gate can fail before being trusted, per this design's own §2 Q6.
 
 ## Evidence
-- `scripts/doclint.mjs` — 10 checks (dangling `[[links]]`, dead scopes, stale hubs via `git log -1 -- <scope>` vs `updated:`, INDEX drift, ticket/sha pointer integrity, untracked docs, declared mirrors, ledger date-naming, rule-accretion count, scope-coverage totality); all scope/link checks run against `git ls-files` — an **uncommitted** hub or rule file is invisible to it.
+- `scripts/doclint.mjs` — 12 checks (dangling `[[links]]`, dead scopes, stale hubs via `git log -1 -- <scope>` vs `updated:`, INDEX drift, ticket/sha pointer integrity, TRACKERS drift, evidence-path existence, untracked docs, declared mirrors, ledger date-naming, rule-accretion count, scope-coverage totality); all scope/link checks run against `git ls-files` — an **uncommitted** hub or rule file is invisible to it.
 - `docs/agents/issue-tracker.md` — `sd` conventions: claim with `--assignee`+`--status in_progress` before working, `sd dep add` for blockers, `sd ready` for the frontier, close with `--reason` carrying the answer, not a restatement.
 - `git log --oneline` — the live commit-message convention: `close: Archie-xxxx — <verdict>`, `<type>(<slug>): <description> (Archie-xxxx)`, `rule: <what changed>`, `docs(<slug>): <what was recorded>`. Ticket id in parens or after a colon is what makes `git log --grep Archie-xxxx` work.
 

@@ -23,6 +23,11 @@
 - viewer: 24 files / 214 pass (incl. new `reading-walltext.test.ts`); svelte-check 1503 files → only pre-existing `published.ts` `import.meta.env` error (fails identically on clean HEAD).
 - studio: 1242 pass / 3 fail — the 3 are `writer-lock.svelte.test.ts` Web Locks tests, failing identically on clean HEAD (the flaky-gates theme); svelte-check 15 errors, byte-identical count on clean HEAD, none in files this lane touched.
 
+> **CORRECTED 2026-08-08** — the gate counts above are overtaken (recorded at `3dab221`, 2026-07-29).
+> Current on HEAD `caa3736`: studio **1293/1293 green** (the 3 `writer-lock` failures are fixed),
+> viewer **281** (from 214), render-core 1544, render-mount 222, render-svelte 15, archie-viewer 218,
+> doclint 12/12. The prose and decisions stand.
+
 ## Known edges / follow-ons
 
 - **AV surface:** MediaPlayer picks raise the wall text (threshold is exhibit-level) but AV mounts no (i) to reopen — same dead-door posture as its absent hide-toggle. Wire it if AV grows the affordance.

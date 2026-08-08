@@ -254,6 +254,11 @@ Expected: all three non-zero/matching.
 
 **Execution notes:** (a) This repo has heavy uncommitted WIP across `apps/studio/src/*` from concurrent sessions — check `git status` / `git branch --show-current` before each commit, and prefer executing on the live tree over an isolation worktree (worktrees here spawn from stale snapshots). (b) When the project's `.seeds/` tracker is used, materialize these six tasks via `sd create "<title>" --label plan:drive-harness,wave:<N>` + `sd dep`/`sd block` per the wave edges above — do this at execution start, not before, to avoid tangling concurrent-session tracker state.
 
+> **CORRECTED 2026-08-08:** the heavy WIP note (a) warned about landed in
+> `8341381` (architecture deepening) — the tree is clean at HEAD `caa3736`, so
+> the pre-commit check is no longer reacting to other sessions' edits. The
+> check-first habit and the worktree caveat stand as good practice.
+
 ## Open Questions
 
 ### Flow Contracts

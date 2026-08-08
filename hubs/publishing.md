@@ -7,12 +7,12 @@ scope:
   - "scripts/perf/publish*"
   - "scripts/perf/worker-smoke.mjs"
   - ".github/workflows/deploy.yml"
-updated: 2026-07-28
+updated: 2026-08-08
 ---
 # publishing
 > *How does authored become published?*
 
-`publishLibrary` (`packages/render-core/src/publish/site.ts:312`) is the ONE function that turns a
+`publishLibrary` (`packages/render-core/src/publish/site.ts:517`) is the ONE function that turns a
 `Library` + log into a tree: collection.json/exhibits.json first, `archie.json` marker LAST as the
 commit point (ADR-0020, generation hash keys viewer cache-busting). `apps/viewer/scripts/gen-published.mts`
 is the disk-writing wrapper the Viewer's dev/deploy path calls; `.github/workflows/deploy.yml` is the
@@ -37,6 +37,11 @@ end-to-end wall-clock over a real library (`scripts/perf/publishrun.mjs`), not a
   (`publish/open.ts`); don't grow a second decode-then-validate copy for a new consumer.
 
 ## Decisions
+- (arch deepening P2-P4, no ticket) / 8341381 — marker version policy is ONE
+  `classifyArchieMarker` that both gates adapt (verify-publish composes it, no third copy);
+  `FileContent`/`collectFiles` moved to `publish/snapshot.ts` and republish-tree became a thin
+  composition; `loadLibrary` is lossless on request (`preservePublishFields`); the video tier got a
+  neutral contract (`video-profiles.ts`, one `pickTarget`/`unavailableReason`, `TILE_MIN_EDGE` one home).
 - Archie-9b93 — gen-published tree is a UNION (merge-preserving); rm-everything regen deleted
   committed exhibits on every dev run and CI deploy — fixed, don't reintroduce full-wipe regen.
 - Archie-3db4 — gen-published `--from` bakes the real deploy BASE (`published-base.js`), not the
@@ -53,8 +58,8 @@ end-to-end wall-clock over a real library (`scripts/perf/publishrun.mjs`), not a
 - Archie-19d7 — a published manifest may not reference an asset file the tree lacks; enforced as a
   CLOSING invariant over the finished manifest (`PublishResult.danglingRefs`), because the JSON-only
   recovery path writes no bytes and so cannot check its own output / 896a92f, 2c997fe
-- Archie-fde8 — post-publish verification (`verify-publish.mjs`, reads the tree back through the
-  REAL render-core readers) / `7fbd87d`. Not present on this branch's tree — merged via `main`.
+- Archie-fde8 — post-publish verification (`verify-publish.mjs` + `verify-publish-run.mts`, reads the
+  tree back through the REAL render-core readers; 26/26 checks against the baked tree) / `7fbd87d`.
 - Archie-c367 — one-flow export surface (probe recommendation, greyed-with-reason sinks, tier
   control, deposit bag) shipped / f63a90f (on `main`).
 - Archie-c74e — 1,000-image acceptance PASSED: web tier fits GitHub at 63%, archival does not

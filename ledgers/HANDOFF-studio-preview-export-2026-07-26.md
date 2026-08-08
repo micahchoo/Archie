@@ -241,6 +241,12 @@ branch cannot clobber them — but they need committing from there, by whoever o
 for `Archie-ce7a` and `Archie-7b48`. Closed all three with measured resolutions. `Archie-9ece` and
 `Archie-a09d` updated rather than closed (both only partly satisfied). Open P0s: 2 → 1.
 
+> **CORRECTED 2026-08-08** — recorded for the record, since a later audit misread this ledger as
+> current: **`Archie-7b48` is CLOSED in `.seeds/issues.jsonl`** (closedAt 2026-07-27T02:34Z, i.e. the
+> day after this ledger's sessions; the session-6 text above already records closing it). The
+> "Copy defect still open, unticketed" line further down refers to the *refusal-message copy* (a
+> product call, deliberately unticketed), not to the ticket — the ticket itself never reopened.
+
 `Archie-a09d` turned out to have **no description at all** — its whole content was in the title. The
 read-modify-write guard refused the append (correctly, since it read length 0), which is what surfaced
 it; it now has a body. Keep that guard on every `sd update`.

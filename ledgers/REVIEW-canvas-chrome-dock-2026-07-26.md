@@ -40,6 +40,13 @@ heuristic) and has nothing to do with chrome reservation. Live consumers: `Exhib
 `fixtures/fixture-reach.test.ts:134`. Not over-cautious — correct.
 *(NIT: the author reported `App.svelte:1504`; it is `:1509` at both `d43155c` and `5842087`.)*
 
+> **CORRECTED 2026-08-08** — the `App.svelte:1509` coverage-consumer citation is stale after P8 of the
+> architecture deepening moved the canvas derivation cluster out of `App.svelte` into
+> `apps/studio/src/editor-model.svelte.ts`: `isWholeObjectFor` is imported there at `:20` and the
+> coverage-consumer call is now `editor-model.svelte.ts:263` (the whole-object mark-colour walk).
+> The other cited consumers (`ExhibitView.svelte:458`, `e2e/offline.ts:127`,
+> `fixtures/fixture-reach.test.ts:134`) were unchanged by the move.
+
 **Deleted occlusion suites V22 / V71** — subject genuinely dead: the finder pill and the filmstrip are
 now flow siblings in `ExhibitView`'s `.chrome-dock` (`:706`). V48 and V87 were **rewritten, not
 deleted**. The only surviving `position: fixed` is `.arrival` (`:834`), which the ADR names as an

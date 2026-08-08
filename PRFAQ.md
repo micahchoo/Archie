@@ -40,6 +40,11 @@ narrates the manual workaround (`PublishDialog.svelte:149-150,168`), and the REA
 terminal ritual it replaces (`README.md:234-243`). Copy that narrates a manual step is a feature
 request written in the product's own words.
 
+> **CORRECTED 2026-08-08** — publish-to-web shipped (commits `3334bb2`/`33e0756`/`5f9a495` +
+> the Q-15 series). `PublishDialog.svelte` was replaced by `Publish.svelte` + `PublishSheet.svelte` +
+> `ExportMenu.svelte` + `SetupFlow.svelte`; the dialog citations above now read
+> `apps/studio/src/Publish.svelte:721,740`.
+
 **Is it usable — what's the aha moment and how fast?** First run: a GitHub device-flow screen (a
 six-digit code, entered on github.com — no developer settings, no token pasting), then one button.
 Aha = the live URL appearing in under a minute (probe: 0.6 min end-to-end). A paste-a-token field
@@ -116,3 +121,7 @@ feature; it is never cut — if *it* doesn't fit, the bet is re-examined, not st
 Divergence 1 Status: **spec'd — PRFAQ.md** (probe verdict *pursue* stands beneath it). Next:
 a build session starting from this document + `ledgers/PROBE-publish-to-web-2026-07-22.md`; slice reference
 on branch `probe/publish-to-web` (never merges).
+
+> **CORRECTED 2026-08-08** — that build session shipped the feature: the in-app GitHub push is live
+> (commits `3334bb2`/`33e0756`/`5f9a495` + the Q-15 series; README "Publishing & deploying",
+> `README.md:230-248`). The `probe/publish-to-web` slice branch was never merged into main.

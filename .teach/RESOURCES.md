@@ -11,7 +11,7 @@ implements them.
   Archie is.
 - [`CONTEXT.md`](../CONTEXT.md) — project context and current state. Use for: what's true
   *now* versus what the README promises.
-- [`docs/adr/`](../docs/adr/) — 0001–0017+, the decisions with their reasoning intact.
+- [`docs/adr/`](../docs/adr/) — 0001–0026, the decisions with their reasoning intact.
   Use for: "why is it built this way" on any structural question. ADR-0002 (monorepo /
   three-layer split), ADR-0003 (annotation spine), ADR-0015 (map medium), ADR-0019 (embed
   element) are the load-bearing four.

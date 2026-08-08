@@ -1,5 +1,12 @@
 # REVIEW-COVERAGE — adversarial review ledger
 
+> **CORRECTED 2026-08-08:** the lane map and clean-cell tables below are frozen
+> at the bootstrap snapshot `8a577f0` — their "current" labels describe that
+> commit, not HEAD. No lane re-examination ran against the architecture-deepening
+> commits (`8341381`, `caa3736`). Live ticket state lives in `docs/TRACKERS.md`
+> and `.seeds/`; notably, Archie-dace (Issue 17, Cycle 4) was CLOSED 2026-07-23,
+> so the "still open as filed" notes in Cycles 11 and 16 are stale.
+
 ## Cycle 0 — Bootstrap baseline 2026-07-21
 
 Commit examined: `8a577f0` (main). This is the first-run bootstrap (§9).
@@ -224,7 +231,7 @@ Lane: 3 (gate-shadow code). Re-examined at 5113702. Zero diff in http.ts, load.t
 
 ## CYCLE 11 DRY — 2026-07-21
 
-Lane: 4 (hollow features). Re-examined at 5113702. Zero diff in apps/studio/src/, packages/render-mount/src/. Filed Archie-dace from Cycle 4 remains active. Issue 13 refuted-because stands.
+Lane: 4 (hollow features). Re-examined at 5113702. Zero diff in apps/studio/src/, packages/render-mount/src/. Filed Archie-dace from Cycle 4 was CLOSED 2026-07-23 (frame draw now iterates all whole-object notes — see `.seeds/`; corrected 2026-08-08). Issue 13 refuted-because stands.
 
 ## CYCLE 12 DRY — 2026-07-21
 
@@ -300,7 +307,8 @@ clean cells from Cycle 3 remain current.
 
 Lane: 4 (hollow features). Re-examined at a9900ce. Zero diff from 5113702 in apps/studio/src/
 and packages/render-mount/src/. Issue 13 refuted-because stands (setIdentity + IdentityPrompt
-mounted). Issue 17 (wholeObjects[0]) still open as filed Archie-dace.
+mounted). Issue 17 (wholeObjects[0]) — Archie-dace CLOSED 2026-07-23, no longer open
+(corrected 2026-08-08).
 
 ## CYCLE 17 DRY — 2026-07-22
 

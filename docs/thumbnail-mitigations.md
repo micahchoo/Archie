@@ -11,13 +11,11 @@ the pick, and the repo prior art the pick follows.
 
 Gaps keep the audit's numbering for traceability, not priority.
 
-> **Sequencing constraint.** Mitigations **3, 4, and 8** touch files that carry
-> uncommitted WIP from another session — `apps/studio/src/ingest-flows.ts`,
-> `packages/render-core/src/publish/site.ts`, `apps/studio/src/App.svelte`, and
-> `apps/studio/src/publish-flows.svelte.ts` (the last two behind #8's publish
-> plumbing). Do not start those three until that WIP lands and is committed;
-> starting on the same lines guarantees a merge collision. The other five touch
-> files that are clean at HEAD.
+> **CORRECTED 2026-08-08 — the sequencing constraint is obsolete.** The WIP it
+> blocked on landed in `8341381` (architecture deepening, 2026-08-07); the tree
+> is clean at HEAD `caa3736`. Mitigations 3, 4, and 8 are no longer
+> WIP-blocked — they are actionable, and gap 1's poster extraction shipped in
+> the same commit.
 
 **Two audit citations were wrong and are corrected below.** Gap 5's viewer-cover
 site is `packages/render-core/src/iiif/exhibits.ts:44`, not `apps/viewer/src/exhibits.ts:44`.
@@ -44,19 +42,23 @@ recommended fixes below pull those paths onto the same rule the read side follow
 
 ## 1 — AV objects never get a raster thumbnail
 
-**Now.** Ingest stores an audio/video file as an OPFS asset and returns
-(`apps/studio/src/ingest-flows.ts:380-389`) — no poster or first-frame extraction,
-unlike the image path just below it (which bakes a thumb at `:433-441`). At view
-time `MediaThumbnail.svelte:29-35` leans on `<video src preload="metadata">` to
-paint its own first frame; audio has no frame and renders a drawn-waveform motif
-(`:37-39`) forever.
+**Now.** Poster extraction SHIPPED (2026-08-07, `8341381` / Archie-0c7f): the AV
+branch at `apps/studio/src/ingest-flows.ts:495-524` stores the file as an OPFS
+asset, then pulls a poster frame + duration/dimensions at `:501-519`
+(non-blocking — a codec this engine lacks still imports, just without a plate).
+Newly ingested video gets a baked poster through the same `saveThumbFile` path
+as the image bake at `:600-608`; audio stays motif-only by design. At view time
+`MediaThumbnail.svelte:29-35` still leans on `<video src preload="metadata">`
+for objects that carry no baked thumb; audio has no frame and renders a
+drawn-waveform motif (`:37-39`) forever.
 
 **Impact.** Video plates often paint solid black: `preload="metadata"` fetches
 enough to know duration but frequently no keyframe, and it fires no `onerror`, so
 the `failed` fallback never trips — a black rectangle, not the honest "couldn't
-load" card. Audio is motif-only by design (acceptable). The published viewer is
-worse than studio: the wall (gap 6) and any baked tree have no live `<video>` to
-lean on at all.
+load" card. The shipped poster bake closes this for newly ingested video; the
+black-plate class is now legacy objects without a baked poster. Audio is
+motif-only by design (acceptable). The published viewer is worse than studio:
+the wall (gap 6) and any baked tree have no live `<video>` to lean on at all.
 
 **Options.**
 - **A. Extract a poster frame at ingest** — decode the video in an offscreen
@@ -72,14 +74,16 @@ lean on at all.
 **Recommended: A.** It reuses the image path's exact bake-and-persist plumbing, so
 the poster flows through publish (gap 4) and the wall (gap 6) for free — a runtime
 hack (B) helps neither. `MediaThumbnail`'s `imgSrc = object.thumbnail ?? …`
-(`:13`) already prefers a baked thumb, so the view side needs no change. C is a
-good follow-up once A exists.
+(`:13`) already prefers a baked thumb, so the view side needs no change. **A
+shipped (2026-08-07, `8341381`);** C (frame-scrubber) is the good follow-up now
+that A exists.
 
-**Effort.** M. **Files.** `ingest-flows.ts` (behind #3's WIP, since it edits the
-same AV branch). **Prior art.** The image bake at `ingest-flows.ts:433-441`
-(`bakeThumbnail` → `saveThumbFile` → `thumbnail` ref) is the template to copy;
-`MediaThumbnail.svelte`'s `failed`-state `<img>` (`:24-28`) is the honest-error
-idiom to keep as the fallback when extraction yields nothing.
+**Effort.** M (shipped 2026-08-07 in `8341381`). **Files.** `ingest-flows.ts` —
+poster extraction landed at `:501-519`; option C (frame-scrubber) remains the
+follow-up. **Prior art.** The image bake at `ingest-flows.ts:600-608`
+(`bakeThumbnailAsync` → `saveThumbFile` → `thumbnail` ref) is the template the
+poster bake copies; `MediaThumbnail.svelte`'s `failed`-state `<img>` (`:24-28`)
+is the honest-error idiom kept as the fallback when extraction yields nothing.
 
 ---
 
@@ -113,8 +117,9 @@ objects — and because the studio plates use CSS `background-image` (gap 8), no
 
 **Recommended: A now, C later.** A is small, has proven in-repo prior art
 (`og-image.ts`), and stops the broken image immediately without touching the
-ingest WIP. B is the right *eventual* answer for offline/portable (gap 7) but is
-its own M-L project with a CORS story; fold it in once the ingest files are clean.
+ingest files. B is the right *eventual* answer for offline/portable (gap 7) but is
+its own M-L project with a CORS story; fold it in now that the ingest files are
+clean (`8341381`).
 Do not hand-roll a second probe — extract `og-image.ts`'s `probeUpsize` shape into
 a shared module and have both call it (the repo's anti-drift convention, ADR-0013,
 which `og-image.ts`'s own header cites).
@@ -137,8 +142,8 @@ is `thumbnailCandidates` in `packages/render-core/src/iiif/thumb-fallback.ts`
 (the remaining rungs ride `data-srcs`). The viewer Gallery's wall/covers need no
 change — the wall renders only baked thumbs (no runtime derive, by design, gap 6)
 and exhibit covers are authored URLs; both already carry the `onerror`→text
-fallback. **Follow-up:** `og-image.ts` keeps its own `probeUpsize` for now (the
-file carries uncommitted WIP from another session); once that WIP lands, fold its
+fallback. **Follow-up:** `og-image.ts` keeps its own `probeUpsize` (the WIP that
+gated it landed in `8341381`, 2026-08-07 — the constraint is gone): fold its
 probe onto the shared helper (probe the chain's rungs instead of a hand-built
 upsize) so the fallback order can't drift between the unfurl and the grids. B
 (bake at ingest) remains the eventual portable/offline answer, unchanged.
@@ -151,10 +156,10 @@ upsize) so the fallback order can't drift between the unfurl and the grids. B
 
 ## 3 — Bake errors are swallowed at ingest
 
-**Now.** `ingest-flows.ts:442-444` wraps `bakeThumbnail` in a try/catch whose only
-effect is `console.warn`; the import continues thumb-less. The surrounding comment
-correctly argues a thumb failure must **not** block the import — that part is right.
-What's missing is any *user-visible* signal that it happened.
+**Now.** `ingest-flows.ts:600-611` wraps `bakeThumbnailAsync` in a try/catch whose
+only effect is `console.warn`; the import continues thumb-less. The surrounding
+comment correctly argues a thumb failure must **not** block the import — that part
+is right. What's missing is any *user-visible* signal that it happened.
 
 **Impact.** A curator whose images consistently fail to bake (a codec the canvas
 can't decode, an OOM on huge masters) sees a grid of fallback plates and no reason
@@ -163,7 +168,7 @@ never open.
 
 **Options.**
 - **A. Count and surface** — tally bake failures across a batch and fold the count
-  into the same `note` the import already returns (`:387-389`), e.g. "Added 40
+  into the same `note` the import already returns (`:701-702`), e.g. "Added 40
   images; 3 couldn't be thumbnailed and will show a placeholder."
 - **B. Per-object flag** — stamp `object.thumbnailFailed` and let the plate show a
   quiet "no preview" state distinct from "not yet loaded." More model surface for
@@ -174,22 +179,22 @@ repo rule that a swallowed failure must leave a trace
 (`render-core-data-integrity.md` §2) — without escalating a pure-optimization miss
 into a blocking error. Keep the non-blocking catch; add the tally.
 
-**Effort.** S. **Files.** `ingest-flows.ts` (**WIP-blocked** — same file and branch
-as the fix under revision). **Prior art.** The batch-`note` return already in this
-function (`:387-389`); the "surface the miss per item" policy in
+**Effort.** S. **Files.** `ingest-flows.ts` (the WIP that blocked this landed in
+`8341381` — actionable). **Prior art.** The batch-`note` return already in this
+function (`:701-702`); the "surface the miss per item" policy in
 `render-core-data-integrity.md` §2 and `readAnnotations`' skip-and-report.
 
 ---
 
 ## 4 — Publish silently drops thumbnail refs
 
-**Now.** For each asset object, `publish/site.ts:427-439` deletes `next.thumbnail`
+**Now.** For each asset object, `publish/site.ts:711-723` deletes `next.thumbnail`
 and re-adds it **only** if `getThumbnail` is wired *and* the bytes read back. Any
 path with no `getThumbnail` callback — notably the viewer sample generator
-(`apps/viewer/scripts/gen-published.mts:99`, which passes only `getAsset`) — ships
-a tree with **zero** baked thumbs and no report. Missing *assets* get a report
-(`missingAssets`, `:404-409`, surfaced by `gen-published.mts:102`); missing
-*thumbnails* have no equivalent.
+(`apps/viewer/scripts/gen-published.mts:126`, which wires only `getAsset`, no
+`getThumbnail`) — ships a tree with **zero** baked thumbs and no report. Missing
+*assets* get a report (`missingAssets`, `site.ts:565`/`:681`, surfaced by
+`gen-published.mts:129`); missing *thumbnails* have no equivalent.
 
 **Impact.** A published gallery can lose every thumbnail with the publish reporting
 success. The wall (gap 6) then has nothing to show — image-index entries carry no
@@ -203,8 +208,8 @@ thumb is unrecoverable at view time. The loss reads as "complete."
   new result array. `gen-published.mts` warns per item, exactly as it does for
   `missingAssets` at `:102`.
 - **B. Bake on the fly during publish** — if no thumb byte exists, derive one from
-  the asset the publisher already has in hand (`:403`). Heavier (a decode in the
-  publish loop) and conflates "author never baked" with "bake failed."
+  the asset bytes the publisher already fetched (`site.ts:676`). Heavier (a decode
+  in the publish loop) and conflates "author never baked" with "bake failed."
 
 **Recommended: A.** It is the established pattern one function over
 (`missingAssets`), it upholds "a torn write must read as *refused*, never
@@ -212,10 +217,11 @@ thumb is unrecoverable at view time. The loss reads as "complete."
 legible), and it is the minimum that turns a silent drop into a stated one. B is a
 reasonable later optimization but should not gate the report.
 
-**Effort.** S-M. **Files.** `publish/site.ts` (**WIP-blocked**), `gen-published.mts`,
-the studio publish result surface (`publish-flows.svelte.ts`, also **WIP-blocked**).
-**Prior art.** `missingAssets` (`site.ts:404-409`) and its consumer
-(`gen-published.mts:102`); `render-core-data-integrity.md` §1.
+**Effort.** S-M. **Files.** `publish/site.ts`, `gen-published.mts`, the studio
+publish result surface (`publish-flows.svelte.ts`) — the WIP that blocked these
+landed in `8341381`, all three are actionable.
+**Prior art.** `missingAssets` (`site.ts:681`) and its consumer
+(`gen-published.mts:129`); `render-core-data-integrity.md` §1.
 
 ---
 
@@ -261,8 +267,9 @@ all-AV/empty stay coverless. Review-confirmed limitation: with no `baseUrl` in
 tree-relative (`{slug}/assets-thumb/{name}`), which no current consumer resolves —
 those covers degrade to the title card via the existing onerror paths (a visual
 no-op vs before, not a regression). The win lands for remote/IIIF-source exhibits.
-Follow-up (after the `site.ts` WIP): thread `baseUrl` into `toExhibitsJson` at its
-`site.ts:306` call site so hosted local-import covers resolve.
+Follow-up (the `site.ts` WIP landed in `8341381`, so this is actionable): thread
+`baseUrl` into `toExhibitsJson` at its `site.ts:538` call site so hosted
+local-import covers resolve.
 
 ---
 
@@ -375,16 +382,16 @@ uses (`:19,:24-28`). Do A **and** gap 2 (probe reduces failures, `<img>` catches
 rest).
 
 **Effort.** S. **Files.** `apps/studio/src/ExhibitOverview.svelte` (clean),
-`apps/studio/src/App.svelte` (**WIP-blocked**). Because App.svelte is under active
-WIP, split this: do the `ExhibitOverview` plates now, the `App.svelte` rail tile
-after the WIP lands. **Prior art.** `apps/viewer/src/components/Gallery.svelte:35-38`
+`apps/studio/src/App.svelte` (the WIP that blocked it landed in `8341381` — no
+split needed, do both plates now). **Prior art.** `apps/viewer/src/components/Gallery.svelte:35-38`
 (the broken-cover fallback, audit gap #10 — already fixed on the viewer side);
 `MediaThumbnail.svelte:19-28`.
 
 **MITIGATED — ExhibitOverview half (`mitig/degrade-paths`).** Both plates (grid
 `.img`, list `.li-thumb`) are real `<img loading="lazy" draggable="false">` with an
 `onerror` → `failed`-set → `typeGlyph` fallback, pixel-equivalent object-fit crop.
-The `App.svelte` rail half stays open behind its WIP; when doing it, also wire
+The `App.svelte` rail half stays open (the WIP that gated it landed in `8341381`);
+when doing it, also wire
 `thumbnailCandidates` chain stepping into the studio plates (they currently consume
 the single-URL `thumbFor`, so a level-0 IIIF thumb still glyphs in studio where the
 viewer recovers).
@@ -395,13 +402,16 @@ viewer recovers).
 
 **Done (2026-07-20, branches `mitig/derive-guard` / `mitig/cover-fallback` /
 `mitig/degrade-paths`, review verdict merge×3):** 2 (candidate chain), 5 (cover
-fallback), 7-A (portable master fallback), 8-`ExhibitOverview` half.
+fallback), 7-A (portable master fallback), 8-`ExhibitOverview` half. **Plus,
+2026-08-07 (`8341381` / Archie-0c7f): 1 (AV poster extraction at
+`ingest-flows.ts:501-519`).**
 
-**After the WIP lands:** 3 (bake-error tally), 4 (`missingThumbnails` report),
-1 (AV poster), 8-`App.svelte` half — all gated on `ingest-flows.ts` / `site.ts` /
-`App.svelte` / `publish-flows.svelte.ts` — plus three review follow-ups:
-`baseUrl` threading for derived local covers (gap 5 note), studio chain stepping
-(gap 8 note), and og-image adopting the shared fallback helper (gap 2 note).
+**Open now (the WIP that gated these landed in `8341381`, 2026-08-07):**
+3 (bake-error tally), 4 (`missingThumbnails` report), 8-`App.svelte` half — all
+actionable on `ingest-flows.ts` / `site.ts` / `App.svelte` /
+`publish-flows.svelte.ts` — plus three review follow-ups: `baseUrl` threading for
+derived local covers (gap 5 note), studio chain stepping (gap 8 note), and
+og-image adopting the shared fallback helper (gap 2 note).
 
 **Falls out of the above:** 6 (the wall fills itself once 1 and 2 land; add the
 motif stopgap only if the interim text tiles bother anyone). Cosmetic residual

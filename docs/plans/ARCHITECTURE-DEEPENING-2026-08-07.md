@@ -8,15 +8,20 @@ Date: 2026-08-07. Source: `improve-codebase-architecture` run on every subsystem
 All nine phases were executed and gated. Final state: 126 files changed,
 +3861/−5575 (net −1714). Every gate passed: render-core 1521 tests, render-mount
 222, render-svelte 15, archie-viewer 218, viewer 281, studio 1293, cargo 38;
-all 7 typechecks; embed eager-gz at baseline; verify-publish 26/26; scripts
+all 6 typechecks; embed eager-gz at baseline; verify-publish 26/26; scripts
 checklist 6/6.
 
 ## Verification record (2026-08-08, independent re-run)
 
+> **Committed state:** the whole plan is committed — the deepening landed as
+> `8341381` (185 files, +9201/−4407) and HEAD is now `caa3736` (read-path
+> hardening, +2292/−53 over 13 files). The three defects below were found on the
+> working tree, fixed, and are part of `8341381`.
+
 All gates re-run on the working tree and confirmed. Three defects in the
 uncommitted work were found and fixed:
 
-1. **P8 wiring regression (`apps/studio/src/Publish.svelte:241`)** —
+1. **P8 wiring regression (`apps/studio/src/Publish.svelte:243`)** —
    `get publishBlocked() { return blocksPublish(preflight); }` returned the
    boolean RESULT where publish-machine's contract declares a predicate
    (`publishBlocked?: () => boolean`, invoked `?.()` at publish-machine
@@ -34,13 +39,14 @@ uncommitted work were found and fixed:
    `note-arrival.ts` `NoteTreeData`, `scroll-intent.test.ts` `ScrollIntent`.
    Removed; viewer astro check 0 errors (3 pre-existing baseline hints remain).
 
-Final gate matrix on the fixed tree: render-core 1521, render-mount 222,
+Final gate matrix on the fixed tree: render-core 1544 (1521 at execution;
++23 from the read-path hardening), render-mount 222,
 render-svelte 15, archie-viewer 218 (+ bundle at baseline, sync-dist clean),
 viewer 281 (+ astro check clean), studio 1293 (+ svelte-check clean), cargo
 38 pass / 1 intentional ignore; all 6 package typechecks clean; verify-publish
-26/26 (published samples) and 8/8 (baked tree, fixity SKIP by absence);
-scripts checklist 6/6. Work remains UNCOMMITTED on `main` (`b7fb4ec`):
-137 tracked files changed (+3913/−7038; 116 M + 21 D) + 74 new files.
+26/26 against the baked tree (`apps/viewer/public/published` — the earlier
+run's 8/8 baked-tree count is superseded; fixity SKIP by absence); scripts
+checklist 6/6.
 
 - **P1 read seam** — `NodeFilesystem` (`@render/core/node` subpath — kept OFF the
   browser barrel after the esbuild gate caught the node:fs drag), `tryResolveFile`
@@ -58,7 +64,8 @@ scripts checklist 6/6. Work remains UNCOMMITTED on `main` (`b7fb4ec`):
   one `pickTarget`/`unavailableReason`, the desktop ffmpeg sidecar CONNECTED via
   `video-sidecar-bridge.ts` (temp-file, $APPDATA scope, no grant needed),
   TILE_MIN_EDGE single home, honest probe estimate + `videoTierTell` on the
-  surface. Archie-e870 closed.
+  surface. Archie-e870 connected, ticket stays OPEN (needs one real Chromium
+  encode).
 - **P5 viewer surface** — `note-tree.ts` (one walk; V100 bug class has one home),
   `createNoteSurface()` (one open-note state machine, three hosts shrink ~100 ln
   each), `readingSession` (ExhibitView sheds ~15 locals; wall-text threshold

@@ -2,7 +2,7 @@
 scope:
   - "apps/studio/src/**"
   - "apps/studio/e2e/**"
-updated: 2026-07-28
+updated: 2026-08-08
 ---
 # authoring
 > *how do authors make things?*
@@ -25,6 +25,12 @@ check`. Neither alone is sufficient — see below.
 - [[tauri-fs-seam]] — desktop fs backend needs atomic temp+rename writes and name containment that plugin-fs doesn't give for free; both are studio write paths (autosave, resident store).
 
 ## Decisions
+- (arch deepening P8, no ticket) / 8341381 — the ~450-line canvas-derivation cluster left `App.svelte`
+  for `editor-model.svelte.ts`; the legacy advanced-token publish flow folded into publish-machine
+  (drifted validator gone, five clipboard helpers → one `copyText`); `zoomBand`/`dotsVisibleForBand`
+  moved to core, so studio derives the band without importing the mount's OSD graph. svelte-check
+  caught the one regression tsc could not: a `publishBlocked` getter returning the boolean where the
+  machine invokes a predicate.
 - Q-15 / Archie-5aee..bce2 — publish surface split by AUTHOR INTENT: `Publish` opens the site half
   (`PublishSheet` when the library has a remembered home, `SetupFlow` first-run, quality asked only
   where `qualityMatters`), `Export a copy…` opens the artifact half (`ExportMenu`, with the

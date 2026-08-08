@@ -5,7 +5,7 @@ scope:
   - "apps/viewer/src/lib/**"
   - "apps/viewer/e2e/**"
   - "apps/viewer/astro.config.mjs"
-updated: 2026-07-28
+updated: 2026-08-08
 ---
 # reading
 > *how do readers experience things? (the Viewer app)*
@@ -47,6 +47,11 @@ Chromium — jsdom/vitest cannot hit-test or catch hydration timing.
   worktree's build (false-green is the dangerous direction); pass a distinct `VIEWER_E2E_PORT`.
 
 ## Decisions
+- (arch deepening P5 + P6, no ticket) / 8341381 — `note-tree.ts` gives the V100 bug class ONE home
+  (one walk), `createNoteSurface()` one open-note state machine (three hosts ~100 lines lighter
+  each), `readingSession` sheds ~15 locals from `ExhibitView`; the mount gained `overlay-core.ts`
+  (one lifecycle, `makeClickable` the V68 home) and `osd-open.ts` (one OSD construction). The gate
+  caught a REAL regression: the merged `applyFitBounds` dropped the OSD Rect→Box conversion (NaN fits).
 - Archie-0d6c — narrative-scroll↔camera coupling ships arrival-based (not quiet-timer) suppression,
   both directions / 87b4bd1
 - Archie-36e6 — exhibit-level credit/licence/metadata renders beside the object credit on all three

@@ -8,7 +8,7 @@ scope:
   - "packages/render-core/src/fs/tauri.test.ts"
   - "docs/plans/native-canonical-store.md"
   - "docs/plans/folder-av-originals.md"
-updated: 2026-07-28
+updated: 2026-08-08
 ---
 # desktop
 > *How is the desktop app different?*
@@ -33,6 +33,11 @@ twice already.
   on every name-join (an untrusted exhibit slug from a `.archie.zip` is the concrete threat).
 
 ## Decisions
+- (arch deepening P4 + P9, no ticket) / 8341381 — the desktop ffmpeg sidecar is CONNECTED
+  (`video-sidecar-bridge.ts`: temp-file handoff, `$APPDATA` scope, no new capability grant), and
+  `github.rs` split into 4 modules with a tested `PollIo` poll loop. The gate caught Tauri 2's
+  `__cmd__` macro-path break (fixed via sibling re-exports) — a module split here is never a pure
+  refactor, the macro path is part of the contract.
 - Archie-91e7 — capability manifest omitted `fs:allow-rename`; **every desktop write failed at its
   commit point**, 100% of authored work lost with the UI showing "Retry save" / 25e6d67
 - Archie-7b48 — scope globs don't match dot-led path components (`.bake-schema`,

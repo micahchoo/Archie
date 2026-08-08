@@ -23,25 +23,28 @@ hypothetical.*
 
 ## 1. publish-to-web — one-continuous-motion publishing from Studio
 
-**Status:** **spec'd — PRFAQ.md** 2026-07-05 (pr-faq interview; appetite 3–4 weeks, user-set).
+**Status:** **shipped** — the in-app GitHub push is live (commits `3334bb2`/`33e0756`/`5f9a495`
++ the Q-15 series; documented under README "Publishing & deploying", `README.md:230-248`).
+Prior status: **spec'd — PRFAQ.md** 2026-07-05 (pr-faq interview; appetite 3–4 weeks, user-set).
 Beneath it: probe verdict **pursue** 2026-07-05 — ledger: ledgers/PROBE-publish-to-web-2026-07-22.md (seed
 tree live on GitHub Pages in 0.6 min against a 10-min kill budget; per-blob REST refuted, A2;
 single-pack git push confirmed, A6 — build = `git2`/`gitoxide` in `src-tauri` + 2 REST calls).
 Interview decisions: device-flow + PAT fallback; GitHub-only with a host-adapter seam; Tauri
-full experience + browser guided-manual path. Hands to a build session with PRFAQ.md + the
-ledger; slice on branch `probe/publish-to-web` (`54b2d42..4117631`), never merges.
+full experience + browser guided-manual path. The build session shipped it from PRFAQ.md + the
+ledger; its slice branch `probe/publish-to-web` (`54b2d42..4117631`) never merged.
 
 **Evidence.**
 - repo — the "Save a copy" done-screen tells the user to upload the `.archie.zip` to "your site, a
   GitHub release, the Internet Archive" and paste the URL back to mint a share link
-  (`apps/studio/src/PublishDialog.svelte:149-150`). Hosting — the step that makes the exhibit real —
-  happens outside the app.
+  (`apps/studio/src/Publish.svelte:721`). Hosting — the step that makes the exhibit real —
+  happens outside the app (the shipped GitHub push removes it on the Tauri path; see Status above).
 - repo — the share link self-declares non-terminal: "best for sharing a draft, not for a permanent
   citation. To publish something that stands on its own, use To GitHub Pages"
-  (`PublishDialog.svelte:168`) — and the GitHub Pages path lives entirely outside the app:
-  `pnpm build:gh-pages`, commit, Actions, hand-edit `REPO="Archie"` on fork (`README.md:234-243`).
-- repo — the local-publish done-screens hand the user a shell command (`pnpm --filter @archie/viewer
-  dev`, unzip into a folder) as the last screen (`PublishDialog.svelte:176,184-188`).
+  (`apps/studio/src/Publish.svelte:740`) — and pre-ship, the GitHub Pages path lived entirely outside
+  the app: `pnpm build:gh-pages`, commit, Actions, hand-edit `REPO="Archie"` on fork
+  (`README.md:234-243`; the README section is now `README.md:230-248`).
+- repo — the local-publish done-screen hands the user a shell command (`pnpm --filter @archie/viewer
+  dev`, serve the folder locally) as the last screen (`apps/studio/src/Publish.svelte:753-755`).
 
 **Vantage.** V1 (the job continues after the last screen) + V2 (downstream step done by hand) —
 two independent vantages agree.
@@ -91,11 +94,11 @@ every assumption row holds a verdict and this divergence's Status is updated.
 **Status:** queued
 
 **Evidence.**
-- repo — the codebase carries its own IOU: `apps/studio/src/App.svelte:1489/1957` — `[SNAG] Owed:
-  in-Studio "preview how it opens" reader` — next to a disabled button.
+- repo — the codebase carries its own IOU: `apps/studio/src/App.svelte:2234/2235` — `[SNAG] Owed:
+  an in-Studio "preview how it opens" reader` — next to a disabled button.
 - repo — the current preview loop requires a terminal mid-journey: run the viewer dev server, one
-  origin (`README.md:344-346`); Firefox/Safari authors are pushed onto the zip backend + a full
-  publish just to look (`PublishDialog.svelte:199-201`).
+  origin (`README.md:147,172`); Firefox/Safari authors are pushed onto the zip backend + a full
+  publish just to look (`apps/studio/src/Publish.svelte:753-755`).
 
 **Vantage.** V4 (operator: the *preview* verb, cell already marked "owed" by the repo) + V2
 (mid-journey tool-switch) — two vantages agree.
@@ -257,8 +260,8 @@ loop; publish-to-web completes it. Not bet on this cycle: 3 (probe the round-tri
 
 | Observation | Disposition |
 |---|---|
-| Hosting/deploy hand-carries (PublishDialog:149-168, README:234-243) | claimed → divergence 1 |
-| Terminal-in-the-loop preview; `[SNAG] Owed` preview button (App.svelte:1489/1957) | claimed → divergence 2 |
+| Hosting/deploy hand-carries (Publish.svelte:721,740; README:230-248) | claimed → divergence 1 |
+| Terminal-in-the-loop preview; `[SNAG] Owed` preview button (App.svelte:2234/2235) | claimed → divergence 2 |
 | No reader→author affordance in viewer; readers/students have no verbs (GOAL.md:173-176) | claimed → divergence 3 |
 | render-core publish API has no public entry; README manual pipeline | claimed → divergence 4 |
 | iframe auto-grow unbuilt follow-up (recipes/README.md:136-138) | claimed → divergence 5 |

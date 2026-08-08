@@ -11,6 +11,13 @@ permission system (correctly) declined to let the agent create a repo on the use
 Date: 2026-07-05. Environment: Linux, system git-adjacent libs from distro, Tauri 2 workspace
 (`src-tauri/Cargo.toml`, tauri 2.11.3).
 
+**RESOLVED 2026-08-08:** the 0.19 spike is superseded — the crate ships `git2 = "0.20.4"` in
+`src-tauri/Cargo.toml`. The comment there records the 0.19→0.20.4 deltas: vendored libgit2 1.9.x
+(vs 1.8.1 in the spike), the cleared GHSA/RUSTSEC alert #53 (`git2::Buf` UB), and the packaging-pass
+re-check of the system-libssl link against the GNOME 49 runtime. The spike's `#[cfg(test)]` module
+was retired; the shipped `gh_push_tree` command (github/pack_push.rs) carries the stage-and-commit
+tests.
+
 ## 1. Does it build? Plain vs vendored-openssl
 
 **Plain `git2 = "0.19"` builds cleanly. `vendored-openssl` was NOT needed.**

@@ -20,6 +20,14 @@ elsewhere — not duplicated.
 - Storage model on desktop: the **working store is still OPFS** (`store.ts:38` `navigator.storage.getDirectory()`,
   unconditional, "Browser-only (OPFS)"). `TauriFilesystem` is used only for user-picked **folder bindings**
   (`folder-backend.ts`) and deploy staging goes through `plugin-fs` directly (`deploy-flows.svelte.ts:83`).
+
+> **CORRECTED 2026-08-08** — this "working store is still OPFS" claim is overtaken by the native-store
+> work (`docs/plans/native-canonical-store.md`; Archie-623e Phase 2, the "flip"): the resident store is a
+> **native folder on desktop** and OPFS on web, routed through ONE accessor (`apps/studio/src/resident-store.ts`,
+> consumed at `store.ts:27-29,39-40`). The cited `navigator.storage.getDirectory()` line is now the web/OPFS
+> half only; the TauriFilesystem no longer waits on folder bindings — it backs the desktop working store
+> itself. `src-tauri/README.md`'s scaffold framing is obsolete for the same reason (the crate now ships 8
+> custom commands and is built by CI).
 - Publish/deploy: JS (`deploy-flows.svelte.ts`) → Rust `gh_*` commands. Token stays in Rust/keyring (Q-12).
 
 ## Rung × friction/surplus ledger
@@ -66,6 +74,14 @@ elsewhere — not duplicated.
   frontend layout under `--base ./`.
 - **Surplus:** `assetProtocol.enable=true` + `protocol-asset` cargo feature + `$HOME`/`$APPDATA` asset
   scope are wired, but **no `convertFileSrc` call exists** — a protocol capability with zero consumers.
+
+> **CORRECTED 2026-08-08** — Phase-4 AV spent the capability: `convertFileSrc` is now captured in
+> `apps/studio/src/tauri-fs.ts:25` (inside the async bridge build, so the sync `resolveUrl` can call it)
+> and invoked at `apps/studio/src/tauri-fs.ts:48` — `resolveUrl: (path) => convertFileSrc(path)` streams
+> multi-GB AV masters from disk as `asset://…` URLs with native byte-range seeking instead of a blob:
+> in heap (Archie-623e cap 3; `video-sidecar-bridge.ts` + `video-profiles.ts` are the new Phase-4
+> modules). The protocol capability has a consumer now, and `.claude/rules/tauri-csp.md` documents the
+> interplay. The L1 "zero `convertFileSrc` in the tree" sentence is stale for the same reason.
 
 ## Issues / Directions — see returned JSON.
 

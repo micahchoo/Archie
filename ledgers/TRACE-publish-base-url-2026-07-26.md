@@ -22,6 +22,16 @@ All three Studio sinks pass it: memory projection `publish-flows.svelte.ts:240` 
 desktop deploy), zip `:254`, folder `:316`. So "publish to a folder and push it yourself" produces the same wrong
 URLs as the button.
 
+> **CORRECTED 2026-08-08** — three file:line citations below shifted in the architecture deepening
+> (`8341381`); the logic itself did not move modules, only lines. Re-anchored against the current tree
+> (HEAD `caa3736`):
+> - `publish-machine.svelte.ts:599-608` → **`:680-688`** (`get sitePreview` now computes
+>   `pagesUrlFor(owner, repo)` at `:685`; `:604`-era numbers moved with the getter).
+> - `ghpages.ts:137` → **`:117`** (`export function pagesUrlFor`).
+> - `site.ts:575-578` → **`:894-895`** (the per-canvas grouping filter is now
+>   `heads.filter((h) => targetSource(h) === canvasId)` inside the object fan-out loop).
+> All cited paths still exist with identical names.
+
 ## The real URL was on screen before the push
 
 Nothing is missing — the value exists, four steps too late.

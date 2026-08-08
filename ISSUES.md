@@ -4,6 +4,16 @@
 > `.seeds/issues.jsonl` (`sd` CLI), and the cross-tracker mapping is
 > `docs/TRACKERS.md`. Do not add new entries here.
 > Decision: ledgers/DESIGN-knowledge-layer-2026-07-27.md §2.
+>
+> **CORRECTED 2026-08-08** — post-deepening freshness pass (commits `8341381`, `caa3736`).
+> Direction 7's `packages/render-svelte/src/MarginColumn.svelte` was DELETED by the deepening — the
+> exports-map surplus claim is resolved. Issue 13: `collab.ts` moved to `apps/studio/src/collab.ts`
+> (`collabBreakdown`/`collabSummaryText` are no longer in render-core); `IdentityPrompt.svelte` is
+> now imported and mounted (`App.svelte`), with the permanent identity field in `LibraryHome.svelte`;
+> `asClientId` is at `packages/render-core/src/wadm/brand.ts:156` (line shifted from `:115`).
+> Issue 18: `App.svelte` is now 3106 lines (citations shifted). Direction 5: `Canvas.svelte` moved
+> to `packages/render-svelte/src/Canvas.svelte`; `Reader.svelte`/`ViewerShell.svelte` now live under
+> `apps/viewer/src/components/`. Live ticket state: `docs/TRACKERS.md` + `.seeds/`.
 
 Generated 2026-07-05 by a tend diagnosis. Commit examined: `2091557` (main).
 Evidence gathered by two codebase walks (core packages + apps/ops surface); every

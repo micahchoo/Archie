@@ -7,9 +7,9 @@ chmod +x qa/hooks/post-checkout qa/hooks/post-commit qa/hooks/post-merge qa/hook
 echo "Installed: core.hooksPath -> qa/hooks (LFS safety net)"
 
 # This directory replaces .git/hooks as the effective hooks dir -- confirm the LFS hooks came
-# along, rather than silently losing them (tend Issue 8, ledgers/COLDSTART.md: a fresh clone's
-# git-lfs auto-installs into .git/hooks, and pointing core.hooksPath elsewhere without these
-# tracked copies silently drops the pre-push / post-checkout / post-merge LFS safety net).
+# along, rather than silently losing them (Issue 8, closed in 5f9098d: a fresh clone's git-lfs
+# auto-installs into .git/hooks, and pointing core.hooksPath elsewhere without these tracked
+# copies silently drops the pre-push / post-checkout / post-merge LFS safety net).
 for h in post-checkout post-commit post-merge pre-push; do
   if [ ! -x "qa/hooks/$h" ]; then
     printf >&2 "WARNING: qa/hooks/%s is missing or not executable -- git-lfs's %s hook won't fire.\n" "$h" "$h"

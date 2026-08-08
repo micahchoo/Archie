@@ -2,13 +2,20 @@
 
 > **For agentic workers:** Use executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax.
 > Spec: `docs/plans/publish-export-redesign.md` (locked decisions LD1–LD5 are constraints, not open).
+>
+> **CORRECTED 2026-08-08 — plan complete.** All seven tasks shipped; their
+> tickets closed 2026-07-29 (Archie-5aee 7941 30df 0a9f 68c1 43f2 bce2 — see
+> `b7fb4ec`). Line refs updated to the shipped state: `Publish.svelte` 1485
+> lines / `menuPhase` `:259` (was 1568 / `:231`); `App.svelte` entry `:2097`
+> (was `:2280`). The planned single e2e spec landed as four: `export-surface` /
+> `publish-entry` / `publish-home` / `publish-empty` (no `publish-surface.spec.ts`).
 
 **Goal:** An author publishes changes to their library's remembered home in ≤2 clicks, and reaches
 file exports (.zip / single .html / folder-with-viewer / deposit bag) from the same `Publish ▾`
 entry without the two jobs interleaving.
 
-**Architecture:** `Publish.svelte` (1568 lines, `menuPhase` state machine at `:231`, the "choose"
-wall at `:604–722`) stays the single-scrim shell and router; the wall is replaced by three focused
+**Architecture:** `Publish.svelte` (1485 lines, `menuPhase` state machine at `:259`; the c367
+"choose" wall was replaced by the three screens) stays the single-scrim shell and router; the wall is replaced by three focused
 components — `ExportMenu.svelte` (artifacts), `SetupFlow.svelte` (first-run destination/quality,
 one question per screen), `PublishSheet.svelte` (home card) — all fed by the existing verdict
 model (`export-surface.ts` `rowsFor`/`chooseInitial`/`isPublishable`) and the existing home memory
@@ -35,7 +42,7 @@ visibility claim additionally needs a browser drive ([[svelte-no-typecheck-net]]
 | `apps/studio/src/PublishSheet.svelte` (create) | Home card: URL, last published, facts once, [Publish changes], [View site], Preview, "Change where this publishes…" |
 | `apps/studio/src/export-surface.ts` (modify) | Add `qualityMatters(destination, probe)`; copy constants move to sentence case |
 | `apps/studio/src/deploy/remembered.ts` (modify) | Add `forgetTarget(libraryId)` and a `publishedAt` timestamp on `rememberTarget` |
-| `apps/studio/e2e/publish-surface.spec.ts` (create) | Drives entry menu, setup path, export menu, refusal cross-link |
+| `apps/studio/e2e/export-surface.spec.ts` + `publish-entry.spec.ts` + `publish-home.spec.ts` + `publish-empty.spec.ts` (create) | The planned single spec landed split into four: export menu, entry split-button, home sheet, no-home path |
 
 ---
 
@@ -112,7 +119,7 @@ visibility claim additionally needs a browser drive ([[svelte-no-typecheck-net]]
 **Orient:** One header button carries both verbs (LD4); today's button opens the wall directly.
 **Flow position:** Wave 4: editor header → **Publish ▾ menu** → Publish.svelte with an `intent` ("publish" | "export").
 **Skill:** `none` (wiring; drive-verified)
-**Files:** Modify: `apps/studio/src/App.svelte` — the header entry is the `publish-signal` button at `:2280` (`onclick` → `ensurePub().then((p) => p.openMenu())`; `openMenu` is `publish-flows.svelte.ts:726`, a DIFFERENT function from `openPublish:834`). The `<Publish>` mount props sit near `:2797` (`onenterweb={p.openPublish}`). Locate by `grep -a -rn "publish-signal" apps/studio/src` — NOT by grepping `openPublish`, which never surfaces the button. Also modify: `apps/studio/src/Publish.svelte` (accept `intent` prop, default "publish"). NUL-byte warning: `publish-flows.svelte.ts` contains NUL bytes — plain `grep` returns zero matches on it; always `grep -a`.
+**Files:** Modify: `apps/studio/src/App.svelte` — the header entry is the `publish-signal` button at `:2097` (`onclick` → `ensurePub().then((p) => p.openMenu())`; `openMenu` is `publish-flows.svelte.ts:726`, a DIFFERENT function from `openPublish:834`). The `<Publish>` mount props sit near `:2797` (`onenterweb={p.openPublish}`). Locate by `grep -a -rn "publish-signal" apps/studio/src` — NOT by grepping `openPublish`, which never surfaces the button. Also modify: `apps/studio/src/Publish.svelte` (accept `intent` prop, default "publish"). NUL-byte warning: `publish-flows.svelte.ts` contains NUL bytes — plain `grep` returns zero matches on it; always `grep -a`.
 
 - [ ] Split-button: primary = Publish (sheet or setup), menu item = "Export a copy…" (ExportMenu).
 - [ ] Run gates + drive: both entries land on the right surface; a prop typed but not destructured is exactly the [[svelte-no-typecheck-net]] class — the drive is the gate, not svelte-check.
@@ -123,7 +130,7 @@ visibility claim additionally needs a browser drive ([[svelte-no-typecheck-net]]
 **Orient:** R4/R5/R6 finish here: quiet copy everywhere, the single-file refusal routes to its sibling, the old wall dies, and the flows get a pinned e2e.
 **Flow position:** Wave 5: all nodes — final pass.
 **Skill:** `shadow-walk` after implementation; copy via product-copy skill
-**Files:** Modify: `apps/studio/src/Publish.svelte` (delete dead choose-wall markup; refusal at `:429` gains "…or export the folder with built-in viewer" routing to ExportMenu), copy strings in `export-surface.ts` `DESTINATION_BLURB`/`TIER_BLURB` · Create: `apps/studio/e2e/publish-surface.spec.ts`
+**Files:** Modify: `apps/studio/src/Publish.svelte` (delete dead choose-wall markup; refusal at `:429` gains "…or export the folder with built-in viewer" routing to ExportMenu), copy strings in `export-surface.ts` `DESTINATION_BLURB`/`TIER_BLURB` · Create: `apps/studio/e2e/export-surface.spec.ts` + `publish-entry.spec.ts` + `publish-home.spec.ts` + `publish-empty.spec.ts`
 
 - [ ] e2e (distinct `STUDIO_E2E_PORT`, [[viewer-e2e-shared-port]]): no-home → setup screens; export menu → zip sheet; refusal copy names the sibling (assert string; the 770MB trigger itself is not fixture-reachable — [[playwright-count-does-not-wait]] discipline: assert states, never bare counts).
 - [ ] Red-green each new e2e assertion (inject, watch fail, restore — commit before probing).
@@ -166,13 +173,17 @@ Every wave lands green on all gates before the next starts (≤5 files per wave,
 | `apps/studio/src/export-surface.ts` | patch | `qualityMatters` |
 | `apps/studio/src/PublishSheet.svelte` | create | `Change where this publishes` |
 | `apps/studio/src/Publish.svelte` | patch | `intent` |
-| `apps/studio/e2e/publish-surface.spec.ts` | create | `publish-surface` |
+| `apps/studio/e2e/export-surface.spec.ts` | create | `export-surface` |
+| `apps/studio/e2e/publish-entry.spec.ts` | create | `publish-entry` |
+| `apps/studio/e2e/publish-home.spec.ts` | create | `publish-home` |
+| `apps/studio/e2e/publish-empty.spec.ts` | create | `publish-empty` |
 | `.seeds/issues.jsonl` | wire | `plan:publish-export-redesign` |
 <!-- PLAN_MANIFEST_END -->
 
 Seeds DAG (scheduler state; the plan is the spec): Task 1 = Archie-5aee, Task 2 = Archie-7941,
 Task 3 = Archie-30df, Task 4 = Archie-0a9f, Task 5 = Archie-68c1, Task 6 = Archie-43f2,
-Task 7 = Archie-bce2. Deps mirror the waves; `sd ready` currently offers the two Wave 0 tasks.
+Task 7 = Archie-bce2. Deps mirror the waves. **All seven tickets CLOSED 2026-07-29** —
+`sd ready` offers nothing from this plan (corrected 2026-08-08).
 
 ## Q-Reference summary
 

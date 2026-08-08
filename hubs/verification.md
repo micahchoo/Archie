@@ -9,7 +9,7 @@ scope:
   - "scripts/export-fidelity.mjs"
   - "scripts/export-fidelity.ts"
   - "scripts/export-fidelity.html"
-updated: 2026-07-28
+updated: 2026-08-08
 ---
 # verification
 > *how do I prove a change works?*
@@ -51,6 +51,12 @@ claim from the table below before reaching for a test framework at random.
 - [[shared-worktree-agent-collisions]] — in a shared checkout even `git restore --source=HEAD` can destroy a sibling's uncommitted edit.
 
 ## Decisions
+- (arch deepening + read-seam probes, no ticket) / 8341381 — svelte-check caught a wiring bug neither
+  tsc nor 1293 passing studio tests could see (`publishBlocked` returning a boolean where
+  publish-machine invokes a predicate); `scripts/lib/checklist.mjs` gave every script gate one
+  tolerant per-item tail, which is what let two adversarial read-path probes surface 9 finding
+  classes in ONE run each instead of one per fix-and-rerun. Counter-lesson from the same commit: its
+  own "1521 green" line was never reconciled against a run — the committed tree had 7 red tests / `ledgers/PROBE-read-seam-adversarial-2026-08-08.md`
 - Archie-c314 — `build.mjs`'s baseline write gated behind `--update`; a plain `pnpm -r build` was silently rewriting the eagerGzKB ratchet's own reference point.
 - Archie-f90d — `CONTRACTED_LABELS` completeness check restored to 40/40 after a post-review splice silently dropped it to 35/35 with every gate still green.
 - Archie-64ef — `recipes/smoke.mjs` proven the only gate that catches OSD's overlay-wrapper click-swallow; keyboard/synthetic-click probes pass regardless.
@@ -61,10 +67,10 @@ claim from the table below before reaching for a test framework at random.
 - Archie-b5c2 — FSA real-folder autosave measured 1.2–2.7 ms median vs the 800 ms debounce (within 0.5 ms of OPFS; 125 samples/config, `.crswap` temp-swap proven, tmpfs trap dodged — check the device of BOTH sides); web folder-canonical needs NO cadence change; `scripts/perf/fsafolderrun.mjs` is the headed-Xvfb runner (headless can only reach OPFS, which never exercises the temp-swap path) / 3423c92, ledger `ledgers/PERF-fsa-autosave-2026-07-28.md`
 
 ## Evidence
-- `.github/workflows/checks.yml` — enumerates the live gate set: typecheck, unit-scripts, doclint, test, astro-check, svelte-check, gh-pages-build, archie-viewer-artifact, embed-smoke, perf-ratchets, e2e.
+- `.github/workflows/checks.yml` — enumerates the live gate set: typecheck, unit-scripts, doclint, test, astro-check, svelte-check, gh-pages-build, archie-viewer-artifact, embed-smoke, export-fidelity, perf-ratchets, e2e.
 - `recipes/smoke.mjs` header — documents its own two silent-failure preconditions (unbuilt fixtures, stale root `dist/`) and one still-unattributed flake (2026-07-26).
 
 ## Open & hazards
-- doclint wired into CI 2026-07-27 (job `doclint`). All 10 checks proven red-green same day; the allowlist (scripts/doclint-allow.json) carried ticket ids for its deliberate deferrals; both (Archie-e149 ledger migration, Archie-1f60 accretion rewrite) resolved later the same day and their allowlist entries are empty again.
+- doclint wired into CI 2026-07-27 (job `doclint`). All 12 checks proven red-green same day; the allowlist (scripts/doclint-allow.json) carried ticket ids for its deliberate deferrals; both (Archie-e149 ledger migration, Archie-1f60 accretion rewrite) resolved later the same day and their allowlist entries are empty again.
 - Red-green discipline: inject the defect, confirm it fails for the reason you intended (not a precondition failure), then confirm clean — never trust an assertion you haven't watched fail.
 - Before citing a count or "N/N" figure from any of the above gates, reconcile it against a number the tool itself printed — see [[post-review-fixes-are-unreviewed]]'s counting traps.

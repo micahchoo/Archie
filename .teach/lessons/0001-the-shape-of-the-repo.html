@@ -123,7 +123,7 @@ sentence is my bug, not yours.</p>
 <script>
 const BOXES = {
   core: ["@render/core — packages/render-core/src/",
-    "Pure TypeScript, no DOM. Holds the annotation spine (spine/log.ts, heads.ts, merge.ts), the data types (wadm/types.ts), IIIF projection (iiif/), the publish engine (publish/site.ts), and one Filesystem interface with five implementations (fs/fsa.ts, memory.ts, zip.ts, http.ts, tauri.ts) so the same code writes to a real folder, a zip, memory, or the desktop app."],
+    "Pure TypeScript, no DOM. Holds the annotation spine (spine/log.ts, heads.ts, merge.ts), the data types (wadm/types.ts), IIIF projection (iiif/), the publish engine (publish/site.ts), and one Filesystem interface with six implementations (fs/fsa.ts, memory.ts, zip.ts, http.ts, tauri.ts, node.ts — NodeFilesystem) so the same code writes to a real folder, a zip, memory, the desktop app, or a raw filesystem path."],
   mount: ["@render/mount — packages/render-mount/src/",
     "Framework-free browser wiring: OpenSeadragon (deep zoom) + Annotorious (drawing) + WaveSurfer (audio). Exposes plain imperative calls — fitBounds, setSelected, destroy — plus an onSelect callback. No Svelte, no React. If you ever swapped UI frameworks, this box survives."],
   svelte: ["@render/svelte — packages/render-svelte/src/",

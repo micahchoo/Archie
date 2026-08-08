@@ -107,7 +107,7 @@ Both servers here refuse to. If :5174 is taken, Vite <em>dies</em>.</p>
 <p>Because the front door's targets are hardcoded. A server that silently moved to :5175 leaves the
 proxy pointing at nothing — and you'd get a 502 on a page that looks like it should work, with two
 healthy-looking servers running. A loud failure at boot is strictly better than a confusing one
-later. Kill the stale server, rerun. <span class="path">apps/studio/vite.config.ts:33</span></p>
+later. Kill the stale server, rerun. <span class="path">apps/studio/vite.config.ts:66-69</span></p>
 
 <h3>2. <code>127.0.0.1</code> — a literal, not <code>localhost</code>, never a wildcard</h3>
 

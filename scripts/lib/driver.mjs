@@ -3,8 +3,12 @@
 // One home for the pieces every studio/viewer-driving script used to copy-paste: the
 // bundled-then-system chromium launch ladder, the settle idiom, dev-server discovery
 // (probe candidates, boot `pnpm dev` only if nothing answers), and the overview-plate
-// selector. Consumers: capture-screenshots.mjs, seed-fixture.mjs, scale-check.mjs.
-// A change to any of these belongs HERE, not in a per-script copy.
+// selector. Consumers: a11y-check.mjs, capture-screenshots.mjs, drive-published-tree.mjs,
+// export-fidelity.mjs, seed-fixture.mjs, scale-check.mjs, the accept/ suite (drive,
+// gen-corpus, harness, probe-dom), the perf/ suite (run, worker-smoke, fsrun, fsafolderrun,
+// heaprun, ingestrun, publishrun, readerrun, tilingthresholdrun, webptierrun), and the
+// probes/prototypes (single-file-export.mts, web-tier-selector-rescale.mts,
+// self-replicating-publish.mts). A change to any of these belongs HERE, not in a per-script copy.
 
 import { chromium } from "playwright";
 import { open, readFile } from "node:fs/promises";

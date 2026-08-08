@@ -2,7 +2,7 @@
 scope:
   - "packages/archie-viewer/**"
   - "recipes/**"
-updated: 2026-07-28
+updated: 2026-08-08
 ---
 # embed
 > *how does `<archie-viewer>` work and stay small?*
@@ -19,8 +19,8 @@ receiver-brand-checks, or hydration timing, all classes vitest is structurally b
 
 ## Binding rules
 - [[archie-viewer-eager-closure]] — a value import of `reader.ts` from the entry graph ships
-  OSD eagerly (32.7KB→257.9KB gz was the regression); only `eagerGzKB` sees it, `entryGzKB`/
-  `totalGzKB` moved <0.2KB on the same leak
+  OSD eagerly (36→270.5KB gz was the regression, re-measured 2026-07-25 against a freshly
+  injected leak); only `eagerGzKB` sees it, `entryGzKB`/`totalGzKB` moved <0.2KB on the same leak
 - [[vitest-css-id-empty-string]] — tokens must load via the `virtual:archie-tokens` id, not a
   bare `.css` import — vitest silently returns `""` while the real esbuild build is correct
 - [[bound-fetch-defaults]] — a defaulted/stored `fetch` (`load.ts`) must be
@@ -38,6 +38,11 @@ receiver-brand-checks, or hydration timing, all classes vitest is structurally b
   every build or the drive silently exercises the previous bundle
 
 ## Decisions
+- (arch deepening P7, no ticket) / 8341381 — `reading-marks.ts` DELETED: the package's only untested
+  module, its DOM pairing + 12-frame retry gone by construction rather than covered. Reading
+  collapsed to `reading-layer.ts`, a per-annotation `styleFor` channel replaced the overlay's own
+  styling, `openNote(id)` became one contract, and the codec returns the resource IRI with one
+  fragment parser in core.
 - Archie-f90d — ADR-0019 capability contract ratified: one row per capability, verdict + gate;
   no surveyed corpus (annomea/clover-iiif/canvas-panel/anvil) gates embed parity the way
   smoke.mjs does — original, not borrowed / 26c2a59

@@ -45,8 +45,8 @@ Private developer study material about **the Archie source**. Distinct from
   tables is unreliable.
 
 ## Open threads (candidates for the next lesson)
-- **Where state lives** — one `Filesystem` interface, five backends (`fsa`/`memory`/`zip`/`http`/
-  `tauri`). Pairs well with "no server, no database" as a retelling beat.
+- **Where state lives** — one `Filesystem` interface, six backends (`fsa`/`memory`/`zip`/`http`/
+  `tauri`/`node` — `NodeFilesystem`). Pairs well with "no server, no database" as a retelling beat.
 - **The hot-path trap** — `spine/head-index.ts` and why recomputing heads per edit went quadratic.
   Best taught right after 0002, while the heads rule is fresh.
 - **One image's journey** — ingest → manifest → published tree → pixels. The narrative gap flagged

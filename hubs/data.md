@@ -6,14 +6,16 @@ scope:
   - "packages/render-core/src/model/**"
   - "packages/render-core/src/session/**"
   - "packages/render-core/src/state/**"
-updated: 2026-07-28
+updated: 2026-08-08
 ---
 # data
 > *How is knowledge stored, merged, and kept safe?*
 
 `render-core` is the engine: an append-only per-note version DAG (`spine/`, ADR-0003) read/written
-through one `Filesystem` seam with four backends — Memory/Zip/FSA/OPFS (`fs/`) plus Tauri
-(path-based, `fs/tauri.ts`) — and published/opened through `publish/`. The one spec that matters is
+through one `Filesystem` seam — Memory/Zip/FSA/OPFS (`fs/`), node:fs (`fs/node.ts`,
+`NodeFilesystem`, subpath `@render/core/node`), read-only HTTP (`fs/http.ts`, `HttpFilesystem`),
+Tauri (path-based, `fs/tauri.ts`), a streaming zip writer (`fs/zip-stream.ts`) and a fixity
+decorator (`fs/hashing.ts`) — and published/opened through `publish/`. The one spec that matters is
 `spine/MERGE-CONTRACT.md` (C1-C18, each pinned by a named test in `merge-contract.test.ts`); the one
 gate that matters is that suite plus `fs/conformance.ts` run against every backend.
 
@@ -36,6 +38,13 @@ gate that matters is that suite plus `fs/conformance.ts` run against every backe
   ms threshold.
 
 ## Decisions
+- (arch deepening P1-P3, no ticket) / 8341381 — the READ seam is one composition in core:
+  `NodeFilesystem` on the `@render/core/node` subpath (off the browser barrel — the esbuild gate
+  caught the node:fs drag), `tryResolveFile` the one classified traversal, `httpJsonSource` +
+  `fetchZipBytesIfAny` in core, 5 script bridges collapsed; one `classifyArchieMarker` with typed
+  verdicts behind both gates; `recordsToWorking` / segment-safety / `FileContent` twins collapsed.
+  Adversarially re-probed the same week — 9 finding classes, 5 fixed, 4 open (zip name gate, raw
+  fflate decode text, silently-short STORED entries, torn-marker surface) / `ledgers/PROBE-read-seam-adversarial-2026-08-08.md`
 - Archie-69f9 — an OLDER published tree now MIGRATES on read (`migrate/tree.ts` + `migratingJsonSource`
   over the `JsonSource` seam), never rewritten in place; the marker gates accept `version <
   SCHEMA_VERSION` ONLY where the registry covers every step, so a gap is still a clean refusal /
@@ -77,8 +86,11 @@ gate that matters is that suite plus `fs/conformance.ts` run against every backe
 ## Open & hazards
 - MERGE-CONTRACT OQ-2/3/5 above are load-bearing gaps, not oversights — a new caller that can inject
   duplicate revs or replay `logicalId`s (an importer) hits them for real.
-- `docs/state/CANON.md`'s deferred `HttpFilesystem` (unifying zip-open and tree-over-HTTP marker-check
-  into one 5th backend) was never built — `load.ts`'s tree-marker path stays a separate, unfolded
-  validator per [[untrusted-archive-open-seam]]'s last bullet.
+- CANON.md's maximal-flexibility design flagged an HTTP backend as "not built" — the backend half HAS
+  since landed: `fs/http.ts`'s `HttpFilesystem` is the read-only HTTP backend, composed by core's
+  `httpJsonSource` (`publish/read.ts`) and consumed by `apps/viewer/src/published.ts` and
+  `packages/archie-viewer/src/load.ts`. What stays deferred is the unification half: the zip-open
+  marker gate (`open.ts`) and the tree-over-HTTP gate (`read.ts`'s `assertArchieTreeMarker`) remain
+  two gate shapes over the one shared `classifyArchieMarker`.
 - Zip-open cap rescale is an accepted DoS tradeoff: a crafted `?src=` URL can now cost a tab ~4GiB
   before any guard fires (marker/ratio guards unchanged, only the ceiling moved).

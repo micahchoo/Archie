@@ -36,8 +36,8 @@ skipped the others.
   `fetchArchieLibraryBytes`'s always-throws contract, not an oversight. Don't use this as precedent for
   a new hand-rolled copy elsewhere; if a new caller needs the same swallow-then-sniff shape, extract it
   into `open.ts` instead of copying `load.ts`'s version.
-- `apps/archie-viewer/src/load.ts`'s `openLibraryFromTree` (the published-tree-over-HTTP marker check)
-  and `apps/viewer/src/published.ts`'s hosted-tree reading (`loadGallery`/`httpSource`) are a related,
-  currently-separate validator — deliberately NOT folded into this seam (would require a new
-  `Filesystem` HTTP backend; scoped out of Issue 5, flagged as a follow-up in `docs/state/CANON.md`). Don't
-  treat their existence as license to add a *third* shape for the zip-open case.
+- `packages/archie-viewer/src/load.ts`'s `openLibraryFromTree` (the published-tree-over-HTTP marker check)
+  and `apps/viewer/src/published.ts`'s hosted-tree reading (`loadGallery`/`httpSource`) compose the seam's
+  own HTTP half now — `HttpFilesystem` (`fs/http.ts`) behind `httpJsonSource`/`fsJsonSource` in core
+  (Phase 1 Wave 2 of the 08-07 deepening, `8341381`; the "would require a new HTTP backend" follow-up
+  is done). Don't treat their existence as license to add a *third* shape for the zip-open case.
