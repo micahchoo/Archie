@@ -15,9 +15,9 @@
 # A post-merge gate on main WOULD catch it, and was rejected on measurement rather than taste: over
 # the last 40 first-parent commits on main, 8 of the 11 that touched embed/render-core source did
 # not rebuild dist. A fail-on-main gate would therefore redden main on ~73% of source merges, for
-# something mechanical. checks.yml:200 already recorded the same conclusion from the earlier era's
-# numbers ("only 2 of 11 archie-viewer src commits ever carried dist ... freshness belongs at the
-# release boundary, not here"). This workflow IS that release boundary.
+# something mechanical. checks.yml's gh-pages-build job already recorded the same conclusion from
+# the earlier era's numbers ("only 2 of 11 archie-viewer src commits ever carried dist ...
+# freshness belongs at the release boundary, not here"). This workflow IS that release boundary.
 #
 # What this does and does not promise:
 #   DOES     — a tagged release cannot ship an artifact that differs from its own source.

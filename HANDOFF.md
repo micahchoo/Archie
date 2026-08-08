@@ -210,7 +210,7 @@ destructive button lost its hover feedback at 0/0 green.
 The durable diagnosis: **dist staleness is created by MERGES, not careless PRs** — both parents can
 be fresh and the merge still ships stale bytes, so a per-PR gate is structurally incapable
 (measured at `84bab01`; a fail-on-main gate would redden ~73% of source merges, refused at
-`checks.yml:200`). Tag-time is the boundary.
+checks.yml's gh-pages-build freshness comment). Tag-time is the boundary.
 
 ## Knowledge-layer session (2026-07-28)
 
