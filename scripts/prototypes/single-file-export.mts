@@ -60,13 +60,14 @@
 //
 // Run:  cd apps/viewer && pnpm exec vite-node ../../scripts/prototypes/single-file-export.mts
 // Flags: --objects N (default 1) · --out <path> · --keep · --no-library · --no-assets (RED runs)
-import { readFile, readdir, stat, mkdtemp, writeFile, rm } from "node:fs/promises";
+import { readFile, mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
+import { NodeFilesystem } from "@render/core/node";
 import {
-  MemoryFilesystem, libraryToZip, loadLibrary, appendNew, asClientId,
-  type AnnotationLog, type FsDirectory, type Library,
+  libraryToZip, loadLibrary, appendNew, asClientId,
+  type AnnotationLog, type Library,
 } from "@render/core";
 import { buildSingleFileHtml } from "../../apps/studio/src/single-file-export.js";
 import { launchBrowser } from "../lib/driver.mjs";
@@ -101,26 +102,11 @@ const record = (ok: boolean, label: string, detail: string): void => {
 
 // ------------------------------------------------------------------ bake
 
-/** Read a disk directory into an fs-seam directory, recursively (donor: self-replicating-publish.mts). */
-async function loadDirInto(dir: FsDirectory, diskPath: string): Promise<void> {
-  for (const name of await readdir(diskPath)) {
-    const p = path.join(diskPath, name);
-    if ((await stat(p)).isDirectory()) {
-      await loadDirInto(await dir.getDirectory(name, { create: true }), p);
-    } else {
-      const w = await (await dir.getFile(name, { create: true })).writable();
-      const buf = await readFile(p);
-      await w.write(new Uint8Array(buf).buffer as ArrayBuffer);
-      await w.close();
-    }
-  }
-}
-
 interface Baked { html: string; htmlBytes: number; zipBytes: number; bundleBytes: number; objects: number; notes: number; covers: number }
 
 async function bake(): Promise<Baked> {
-  const src = new MemoryFilesystem();
-  await loadDirInto(await src.root(), SOURCE_TREE);
+  // The fixture tree straight off disk through the node:fs backend — no memory round-trip.
+  const src = new NodeFilesystem(SOURCE_TREE);
   const loaded = await loadLibrary(src);
 
   const exhibit = loaded.library.exhibits.find((e) => e.slug === SLUG);

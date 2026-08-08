@@ -49,7 +49,7 @@ watches the metafile.
 Measured from the metafile (2026-07-25): the barrel (`render-core/src/index.ts`) sits in the eager
 chunk because `element.ts` uses `parseRoute`/`thumbnailCandidates`/`licenseLabel`/`metadataRows`;
 esbuild places a module needed by both an eager and a lazy chunk into the shared (eager) one — so a
-lazy module reaching through the barrel (e.g. `reading-marks.ts` → `readingMarkerStyle`) lands those
+a lazy module reaching through the barrel (e.g. `reading-layer.ts` → `readingMarkerStyle`) lands those
 bytes on the page-load path.
 
 **Bounded, and the bound is what makes it liveable**: tree-shaking still works — `publish/site.ts`

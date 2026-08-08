@@ -103,6 +103,39 @@ export async function fetchArchieLibraryBytes(
   return bytes;
 }
 
+/** The shared zip-fallback byte sniff — the "open a `.zip`-less URL that actually serves zip bytes"
+ *  carve-out both the embed (`openSrcAsZipIfBytesAreZip`) and the viewer (`fetchIfZipBytes`)
+ *  implement identically today. Fetch `url` under `maxBytes` and return the bytes IFF they are a zip
+ *  (`looksLikeZip`); `null` for anything else.
+ *
+ *  A genuinely different error contract from `fetchArchieLibraryBytes` (which ALWAYS throws on a
+ *  network failure / non-OK response): here a network fault or a non-OK status SWALLOWS to `null`,
+ *  so the caller can surface the ORIGINAL tree-open error instead of this speculative one. Only the
+ *  too-large case still throws — the cap stays hard even on the speculative path, with the consumers'
+ *  current copy. */
+export async function fetchZipBytesIfAny(
+  url: string,
+  opts?: { fetch?: typeof fetch; maxBytes?: number },
+): Promise<Uint8Array | null> {
+  // Bound default — bare `fetch` breaks in browsers if a consumer ever object-stores it (WebIDL
+  // receiver brand check; Node doesn't check, so tests can't see it). bound-fetch-defaults.md.
+  const fetchImpl = opts?.fetch ?? globalThis.fetch.bind(globalThis);
+  const maxBytes = opts?.maxBytes ?? SRC_MAX_BYTES;
+  let res: Response;
+  try {
+    res = await fetchImpl(url);
+  } catch {
+    return null; // network fault — the caller's tree-open error is the one worth surfacing
+  }
+  if (!res.ok) return null; // non-OK — same
+  const declared = Number(res.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > maxBytes) throw new Error("That library is too large to open here.");
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if (!looksLikeZip(bytes)) return null;
+  if (bytes.byteLength > maxBytes) throw new Error("That library is too large to open here.");
+  return bytes;
+}
+
 /** Composition for the modal case ("give me a validated library from this URL"): fetch under `maxBytes`
  *  then `openArchieLibrary` the result. The fetch step (network + both cap checks) runs to completion
  *  BEFORE the decode step, so a transport or size failure never spends CPU decoding a zip. */

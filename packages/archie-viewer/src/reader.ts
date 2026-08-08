@@ -4,24 +4,35 @@
 //
 // This module is the ONLY place that imports @render/mount, so the element can `await import("./reader.js")`
 // to defer the OSD weight. The element passes the chosen object + its head notes + the offline flag.
+//
+// Phase 7: this surface OWNS the note card (the image half of the openNote contract — the AV player
+// owns the other half), and it passes a per-annotation STYLE RESOLVER through the mount's new style
+// channel (render-mount read-overlay styleFor) instead of running the reading-marks post-pass.
+// reading-marks.ts is gone: the overlay draws AND styles each mark in one pass, so there is no
+// DOM-order pairing, no count-mismatch refusal and no deferred-draw retry loop to maintain — the
+// style resolver is derived HERE from the caller's reading colours (reading-layer colourOf) +
+// BASE_MARK_COLOUR + render-core's readingMarkerStyle, the ONE source of the 0.18/0.95/2 numbers.
 
 import {
   createReadOnlyMount,
   type ReadOnlyMountSurface,
 } from "@render/mount";
-import { commentOfAnnotation, stripMarkdown } from "@render/core";
+import { commentOfAnnotation, stripMarkdown, readingMarkerStyle, emphasisOf } from "@render/core";
 import type { AnnotationLike, W3CAnnotation } from "@render/core";
 import { isRemoteSource, OfflineRemoteBlockedError, type OpenObjectOptions } from "./reader-guards.js";
-import { paintReadingMarksWhenDrawn } from "./reading-marks.js";
+import { BASE_MARK_COLOUR } from "./reader-chrome.js";
+import { createNoteCard } from "./note-card.js";
 
 /**
- * The surface the EMBED holds: the read-only mount contract plus one addition — `showAnnotations`,
- * which replaces the drawn set AND re-paints the Reading colours in one call. The legend (V56) needs
- * exactly that: switching layer must change which marks are on the canvas and what colour they are,
- * without tearing down OSD and losing the camera.
+ * The surface the EMBED holds: the read-only mount contract plus the reader's two additions —
+ * `showAnnotations`, the ONE path that replaces the drawn set (the mount's style channel recolours
+ * every mark at draw time, so a legend switch can never forget the colour pass), and `openNote`,
+ * the image half of the openNote contract (select + fit + show the note's body in the surface's
+ * own card). The AV player exposes the same `openNote(id): boolean` shape.
  */
 export interface EmbedReaderSurface extends ReadOnlyMountSurface {
   showAnnotations(annotations: W3CAnnotation[]): void;
+  openNote(id: string): boolean;
 }
 
 // Re-exported so this module stays the one-stop reader surface for its own importers (reader.test.ts,
@@ -61,7 +72,8 @@ export function labelFromAnnotations(annotations: W3CAnnotation[]): (id: string)
 /**
  * Mount the read-only deep-zoom surface for ONE object into `container`. Resolves once OSD opens.
  * Offline + a remote source → throws OfflineRemoteBlockedError BEFORE constructing OSD (no network
- * touch). The returned surface is the element's handle to setAnnotations / fitBounds / destroy.
+ * touch). The returned surface is the element's handle to setAnnotations / fitBounds / destroy —
+ * and now to its own note card (openNote) and the mount's draw-time style channel (styleFor).
  */
 export async function openObject(
   container: HTMLElement,
@@ -71,26 +83,87 @@ export async function openObject(
     throw new OfflineRemoteBlockedError();
   }
 
-  const surface = await createReadOnlyMount(container, {
-    source: opts.object.source,
-    ...(opts.object.tileSource ? { tileSource: opts.object.tileSource } : {}),
-    ...(opts.canvasId ? { canvasId: opts.canvasId } : {}),
-    ...(opts.onSelect ? { onSelect: opts.onSelect } : {}),
-    // Archie-9413: shapes announce the note's first comment line, not "annotation <rawULID>".
-    labelFor: labelFromAnnotations(opts.annotations),
-    // Archie-6f25: the locator mini-map, matching the full viewer (Reader.svelte passes `locator`
-    // unconditionally too — read-mount mounts it auto-fading, so it stays quiet on small images).
-    locator: true,
-  });
+  // The surface OWNS the note card (Phase 7 — the openNote contract; the element no longer does).
+  // Mounts into the element's `.reader-note` row (handed over as noteCardHost), defaulting to the
+  // mount container for programmatic hosts; the sheet layer rides the shadow root (createNoteCard).
+  // Declared BEFORE the mount so the mount's own onSelect closure can drive it; if the mount fails
+  // (offline-blocked / load error), the catch destroys the card so nothing is orphaned in the
+  // element's note row.
+  const card = createNoteCard(opts.noteCardHost ?? container);
+  // The card resolves ids against the CURRENT projection — re-armed on every showAnnotations, so a
+  // legend switch (the reading layer's setReading → showAnnotations) re-targets the card too.
+  let current: W3CAnnotation[] = opts.annotations;
 
-  // ONE path sets the drawn set, so the colour pass can never be forgotten by a future caller: the
-  // initial load below and every legend switch go through the same function.
-  const colourOf = opts.markColourOf ?? ((): undefined => undefined);
+  let surface: ReadOnlyMountSurface;
+  try {
+    surface = await createReadOnlyMount(container, {
+      source: opts.object.source,
+      ...(opts.object.tileSource ? { tileSource: opts.object.tileSource } : {}),
+      ...(opts.canvasId ? { canvasId: opts.canvasId } : {}),
+      // V56 canvas half, Phase 7: the mount's per-annotation style channel. Every drawn mark is
+      // styled AT DRAW TIME by this resolver — reading colours from the caller (the element's
+      // reading layer), base colour fallback, numbers from render-core's readingMarkerStyle. The
+      // reading-marks post-pass (DOM-order pairing + 12-frame retry) is what this replaces; the
+      // overlay now draws AND styles in one pass, so neither the pairing nor the retry can exist.
+      styleFor: (id, ann) => {
+        const colour = opts.markColourOf?.(id) ?? BASE_MARK_COLOUR;
+        const spec = readingMarkerStyle(colour, emphasisOf(ann));
+        return {
+          stroke: spec.stroke,
+          fill: spec.fill,
+          fillOpacity: String(spec.fillOpacity),
+          strokeOpacity: String(spec.strokeOpacity),
+          strokeWidth: String(spec.strokeWidth),
+        };
+      },
+      // Archie-9413: shapes announce the note's first comment line, not "annotation <rawULID>".
+      labelFor: labelFromAnnotations(opts.annotations),
+      // Archie-6f25: the locator mini-map, matching the full viewer (Reader.svelte passes `locator`
+      // unconditionally too — read-mount mounts it auto-fading, so it stays quiet on small images).
+      locator: true,
+      // Overlay selection — a region shape click / the whole-object frame / a background click. The
+      // CARD is driven here (this surface owns it — see above); the element's onSelect hook only
+      // highlights the index row (V70's other direction). A null (background) click hides the card.
+      onSelect: (id) => {
+        if (id === null) card.hide();
+        else card.showNote(current, id);
+        opts.onSelect?.(id);
+      },
+    });
+  } catch (e) {
+    card.destroy(); // the mount failed — don't leave the card behind in the element's note row
+    throw e;
+  }
+
+  // ONE path sets the drawn set: the initial load below and every legend switch go through the same
+  // function, so the colour pass can never be forgotten by a future caller — the mount's style
+  // channel makes recolouring intrinsic to redrawing.
   const showAnnotations = (annotations: W3CAnnotation[]): void => {
+    current = annotations;
     surface.setAnnotations(annotations);
-    paintReadingMarksWhenDrawn(container, annotations, colourOf);
   };
+
+  // The image half of the openNote contract: select (visual state) + fit (camera) + show the body
+  // (the surface's own card) — the ADR-0006 nav pair the element used to call by hand, plus the
+  // card it used to own. False = no such note on this object (nothing opened — the caller keeps the
+  // row un-styled, the S1 rule the AV path already enforced).
+  const openNote = (id: string): boolean => {
+    if (!current.some((a) => String((a as AnnotationLike).id ?? "") === id)) return false;
+    surface.setSelected(id);
+    surface.fitBounds(id);
+    card.showNote(current, id);
+    return true;
+  };
+
   showAnnotations(opts.annotations);
 
-  return Object.assign(surface, { showAnnotations });
+  const destroy = surface.destroy;
+  return Object.assign(surface, {
+    showAnnotations,
+    openNote,
+    destroy(): void {
+      destroy();
+      card.destroy();
+    },
+  });
 }

@@ -7,17 +7,15 @@
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import {
-    resolveLayout, overlay, selectorOf, asExhibitId,
-    isWholeObjectFor, wholeObjectFlagOf, emphasisOf, readingMarkerStyle,
+    resolveLayout, selectorOf, asExhibitId,
     routeToHash, logicalIdOf, citationFor, encodeContentState,
     type Exhibit, type LayoutDescriptor, type RightsFields, type W3CAnnotation, type ViewerRoute,
-    type Reading,
   } from "@render/core";
-  import { wallTextFor, wallTextSeenKey } from "../reading-walltext.js";
   import ReadingWallText from "./ReadingWallText.svelte";
   import { loadPublishedExhibit, type PublishedExhibit } from "../published.js";
   import { canvasIdFor } from "../published-base.js";
-  import { resolveNoteArrival } from "../note-arrival.js";
+  import { locate, noteById } from "../note-tree.js";
+  import { createReadingSession } from "../reading-session.svelte.js";
   import { resolveSectionIndex } from "../section-landing.js";
   import ObjectGrid from "./ObjectGrid.svelte";
   import Filmstrip from "./Filmstrip.svelte";
@@ -34,7 +32,6 @@
   const SearchOverlayLazy = lazyComponent(() => import("./SearchOverlay.svelte"));
   const CitePanelLazy = lazyComponent(() => import("./CitePanel.svelte"));
   import { stepObjectId } from "../exhibit-nav.js";
-  import type { MarkerStyle } from "@render/svelte";
 
   // `onnav` (dba2): publishes the object-nav snapshot up to ViewerShell, which renders the carousel in
   // the persistent top bar. `selectedObjectId` stays the source of truth here; ViewerShell only reflects
@@ -82,45 +79,20 @@
   // miss raises the arrival chrome honestly. null = no section cite / unresolved.
   let arrivedSection = $state<number | null>(null);
   let sectionMissing = $state(false);
-  let activeReading = $state<string | null>(null); // ADR-0007 / Q16: base-only by default; null = base
-  let notesHidden = $state(false); // ReadingLegend "Hide all" — declutter the canvas to the bare basemap/image
 
-  // ---- Reading wall text (plan 2026-07-29): the reading's full voice at the THRESHOLD. Raised on
-  // first entry per visit via the legend radios; NEVER by the A0 note-arrival seam (the note is the
-  // destination — `arriveAtNote` assigns `activeReading` directly, bypassing `openReading`, by design).
-  let wallReading = $state<Reading | null>(null);
-  // sessionStorage can throw (privacy modes). Degrade both ways to "never block": unreadable → treat
-  // as seen (no dialog), unwritable → the reading re-introduces itself next activation. Never an error.
-  const wallSeen = (rid: string): boolean => {
-    try { return sessionStorage.getItem(wallTextSeenKey(slug, rid)) === "1"; } catch { return true; }
-  };
-  /** Every legend radio routes through here — activation is where the threshold is. */
-  function openReading(id: string | null) {
-    activeReading = id;
-    wallReading = wallTextFor(id, data?.readings ?? [], wallSeen);
-  }
-  /** Seen is recorded on DISMISS, not open — a reload mid-read shows the text again, not loses it. */
-  function dismissWallText() {
-    if (wallReading) { try { sessionStorage.setItem(wallTextSeenKey(slug, wallReading.id), "1"); } catch { /* degrade */ } }
-    wallReading = null;
-  }
-  /** The legend's (i): reread on demand — ignores seen (silence rules live in wallTextFor's cases). */
-  function reopenWallText() {
-    const r = data?.readings.find((x) => x.id === activeReading);
-    if (r) wallReading = r;
-  }
-  // Exhibit-wide stats for the wall text's meta line — the threshold speaks for the whole pass,
-  // unlike the legend's per-object counts.
-  const wallStats = $derived.by(() => {
-    let notes = 0, sources = 0;
-    if (wallReading && data) {
-      for (const o of data.objects) {
-        const n = data.readingAnnotationsByObject[o.id]?.[wallReading.id]?.length ?? 0;
-        if (n > 0) { notes += n; sources += 1; }
-      }
-    }
-    return { notes, sources };
-  });
+  // THE READING SESSION (reading-session.svelte.ts, Phase 5) — ONE Reading concept. This view used
+  // to hold ~15 scattered locals: activeReading, notesHidden, the wall-text threshold machine
+  // (wallSeen/openReading/dismissWallText/reopenWallText/wallStats), the per-object note counts,
+  // and the style minting (readingColourById/readingStyleOf/frameFor/annotationById). All of it
+  // lives in the session now; the address/locus coupling (canvasIdOf, the `locus` derivation) and
+  // the navigation state stay here. `data` is read through a closure so the session's derivations
+  // track the exhibit filling in on mount. The wall-text threshold machine is the session's own:
+  // raised on first entry per visit via the legend radios; NEVER by the A0 note-arrival seam (the
+  // note is the destination — `arriveAtNote` assigns `activeReading` directly, bypassing
+  // `openReading`, by design).
+  // svelte-ignore state_referenced_locally -- initial-capture is the contract: `slug` is fixed for a
+  // mounted exhibit (the shell re-keys ExhibitView per route); it only scopes the wall-text seen key.
+  const reading = createReadingSession({ slug, data: () => data });
   // Grid-index escape (ADR-0016 keystone): when a narrative LEADS, the object grid stays reachable BEHIND
   // it as an index (§137 precision-in/escape-out; §223 anti-trap) — not a dead-end takeover. `narrativeIndex`
   // opens that grid over the read; `indexObjectId` is an object opened FROM the index (its own Reader).
@@ -280,7 +252,7 @@
 
   /** What the reader is looking at, in words — the panel's heading and its citation title. */
   const citeSubject = $derived.by(() => {
-    const note = locusNote ? findNote(locusNote) : undefined;
+    const note = locusNote ? noteById(locusNote, data) : undefined;
     if (note) return { title: noteTitleOf(note), type: "graphic" as const, rights: undefined };
     const objId = layout?.type === "narrative" ? indexObjectId : selectedObjectId;
     const obj = objId ? data?.objects.find((o) => o.id === objId) : undefined;
@@ -290,21 +262,7 @@
       : undefined;
     if (sec) return { title: sec.title, type: "chapter" as const, rights: undefined };
     return { title: data?.title ?? slug, type: "webpage" as const, rights: exhibitRights };
-  });
-
-  /** Find a note by its published id across base + reading pages (the panel needs its body + canvas). */
-  function findNote(id: string): W3CAnnotation | undefined {
-    if (!data) return undefined;
-    for (const o of data.objects) {
-      const hit = (data.annotationsByObject[o.id] ?? []).find((a) => a.id === id);
-      if (hit) return hit;
-      for (const notes of Object.values(data.readingAnnotationsByObject[o.id] ?? {})) {
-        const h2 = notes.find((a) => a.id === id);
-        if (h2) return h2;
-      }
-    }
-    return undefined;
-  }
+  })
 
   /** A note's first line of body text, trimmed — enough to name it without pasting the whole note. */
   function noteTitleOf(a: W3CAnnotation): string {
@@ -320,15 +278,15 @@
    *  rungs genuinely have none, and a fabricated payload that decodes to nothing is worse. */
   const citeContentState = $derived.by(() => {
     if (!locusNote || !data) return null;
-    const note = findNote(locusNote);
+    const note = noteById(locusNote, data);
     if (!note) return null;
-    const owner = data.objects.find((o) =>
-      (data!.annotationsByObject[o.id] ?? []).some((a) => a.id === locusNote) ||
-      Object.values(data!.readingAnnotationsByObject[o.id] ?? {}).some((ns) => ns.some((a) => a.id === locusNote)),
-    );
+    // Owner resolution through the canonical walk (the note's id is a published IRI; `locate`
+    // normalises both sides via logicalIdOf — the same resolution the A0 seam uses, so the content
+    // state can never name a different owner than the note's arrival did).
+    const owner = locate(locusNote, data, data.objects);
     if (!owner) return null;
     const sel = selectorOf(note);
-    return encodeContentState(note.id, canvasIdOf(owner.id), sel ?? { type: "FragmentSelector" });
+    return encodeContentState(note.id, canvasIdOf(owner.objectId), sel ?? { type: "FragmentSelector" });
   });
 
   const citeData = $derived.by(() => {
@@ -348,9 +306,9 @@
 
   function arriveAtNote(targetNote: string) {
     if (!data || !layout) return;
-    const arrival = resolveNoteArrival(targetNote, layout.objects, data);
+    const arrival = locate(targetNote, data, layout.objects);
     if (arrival) {
-      if (arrival.reading) activeReading = arrival.reading; // a jump into a reading opens that reading
+      if (arrival.reading) reading.activeReading = arrival.reading; // a jump into a reading opens that reading
       // A narrative ignores selectedObjectId (it navigates via its own internal section index, driven by
       // `initialSelected` below) — setting it here for a note that lives on an AV object would hijack the
       // top-level `isAV && activeData` branch (MF-2: same dead-end trap as the objects[0] seeding above).
@@ -423,84 +381,11 @@
   // temporal MediaPlayer instead of the spatial OSD Reader. Works for single AV and AV-in-a-grid.
   const activeData = $derived(data?.objects.find((o) => o.id === selectedObjectId));
   const isAV = $derived(activeData?.mediaType === "sound" || activeData?.mediaType === "video");
-  const noNotes: W3CAnnotation[] = [];
-  // Base notes are always visible (Q16); an active Reading overlays its notes on top of the base.
-  const annotationsOf = (objectId: string): W3CAnnotation[] => {
-    const base = data?.annotationsByObject[objectId] ?? noNotes;
-    if (activeReading === null) return base;
-    return overlay(base, data?.readingAnnotationsByObject[objectId]?.[activeReading]);
-  };
-  // Per-reading note count on a given object for the ReadingLegend (id=null → base / General notes). The
-  // count is per-OBJECT — the current image — matching the legend's per-canvas overlay action (Q: current
-  // image, not exhibit-wide). Reading-independent (it counts attachment, not what's active), so it's stable
-  // as you toggle readings and only re-mints when the object changes.
-  const readingCountOf = (objectId: string) => {
-    const base = data?.annotationsByObject[objectId] ?? noNotes;
-    const byR = data?.readingAnnotationsByObject[objectId] ?? {};
-    return (id: string | null): number => (id === null ? base.length : (byR[id]?.length ?? 0));
-  };
   // Canvas IRI from the published manifest (SNAG fix — matches annotation targets for any publish
   // origin); falls back to the demo BASE reconstruction only if the map lacks it.
   const canvasIdOf = (objectId: string): string => data?.canvasIdByObject[objectId] ?? canvasIdFor(slug, objectId);
-  // Colour each marker by its Reading (ADR-0007) so toggling readings is VISIBLE on the canvas, not
-  // only in the note pane: build annotation-id → reading colour for an object, then a per-id style fn.
-  const readingColourById = (objectId: string): Record<string, string> => {
-    const m: Record<string, string> = {};
-    const byR = data?.readingAnnotationsByObject[objectId] ?? {};
-    for (const r of data?.readings ?? []) {
-      if (!r.colour) continue;
-      for (const a of byR[r.id] ?? []) if (a.id) m[a.id] = r.colour;
-    }
-    return m;
-  };
-  // 1489 emphasis — id → visible annotation, built from the SAME source the canvas renders
-  // (annotationsOf = base + active reading), so base notes pick up emphasis too (never hue, ADR-0007).
-  const annotationById = (objectId: string): Record<string, W3CAnnotation> => {
-    const m: Record<string, W3CAnnotation> = {};
-    for (const a of annotationsOf(objectId)) if (a.id) m[a.id] = a;
-    return m;
-  };
-  // Forest-green neutral default for reading-less (base) marks (system.md §"Base notes") — same
-  // stroke-over-stroke opacities as the reading style, so emphasis modulates a VISIBLE base mark.
-  const ACCENT = "#3A8C5D"; // emerald base mark (--accent) — clears ~4.7:1 on the near-black light-table canvas
-  // Per-note hover solo (the Reader list's hover → the mark lights up). Read INSIDE readingStyleOf
-  // so the template's `styleOf={readingStyleOf(...)}` expression depends on it and re-mints the
-  // closure identity on change — Canvas only re-applies styles when the prop identity changes
-  // (the Studio harness finding).
-  let hoverNote = $state<string | null>(null);
-  const readingStyleOf = (objectId: string): ((id: string) => MarkerStyle | undefined) => {
-    const colourBy = readingColourById(objectId);
-    const annBy = annotationById(objectId);
-    const hovered = hoverNote; // captured per mint — the read that re-mints identity
-    // ONE style source shared with Studio (render-core readingMarkerStyle). The Viewer stays
-    // exclusive-radio in v1 (archie-ux Q-2), so no comparing/solo state is passed here.
-    return (id) => readingMarkerStyle(colourBy[id] ?? ACCENT, annBy[id] ? emphasisOf(annBy[id]!) : "normal", { highlighted: hovered === id });
-  };
-
-  // 7e1f coverage border — single-object image Reader only. The first selector off a target comes from
-  // the canonical `selectorOf` (@render/core): same array-vs-single + Fragment/Svg filtering, returns
-  // W3CSelector | null (was an inline replica back when render-mount's selectorOf wasn't exported).
-  // 0045 contrast rule: the frame draws over the near-black light-table canvas (#181714), NOT the
-  // grey overlay (#252420) the rule actually targets — and forest-green-on-canvas is the established
-  // normal (the active-object ring is green here). A raw WCAG ratio would wrongly fail green on the
-  // dark canvas (~2.9:1) and flip every frame to amber, so per the contract we default to the reading
-  // colour (or the green base) and leave the amber rescue as a TODO.
-  // TODO(0045): surface-aware contrast rescue to golden-amber (--accent-2 #d6a23e) — needs the actual
-  // surface luminance under the frame (light-table vs grey overlay vs photo region), not a fixed pair.
-  const frameColour = (colour: string): string => colour;
-  // The single mark that frames the WHOLE object (first qualifying), or null. A bare-IRI Object-level
-  // Note (no selector — ADR-0018) ALWAYS frames (it has no geometry to measure, and IS the whole
-  // object); a region note frames via the ≥75% coverage heuristic or the authored region-override.
-  const frameFor = (objectId: string, w?: number, h?: number): { markId: string; colour: string } | null => {
-    const colourBy = readingColourById(objectId);
-    for (const a of annotationsOf(objectId)) {
-      if (!a.id) continue;
-      if (isWholeObjectFor(selectorOf(a), w ?? 0, h ?? 0, wholeObjectFlagOf(a))) {
-        return { markId: a.id, colour: frameColour(colourBy[a.id] ?? ACCENT) };
-      }
-    }
-    return null;
-  };
+  // The reading projections (annotationsOf / readingCountOf / readingColourById / readingStyleOf /
+  // frameFor — the style minting) all live on the reading session (reading-session.svelte.ts).
 
   // Rights/credit (Q5): the Viewer renders ALREADY-RESOLVED published values and never re-runs the
   // opt-in cascade (that collapsed at publish) — so the exhibit chrome shows the exhibit's own credit and
@@ -614,7 +499,7 @@
         <MediaPlayerLazy.current
           onlocus={(l) => { locusNote = l.noteId; locusTime = l.t; }}
           object={activeData}
-          annotations={annotationsOf(activeData.id)}
+          annotations={reading.annotationsOf(activeData.id)}
           rights={objectRightsOf(activeData.id)}
           {exhibitRights}
           initialSeek={t}
@@ -624,9 +509,9 @@
           onoverview={() => (selectedObjectId = null)}
           onopenfinder={(tag) => openFinder(tag)}
           readings={data.readings}
-          activeReading={activeReading}
-          onreading={openReading}
-          readingCount={readingCountOf(activeData.id)}
+          activeReading={reading.activeReading}
+          onreading={reading.openReading}
+          readingCount={reading.readingCountOf(activeData.id)}
         />
       {/if}
     {/key}
@@ -639,30 +524,30 @@
         <!-- Keyed like the grid-AV player: stepping the carousel between AV index objects must remount. -->
         {#key indexData.id}
           {#if MediaPlayerLazy.current}
-            <MediaPlayerLazy.current object={indexData} annotations={annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} {exhibitRights} initialSeek={t} onback={() => (indexObjectId = null)} onlocus={(l) => { locusNote = l.noteId; locusTime = l.t; }} onopenfinder={(tag) => openFinder(tag)} readings={data.readings} activeReading={activeReading} onreading={openReading} readingCount={readingCountOf(indexData.id)} />
+            <MediaPlayerLazy.current object={indexData} annotations={reading.annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} {exhibitRights} initialSeek={t} onback={() => (indexObjectId = null)} onlocus={(l) => { locusNote = l.noteId; locusTime = l.t; }} onopenfinder={(tag) => openFinder(tag)} readings={data.readings} activeReading={reading.activeReading} onreading={reading.openReading} readingCount={reading.readingCountOf(indexData.id)} />
           {/if}
         {/key}
       {:else}
         {#if ReaderLazy.current}
           <ReaderLazy.current
             object={{ source: indexObject.source, canvasId: canvasIdOf(indexObject.id), label: indexObject.label, summary: indexData?.summary, ...(indexObject.tileSource ? { tileSource: indexObject.tileSource } : {}) }}
-            annotations={annotationsOf(indexObject.id)}
+            annotations={reading.annotationsOf(indexObject.id)}
             readings={data.readings}
-            activeReading={activeReading}
-            onreading={openReading}
-            onreadinginfo={reopenWallText}
-            readingCount={readingCountOf(indexObject.id)}
-            styleOf={readingStyleOf(indexObject.id)}
-            frame={frameFor(indexObject.id, indexData?.width, indexData?.height)}
+            activeReading={reading.activeReading}
+            onreading={reading.openReading}
+            onreadinginfo={reading.reopenWallText}
+            readingCount={reading.readingCountOf(indexObject.id)}
+            styleOf={reading.readingStyleOf(indexObject.id)}
+            frame={reading.frameFor(indexObject.id, indexData?.width, indexData?.height)}
             onback={() => (indexObjectId = null)}
             rights={objectRightsOf(indexObject.id)}
             {exhibitRights}
             initialSelected={arrivedNote}
             initialRegion={arrivedRegion}
             onlocus={(l) => { locusNote = l.noteId; locusRegion = l.xywh; }}
-            onnotehover={(id) => (hoverNote = id)}
-            notesHidden={notesHidden}
-            onhiddenchange={(v) => (notesHidden = v)}
+            onnotehover={(id) => (reading.hoverNote = id)}
+            notesHidden={reading.notesHidden}
+            onhiddenchange={(v) => (reading.notesHidden = v)}
             onopenfinder={(tag) => openFinder(tag)}
           />
         {/if}
@@ -672,7 +557,7 @@
         title={data.title}
         summary={data.summary}
         objects={layout.objects}
-        countOf={(id) => annotationsOf(id).length}
+        countOf={(id) => reading.annotationsOf(id).length}
         onselect={(id) => (indexObjectId = id)}
         rights={exhibitRights}
       />
@@ -692,16 +577,16 @@
           title={data.title}
           rights={exhibitRights}
           readings={data.readings}
-          activeReading={activeReading}
-          onreading={openReading}
-          onreadinginfo={reopenWallText}
-          styleFor={readingStyleOf}
-          frameFor={(objectId) => { const o = data?.objects.find((x) => x.id === objectId); return frameFor(objectId, o?.width, o?.height); }}
+          activeReading={reading.activeReading}
+          onreading={reading.openReading}
+          onreadinginfo={reading.reopenWallText}
+          styleFor={reading.readingStyleOf}
+          frameFor={(objectId) => { const o = data?.objects.find((x) => x.id === objectId); return reading.frameFor(objectId, o?.width, o?.height); }}
           initialSelected={arrivedNote}
           initialSection={arrivedSection}
           onlocus={(l) => { locusSection = l.sectionId; locusNote = l.noteId; }}
-          notesHidden={notesHidden}
-          onhiddenchange={(v) => (notesHidden = v)}
+          notesHidden={reading.notesHidden}
+          onhiddenchange={(v) => (reading.notesHidden = v)}
           onindex={() => (narrativeIndex = true)}
           onopenfinder={(tag) => openFinder(tag)}
         />
@@ -711,23 +596,23 @@
     {#if ReaderLazy.current}
       <ReaderLazy.current
         object={{ source: activeObject.source, canvasId: canvasIdOf(activeObject.id), label: activeObject.label, summary: activeData?.summary, ...(activeObject.tileSource ? { tileSource: activeObject.tileSource } : {}) }}
-        annotations={annotationsOf(activeObject.id)}
+        annotations={reading.annotationsOf(activeObject.id)}
         readings={data.readings}
-        activeReading={activeReading}
-        onreading={openReading}
-        onreadinginfo={reopenWallText}
-        readingCount={readingCountOf(activeObject.id)}
-        styleOf={readingStyleOf(activeObject.id)}
-        frame={frameFor(activeObject.id, activeData?.width, activeData?.height)}
+        activeReading={reading.activeReading}
+        onreading={reading.openReading}
+        onreadinginfo={reading.reopenWallText}
+        readingCount={reading.readingCountOf(activeObject.id)}
+        styleOf={reading.readingStyleOf(activeObject.id)}
+        frame={reading.frameFor(activeObject.id, activeData?.width, activeData?.height)}
         onback={isGrid ? () => (selectedObjectId = null) : undefined}
         rights={objectRightsOf(activeObject.id)}
         {exhibitRights}
         initialSelected={arrivedNote}
         initialRegion={arrivedRegion}
         onlocus={(l) => { locusNote = l.noteId; locusRegion = l.xywh; }}
-        onnotehover={(id) => (hoverNote = id)}
-        notesHidden={notesHidden}
-        onhiddenchange={(v) => (notesHidden = v)}
+        onnotehover={(id) => (reading.hoverNote = id)}
+        notesHidden={reading.notesHidden}
+        onhiddenchange={(v) => (reading.notesHidden = v)}
         onopenfinder={(tag) => openFinder(tag)}
         siblings={gridSiblings ?? undefined}
         currentId={activeObject.id}
@@ -740,7 +625,7 @@
       title={data.title}
       summary={data.summary}
       objects={layout.objects}
-      countOf={(id) => annotationsOf(id).length}
+      countOf={(id) => reading.annotationsOf(id).length}
       onselect={(id) => (selectedObjectId = id)}
       rights={exhibitRights}
     />
@@ -793,8 +678,8 @@
 
   <!-- The reading's wall text — its full voice at the threshold (single-scrim: opens only from the
        legend's chrome, never from inside another scrimmed surface). Dismissal IS entry. -->
-  {#if wallReading}
-    <ReadingWallText reading={wallReading} noteCount={wallStats.notes} sourceCount={wallStats.sources} onclose={dismissWallText} />
+  {#if reading.wallReading}
+    <ReadingWallText reading={reading.wallReading} noteCount={reading.wallStats.notes} sourceCount={reading.wallStats.sources} onclose={reading.dismissWallText} />
   {/if}
   {#if citeOpen && CitePanelLazy.current}
     <CitePanelLazy.current

@@ -30,8 +30,8 @@ tauri-plugin-single-instance = "2"
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-# GitHub device-flow handshake (github.rs). rustls keeps the REST/token traffic off openssl; reuses the
-# reqwest 0.12 already in the tree via tauri-plugin-http.
+# GitHub device-flow handshake (github/device_flow.rs). rustls keeps the REST/token traffic off
+# openssl; reuses the reqwest 0.12 already in the tree via tauri-plugin-http.
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "charset"] }
 # `tokio::time::sleep` for the poll back-off loop; tokio is already in-tree via tauri.
 tokio = { version = "1", features = ["time"] }
@@ -57,3 +57,7 @@ git2 = "0.20.4"
 [dev-dependencies]
 # Temp dirs for the stage-and-commit tests (gh_push_tree).
 tempfile = "3"
+# tokio test runtime for the device-flow poll-loop tests (github/device_flow.rs). Features union
+# with the main `tokio` dep above; `time` is already enabled, this adds the `#[tokio::test]` driver
+# that runs the injected-clock poll loop headlessly.
+tokio = { version = "1", features = ["macros", "rt"] }

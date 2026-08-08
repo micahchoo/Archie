@@ -14,6 +14,15 @@
 // Firefox and Safari get neither and keep the measure-and-tell hand-off (`videoTierTell`) — the
 // evidence is in scripts/probe/webcodecs-video.mjs and video-transcode-web.ts's header.
 //
+// ── WHERE THE SHARED CONTRACT LIVES ──────────────────────────────────────────────────────────────
+// The two declared profiles (`WEB_TIER_H264` / `WEB_TIER_VP9`), the `VideoTargetParams` shape, the
+// typed error, and the ONE target decision (`pickTarget` over the one `VideoCapabilities` shape)
+// live in `video-profiles.ts`, which imports NOTHING. This file keeps the DESKTOP half: the Tauri
+// bridge, the capability probe (a thin adapter from ffmpeg's `EncoderReport` onto that one shape),
+// the transcode call, the skip counter, and the H4 measure-and-tell. `video-transcode-web.ts`
+// imports the same contract from `video-profiles.ts`, so neither seam drags the other's platform
+// glue into the web graph.
+//
 // ── SILENT FALLBACK IS THE HAZARD, SO THERE IS A COUNTER ─────────────────────────────────────────
 // .claude/rules/perf-measure-the-flow.md §2: `dzi-slice-pool` and `bake-async` both degrade silently
 // BY DESIGN, and both are only observable because of `bakeFallbackCount()`. The same discipline is
@@ -21,121 +30,17 @@
 // not merely run slow, it publishes the 180 GB of originals the tier existed to avoid.
 // `videoSkipCount()` is that readout. This module NEVER falls back on its own; when it cannot
 // transcode it THROWS, and the counter records what the caller then chose to skip.
+import {
+  KNOWN_KINDS,
+  NO_VIDEO_CAPABILITIES,
+  VideoTranscodeError,
+  type VideoCapabilities,
+  type VideoErrorKind,
+  type VideoProgress,
+  type VideoTargetParams,
+  type VideoTranscodeResult,
+} from "./video-profiles.js";
 import { isTauri } from "./tauri-fs.js";
-
-// ---------------------------------------------------------------------------------------------------
-// Targets
-// ---------------------------------------------------------------------------------------------------
-
-/** The two web-tier targets. Which one is reachable depends on the machine — see the module header of
- *  src-tauri/src/video.rs for the measured GNOME 49 finding (H.264 needs the codecs-extra extension;
- *  VP9/Opus is what the base runtime guarantees). */
-export type VideoTarget = "h264" | "vp9";
-
-export interface VideoTargetParams {
-  codec: VideoTarget;
-  /** Container extension, without the dot. */
-  ext: "mp4" | "webm";
-  /** The `type` a `<video>` / `<source>` should advertise — WITH codec parameters, because that is
-   *  the whole point of the attribute: it lets a browser skip a source it cannot play without
-   *  fetching it. NOT for a manifest `format` field; see {@link VideoTargetParams.containerMime}. */
-  mime: string;
-  /** The bare media type, no parameters — what an object's `format` carries in the published
-   *  manifest, beside `image/webp` and `audio/ogg`.
-   *
-   *  SEPARATE FROM `mime` because a test caught them being conflated: the tier decision put the full
-   *  `video/mp4; codecs="avc1.640028, mp4a.40.2"` into `AObject.format`. IIIF Presentation 3 `format`
-   *  is a media type, and every other tier writes a bare one, so a parameterised string there is both
-   *  off-spec and inconsistent with its siblings. Two fields, two jobs. */
-  containerMime: string;
-  /** Downscale-only cap on the long-ish edge (height). A smaller source is left alone. */
-  maxHeight: number;
-  /** Constant-quality knob. The scales are NOT comparable between codecs: 23 is a normal H.264
-   *  value, 33 a normal VP9 one. Used by the ffmpeg sidecar ONLY. */
-  crf: number;
-  /** Video bitrate for the BROWSER path, in kbit/s. A second knob rather than a conversion of `crf`
-   *  because the two encoders take genuinely different instructions: ffmpeg does constant QUALITY
-   *  (rate varies, quality pinned), while WebCodecs' `VideoEncoder` is configured with a bitrate
-   *  (rate pinned, quality varies). There is no exchange rate between them — a CRF-to-bitrate formula
-   *  would be a fabricated number dressed as a derivation, so both are stated instead.
-   *
-   *  The H.264 figure is not free-chosen: it is `WEB_TIER_VIDEO_KBPS` minus this profile's audio, so
-   *  the bitrate the browser actually encodes at and the bitrate `estimateWebTierVideoBytes` predicts
-   *  are THE SAME NUMBER. Before this path existed the estimate answered for nobody; now a size
-   *  estimate that misses is a bug with one cause instead of two. VP9 is set lower at the same
-   *  perceived quality, which is the codec's whole point. */
-  webBitrateKbps: number;
-  audioKbps: number;
-}
-
-/** H.264 High + AAC-LC in MP4, faststart. THE DEFAULT — see the decision note on Archie-7e6f: MDN's
- *  web video codec guide states MP4/AVC/AAC is "a broadly-supported combination—by every major
- *  browser, in fact" (fetched 2026-07-27). A published tree is read by visitors we will never meet on
- *  browsers we cannot poll, so the artifact takes the compatible format and the ENCODER side absorbs
- *  the awkwardness. */
-export const WEB_TIER_H264: VideoTargetParams = {
-  codec: "h264",
-  ext: "mp4",
-  mime: 'video/mp4; codecs="avc1.640028, mp4a.40.2"',
-  containerMime: "video/mp4",
-  maxHeight: 720,
-  crf: 23,
-  webBitrateKbps: 2000,
-  audioKbps: 128,
-};
-
-/** VP9 + Opus in WebM — royalty-free, and the target the stock GNOME 49 Flatpak runtime can actually
- *  produce with no extension. MDN notes WebM/open-codec output is "generally well-supported, with the
- *  exception being Safari on older Apple devices", which is exactly the compatibility cliff the
- *  default avoids. Offered as the fallback when `h264` is unavailable, never chosen silently. */
-export const WEB_TIER_VP9: VideoTargetParams = {
-  codec: "vp9",
-  ext: "webm",
-  mime: 'video/webm; codecs="vp9, opus"',
-  containerMime: "video/webm",
-  maxHeight: 720,
-  crf: 33,
-  webBitrateKbps: 1400,
-  audioKbps: 96,
-};
-
-const VIDEO_MIME_PREFIX = "video/";
-
-/** True for a mime this seam is willing to hand to the encoder. Deliberately permissive — ffmpeg
- *  reads far more than folder-import's EXT_MIME names, and an input it cannot read comes back as a
- *  classified `unsupported-input` rather than being pre-refused on a guess. */
-export function isTranscodableVideoMime(mime: string): boolean {
-  return mime.startsWith(VIDEO_MIME_PREFIX);
-}
-
-/** The target this machine should use, given what it reports. Returns null when neither is reachable
- *  — the caller then greys the control with `unavailableReason` (Archie-c367: never silently swap). */
-export function pickTarget(report: EncoderReport): VideoTargetParams | null {
-  if (!report.ffmpeg) return null;
-  // DELIBERATELY does not consult `h264Decode`. Decode capability is a property of each SOURCE file,
-  // not of the target, and a machine that can read WebM but not H.264 can still convert some of the
-  // library. Blanket-greying it would refuse work it can do; instead each unreadable file comes back
-  // as `decoder-missing`, which names the real cause. See video.rs's header for why the stock GNOME
-  // 49 runtime is exactly this machine.
-  if (report.h264 && report.aac) return WEB_TIER_H264;
-  if (report.vp9 && report.opus) return WEB_TIER_VP9;
-  return null;
-}
-
-/** Why the control is greyed, in the author's language. Empty string when video transcode IS
- *  available — callers should branch on `pickTarget` rather than on this. */
-export function unavailableReason(report: EncoderReport): string {
-  if (!report.ffmpeg) {
-    return "This build has no video converter, so videos will publish at their original size.";
-  }
-  if (!report.h264Decode && !report.vp9) {
-    return "This build's video converter is missing its codecs, so videos will publish at their original size.";
-  }
-  if (pickTarget(report) === null) {
-    return "This build's video converter has no usable web format, so videos will publish at their original size.";
-  }
-  return "";
-}
 
 // ---------------------------------------------------------------------------------------------------
 // The bridge
@@ -149,7 +54,9 @@ export interface VideoBridge {
   listen(event: string, handler: (payload: unknown) => void): Promise<() => void>;
 }
 
-/** Mirrors `EncoderReport` in src-tauri/src/video.rs (serde `rename_all = "camelCase"`). */
+/** Mirrors `EncoderReport` in src-tauri/src/video.rs (serde `rename_all = "camelCase"`). The probe
+ *  maps this platform report onto the ONE `VideoCapabilities` shape — `version` is diagnostic and
+ *  does not survive the mapping. */
 export interface EncoderReport {
   ffmpeg: boolean;
   version: string | null;
@@ -158,51 +65,6 @@ export interface EncoderReport {
   aac: boolean;
   opus: boolean;
   h264Decode: boolean;
-}
-
-/** Mirrors `TranscodeProgress`. `outTimeUs` is MICROseconds — ffmpeg's own `out_time_ms` field is a
- *  misnomer that also reports microseconds (measured), so the Rust side never reads it. */
-export interface VideoProgress {
-  jobId: string;
-  outTimeUs: number;
-  frame: number;
-  speed: number | null;
-  totalSize: number | null;
-  done: boolean;
-}
-
-/** Mirrors `TranscodeResult`. */
-export interface VideoTranscodeResult {
-  output: string;
-  bytes: number;
-  outTimeUs: number;
-}
-
-/** The stable failure kinds `classify_failure` in video.rs can produce, plus the two this side owns
- *  (`unavailable` when there is no Tauri at all, `bad-request` shared with Rust's validation). */
-export type VideoErrorKind =
-  | "unavailable"
-  | "bad-request"
-  | "encoder-missing"
-  | "codec-missing"
-  | "decoder-missing"
-  | "unsupported-input"
-  | "unreadable-input"
-  | "output-failed"
-  | "encode-failed";
-
-const KNOWN_KINDS: ReadonlySet<string> = new Set<VideoErrorKind>([
-  "unavailable", "bad-request", "encoder-missing", "codec-missing", "decoder-missing",
-  "unsupported-input", "unreadable-input", "output-failed", "encode-failed",
-]);
-
-export class VideoTranscodeError extends Error {
-  readonly kind: VideoErrorKind;
-  constructor(kind: VideoErrorKind, message: string) {
-    super(message);
-    this.name = "VideoTranscodeError";
-    this.kind = kind;
-  }
 }
 
 /** Normalize anything thrown by the invoke boundary into a typed error.
@@ -281,16 +143,24 @@ export function resetVideoSkipCount(): void {
 // The seam
 // ---------------------------------------------------------------------------------------------------
 
-/** What this machine can do. Never throws — a machine with no ffmpeg reports `ffmpeg: false` so the
- *  UI greys the control with a reason instead of raising an error the author cannot act on. */
-export async function probeVideoEncoders(bridge?: VideoBridge): Promise<EncoderReport> {
-  const none: EncoderReport = {
-    ffmpeg: false, version: null, h264: false, vp9: false, aac: false, opus: false, h264Decode: false,
-  };
+/** What this machine can do, as the ONE capability shape both platforms share (video-profiles.ts).
+ *  Never throws — a machine with no ffmpeg reports `ffmpeg: false` so the UI greys the control with
+ *  a reason instead of raising an error the author cannot act on. Thin adapter: maps the Rust
+ *  `EncoderReport` onto {@link VideoCapabilities}. */
+export async function probeVideoEncoders(bridge?: VideoBridge): Promise<VideoCapabilities> {
+  const none: VideoCapabilities = { ...NO_VIDEO_CAPABILITIES, h264Decode: false };
   if (!bridge && !isTauri()) return none; // web: no sidecar, by construction
   try {
     const b = bridge ?? (await tauriVideoBridge());
-    return await b.invoke<EncoderReport>("video_probe_encoders");
+    const report = await b.invoke<EncoderReport>("video_probe_encoders");
+    return {
+      ffmpeg: report.ffmpeg,
+      h264: report.h264,
+      vp9: report.vp9,
+      aac: report.aac,
+      opus: report.opus,
+      h264Decode: report.h264Decode,
+    };
   } catch {
     return none;
   }
@@ -442,9 +312,9 @@ export function videoTierTell(inv: VideoInventory, reason: string): string {
 // reports a capability the codebase no longer lacks is worse than no probe, because it reads as
 // current.
 //
-// The live browser equivalents are `probeBrowserVideoCaps()` / `pickBrowserTarget()` in
-// `video-transcode-web.ts`, which answer the same question this seam's `probeVideoEncoders()` /
-// `pickTarget()` answer for the desktop sidecar — deliberately the same shape against a different
-// oracle, so both platforms choose between the SAME two declared profiles above and no third artifact
-// shape can enter a published tree. The measured Chromium 148 findings that shaped the choice (H.264
-// encode yes, AAC encode NO) are recorded in that file's header.
+// The live browser equivalents are `probeBrowserVideoCaps()` in `video-transcode-web.ts` and the
+// ONE shared decision `pickTarget()` in `video-profiles.ts` — the browser probe reports the same
+// `VideoCapabilities` shape this seam's `probeVideoEncoders()` reports for the desktop sidecar, so
+// both platforms choose between the SAME two declared profiles and no third artifact shape can enter
+// a published tree. The measured Chromium 148 findings that shaped the choice (H.264 encode yes,
+// AAC encode NO) are recorded in that file's header.

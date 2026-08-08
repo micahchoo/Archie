@@ -4,7 +4,11 @@
 // never found — the spine fell to section 0, stranding the link-follower on the wrong prose. This pure
 // resolver scans BOTH the base notes AND every reading overlay, then maps the owning object to its
 // section index. Headless-tested; NarrativeReader consumes it for both initial arrival and re-selection.
-import { logicalIdOf, type W3CAnnotation } from "@render/core";
+//
+// Phase 5: a THIN composition over note-tree.ts — the ONE canonical walk. The owner search delegates
+// to `locate` over the spine's object list; `arrivalSectionIndex` is unchanged logic on top.
+import type { W3CAnnotation } from "@render/core";
+import { locate } from "./note-tree.js";
 
 export interface NarrativeOwnerData {
   annotationsByObject: Record<string, W3CAnnotation[]>;
@@ -14,32 +18,21 @@ export interface NarrativeOwnerData {
 
 /**
  * The object id that owns `noteId`, searching base pages AND per-reading pages, or null if no object
- * carries it (a tombstoned cite — ADR-0003). Order: base first, then reading overlays.
+ * carries it (a tombstoned cite — ADR-0003). Order: base first, then reading overlays, per object —
+ * the canonical interleaved walk (Phase 5 unified this with the flat/owner search; the old
+ * all-bases-then-all-readings order is gone, pinned in note-tree.test.ts).
  */
 // Matches on LOGICAL id — the same V100 defect `resolveNoteArrival` carried, found by the audit this
 // ticket asked for. A deep-linked note carries a bare ULID; `a.id` is the full published IRI. With raw
 // `===` this always returned null, so `arrivalSectionIndex` silently fell back to section 0 and a cited
 // note in a narrative exhibit landed at the top of the spine instead of at its own beat — a
-// plausible-looking result, which is why it went unnoticed.
+// plausible-looking result, which is why it went unnoticed. The fix lives in `note-tree.locate`.
 export function ownerObjectOf(
   noteId: string,
   objectIds: readonly string[],
   data: NarrativeOwnerData,
 ): string | null {
-  const want = logicalIdOf(noteId);
-  if (want === null) return null;
-  const has = (notes: W3CAnnotation[]): boolean => notes.some((a) => logicalIdOf(a.id) === want);
-  for (const oid of objectIds) {
-    if (has(data.annotationsByObject[oid] ?? [])) return oid;
-  }
-  for (const oid of objectIds) {
-    const byR = data.readingAnnotationsByObject[oid];
-    if (!byR) continue;
-    for (const rid of Object.keys(byR)) {
-      if (has(byR[rid] ?? [])) return oid;
-    }
-  }
-  return null;
+  return locate(noteId, data, objectIds.map((id) => ({ id })))?.objectId ?? null;
 }
 
 /**

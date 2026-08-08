@@ -4,7 +4,7 @@ import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { planPush, gitBlobSha, localBlobShas, EMPTY_REMOTE_TREE, UNKNOWN_REMOTE_TREE, type RemoteTreeIndex } from "./push-delta.js";
-import type { FileContent } from "./ghpages.js";
+import type { FileContent } from "./snapshot.js";
 
 // The incremental-push delta (Archie-53e3). Two independent things are proven here:
 //   1. `gitBlobSha` really computes GIT's blob id — checked against `git hash-object` itself, not

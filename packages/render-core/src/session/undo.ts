@@ -32,8 +32,7 @@ import type { AnnotationRecord, W3CAnnotation } from "../wadm/types.js";
 import type { LogicalId } from "../wadm/brand.js";
 import type { AnnotationSession, NewNote, NoteEdit } from "./session.js";
 import { emptyDiff, isEmptyDiff, reverseRecordsDiff, squashRecordDiffsMutable, type RecordsDiff } from "./records-diff.js";
-import { recordToAnnotation } from "../spine/serialize.js";
-import { ARCHIE_READING, ARCHIE_SECTION, ARCHIE_EMPHASIS, ARCHIE_WHOLE_OBJECT, ARCHIE_GEO } from "../wadm/types.js";
+import { recordsToWorking } from "../spine/serialize.js";
 
 /** A diff over the note projection, keyed by the stable logicalId the surface selects on. */
 export type NoteDiff = RecordsDiff<LogicalId, AnnotationRecord>;
@@ -186,17 +185,12 @@ export class AnnotationUndoManager {
   }
 
   /** The working (logicalId-keyed) WADM surface, over the undo-aware projection.
-   *  Mirrors `AnnotationSession.workingAnnotations` exactly — see the carry sentinel there. */
+   *  One shared projection with `AnnotationSession.workingAnnotations` — `recordsToWorking`
+   *  (spine/serialize.ts), whose carry sentinel guards both callers. The head source differs:
+   *  this composes `notes()` (session heads + the overlay), so an undone delete re-shows the
+   *  reinstated record. */
   workingAnnotations(): W3CAnnotation[] {
-    return this.notes().map((record) => {
-      const ann = recordToAnnotation(record, record.logicalId);
-      if (record.reading !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_READING] = record.reading;
-      if (record.section !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_SECTION] = record.section;
-      if (record.emphasis !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_EMPHASIS] = record.emphasis;
-      if (record.wholeObject === true) (ann as unknown as Record<string, unknown>)[ARCHIE_WHOLE_OBJECT] = true;
-      if (record.geo !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_GEO] = record.geo;
-      return ann;
-    });
+    return recordsToWorking(this.notes());
   }
 
   // ── Internals ──

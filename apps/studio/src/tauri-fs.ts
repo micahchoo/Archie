@@ -55,6 +55,14 @@ export async function defaultLibraryRoot(): Promise<string> {
   return join(await appDataDir(), "library");
 }
 
+/** The OS app-data dir ITSELF (not the library subdir) — the scoped root for ephemeral staging
+ *  (the video sidecar bridge stages under it; capabilities/default.json `fs:scope` covers
+ *  `$APPDATA/**`). Kept here so `@tauri-apps/*` stays touched in this file only. */
+export async function tauriAppDataDir(): Promise<string> {
+  const { appDataDir } = await import("@tauri-apps/api/path");
+  return appDataDir();
+}
+
 /** Prompt for a folder to bind a Project to — the desktop analogue of src/binding.ts `pickFolder()`. */
 export async function pickTauriFolder(): Promise<string | null> {
   const { open } = await import("@tauri-apps/plugin-dialog");

@@ -2,7 +2,8 @@
   // A draggable divider between a fixed-width side panel and the flexible main area, plus a
   // collapse toggle (image-first looking). The MATH lives in @render/core's panel-resize
   // (headless-tested); this component only measures the live panel width, projects the new width
-  // onto a bindable `width`, and draws the handle — the MarginColumn ↔ layoutMarginalia pattern.
+  // onto a bindable `width`, and draws the handle — the measure-in-shell / solve-in-core pattern
+  // (same shape as the studio marginalia rail, Marginalia.svelte ↔ layoutMarginalia).
   //
   // The resting width is the CSS `clamp()` default (responsive); `width` is the user's px OVERRIDE
   // (null ⇒ default). The host applies it via a CSS custom property on the panel and persists it.

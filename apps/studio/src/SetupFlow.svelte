@@ -19,6 +19,7 @@
   let {
     probe = null,
     probing = false,
+    videoTell = "",
     probeDone = 0,
     probeTotal = 0,
     rows = [],
@@ -36,6 +37,10 @@
   }: {
     probe?: ArchiveProbe | null;
     probing?: boolean;
+    /** The honest video measure-and-tell (Archie-7e6f H4): non-empty when the library has video and
+     *  no transcode is reachable on this platform — quoted under the destination list so the
+     *  web-tier numbers are not mistaken for what this machine can actually produce. */
+    videoTell?: string;
     probeDone?: number;
     probeTotal?: number;
     /** Every destination row for the current tier (`rowsFor`) — including unavailable ones, which are
@@ -103,6 +108,7 @@
       {#each probe.blockers as b}<p class="b-sub">{b}</p>{/each}
     </div>
   {:else if probe}
+    {#if videoTell}<p class="note">{videoTell}</p>{/if}
     <fieldset class="dests">
       <legend class="sr-only">Destination</legend>
       {#if probe.recommendation}<p class="rec-why">{probe.recommendation.why}</p>{/if}

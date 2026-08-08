@@ -11,7 +11,7 @@ import {
   type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type MissingAsset, type GitHubTarget, type PublishProgress, type IncrementalScope, type SectionLog, type PublishResult,
   type SelectorScale, type UnscaledSelector, type ViewerBundleFiles,
 } from "@render/core";
-import { probeArchive, type ArchiveProbe } from "./archive-probe.js";
+import { probeArchive, TILE_MIN_EDGE, type ArchiveProbe } from "./archive-probe.js";
 import { libraryInventory } from "./archive-inventory.js";
 import { folderSinkSupported } from "./folder-backend.js";
 import { supportsStreamingZipSave, openStreamingZipSave, saveZipToDisk, saveBagZip, downloadHtml } from "./binding.js";
@@ -25,9 +25,16 @@ import {
   DEFAULT_TIER, applyTier, assetMime, capsFor, projectLibraryForTier, resetTierFallbacks, selectorScaleOf, tierDecision, tierFallbackCount,
   type QualityTier, type TierEncoders, type TierRescale,
 } from "./publish-tier.js";
-// The browser video path (Archie-7e6f H3). Cheap to import: `mediabunny` itself sits behind an
-// `await import` inside both of these, so a library with no video never downloads the muxer.
-import { pickBrowserTarget, probeBrowserVideoCaps, transcodeVideoInBrowser } from "./video-transcode-web.js";
+// The TWO video encoder paths (Archie-7e6f), resolved per platform: the ffmpeg sidecar on desktop
+// (via the Blob↔file bridge in video-sidecar-bridge.ts), mediabunny/WebCodecs in Chromium. Both are
+// cheap to import — `mediabunny` and every `@tauri-apps/*` sit behind `await import`, so a library
+// with no video never downloads either heavy path.
+import { isTauri } from "./tauri-fs.js";
+import { probeVideoEncoders, videoTierTell, type VideoInventory } from "./video-transcode.js";
+import { transcodeVideoViaTempFile } from "./video-sidecar-bridge.js";
+import { probeBrowserVideoCaps, transcodeVideoInBrowser } from "./video-transcode-web.js";
+// The ONE shared decision (video-profiles.ts imports nothing — the neutral contract both seams use).
+import { pickTarget, unavailableReason, type VideoCapabilities } from "./video-profiles.js";
 // ADR-0014 (static archival pages): note bodies render through the SAME sanitize pipeline the
 // live Viewer uses (P-1 Q3 no-drift invariant) — renderMarkdown is canonical in @render/core now
 // (sanitize moved into core; @render/svelte only re-exports for back-compat).
@@ -134,7 +141,7 @@ export function createPublishFlows(deps: PublishDeps) {
   // ONE open flag (Archie-1921 — PublishDialog + the Publish wizard merged into one scrimmed surface):
   // the old `dialogOpen`/`publishOpen` pair (one per dialog, toggled in lockstep by the chooser's
   // "Publish to the web" card) is gone now that there's only one surface to show or hide.
-  const s = $state<{ open: boolean; intent: PublishIntent; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; corruptLogs: CorruptLogFinding[]; missingAssets: MissingAsset[]; preflight: PreflightFinding[]; tierRescaled: TierRescale[]; unscaledSelectors: UnscaledSelector[]; tierFallbacks: number; tier: QualityTier | null; probe: ArchiveProbe | null; probing: boolean }>({
+  const s = $state<{ open: boolean; intent: PublishIntent; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; corruptLogs: CorruptLogFinding[]; missingAssets: MissingAsset[]; preflight: PreflightFinding[]; tierRescaled: TierRescale[]; unscaledSelectors: UnscaledSelector[]; tierFallbacks: number; tier: QualityTier | null; probe: ArchiveProbe | null; probing: boolean; videoTell: string }>({
     open: false, // the merged Publish & Share surface
     intent: "publish" as PublishIntent, // which half of the surface the author asked for (Q-15)
     brokenLinks: [], // intra-Library links that degrade to plain text on publish (dialog advisory)
@@ -165,6 +172,11 @@ export function createPublishFlows(deps: PublishDeps) {
     // second `probe()` while one is in flight is refused rather than queued (see `probe`).
     probe: null,
     probing: false,
+    // The honest measure-and-tell (H4) for THIS platform, set by the last probe: non-empty exactly
+    // when the library has video AND no transcode is reachable, in which case the probe's web-tier
+    // figure is the full-size over-estimate and the surface must say why and what the alternatives
+    // cost instead of letting the author discover it at publish time.
+    videoTell: "",
   });
   let cachedSiteFs: MemoryFilesystem | null = null; // the no-originals projection from openPublish, reused by publish
   // The base `cachedSiteFs` was projected AT (Archie-19c5 / Archie-3504). The cache is only sound for
@@ -222,7 +234,7 @@ export function createPublishFlows(deps: PublishDeps) {
   // published viewer deep-zooms from fast LOCAL tiles instead of streaming the full master (or a slow remote
   // IIIF). Browser-only (OffscreenCanvas) — injected into publishLibrary so render-core stays platform-free.
   // Returns null (→ single image, unchanged) for small images or an undecodable blob.
-  const TILE_MIN_EDGE = 4096; // longer edge over this → deep-zoom pays off; smaller stays a single master
+  // `TILE_MIN_EDGE` is imported from the probe — ONE definition in the repo (archive-probe.ts).
   const tileObject = async (_slug: string, name: string, bytes: ArrayBuffer | Blob) => {
     let bmp: ImageBitmap;
     let blob: Blob;
@@ -401,35 +413,51 @@ export function createPublishFlows(deps: PublishDeps) {
   };
 
   /**
-   * The video encoder for this platform, resolved ONCE and only when a web-tier publish asks.
+   * What THIS machine can transcode to, probed ONCE per session. Memoised on the PROMISE rather than
+   * on its value, so a probe run and a projection started together share one probe instead of racing
+   * two — and because the probe is not free: `probeBrowserVideoCaps` constructs real encoders to
+   * ask, which is the whole reason it is not re-asked per file. Capability cannot change within a
+   * session, so there is no staleness to invalidate.
    *
-   * Memoised on the PROMISE rather than on its value, so two projections started together share one
-   * probe instead of racing two. Capability cannot change within a session, so there is no staleness
-   * to invalidate — and the probe is not free: `probeBrowserVideoCaps` constructs real encoders to
-   * ask, which is the whole reason it is not re-asked per file.
-   *
-   * WHY THE BROWSER PATH ONLY, stated plainly rather than left as an apparent oversight. The desktop
-   * sidecar (`transcodeVideo`) is genuinely better — its ffmpeg reaches H.264 that Chromium's encoder
-   * pool cannot pair with AAC — but it takes ABSOLUTE FILE PATHS in and out, while `applyTier` holds
-   * a `Blob` and expects a `Blob` back. Bridging them needs a temp-file seam (write blob → invoke →
-   * read back → clean up) plus a Tauri fs capability grant for that directory, and neither exists
-   * today. Writing one here would be code no gate in this repo can execute: there is no packaged
-   * desktop run available, and `.claude/rules/svelte-no-typecheck-net.md` is explicit that compiling
-   * is not carrying. So the desktop wiring is a NAMED follow-up on Archie-7e6f, not a silent gap —
-   * and until it lands a desktop web-tier publish takes the counted `no-video-encoder` passthrough,
-   * which is visible in `tierFallbacksByReason()` and `videoSkipCount()` rather than invisible.
+   * PLATFORM-AWARE (Archie-e870, the tracked gap now CLOSED): on `isTauri()` the desktop sidecar is
+   * probed (`probeVideoEncoders` — WebKitGTK has no WebCodecs, so the browser path would report
+   * nothing and every web-tier video took the counted passthrough); elsewhere the browser is probed.
+   * Both probes report the ONE `VideoCapabilities` shape, so the single `pickTarget` decides.
    */
-  let videoEncoderOnce: Promise<Pick<TierEncoders, "encodeVideo" | "videoTarget">> | null = null;
-  function resolveVideoEncoder() {
-    videoEncoderOnce ??= (async () => {
-      const target = pickBrowserTarget(await probeBrowserVideoCaps());
-      // No reachable profile ⇒ BOTH members stay absent. `capsFor` treats a half-configured pair as
-      // no capability at all, but leaving neither is what makes that guard unreachable rather than
-      // merely correct.
-      if (!target) return {};
-      return { videoTarget: target, encodeVideo: (src: Blob) => transcodeVideoInBrowser(src, { target }) };
+  let videoCapsOnce: Promise<{ tauri: boolean; caps: VideoCapabilities }> | null = null;
+  function resolveVideoCapabilities(): Promise<{ tauri: boolean; caps: VideoCapabilities }> {
+    videoCapsOnce ??= (async () => {
+      const tauri = isTauri();
+      return { tauri, caps: tauri ? await probeVideoEncoders() : await probeBrowserVideoCaps() };
     })();
-    return videoEncoderOnce;
+    return videoCapsOnce;
+  }
+
+  /**
+   * The video encoder for this platform, resolved only when a web-tier publish asks.
+   *
+   * WHY THE SIDECAR IS BRIDGED THROUGH A TEMP FILE: `transcodeVideo` takes ABSOLUTE FILE PATHS in
+   * and out, while `applyTier` holds a `Blob` and expects a `Blob` back. `transcodeVideoViaTempFile`
+   * is that seam — it stages the source under the app-data dir (scoped by capabilities/default.json
+   * `fs:scope` `$APPDATA/**`, so no new grant), invokes the sidecar, reads the result back, and
+   * unlinks both files. The browser path (`transcodeVideoInBrowser`) is the non-Tauri fallback; a
+   * machine whose probe finds no reachable profile keeps the counted `no-video-encoder` passthrough,
+   * which is visible in `tierFallbacksByReason()` and `videoSkipCount()` rather than invisible.
+   *
+   * No reachable profile ⇒ BOTH members stay absent. `capsFor` treats a half-configured pair as no
+   * capability at all, but leaving neither is what makes that guard unreachable rather than merely
+   * correct.
+   */
+  function resolveVideoEncoder(): Promise<Pick<TierEncoders, "encodeVideo" | "videoTarget">> {
+    return resolveVideoCapabilities().then(({ tauri, caps }) => {
+      const target = pickTarget(caps);
+      if (!target) return {};
+      return {
+        videoTarget: target,
+        encodeVideo: (src: Blob) =>
+          tauri ? transcodeVideoViaTempFile(src, target) : transcodeVideoInBrowser(src, { target }),
+      };
+    });
   }
 
   /**
@@ -672,6 +700,9 @@ export function createPublishFlows(deps: PublishDeps) {
     setTier(t: QualityTier) { s.tier = t; },
     /** The last archive probe, or null before one has run. */
     get probe(): ArchiveProbe | null { return s.probe; },
+    /** The honest measure-and-tell for THIS platform (H4): non-empty exactly when the library has
+     *  video and no transcode is reachable — what a conversion would cost, and both ways out. */
+    get videoTell(): string { return s.videoTell; },
     /** True while an inventory pass is walking the library's assets. */
     get probing(): boolean { return s.probing; },
     /**
@@ -692,6 +723,12 @@ export function createPublishFlows(deps: PublishDeps) {
       try {
         const exhibits = deps.exhibits();
         const files = await libraryInventory(exhibits, onProgress);
+        // The video profile THIS machine resolved (Archie-7e6f): a reachable transcode lets the
+        // probe's web tier quote the honest `bitrate × duration` figure instead of full size, and an
+        // unreachable one is exactly when the surface must say why. Same memoised probe the publish
+        // projection uses, so the estimate and the encoder can never disagree about the platform.
+        const { caps } = await resolveVideoCapabilities();
+        const videoTarget = pickTarget(caps);
         const probe = probeArchive(files, {
           // `folderSinkSupported()` is the ONE definition of "can this platform write a folder"
           // (`folder-backend.ts`) — read here rather than re-derived, so the greyed folder and
@@ -699,8 +736,23 @@ export function createPublishFlows(deps: PublishDeps) {
           // `false` and both rows come back unavailable WITH their reason (Archie-c85f / Archie-c367).
           capabilities: { folderSink: folderSinkSupported() },
           exhibitCount: Math.max(1, exhibits.length),
+          videoTarget,
         });
         s.probe = probe;
+        // The honest measure-and-tell (H4), wired to its production caller: when no transcode is
+        // reachable the web-tier figure the probe just quoted is the full-size over-estimate, so the
+        // surface quotes what a conversion WOULD cost and both ways out, in the author's numbers.
+        // `bytes` is the archival tier's video tally — the originals, whatever the web tier modelled.
+        s.videoTell = videoTarget
+          ? ""
+          : videoTierTell(
+              {
+                count: probe.folder.video,
+                bytes: probe.tiers.archival.bytesByMedia.video,
+                durationSec: probe.sample.videoSeconds,
+              },
+              unavailableReason(caps),
+            );
         return probe;
       } finally {
         s.probing = false;

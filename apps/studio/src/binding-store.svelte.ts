@@ -10,7 +10,7 @@ import { loadLibrary, recentFromBinding, addRecent, removeRecent, bindingLabel, 
 import { loadRecents, saveRecents, loadLastBinding, saveLastBinding, subscribeRecents } from "./binding.js";
 import { folderSinkSupported, pickFolderBinding, reopenFolderBinding, forgetFolderBinding } from "./folder-backend.js";
 import { enqueueSave } from "./save-queue.svelte.js";
-import { readMirrorToken, writeMirrorToken, newMirrorToken } from "./mirror-stamp.js";
+import { createGenerationGuard } from "./generation-guard.js";
 import type { FolderWritePlan } from "./publish-flows.svelte.js";
 
 export type LoadedLibrary = Awaited<ReturnType<typeof loadLibrary>>;
@@ -52,11 +52,14 @@ export function createBindingStore(deps: BindingDeps) {
 
   let folderFs: Filesystem | null = null; // cached so autosave doesn't re-acquire each tick
   let autosaving = false;
-  // Folder-mirror generation stamp (Issue 25 row c, docs/state/MIRROR.md): the opaque token Archie last
-  // wrote into the bound folder. Before an INCREMENTAL mirror, the on-disk token is compared to this —
-  // a definite mismatch means an external writer (or a second Archie window) touched the folder, so the
-  // mirror stops instead of blind-overwriting. null = no baseline yet (fresh session / just rebound).
-  let lastMirrorToken: string | null = null;
+  // Folder-mirror generation guard (Issue 25 row c, docs/state/MIRROR.md): the shared
+  // adopt/verify/restamp protocol (generation-guard.ts) owning the opaque token Archie last wrote into
+  // the bound folder. Before an INCREMENTAL mirror the on-disk token is compared to this — a definite
+  // mismatch means an external writer (or a second Archie window) touched the folder, so the mirror
+  // stops instead of blind-overwriting. The baseline is RESET at bind and established only by the first
+  // full write's re-stamp (the first mirror of a session always resyncs, so the pre-existing tree is
+  // never trusted incrementally — see the baseline decision in generation-guard.ts).
+  const guard = createGenerationGuard();
 
   /** Issue 25 row (d): a WRITE failure means the cached handle may be dead (folder moved/deleted/perm
    *  revoked). Drop the cache so the next attempt RE-ACQUIRES instead of hitting the same dead handle,
@@ -77,9 +80,7 @@ export function createBindingStore(deps: BindingDeps) {
    *  baseline the next incremental mirror checks. An Archie write reclaims the folder, so this also
    *  clears any prior external-change block. */
   async function stampMirror(fs: Filesystem): Promise<void> {
-    const token = newMirrorToken();
-    await writeMirrorToken(fs, token);
-    lastMirrorToken = token;
+    await guard.restamp(fs); // fresh token on disk + new session baseline (Archie reclaimed the folder)
     if (s.externalChange) {
       s.externalChange = false;
       if (s.error === EXTERNAL_CHANGE_MSG) s.error = null;
@@ -158,13 +159,12 @@ export function createBindingStore(deps: BindingDeps) {
       // Issue 25 row (c): before overwriting only the dirty files (and TRUSTING the rest of the on-disk
       // tree), verify the folder is still the one Archie last wrote. A definite token mismatch means an
       // external writer / a second Archie window touched it — stop and warn instead of mixing versions.
-      if (lastMirrorToken !== null) {
-        const onDisk = await readMirrorToken(fs);
-        if (onDisk !== null && onDisk !== lastMirrorToken) {
-          s.externalChange = true;
-          s.error = EXTERNAL_CHANGE_MSG;
-          return; // dirt retained; the user resolves via Save (mine wins) or reopen (theirs wins)
-        }
+      // (verify is false with no baseline yet — the pre-first-write tree is never incrementally trusted,
+      // the first mirror always resyncs above.)
+      if (await guard.verify(fs)) {
+        s.externalChange = true;
+        s.error = EXTERNAL_CHANGE_MSG;
+        return; // dirt retained; the user resolves via Save (mine wins) or reopen (theirs wins)
       }
       const snap = takeDirt();
       const plan: FolderWritePlan = { incremental: { exhibits: snap.exhibits, reassets: snap.reassets }, removedExhibits: snap.removedExhibits, removedObjects: snap.removedObjects };
@@ -229,7 +229,7 @@ export function createBindingStore(deps: BindingDeps) {
     bindToFile(name: string) {
       folderFs = null;
       folderResynced = false; resetDirt(); // leaving any folder binding — drop its stale mirror state
-      lastMirrorToken = null; s.externalChange = false; // new binding — no generation baseline yet
+      guard.reset(); s.externalChange = false; // new binding — no generation baseline yet
       s.binding = { kind: "file", name };
       s.error = null;
       s.dirty = false;
@@ -292,7 +292,7 @@ export function createBindingStore(deps: BindingDeps) {
         await deps.replaceProjectFrom(loaded, fb.fs);
         folderFs = fb.fs;
         folderResynced = false; resetDirt(); // new library + folder — resync before incremental mirrors
-        lastMirrorToken = null; s.externalChange = false; // fresh folder — reset the generation baseline
+        guard.reset(); s.externalChange = false; // fresh folder — reset the generation baseline
         s.binding = { kind: "folder", name: fb.name, handleKey: fb.key };
         s.dirty = false; rememberBinding();
       } finally { s.busy = false; }
@@ -314,7 +314,7 @@ export function createBindingStore(deps: BindingDeps) {
         await deps.replaceProjectFrom(loaded, reb.fs);
         folderFs = reb.fs;
         folderResynced = false; resetDirt(); // new library + folder — resync before incremental mirrors
-        lastMirrorToken = null; s.externalChange = false; // fresh folder — reset the generation baseline
+        guard.reset(); s.externalChange = false; // fresh folder — reset the generation baseline
         s.binding = { kind: "folder", name: reb.name, handleKey: r.id };
         s.dirty = false; rememberBinding();
       } finally { s.busy = false; }
@@ -331,7 +331,7 @@ export function createBindingStore(deps: BindingDeps) {
       if (s.binding.kind === "folder" && s.binding.handleKey) void forgetFolderBinding(s.binding.handleKey);
       folderFs = null;
       folderResynced = false; resetDirt(); // a new binding must resync before incremental mirrors resume
-      lastMirrorToken = null; s.externalChange = false; // detached — no generation baseline
+      guard.reset(); s.externalChange = false; // detached — no generation baseline
       s.binding = { kind: "unbound" };
       s.error = null; s.dirty = false;
       saveLastBinding(s.binding);

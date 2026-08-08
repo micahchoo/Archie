@@ -2,7 +2,7 @@
 // ZipFilesystem.fromZip + validateArchieMarker so no consumer can skip the marker check the way
 // apps/studio/src/ingest-flows.ts's openZip used to.
 import { describe, it, expect, vi } from "vitest";
-import { openArchieLibrary, fetchArchieLibraryBytes, openArchieLibraryFromUrl, looksLikeZip, SRC_MAX_BYTES } from "./open.js";
+import { openArchieLibrary, fetchArchieLibraryBytes, fetchZipBytesIfAny, openArchieLibraryFromUrl, looksLikeZip, SRC_MAX_BYTES } from "./open.js";
 import { libraryToZipFs } from "./site.js";
 import { ZipFilesystem } from "../fs/zip.js";
 import { asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
@@ -121,6 +121,43 @@ describe("open seam — fetchArchieLibraryBytes (capped fetch, no decode/validat
     const fakeFetch = vi.fn(async () => new Response(new Blob([bytes as BlobPart]), { status: 200 })) as unknown as typeof fetch;
     await expect(fetchArchieLibraryBytes("https://host/small.zip", { fetch: fakeFetch })).resolves.toHaveLength(10);
     expect(SRC_MAX_BYTES).toBe(1024 * 1024 * 1024); // 1 GiB (SCALE-rescaled from 256 MB)
+  });
+});
+
+describe("open seam — fetchZipBytesIfAny (the shared zip-fallback byte sniff)", () => {
+  const ZIP = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 1, 2, 3]); // PK\x03\x04 local-file header + payload
+  const NOT_ZIP = new Uint8Array([0x7b, 0x22, 0x61, 0x22, 0x7d]); // `{"a"}` — valid JSON, not a zip
+
+  it("returns the bytes IFF they are a zip (the `.zip`-less-URL carve-out)", async () => {
+    const fakeFetch = vi.fn(async () => new Response(new Blob([ZIP as BlobPart]), { status: 200 })) as unknown as typeof fetch;
+    expect(await fetchZipBytesIfAny("https://host/library-download", { fetch: fakeFetch })).toEqual(ZIP);
+    expect(fakeFetch).toHaveBeenCalledWith("https://host/library-download");
+  });
+
+  it("returns null for non-zip bytes — the caller surfaces its own error", async () => {
+    const fakeFetch = vi.fn(async () => new Response(new Blob([NOT_ZIP as BlobPart]), { status: 200 })) as unknown as typeof fetch;
+    expect(await fetchZipBytesIfAny("https://host/page", { fetch: fakeFetch })).toBeNull();
+  });
+
+  it("SWALLOWS a network fault to null — NOT thrown, so the original tree-open error surfaces", async () => {
+    const fakeFetch = vi.fn(async () => {
+      throw new Error("offline");
+    }) as unknown as typeof fetch;
+    expect(await fetchZipBytesIfAny("https://host/down", { fetch: fakeFetch })).toBeNull();
+  });
+
+  it("SWALLOWS a non-OK response to null — same reason", async () => {
+    const fakeFetch = vi.fn(async () => new Response("nope", { status: 404 })) as unknown as typeof fetch;
+    expect(await fetchZipBytesIfAny("https://host/missing", { fetch: fakeFetch })).toBeNull();
+  });
+
+  it("still THROWS on too-large — the cap stays hard even on the speculative path (declared and actual)", async () => {
+    const declared = vi.fn(async () => new Response("x", { status: 200, headers: { "content-length": "999999999999" } })) as unknown as typeof fetch;
+    await expect(fetchZipBytesIfAny("https://host/huge", { fetch: declared, maxBytes: 1024 })).rejects.toThrow(/too large/i);
+    const bigZip = new Uint8Array(2048);
+    bigZip.set([0x50, 0x4b, 0x03, 0x04]); // a zip-shaped body that exceeds the cap
+    const actual = vi.fn(async () => new Response(new Blob([bigZip as BlobPart]), { status: 200 })) as unknown as typeof fetch;
+    await expect(fetchZipBytesIfAny("https://host/big", { fetch: actual, maxBytes: 1024 })).rejects.toThrow(/too large/i);
   });
 });
 

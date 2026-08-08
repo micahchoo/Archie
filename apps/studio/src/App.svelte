@@ -50,17 +50,17 @@
   import { modality } from "./modality.svelte";
   import { applyClick, selectAll as selectAllIds, applyMarquee, type ClickMods } from "./overview-selection.js";
   import { teardownAndRemoveExhibits } from "./exhibit-teardown.js";
-  import { liveNoteIdsOnCanvas, conflictsBlockingRemoval as blockingRemovalConflicts, dedupeById } from "./conflict-gate.js";
+  import { liveNoteIdsOnCanvas, conflictsBlockingRemoval as blockingRemovalConflicts } from "./conflict-gate.js";
   import { warnAnnotationPublishCorruption, type CorruptLogFinding } from "./publish-warnings.js";
   import {
     AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
     timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
-    tagsOf, emphasisOf, readingMarkerStyle, withZoomBand, workingToLibrary, resolveLayoutType,
+    tagsOf, workingToLibrary, resolveLayoutType,
     READING_PALETTE as CORE_READING_PALETTE,
-    isWholeObjectFor, wholeObjectFlagOf, selectorOf, selectorBBox, DZI_TILE_SIZE,
+    DZI_TILE_SIZE,
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
   } from "@render/core";
-  import { formatZoomRatio, zoomBand, type DrawTool, type MarkerStyle, type FrameOverlay } from "@render/mount";
+  import { formatZoomRatio, type DrawTool } from "@render/mount";
   import { openExhibitAnnotationsDir, openExhibitStructureDir, loadLibraryMeta, migrateResidentStoreIds, readAssetUrl, residentAssetUrl, readThumbUrl, clearExhibitAnnotations, clearExhibitStructure, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, WORKING_STORE_ID, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
   import { createLibraryStore } from "./library-meta.svelte.js";
   import { enqueueSave, saveStatus, setWriterGate, setWriterOtherName } from "./save-queue.svelte.js";
@@ -76,11 +76,14 @@
   // deps stay OUT of the startup bundle — publishing is a deliberate action, never needed at boot.
   import { createReadingState } from "./reading-state.svelte.js";
   import { readingBadge, readingNumber } from "./reading-index.js";
-  import { distinctEditors, hasMultipleEditors, editorLabel, attributionChip } from "./collab-attribution.js";
+  import { editorLabel, attributionChip } from "./collab-attribution.js";
   import { loadImportFreshness, freshnessBadgeText } from "./import-freshness.js";
   import MergeReview from "./MergeReview.svelte";
   import { roveIndex } from "./roving.js";
-  import { dedupeHeadsByLogicalId } from "./note-heads.js";
+  // The editor view-model (Archie P8): the notes/annotations derivation cluster + marginalia rail + LOD
+  // dots + co-located-note stack — ONE factory over App's reactive primitives (constructed below, after
+  // commentOf). The pure helpers it owns and App still calls directly are imported from the same module.
+  import { createEditorModel, oneTarget, selHasSelector, BASE_MARKER } from "./editor-model.svelte.js";
   import { hasRealWorkIn } from "./safety-state.svelte.js";
   // Persisted editor-chrome view preferences (Archie-c7ef): the filmstrip's collapsed state + the
   // inspector panel's width. Same module the overview Canvas/List + library lens live in.
@@ -462,7 +465,7 @@
     clearSel(); selectMode = false; // selection is exhibit-scoped (Phase 2) — the incoming exhibit starts clean
     void loadPendingNotes().then((m) => { pendingNotes = m[slug] ?? []; }); // this exhibit's coordinate-free imports awaiting a box
     rdg.resetForExhibit(); // fresh exhibit = everything visible, pen on base (fixes the cross-exhibit leak)
-    editorFilter = "all"; // the editor lens is exhibit-scoped too — a filter from the outgoing exhibit must not silently hide notes here
+    model.editorFilter = "all"; // the editor lens is exhibit-scoped too — a filter from the outgoing exhibit must not silently hide notes here
     firstAddCueSlug = null; pendingClear = null; clearedSlug = null; // drop any narrative-staging cue from the outgoing exhibit
     // The SESSION swap is now one ATOMIC transition (fix #3): exhibit-session.open flushes the OUTGOING
     // exhibit, resolves THIS exhibit's thumbs, then loads/seeds + installs session/annDir/storeReady in a
@@ -549,7 +552,7 @@
    * Returns the blocking ids, or an empty array when the removal is safe.
    */
   const conflictsBlockingRemoval = (objIds: readonly string[]): string[] =>
-    blockingRemovalConflicts(objIds, liveNoteIdsOn, (id) => conflictedNoteIds.has(id));
+    blockingRemovalConflicts(objIds, liveNoteIdsOn, (id) => model.conflictedNoteIds.has(id));
 
   /** The shared refusal message + note, so both removal paths say the same thing. */
   function refuseForConflicts(blocking: readonly string[], what: string): void {
@@ -876,7 +879,7 @@
   // might not have blurred the textarea first), then deselect → the note's inspector card collapses back to
   // its header.
   function closeNote() {
-    if (sel && commentEl) applyForm(commentEl.value, tagsOf(sel).join(", "));
+    if (model.sel && commentEl) applyForm(commentEl.value, tagsOf(model.sel).join(", "));
     vs.selected = null;
     vs.editing = null;
   }
@@ -1115,7 +1118,7 @@
   // note). Selecting a conflicted note still highlights it on the canvas (`selected`), but `editing`
   // stays null so the note's inspector card expands to the "needs review" gate (below) instead of a form
   // that would throw on its first write — resolve in MergeReview first, then it opens normally.
-  $effect(() => { if (vs.selected !== null) vs.editing = conflictedNoteIds.has(vs.selected) ? null : vs.selected; });
+  $effect(() => { if (vs.selected !== null) vs.editing = model.conflictedNoteIds.has(vs.selected) ? null : vs.selected; });
   // ADR-0011: creation is gesture-initiated, not a sticky tool mode. Selection is ambient (the canvas
   // resting state). `creating` is the transient armed state for a NEW NOTE — null = not drawing; a chosen
   // shape = "draw the next region, then disarm". Narrative camera framing (framingSectionId) shares the
@@ -1377,139 +1380,12 @@
   function patchExhibitMeta(slug: string, fields: Partial<ExhibitMeta>) { lib.patchExhibit(slug, fields); }
   function patchObjectMeta(objId: string, fields: Partial<ObjectMeta>) { lib.patchObject(vs.currentSlug, objId, fields); }
 
-  // A W3C annotation target is `W3CTarget | W3CTarget[]`; Archie authors ONE target per note, so
-  // normalize to the single target wherever a single is required (createNote/editNote/geoForTarget).
-  const oneTarget = <T,>(t: T | T[]): T => (Array.isArray(t) ? (t[0] as T) : t);
-  // Notes + working annotations are scoped to the CURRENT object's canvas (then the layer filter).
-  // `void rev;` registers the revision counter as a reactive dep (bumped on every log write) without the
-  // bare-comma idiom svelte-check flags as an unused expression.
-  // Hide-by-ancestry (Archie-42f3, flag-on only): notes attributed to a TOMBSTONED section are
-  // filtered from the working surfaces at data level (spine/visibility.ts hiddenNoteIds). Flag off
-  // ⇒ structure.hiddenIds returns the constant empty set and both filters are identity.
-  const hiddenByStructure = $derived.by<ReadonlySet<string>>(() => { void rev; return structure.hiddenIds(vs.currentSlug, sess.session.entries); });
-  // Sections with plural heads (unresolved concurrent edits) — gates the NarrativeEditor's edit
-  // affordances (merge contract C4). Empty set whenever the flag is off.
-  const conflictedSectionIds = $derived<ReadonlySet<string>>(structure.conflictedLocalIds(vs.currentSlug));
-  // NOTES with plural heads (Archie-90f1, merge contract C4/C5) — the annotation-level sibling of
-  // conflictedSectionIds above. Source-agnostic: session.conflicts() just reads the log, so this reflects
-  // whatever put plural heads there (a merged colleague's zip today; a live-sync transport tomorrow) — the
-  // status strip's summary, MergeReview, and the per-note edit gate below all read this ONE set.
-  const noteConflicts = $derived.by<string[]>(() => { void rev; return sess.session.conflicts(); });
-  const conflictedNoteIds = $derived<ReadonlySet<string>>(new Set(noteConflicts));
+  // --- editor view-model (Archie P8): the ~450-line notes/annotations derivation cluster that lived here
+  // (hiddenByStructure → cycleCoLocated) moved to editor-model.svelte.ts — ONE factory, constructed below
+  // (after commentOf, a model dep). App stays the thin shell: it renders model state and keeps the two
+  // UI/DOM-bound bits that sat inside the cluster — mergeReviewOpen (a modal flag, not a derivation) and
+  // the notes list element + its marker-follow $effect (bind:this + scrollIntoView touch the DOM). ---
   let mergeReviewOpen = $state(false);
-  const allNotes = $derived.by(() => { void rev; return sess.session.notes().filter((r) => !hiddenByStructure.has(r.logicalId)); });
-  // Attribution chrome (Archie-90f1) is gated on ≥2 distinct editors across the WHOLE exhibit's live
-  // notes (not just this object) — a solo library/exhibit shows zero attribution chips or filter lens.
-  const showAttribution = $derived(hasMultipleEditors(allNotes));
-  // Filter-by-editor lens, composing with the Readings visibility filter below ("all" = no narrowing).
-  // Reset on exhibit switch (mirrors rdg.resetForExhibit()) so a filter picked in one exhibit doesn't
-  // silently hide notes in the next.
-  let editorFilter = $state<string>("all");
-  const editorOptions = $derived.by<string[]>(() => { void rev; return [...distinctEditors(allNotes)]; });
-  // ONE row per note (Archie-d48e): session.notes() returns every live head, so an edit-vs-edit conflict
-  // yields 2+ records sharing a logicalId — deduped here to one max-rev representative so the inspector's
-  // logicalId-keyed list (and the object-scoped reading counts) are per-NOTE, not per-head. Both sides stay
-  // reachable for resolution via session.conflictHeads() (MergeReview); exhibit-wide allNotes is left with
-  // all heads on purpose (editor-diversity / attribution legitimately counts every editor's head).
-  const objNotes = $derived(dedupeHeadsByLogicalId(allNotes.filter((r) => srcOf(r.target) === vs.canvasId)));
-  const notes = $derived(
-    objNotes.filter((r) => rdg.noteVisible(r) && (editorFilter === "all" || String(r.lastEditor ?? "unknown") === editorFilter)),
-  );
-  // Archie-7e5b S3a: `workingAnnotations()` yields every live HEAD, so a conflicted note arrives as
-  // TWO annotations sharing one `id` — Annotorious is handed duplicate ids and draws the note twice,
-  // with only one of them addressable. Dedupe to a single representative, the same rule `objNotes`
-  // above applies to the sidebar list; both sides stay reachable through MergeReview.
-  const objAnnotations = $derived.by<W3CAnnotation[]>(() => {
-    void rev;
-    return dedupeById(sess.session.workingAnnotations().filter((a) => srcOf(a.target) === vs.canvasId && !hiddenByStructure.has(a.id)));
-  });
-  // O(1) marker lookup for the live styler: Annotorious calls styleOf per marker on every restyle
-  // (hover / solo / reading toggle), so a per-call array scan was O(n²) across the canvas. Rebuilt only
-  // when the working-annotation set changes.
-  const annById = $derived(new Map(objAnnotations.map((a) => [a.id, a] as const)));
-  const annotations = $derived<W3CAnnotation[]>(
-    objAnnotations.filter((a) => rdg.isVisible(((a as unknown as Record<string, unknown>)["archie:reading"] as string | undefined) ?? "base")),
-  );
-  const sel = $derived(notes.find((r) => r.logicalId === vs.editing));
-  // Note count per canvas, built ONCE per allNotes change — the overview/library lists call this per
-  // object, so the old per-call filter was O(objects × notes) on every `rev` bump. O(1) lookup now.
-  // Deduped by logicalId first (Archie-d7ee): allNotes carries EVERY live head, so an edit-vs-edit
-  // conflict holds 2+ records for one note — counting raw heads would tally that note twice. The count
-  // is per-NOTE (like objNotes / the inspector list), not per-head.
-  const noteCountByCanvas = $derived.by(() => {
-    const m = new Map<string, number>();
-    for (const r of dedupeHeadsByLogicalId(allNotes)) { const c = srcOf(r.target); if (c === undefined) continue; m.set(c, (m.get(c) ?? 0) + 1); }
-    return m;
-  });
-  const noteCountOf = (objId: string) => noteCountByCanvas.get(vs.canvasIdOf(objId)) ?? 0;
-  // Recency per canvas for the overview's "recently-annotated" sort (Phase 2) — MAX modifiedAt over the
-  // object's notes, built ONCE per allNotes change (same shape as noteCountByCanvas). modifiedAt is an ISO
-  // string, so lexicographic MAX = chronological MAX; "" (no notes) sorts oldest. Exhibit-scoped, which is
-  // exactly the overview's scope (the session holds one exhibit's log).
-  const lastAnnotatedByCanvas = $derived.by(() => {
-    const m = new Map<string, string>();
-    for (const r of allNotes) { const c = srcOf(r.target); if (c === undefined) continue; const t = r.modifiedAt ?? ""; const cur = m.get(c); if (cur === undefined || t > cur) m.set(c, t); }
-    return m;
-  });
-  const lastAnnotatedOf = (objId: string) => lastAnnotatedByCanvas.get(vs.canvasIdOf(objId)) ?? "";
-  // Live marker styling (Archie-1489) — mirrors the viewer's readingStyleOf so the curator authors against
-  // what a visitor sees. Colour = the note's reading (ADR-0007); reading-less notes get a neutral forest-
-  // green default (so base marks are visible). Per-note emphasis modulates opacity/weight ONLY, never hue.
-  const BASE_MARKER = "#3A8C5D"; // forest green — the base (reading-less) note default
-  // The active reading (the pen's destination), shaped for the draw-time cue (P1): name + colour,
-  // falling back to base ("General notes" / the base hue) when the pen is on base. `find ?? null`
-  // dodges the BASE-url collision — base is never in currentReadings, so a miss means base.
-  const activeReading = $derived(currentReadings.find((r) => r.id === rdg.active) ?? null);
-  const activeReadingLabel = $derived(activeReading?.name ?? "General notes");
-  const activeReadingColour = $derived(activeReading?.colour ?? BASE_MARKER);
-  // Solo (rail-row hover, B4): the soloed reading's fill returns while comparing. null = none.
-  let soloReading = $state<string | null>(null);
-  // Per-NOTE solo: hovering a note in the list lights its mark on the canvas (the rail's hover
-  // affordance applied to annotations) — `vs.hoverNote`, driven by the notes list + the marginalia rail.
-
-  // --- Marginalia rail (Archie-dff3, direction B — collapsed tick rail) — the surviving marginalia
-  // engine, re-presented as a near-invisible tick rail beside the canvas (NOT the reverted floating
-  // card column, and superseding an intermediate direction-C density-cluster build per user verdict).
-  // Canvas streams each visible note's on-screen region rect via `onmarkerrects`; the rail places one
-  // tick per note (no clustering, no chip chrome, no heat band — ticks at every density). It's a
-  // spatial index that DRIVES `selected`/`hoverNote` — the same channels the inspector list and canvas
-  // marks use — so it never becomes a second edit surface. Image/Map objects only (regions have a
-  // screen rect; AV notes are temporal). `markerRects` is the latest batched frame; the rail re-solves
-  // off it. Each tick's colour is the note's reading colour (mirroring markerStyleOf's base
-  // fallback) — WHERE + HOW MUCH only, never a text lead (user-verdict strip, Archie-dff3). ---
-  let markerRects = $state<Record<string, { left: number; top: number; right: number; bottom: number } | null>>({});
-  // Is the open note a region note (has a spatial/temporal selector)? Drives the note-form Scope control
-  // AND (Archie-e913) marginaliaItems' `wholeImage` flag below — moved up from its original spot beside
-  // setNoteScope so both readers see one definition (script order matters: $derived reads eagerly).
-  const selHasSelector = (r: AnnotationRecord | undefined): boolean =>
-    !!r && typeof r.target !== "string" && (r.target as { selector?: unknown }).selector != null;
-  // Archie-e913: a whole-image (bare-IRI) note has no marker rect — `markerRects[id]` is always null for
-  // it (mount.ts's markerScreenRects only sees Annotorious-registered markers, and canvasAnnotations drops
-  // the framed whole-object note entirely). Rather than synthesize a fake rect into that shared stream
-  // (dots/selection-popover consumers trust it as real geometry — see Marginalia.svelte's header comment),
-  // the rail is told directly which ids are whole-image and gives them their own reserved slot.
-  const marginaliaItems = $derived(
-    notes.map((r) => ({
-      id: r.logicalId,
-      colour: (r.reading ? currentReadings.find((x) => x.id === r.reading)?.colour : undefined) ?? BASE_MARKER,
-      wholeImage: !selHasSelector(r),
-    })),
-  );
-  const marginaliaRectIds = $derived(notes.map((r) => r.logicalId));
-
-  // LOD dots (Archie-c1d9) — the note set the canvas plots as far-band location dots AND as navigator
-  // note-dots. Same id/colour as the marginalia rail (logicalId = the annotation id the canvas keys on;
-  // colour = the note's Reading hue, base fallback), plus an accessible label (the note's prose snippet)
-  // for the far-band dot's aria-label — the marker-level a11y contract now lives on these real dots
-  // (Archie-3e12), the inspector notes list stays the PRIMARY keyboard surface.
-  const dotItems = $derived(
-    notes.map((r) => ({
-      id: r.logicalId,
-      colour: (r.reading ? currentReadings.find((x) => x.id === r.reading)?.colour : undefined) ?? BASE_MARKER,
-      label: stripMarkdown(commentOf(r)).slice(0, 120) || "Untitled note",
-    })),
-  );
-
   // --- Notes-panel DISCLOSURE surface (Archie-f260 §4 obligation, re-derived for Archie-d48e).
   // The WebGL/PixiJS marks have no per-marker DOM node a screen reader can reach (confirmed: no marker-level
   // ARIA is possible), so the inspector's notes list IS the accessible parallel structure standing in for the
@@ -1520,6 +1396,9 @@
   // selecting now opens a heavy edit form, arrowing must not silently open one. The old roving/listbox
   // machinery (roving tabindex, arrow-nav, spoken position) retired WITH the listbox role it served — a native
   // button needs none of it (it's a real tab stop, natively activatable, and carries its own expanded state). ---
+  // (Archie P8: the NOTES + ANNOTATIONS derivation chain above this surface — and the marginalia rail,
+  // LOD dots, marker styler, whole-object frame and co-located stack that sat around it — moved to
+  // editor-model.svelte.ts; only the DOM-bound list element + its marker-follow effect stay here.)
   let notesListEl = $state<HTMLElement | null>(null);
   // Marker-follow (Archie-d48e): selecting a note on the CANVAS expands its card IN PLACE in the inspector
   // list — bring that card into view when it might be off-screen (the list can be taller than the panel).
@@ -1529,90 +1408,6 @@
     if (!id) return;
     notesListEl?.querySelector<HTMLElement>(`[data-note-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   });
-  // Scale-aware marks (Archie-a6fb): the coarse zoom band, derived from the live zoomRatio the
-  // canvas streams via onzoom. A `$derived` so it's memoized BY VALUE — while a pan/zoom keeps the
-  // reader in the same band, this stays the same string and doesn't re-mint styleOfLive; it only
-  // re-mints (→ setStyle re-applies) when the band actually crosses far↔mid↔near. The zoom-band CSS
-  // that used to do this against `.a9s-annotation` was inert (WebGL mark layer, no SVG node), so the
-  // weight now rides the style channel via withZoomBand below.
-  const zoomBandNow = $derived(zoomBand(zoomRatio));
-  // Canvas re-applies styles only when the styleOf PROP IDENTITY changes ($effect dep) — a stable
-  // function would freeze the comparing/solo regime (browser-harness finding). This derived mints
-  // a fresh identity whenever the display state (visibility/solo/hover/readings/log/zoom band) changes.
-  const styleOfLive = $derived.by(() => {
-    void rdg.comparing(currentReadings);
-    void soloReading;
-    void vs.hoverNote;
-    void rev;
-    void zoomBandNow;
-    return (id: string) => markerStyleOf(id);
-  });
-  function markerStyleOf(id: string): MarkerStyle | undefined {
-    const a = annById.get(id);
-    if (!a) return undefined;
-    const rid = (a as unknown as Record<string, unknown>)["archie:reading"] as string | undefined;
-    const colour = (rid ? currentReadings.find((r) => r.id === rid)?.colour : undefined) ?? BASE_MARKER;
-    // ONE style source for both apps (render-core readingMarkerStyle) carrying the comparing
-    // regime (archie-ux Q-2): 2+ readings visible → outline-only; solo-on-hover restores a fill.
-    const base = readingMarkerStyle(colour, emphasisOf(a), {
-      comparing: rdg.comparing(currentReadings),
-      soloed: soloReading !== null && (rid ?? "base") === soloReading,
-      highlighted: vs.hoverNote === id, // the hovered list note's mark is momentarily the brightest thing
-    });
-    // Layer the zoom-band weight ON TOP (post-modulation): far → heavier stroke for presence at
-    // fit-width; near → the outline recedes. Composes with the regime above, one style channel.
-    return withZoomBand(base, zoomBandNow);
-  }
-
-  // Whole-object frame for the STUDIO canvas (ADR-0018): the first note that frames the WHOLE object —
-  // a bare-IRI note (no selector) or a ≥75%/override region note. Mirrors the viewer's ExhibitView.frameFor
-  // so a created/converted whole-object note is VISIBLE while authoring (it has no marker of its own). AV
-  // objects have no OSD canvas, so no frame there (their whole-track band lives in the viewer's MediaPlayer).
-  const frameMark = $derived.by<{ markId: string; colour: string } | null>(() => {
-    if (isAvCurrent) return null;
-    const w = vs.current?.width, h = vs.current?.height;
-    for (const a of annotations) {
-      if (!a.id) continue;
-      if (isWholeObjectFor(selectorOf(a), w ?? 0, h ?? 0, wholeObjectFlagOf(a))) {
-        const rid = (a as unknown as Record<string, unknown>)["archie:reading"] as string | undefined;
-        const colour = (rid ? currentReadings.find((r) => r.id === rid)?.colour : undefined) ?? BASE_MARKER;
-        return { markId: a.id, colour };
-      }
-    }
-    return null;
-  });
-  // The OSD frame overlay; its corners activate (select) the framed note, like a marker click.
-  const studioFrame = $derived<FrameOverlay | null>(
-    frameMark ? { colour: frameMark.colour, onActivate: () => (vs.selected = frameMark.markId) } : null,
-  );
-  // Drop the framed note's own rect from the canvas array (a ≥75% region note would otherwise draw rect +
-  // frame); a bare-IRI whole-object note has no rect, so this is a no-op for the common case.
-  const canvasAnnotations = $derived(frameMark ? annotations.filter((a) => a.id !== frameMark!.markId) : annotations);
-
-  // Co-located notes — a "stack" of notes whose hitboxes overlap so much you can't separate them by
-  // clicking the canvas (e.g. the cipher/hoax/abjad reading notes share one region). The note editor cycles
-  // through them so every note at a spot is reachable. Overlap = bbox IoU ≥ 0.5 on the SAME object.
-  type Bx = { x: number; y: number; w: number; h: number };
-  const bboxOf = (t: unknown): Bx | null => { const s = selectorOf({ target: t }); return s ? selectorBBox(s) : null; };
-  const bboxIoU = (a: Bx, b: Bx): number => {
-    const ix = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
-    const iy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
-    const inter = ix * iy, uni = a.w * a.h + b.w * b.h - inter;
-    return uni > 0 ? inter / uni : 0;
-  };
-  const coLocated = $derived.by<AnnotationRecord[]>(() => {
-    if (!sel) return [];
-    const sb = bboxOf(sel.target);
-    if (!sb) return []; // whole-object / no-region selected → no stack to step through
-    return objNotes.filter((r) => { const b = bboxOf(r.target); return !!b && bboxIoU(sb, b) >= 0.5; });
-  });
-  const coLocatedIndex = $derived(coLocated.findIndex((r) => r.logicalId === vs.editing));
-  function cycleCoLocated(dir: 1 | -1) {
-    if (coLocated.length < 2) return;
-    const i = ((coLocatedIndex < 0 ? 0 : coLocatedIndex) + dir + coLocated.length) % coLocated.length;
-    vs.selected = coLocated[i]!.logicalId;
-  }
-
   // --- canvas lifecycle ---
   function onCreate(a: W3CAnnotation) {
     if (framingSectionId) {
@@ -1678,8 +1473,8 @@
   function setNoteScope(scope: "whole" | "region") {
     if (!vs.editing) return;
     if (scope === "whole") {
-      if (!selHasSelector(sel)) return; // already whole-object — no-op
-      sess.session.editNote(vs.editing as LogicalId, { target: srcOf(sel!.target) ?? vs.canvasId, ...(isMapCurrent ? { geo: null } : {}) });
+      if (!selHasSelector(model.sel)) return; // already whole-object — no-op
+      sess.session.editNote(vs.editing as LogicalId, { target: srcOf(model.sel!.target) ?? vs.canvasId, ...(isMapCurrent ? { geo: null } : {}) });
       bump();
     } else {
       // "Draw a region" (whole→region) OR "Redraw bounds" (replace a region): arm a draw that re-targets
@@ -1696,7 +1491,7 @@
   // nothing written. Refuse here too, with the same message the removal paths use, and re-render so
   // the marker snaps back to its stored geometry rather than lying about an edit that never landed.
   const onUpdate = (a: W3CAnnotation) => {
-    if (conflictedNoteIds.has(a.id)) {
+    if (model.conflictedNoteIds.has(a.id)) {
       importNote = { message: "Two people edited this note at the same time. Open Review to settle it before moving its marker — nothing has changed.", ok: false };
       bump(); // re-render from the log: the dragged marker returns to where it actually is
       return;
@@ -1706,7 +1501,7 @@
   };
   const ondelete = (id: string) => {
     // Same gate as onUpdate: deleteNote resolves the linear head and throws on plural heads.
-    if (conflictedNoteIds.has(id)) {
+    if (model.conflictedNoteIds.has(id)) {
       importNote = { message: "Two people edited this note at the same time. Open Review to settle it before deleting it — nothing has changed.", ok: false };
       bump();
       return;
@@ -1750,6 +1545,24 @@
   // --- WADM form helpers ---
   const bodies = (r: AnnotationRecord): W3CBody[] => (Array.isArray(r.body) ? r.body : r.body ? [r.body] : []);
   const commentOf = (r: AnnotationRecord) => { const b = bodies(r).find((x) => { const p = (x as { purpose?: string }).purpose; return p === undefined || p === "commenting"; }); return (b as { value?: string } | undefined)?.value ?? ""; };
+  // --- editor view-model construction (Archie P8): the notes/annotations derivation cluster, the
+  // marginalia rail's item lists, the LOD dots, and the co-located-note stack now live in
+  // editor-model.svelte.ts. Constructed HERE (after commentOf — a model dep the dot labels use) once,
+  // against App's reactive primitives; every later read of `model.X` stays live because the factory
+  // holds the same $state/$derived machinery the inline cluster did. Only the DOM-bound bits remain
+  // App-owned (notesListEl + its marker-follow $effect above, mergeReviewOpen). ---
+  const model = createEditorModel({
+    session: () => sess.session,
+    vs,
+    rdg,
+    structure,
+    rev: () => rev,
+    currentReadings: () => currentReadings,
+    isAvCurrent: () => isAvCurrent,
+    zoomRatio: () => zoomRatio,
+    srcOf,
+    commentOf,
+  });
   // tagsOf now routes to @render/core's canonical filter.ts (Standard 6). NOTE: core's tagsOf drops
   // empty/whitespace tag values; the prior local impl kept "" — empty tag chips no longer render.
 
@@ -1832,12 +1645,12 @@
   // already unreachable; its removal completes "MediaPicker becomes the image tab inside CmdK".)
   // The note-Comment cite target: splice at the cursor, persist via applyForm, restore focus past the link.
   async function citeIntoComment(md: string) {
-    if (!sel) return;
-    const full = commentEl?.value ?? commentOf(sel);
+    if (!model.sel) return;
+    const full = commentEl?.value ?? commentOf(model.sel);
     const start = commentEl?.selectionStart ?? full.length;
     const end = commentEl?.selectionEnd ?? full.length;
     const next = full.slice(0, start) + md + full.slice(end);
-    applyForm(next, tagsOf(sel).join(", "));
+    applyForm(next, tagsOf(model.sel).join(", "));
     await tick();
     const pos = start + md.length;
     commentEl?.focus();
@@ -1888,7 +1701,7 @@
     // hint instead of a silent no-op (shortcuts.ts advertises ⌘K; the dead-key was a dogfood gap).
     if (matches(e, "⌘K") && vs.view === "editor") {
       e.preventDefault();
-      if (sel) void requestCite(citeIntoComment);
+      if (model.sel) void requestCite(citeIntoComment);
       else importNote = { message: "Open a note first — then ⌘K cites another note or exhibit into it.", ok: false };
       return;
     }
@@ -1903,7 +1716,7 @@
       if (vs.creating) { e.preventDefault(); vs.creating = null; return; } // disarm a new-note gesture first
       if (framingSectionId) { e.preventDefault(); cancelFraming(); return; }
       if (placingPendingId) { e.preventDefault(); cancelPlacing(); return; } // disarm a pending-note placement
-      if (sel) { e.preventDefault(); vs.selected = null; vs.editing = null; return; }
+      if (model.sel) { e.preventDefault(); vs.selected = null; vs.editing = null; return; }
       // Phase 2 rungs — clear a selection first, then leave select-mode, BEFORE backing out of the overview.
       if (vs.view === "overview" && selection.size > 0) { e.preventDefault(); clearSel(); return; }
       if (vs.view === "overview" && selectMode) { e.preventDefault(); selectMode = false; return; }
@@ -2189,7 +2002,7 @@
       title={vs.currentExhibit.title}
       layout={currentLayout}
       objects={vs.OBJECTS}
-      {noteCountOf}
+      noteCountOf={model.noteCountOf}
       thumbFor={(o) => (o.mediaType && o.mediaType !== "image") ? "" : thumbSrc(o)}
       sections={vs.currentExhibit.sections ?? []}
       onopenobject={openObject}
@@ -2199,7 +2012,7 @@
       onimportmetadata={canWriteNow ? () => (metadataImportOpen = true) : undefined}
       onback={backToLibrary}
       onreorder={reorderObjects}
-      {lastAnnotatedOf}
+      lastAnnotatedOf={model.lastAnnotatedOf}
       {selection}
       {selectMode}
       onselectmode={() => { selectMode = !selectMode; if (!selectMode) clearSel(); }}
@@ -2336,7 +2149,7 @@
           <span class="obj-thumb" style={`background-image:url(${thumbSrc(o)})`}></span>
           <span class="obj-meta">
             <span class="obj-label">{o.label}</span>
-            <span class="obj-count">{noteCountOf(o.id)} notes</span>
+            <span class="obj-count">{model.noteCountOf(o.id)} notes</span>
           </span>
         </button>
       {/each}
@@ -2346,7 +2159,7 @@
   <!-- Status strip (Archie-5e96 / Archie-b671) — ABSENT when idle. Between the rail and the canvas: the ONE
        slim bar the rail's non-nav cargo moved into — mode banners (framing / drawing) and import toasts,
        off the rail and off the canvas. role="status" so a screen reader announces the mode/toast. -->
-  {#if framingSectionId || vs.creating || importStatus || importNote || noteConflicts.length > 0}
+  {#if framingSectionId || vs.creating || importStatus || importNote || model.noteConflicts.length > 0}
     <div class="status-strip" role="status">
       {#if framingSectionId}
         <span class="ss-tag">Setting the view</span>
@@ -2355,7 +2168,7 @@
       {:else if vs.creating}
         <span class="ss-tag">Drawing a region</span>
         <span class="ss-msg">Draw the {vs.creating === "rectangle" ? "box" : "outline"} on the {isMapCurrent ? "map" : "image"} — it becomes your note’s place{isMapCurrent ? ", anchored to its longitude/latitude" : ""}. Drag pans again once you’ve drawn.</span>
-        <span class="ss-into" title="This note files into the active reading (the pen in the readings panel).">Filing into <span class="ss-rd" style={`border-color:${activeReadingColour}`}><span class="ss-rd-num" aria-hidden="true">{readingBadge(rdg.active, readingIds)}</span> {activeReadingLabel}</span></span>
+        <span class="ss-into" title="This note files into the active reading (the pen in the readings panel).">Filing into <span class="ss-rd" style={`border-color:${model.activeReadingColour}`}><span class="ss-rd-num" aria-hidden="true">{readingBadge(rdg.active, readingIds)}</span> {model.activeReadingLabel}</span></span>
         <button type="button" class="ss-cancel" onclick={() => (vs.creating = null)}>Cancel <kbd>Esc</kbd></button>
       {/if}
       {#if importStatus}
@@ -2364,11 +2177,11 @@
       {#if importNote}
         <span class="ss-note">{importNote.message}<button type="button" class="ss-note-x" onclick={() => (importNote = null)} aria-label="Dismiss">✕</button></span>
       {/if}
-      {#if noteConflicts.length > 0}
+      {#if model.noteConflicts.length > 0}
         <!-- Non-blocking merge summary (Archie-90f1, decision Archie-d71c): "am I done? what happened?"
              lives HERE now, not inside MergeReview — Review opens the scrimmed card-by-card surface. -->
         <span class="ss-merge">
-          <span class="ss-msg">{noteConflicts.length} {noteConflicts.length === 1 ? "note needs" : "notes need"} a look.</span>
+          <span class="ss-msg">{model.noteConflicts.length} {model.noteConflicts.length === 1 ? "note needs" : "notes need"} a look.</span>
           <button type="button" class="ss-cancel" onclick={() => (mergeReviewOpen = true)}>Review</button>
         </span>
       {/if}
@@ -2380,11 +2193,11 @@
          place by {@render}-ing this snippet (Archie-d48e). Declared at .body scope so the inspector site can
          reach it; a single definition keeps the edit form identical wherever it hosts. -->
     {#snippet noteForm()}
-      <NoteEditor sel={sel!} editing={vs.editing!} {currentReadings} bind:commentEl
-        {showAttribution} you={author}
+      <NoteEditor sel={model.sel!} editing={vs.editing!} {currentReadings} bind:commentEl
+        showAttribution={model.showAttribution} you={author}
         {commentOf} {tagsOf} {timeOf}
         {applyForm} {applyTime} {setNoteReading} {setNoteEmphasis} {setNoteScope} {requestCite} {citeIntoComment} {closeNote} {ondelete}
-        {coLocatedIndex} coLocatedCount={coLocated.length} {cycleCoLocated} />
+        coLocatedIndex={model.coLocatedIndex} coLocatedCount={model.coLocated.length} cycleCoLocated={model.cycleCoLocated} />
     {/snippet}
     <!-- Two-zone sidebar (Archie-5e96): a labeled "Exhibit" scope zone (the narrative spine — ADR-0016
          always-present) over a "This object" scope zone (readings, notes, detail). Sticky zone headers hold
@@ -2462,7 +2275,7 @@
                 sections={vs.currentExhibit?.sections ?? []}
                 objects={vs.OBJECTS}
                 currentObjectId={vs.currentObjectId}
-                conflictedIds={conflictedSectionIds}
+                conflictedIds={model.conflictedSectionIds}
                 activeSectionId={focusSectionId}
                 framingId={framingSectionId}
                 cleared={clearedSlug === vs.currentSlug}
@@ -2512,7 +2325,7 @@
               <div class="readings-rows">
                 {#each [{ id: "base", name: "General notes", colour: "var(--accent)" }, ...currentReadings] as r (r.id)}
                   <div class="reading-row" class:active-reading={rdg.active === r.id}
-                    onmouseenter={() => (soloReading = r.id)} onmouseleave={() => (soloReading = null)} role="group" aria-label={`${r.name} — reading ${readingNumber(r.id, readingIds)}`}>
+                    onmouseenter={() => (model.soloReading = r.id)} onmouseleave={() => (model.soloReading = null)} role="group" aria-label={`${r.name} — reading ${readingNumber(r.id, readingIds)}`}>
                     <input type="checkbox" class="rd-vis" checked={rdg.isVisible(r.id)} onchange={() => rdg.toggle(r.id)} aria-label={`Show ${r.name} notes`} title={`Show “${r.name}” notes on the image`} />
                     <!-- Colour-independent identifier (Archie-f260 §3): a small circled number paired with the
                          swatch, so the reading is legible without perceiving the hue. aria-hidden — the reading
@@ -2520,7 +2333,7 @@
                     <span class="reading-num" aria-hidden="true">{readingBadge(r.id, readingIds)}</span>
                     <span class="reading-dot" style={`background:${r.colour ?? "var(--accent)"}`}></span>
                     <span class="reading-name">{r.name}</span>
-                    <span class="reading-count">{r.id === "base" ? objNotes.filter((n) => !n.reading).length : objNotes.filter((n) => n.reading === r.id).length}</span>
+                    <span class="reading-count">{r.id === "base" ? model.objNotes.filter((n) => !n.reading).length : model.objNotes.filter((n) => n.reading === r.id).length}</span>
                     <label class="reading-pen" title={`File new notes into “${r.name}”`}>
                       <input type="radio" name="active-reading" value={r.id} checked={rdg.active === r.id} onchange={() => rdg.setActive(r.id)} aria-label={`Draw new notes into ${r.name}`} />
                       <span aria-hidden="true">✎</span>
@@ -2531,16 +2344,16 @@
               <button type="button" class="readings-manage" onclick={() => (readingsOpen = true)}>{#if currentReadings.length === 0}<span aria-hidden="true">+</span> New reading{:else}Manage readings…{/if}</button>
             </section>
           {/if}
-          {#if showAttribution}
+          {#if model.showAttribution}
             <!-- Filter-by-editor lens (Archie-90f1) — a visibility lens like the Readings toggles, so it
                  stays in the navigator; it composes with them to narrow the inspector's notes list on the
                  right (both are "which notes show"). Gated on ≥2 distinct editors so a solo exhibit never
                  shows this control. -->
             <label class="editor-filter">
               <span class="field-head">Editor</span>
-              <select value={editorFilter} onchange={(e) => (editorFilter = (e.currentTarget as HTMLSelectElement).value)}>
+              <select value={model.editorFilter} onchange={(e) => (model.editorFilter = (e.currentTarget as HTMLSelectElement).value)}>
                 <option value="all">All editors</option>
-                {#each editorOptions as e (e)}<option value={e}>{editorLabel(e, author)}</option>{/each}
+                {#each model.editorOptions as e (e)}<option value={e}>{editorLabel(e, author)}</option>{/each}
               </select>
             </label>
           {/if}
@@ -2603,7 +2416,7 @@
                  panel). Hidden WHILE drawing (creating) — the status strip shows its own "filing into" then,
                  so keeping this would double it (review nit Archie-d48e). -->
             {#if !vs.creating}
-              <span class="ts-into" title="New notes file into the active reading — set the pen (✎) in the Readings panel.">filing into <span class="ts-rd" style={`border-color:${activeReadingColour}`}><span class="ts-rd-num" aria-hidden="true">{readingBadge(rdg.active, readingIds)}</span> {activeReadingLabel}</span></span>
+              <span class="ts-into" title="New notes file into the active reading — set the pen (✎) in the Readings panel.">filing into <span class="ts-rd" style={`border-color:${model.activeReadingColour}`}><span class="ts-rd-num" aria-hidden="true">{readingBadge(rdg.active, readingIds)}</span> {model.activeReadingLabel}</span></span>
             {/if}
             <!-- Scale cue (Archie-93fd): HOW FAR IN, the locator's missing companion. Quiet chrome ON
                  the tool strip's own row — never floating over the artefact (Archie-a9fc, same rule this
@@ -2626,7 +2439,7 @@
               {@const Av = AvEditorComp}
               <Av source={currentSource} label={vs.current.label} mediaType={vs.current.mediaType}
                 slug={vs.currentSlug} assetName={isAsset(vs.current.source) ? vs.current.source.slice(ASSET_PREFIX.length) : null}
-                {annotations} bind:selected={vs.selected} oncreate={onCreateTime} oncreatewhole={createWholeObjectNote} onimport={onImportTranscript}
+                annotations={model.annotations} bind:selected={vs.selected} oncreate={onCreateTime} oncreatewhole={createWholeObjectNote} onimport={onImportTranscript}
                 onimporterror={(msg) => (importNote = { message: msg, ok: false })} />
             {:else}
               <div class="no-canvas">Loading…</div>
@@ -2639,7 +2452,7 @@
                    an editing canvas needs the surrounding context and the shape's resize handles on
                    screen, and a full-bleed fit shoved the marker under the viewport edges. Section
                    camera targets (focus) still frame exactly as authored (fitRegion pins fraction=1). -->
-              <CanvasComp source={currentSource} tileSource={currentTileSource} canvasId={vs.canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator dots={dotItems} bind:selected={vs.selected} oncreate={onCreate} onupdate={onUpdate} ondelete={ondelete} onzoom={(r) => (zoomRatio = r)} rectIds={marginaliaRectIds} onmarkerrects={(r) => (markerRects = r)} nativeFetch={nativeFetch} />
+              <CanvasComp source={currentSource} tileSource={currentTileSource} canvasId={vs.canvasId} annotations={model.canvasAnnotations} frame={model.studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={model.styleOfLive} locator dots={model.dotItems} bind:selected={vs.selected} oncreate={onCreate} onupdate={onUpdate} ondelete={ondelete} onzoom={(r) => (zoomRatio = r)} rectIds={model.marginaliaRectIds} onmarkerrects={(r) => (model.markerRects = r)} nativeFetch={nativeFetch} />
             {:else}
               <div class="no-canvas">Loading…</div>
             {/if}
@@ -2665,10 +2478,10 @@
          at all. Sparse exhibits show only faint ticks (revealed on hover); crowded ones show counted
          cluster chips + a heat band. Chips DRIVE selection/hover, they don't edit — the inspector on the
          right is still where a note opens. -->
-    {#if vs.current && !isAvCurrent && marginaliaItems.length > 0}
+    {#if vs.current && !isAvCurrent && model.marginaliaItems.length > 0}
       <Marginalia
-        items={marginaliaItems}
-        rects={markerRects}
+        items={model.marginaliaItems}
+        rects={model.markerRects}
         selected={vs.selected}
         onselect={(id) => (vs.selected = vs.selected === id ? null : id)}
         onhover={(id) => (vs.hoverNote = id)}
@@ -2682,7 +2495,7 @@
     <aside class="inspector" style:--studio-inspector-w={inspectorWidth != null ? `${inspectorWidth}px` : null} aria-label="Notes inspector">
       <div class="panel-title-row inspector-head">
         <h3 class="panel-title">Notes</h3>
-        <span class="panel-note">{#if notes.length === objNotes.length}{notes.length} {notes.length === 1 ? "note" : "notes"}{:else}{notes.length} of {objNotes.length} shown{/if}</span>
+        <span class="panel-note">{#if model.notes.length === model.objNotes.length}{model.notes.length} {model.notes.length === 1 ? "note" : "notes"}{:else}{model.notes.length} of {model.objNotes.length} shown{/if}</span>
       </div>
       <!-- Bulk on-ramps (⑥ CSV, ⑦ WADM) folded into ONE quiet disclosure — the import affordance travels with
            the notes list to the inspector (Archie-d48e). Native <details>, the "To place" summary dress. -->
@@ -2702,8 +2515,8 @@
       </details>
 
       <!-- What's on this item — the present-notes list (empty-state when none or all hidden). -->
-      {#if notes.length === 0}
-        <p class="empty">{isAvCurrent ? "No notes on this recording yet. Mark a moment, then add a note to pin it." : objNotes.length > 0 ? (editorFilter !== "all" ? "No notes here from that editor. Try “All editors”." : "This media item has notes, but they’re hidden. Turn on a reading to show them.") : "No notes on this media item yet. Pick Box or Outline on the canvas strip, then draw the region."}</p>
+      {#if model.notes.length === 0}
+        <p class="empty">{isAvCurrent ? "No notes on this recording yet. Mark a moment, then add a note to pin it." : model.objNotes.length > 0 ? (model.editorFilter !== "all" ? "No notes here from that editor. Try “All editors”." : "This media item has notes, but they’re hidden. Turn on a reading to show them.") : "No notes on this media item yet. Pick Box or Outline on the canvas strip, then draw the region."}</p>
       {/if}
       <!-- Notes-panel DISCLOSURE (Archie-f260 §4 obligation, re-derived for Archie-d48e): the keyboard/AT
            surface standing in for the un-focusable WebGL marks. Each note is a native <button aria-expanded>
@@ -2712,9 +2525,9 @@
            the edit form. Keyed by logicalId so a live edit (which appends a new rev) does NOT remount the row
            and drop focus mid-interaction. The conflicted-selected note expands to the review gate instead. -->
       <ul class="notes-list" aria-label="Notes on this object" bind:this={notesListEl}>
-        {#each notes as r (r.logicalId)}
+        {#each model.notes as r (r.logicalId)}
           {@const showForm = vs.editing === r.logicalId && !drawArmed}
-          {@const showGate = vs.selected === r.logicalId && conflictedNoteIds.has(r.logicalId)}
+          {@const showGate = vs.selected === r.logicalId && model.conflictedNoteIds.has(r.logicalId)}
           {@const expanded = showForm || showGate}
           <li class="note-item">
             <!-- Hovering a note solos its MARK on the canvas (the rail's hover affordance, per-note). Clicking
@@ -2733,8 +2546,8 @@
                        The circled reading number (Archie-f260 §3) leads the chip so the note's reading is identified without relying on the border colour. -->
                   {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}><span class="layer-num" aria-hidden="true">{readingBadge(r.reading, readingIds)}</span> {rd?.name ?? r.reading}</span>{:else if currentReadings.length > 0}<span class="layer" style={`border-color:${BASE_MARKER}`}><span class="layer-num" aria-hidden="true">{readingBadge("base", readingIds)}</span> General notes</span>{/if}
                   <!-- Attribution chip (Archie-90f1) — "Meera · 2d ago", gated on ≥2 distinct editors. -->
-                  {#if showAttribution}<span class="attribution">{attributionChip(r, author)}</span>{/if}
-                  {#if conflictedNoteIds.has(r.logicalId)}<span class="conflict-badge" title="Two people edited this note — Review to resolve">Needs review</span>{/if}
+                  {#if model.showAttribution}<span class="attribution">{attributionChip(r, author)}</span>{/if}
+                  {#if model.conflictedNoteIds.has(r.logicalId)}<span class="conflict-badge" title="Two people edited this note — Review to resolve">Needs review</span>{/if}
               </span>
             </button>
             {#if showForm}
@@ -2807,6 +2620,7 @@
       ondeposit={() => p.depositBag()}
       probe={p.probe}
       probing={p.probing}
+      videoTell={p.videoTell}
       onprobe={(onProgress) => p.probeLibrary(onProgress)}
       tier={p.tier}
       ontier={(t) => p.setTier(t)}
@@ -2870,7 +2684,7 @@
 <IdentityPrompt open={identityPromptOpen} onsave={onIdentitySave} onskip={onIdentitySkip} />
 <!-- GLOBAL: MergeReview (Archie-90f1) — opened by the status strip's "Review", source-agnostic over
      however sess.session got its plural heads (a merged zip today; live sync later). -->
-<MergeReview open={mergeReviewOpen} onclose={() => (mergeReviewOpen = false)} session={sess.session} conflicts={noteConflicts} onchange={bump} />
+<MergeReview open={mergeReviewOpen} onclose={() => (mergeReviewOpen = false)} session={sess.session} conflicts={model.noteConflicts} onchange={bump} />
 <!-- GLOBAL: the onboarding tutorial (embeds docs/learn decks from public/learn). -->
 <TutorialModal open={tutorialOpen} onclose={() => (tutorialOpen = false)} />
 <!-- GLOBAL: the storage chip — fixed bottom-right corner, under every view (library / overview /

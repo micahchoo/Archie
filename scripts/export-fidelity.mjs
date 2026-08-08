@@ -73,6 +73,7 @@ import { tmpdir } from "node:os";
 import net from "node:net";
 import path from "node:path";
 import { launchBrowser } from "./lib/driver.mjs";
+import { createChecklist } from "./lib/checklist.mjs";
 
 /** A port the OS says is free right now. Reserved-then-released, so there IS a race window — which
  *  is why the caller pairs it with `strictPort: true`. */
@@ -94,14 +95,7 @@ const KEEP = argv.includes("--keep");
 const outIdx = argv.indexOf("--out");
 const OUT_DIR_ARG = outIdx !== -1 ? path.resolve(process.cwd(), argv[outIdx + 1]) : null;
 
-// ── reporting ────────────────────────────────────────────────────────────────────────────────────
-const results = [];
-const check = (ok, label, detail) => {
-  results.push({ ok, label, detail });
-  console.log(`  ${ok ? "PASS" : "FAIL"}  ${label} — ${detail}`);
-  return ok;
-};
-
+// ── reporting (per-item tolerant; owned by scripts/lib/checklist.mjs, created in main) ────────────
 const sha256 = (buf) => createHash("sha256").update(buf).digest("hex");
 
 // ── ref sweep (the Archie-19d7 invariant, computed from the ARTIFACT) ─────────────────────────────
@@ -217,9 +211,25 @@ async function main() {
   }
   const wallMs = Date.now() - t0;
 
+  // ── reporting ────────────────────────────────────────────────────────────────────────────────────
+  // Per-item tolerant: every check runs and prints, PASS or FAIL, with its SUBJECT (a count/value),
+  // never just a verdict — the loop is owned by scripts/lib/checklist.mjs (export-fidelity's lines
+  // sit two spaces under the harness banner). This harness's TAIL is a parameter: the drive-time
+  // summary, the tree-kept line, the RESULT line, then exit 1/0.
+  const { check, finish } = createChecklist({
+    indent: "  ",
+    onExit: async (ctx) => {
+      console.log(`\n${ctx.passed}/${ctx.total} checks passed  (drive ${(wallMs / 1000).toFixed(1)}s — goto→publish→emit, excludes vite boot and browser launch)`);
+      if (KEEP || OUT_DIR_ARG) console.log(`tree kept at ${outDir}`);
+      else await rm(outDir, { recursive: true, force: true }).catch(() => {});
+      console.log(ctx.failed.length ? "RESULT: FAIL" : "RESULT: PASS");
+      process.exit(ctx.failed.length ? 1 : 0);
+    },
+  });
+
   if (!outcome?.ok) {
     check(false, "harness · the browser publish completed", String(outcome?.error ?? "no result").slice(0, 400));
-    return finish(outDir, wallMs);
+    return finish();
   }
   const r = outcome.report;
   console.log(`• published ${files.size} files (${r.elapsedMs} ms in-page), zip ${r.zipBytes} bytes\n`);
@@ -346,7 +356,7 @@ async function main() {
     `exit ${verify.status}; ${verifyTail.length} checks, ${verifyFails.length} failed${verifyFails.length ? `: ${verifyFails.slice(0, 2).join(" | ")}` : ""}`,
   );
 
-  return finish(outDir, wallMs);
+  return finish();
 }
 
 /** Collect AUTHORED annotation ids from any published JSON. Walks by `type` rather than a fixed key
@@ -359,15 +369,6 @@ function collectAnnotationIds(node, out) {
   const motiv = Array.isArray(node.motivation) ? node.motivation : [node.motivation];
   if (node.type === "Annotation" && node.id && !motiv.includes("painting")) out.add(node.id);
   for (const v of Object.values(node)) collectAnnotationIds(v, out);
-}
-
-async function finish(outDir, wallMs) {
-  const fails = results.filter((x) => !x.ok);
-  console.log(`\n${results.length - fails.length}/${results.length} checks passed  (drive ${(wallMs / 1000).toFixed(1)}s — goto→publish→emit, excludes vite boot and browser launch)`);
-  if (KEEP || OUT_DIR_ARG) console.log(`tree kept at ${outDir}`);
-  else await rm(outDir, { recursive: true, force: true }).catch(() => {});
-  console.log(fails.length ? "RESULT: FAIL" : "RESULT: PASS");
-  process.exit(fails.length ? 1 : 0);
 }
 
 main().catch(async (e) => {

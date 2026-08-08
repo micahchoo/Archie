@@ -85,6 +85,7 @@
     ondeposit,
     probe = null,
     probing = false,
+    videoTell = "",
     onprobe,
     tier = "archival",
     ontier,
@@ -104,7 +105,7 @@
     checkRepoExists,
     listRepos,
     recheckPages,
-    // --- legacy advanced (token) form — verbatim, unchanged interface ---
+    // --- advanced (token) form: the raw-token publish seam, wired into the machine ---
     onpublish,
     brokenLinks = [],
     incompleteCanvases = [],
@@ -137,6 +138,10 @@
     probe?: ArchiveProbe | null;
     /** True while the inventory pass is walking the library's assets. */
     probing?: boolean;
+    /** The honest video measure-and-tell for this platform (Archie-7e6f H4): non-empty when the
+     *  library has video and no transcode is reachable — quoted under the destination list so the
+     *  web-tier numbers on the rows are not mistaken for what this machine can actually produce. */
+    videoTell?: string;
     /** Run a probe, reporting inventory progress. Called once per open; absent ⇒ no recommendation and
      *  the surface says so, which is a stated absence and never a silent swap. */
     onprobe?: (onProgress: (done: number, total: number) => void) => Promise<ArchiveProbe | null>;
@@ -230,6 +235,12 @@
     get checkRepoExists() { return checkRepoExists; },
     get listRepos() { return listRepos; },
     get recheckPages() { return recheckPages; },
+    get onpublish() { return onpublish; },
+    // The advanced form's gate is the SAME single `block` definition the chooser uses (render-core's
+    // blocksPublish) — the machine asks, the view answers with the predicate it already owns. The
+    // closure re-reads `preflight` at call time: the machine invokes `publishBlocked?.()` fresh when
+    // advCanPublish derives, so a block finding that lands AFTER open() still refuses the publish.
+    get publishBlocked() { return () => blocksPublish(preflight); },
     openUrl: defaultOpenUrl,
     copy: defaultCopy,
   });
@@ -259,7 +270,6 @@
   let probeTotal = $state(0);
   /** The author's `remote:bucket` for the rclone hand-off. Placeholder until they type their own. */
   let rcloneRemote = $state("");
-  let copiedRclone = $state(false);
 
   const rows = $derived(probe ? rowsFor(probe, tier) : []);
   const chosenRow = $derived(rows.find((r) => r.id === destination) ?? null);
@@ -303,11 +313,6 @@
   }
 
   const rcloneLines = $derived(rcloneCommands(folderName || "./my-library", rcloneRemote));
-  function copyRclone() {
-    navigator.clipboard.writeText(rcloneLines.join("\n"))
-      .then(() => { copiedRclone = true; setTimeout(() => (copiedRclone = false), 1500); })
-      .catch(() => { copiedRclone = false; });
-  }
 
   // Feature flag (Task 13): when the build offers the one-motion desktop deploy, "Publish to the web" LEADS
   // the chooser (durability-first, Q-3). Off (a fork with no deploy infra) → today's quieter "To GitHub
@@ -316,17 +321,11 @@
   const CANONICAL_VIEWER = `${archieConfig.canonicalOrigin}${archieConfig.viewerPath}`;
   const CANONICAL_HOST = new URL(CANONICAL_VIEWER).host;
   let zipUrl = $state("");
-  let copied = $state(false);
   // Archie-4f7c: the grammar is `#/?src=` (INSIDE the hash), not `?src=`. Minted by share-link.ts so
   // it can be round-tripped against the viewer's own parseRoute in a test — a real query param is
   // invisible to the viewer, which reads only location.hash, so every link this emitted was dead.
   const shareLink = $derived(viewerShareLink(CANONICAL_VIEWER, zipUrl));
   const canCopy = typeof navigator !== "undefined" && !!navigator.clipboard;
-  function copyShareLink() {
-    navigator.clipboard.writeText(shareLink)
-      .then(() => { copied = true; setTimeout(() => (copied = false), 1500); })
-      .catch(() => { copied = false; }); // permission denied — the link is still selectable above
-  }
   // Embed snippet (contributor-broadening ⑩ slice A): TWO ways to embed, per the locked v1 contract
   // (ADR-0021) and the iframe floor (anvil ADR-0006).
   // @v1.1, NOT @v1: the v1 tag's dist/ predates the av-player chunk (git ls-tree v1 dist/ = 3 files)
@@ -338,18 +337,6 @@
 `<script type="module" src="${CDN_RUNTIME}" crossorigin="anonymous"></scr` + `ipt>
 <archie-viewer src="${zipUrl.trim()}"></archie-viewer>`);
   const embedSnippet = $derived(viewerEmbedSnippet(shareLink));
-  let copiedWc = $state(false);
-  let copiedEmbed = $state(false);
-  function copyWc() {
-    navigator.clipboard.writeText(wcSnippet)
-      .then(() => { copiedWc = true; setTimeout(() => (copiedWc = false), 1500); })
-      .catch(() => { copiedWc = false; });
-  }
-  function copyEmbed() {
-    navigator.clipboard.writeText(embedSnippet)
-      .then(() => { copiedEmbed = true; setTimeout(() => (copiedEmbed = false), 1500); })
-      .catch(() => { copiedEmbed = false; });
-  }
 
   // Whenever the surface (re)opens: reset the chooser's transient bits, then resume the wizard exactly
   // where it was left (a pending device code, an in-flight/finished publish) — or land fresh on step 1.
@@ -368,7 +355,7 @@
   $effect(() => {
     if (!open) return;
     untrack(() => {
-      destErrorMsg = ""; zipUrl = ""; copied = false; copiedWc = false; copiedEmbed = false;
+      destErrorMsg = ""; zipUrl = ""; copiedKey = null;
       // Changing the home is a decision about THIS visit, never a mode the surface stays in — and
       // re-read the home itself, because a deploy that landed since the last open wrote one.
       changingHome = false; homeNonce += 1;
@@ -530,10 +517,10 @@
   function close() {
     menuPhase = "choose";
     destErrorMsg = "";
-    zipUrl = ""; copied = false; copiedWc = false; copiedEmbed = false;
-    token = ""; // never retain the advanced-form secret across a close
-    advPhase = "idle";
-    advProgress = null;
+    zipUrl = ""; copiedKey = null;
+    // The token-secret lifecycle lives in the machine: closing drops the advanced form's secret and
+    // resets its phase (a finished/failed attempt must not re-appear on the next visit).
+    machine.resetAdvanced();
     onclose();
   }
   /** Dismiss a FINISHED wizard attempt (Done on success / Cancel on error) — unlike `close()`, this
@@ -558,22 +545,35 @@
   // served from its own origin, so the iframe points at the site itself — no `?src=` hop through the
   // canonical viewer, which is what the done-download panel's snippet is for (a zip has no address).
   let showEmbed = $state(false);
-  let copiedSiteEmbed = $state(false);
   const sitEmbedSnippet = $derived(viewerEmbedSnippet(machine.result?.url ?? ""));
-  function copySiteEmbed() {
-    navigator.clipboard.writeText(sitEmbedSnippet)
-      .then(() => { copiedSiteEmbed = true; setTimeout(() => (copiedSiteEmbed = false), 1500); })
-      .catch(() => { copiedSiteEmbed = false; });
+  // ONE clipboard seam for every "Copy …" affordance on the surface (was five byte-identical helpers).
+  // The five destinations differ only in WHAT they copy, so the payloads are data keyed by destination
+  // and the write + flash is a single function. The flash is per-key so two "Copied" labels can't light
+  // at once; a clipboard denial is silent, because every payload stays selectable above its button.
+  const copyPayloads = {
+    shareLink: () => shareLink,
+    wc: () => wcSnippet,
+    embed: () => embedSnippet,
+    rclone: () => rcloneLines.join("\n"),
+    siteEmbed: () => sitEmbedSnippet,
+  };
+  type CopyKey = keyof typeof copyPayloads;
+  let copiedKey = $state<CopyKey | null>(null);
+  function copyText(key: CopyKey) {
+    navigator.clipboard.writeText(copyPayloads[key]())
+      .then(() => { copiedKey = key; setTimeout(() => (copiedKey = null), 1500); })
+      .catch(() => { copiedKey = null; });
   }
   // GitHub's own custom-domain walkthrough — we point at it rather than automating CNAME (PRFAQ item 5).
   const CUSTOM_DOMAIN_DOCS = "https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/about-custom-domains-and-github-pages";
 
   // ===========================================================================================
-  // Advanced (token) form — VERBATIM from the pre-Task-10 dialog. Its own local state + the legacy
-  // `onpublish` prop; the machine above does not touch these. (CONTEXT: token not stored — it lives
-  // only here for the duration of one publish and is dropped after.)
+  // Advanced (token) form — the pre-Task-10 flow, now MACHINE state (publish-machine.svelte.ts §
+  // "advanced"): the form fields, phase, validation, progress copy, and the token-secret lifecycle
+  // (dropped on success/error/close) all live in the machine; this view only renders them. What stays
+  // here is the display-only derivation of the advisory props below. (CONTEXT: token not stored — it
+  // lives for the duration of one publish and is dropped after.)
   // ===========================================================================================
-  let includeOriginals = $state(false); // opt-in: ship preserved source originals for citation (CONTEXT §89.1)
 
   // A broken link's target, typed for display (the cited exhibit/note that isn't in this library).
   const tgt = (b: BrokenLink) => b.target as { exhibitSlug?: string; noteLogicalId?: string };
@@ -592,58 +592,6 @@
   const lostLogs = $derived(corruptLogs.filter((c) => c.allCorrupt));
   const partialLogs = $derived(corruptLogs.filter((c) => !c.allCorrupt));
   const familyWord = (f: CorruptLogFinding["family"]) => (f === "annotations" ? "annotations" : "section history");
-
-  let owner = $state("");
-  let repo = $state("");
-  let branch = $state("gh-pages");
-  let token = $state("");
-  let advPhase = $state<"idle" | "publishing" | "done" | "error">("idle");
-  let commitUrlAdv = $state("");
-  let pagesUrl = $state("");          // visitor-facing URL, returned by publishToGitHub (project- vs user-site aware)
-  let pagesEnabled = $state(false);   // false ⇒ the push landed but Pages must be enabled manually
-  let advErrorMsg = $state("");
-  let advProgress = $state<PublishProgress | null>(null); // live step from publishToGitHub while publishing
-
-  // Human-readable progress for the long push (media upload is one request per asset → show the count).
-  // The republish case says what it SKIPPED as well as what it's sending: a publish that uploads 3 of
-  // 4,132 files and one that uploads all 4,132 look identical without it (Archie-53e3).
-  const progressText = $derived(
-    advProgress?.phase === "comparing" ? "Checking what's already published…"
-    : advProgress?.phase === "uploading"
-      ? `Uploading media — ${advProgress.done} of ${advProgress.total}…${advProgress.unchanged > 0 ? ` (${advProgress.unchanged} already up to date)` : ""}`
-    : advProgress?.phase === "committing" ? "Creating the commit…"
-    : advProgress?.phase === "enabling-pages" ? "Turning on GitHub Pages…"
-    : "Preparing the library…",
-  );
-
-  // Owner/repo are bare names — reject a pasted URL or "owner/repo" before it becomes a confusing 404.
-  const nameError = $derived(
-    /[/\s]/.test(owner.trim()) || /[/\s]/.test(repo.trim()) ? "Enter just the names — no slashes, spaces, or full URLs." : "",
-  );
-  // A `block` finding refuses the publish outright — the ONLY severity that does. `blocksPublish`
-  // is render-core's single definition of that, not a second predicate written here.
-  const canPublish = $derived(owner.trim() !== "" && repo.trim() !== "" && token.trim() !== "" && nameError === "" && advPhase !== "publishing" && !blocksPublish(preflight));
-  // Where the author flips Pages on if we couldn't (private repo / token without Pages scope).
-  const pagesSettingsUrl = $derived(`https://github.com/${owner.trim()}/${repo.trim()}/settings/pages`);
-
-  async function advPublish() {
-    advPhase = "publishing";
-    advErrorMsg = "";
-    advProgress = null;
-    try {
-      const target: GitHubTarget = { owner: owner.trim(), repo: repo.trim(), branch: branch.trim() || "gh-pages", token: token.trim() };
-      const res = await onpublish(target, { includeOriginals }, (p) => (advProgress = p));
-      commitUrlAdv = res.commitUrl;
-      pagesUrl = res.pagesUrl;
-      pagesEnabled = res.pagesEnabled;
-      advPhase = "done";
-      token = ""; // drop the secret the instant we're done with it
-    } catch (e) {
-      advErrorMsg = e instanceof Error ? e.message : "Couldn't publish. Check the repository name and that your token has Contents and Pages write access.";
-      advPhase = "error";
-      token = ""; // never retain the secret across an error either
-    }
-  }
 </script>
 
 {#if open}
@@ -692,6 +640,7 @@
       <SetupFlow
         {probe}
         {probing}
+        {videoTell}
         {probeDone}
         {probeTotal}
         {rows}
@@ -780,9 +729,9 @@
           <pre class="cmd"><code>{embedSnippet}</code></pre>
           {#if canCopy}
             <div class="actions share-actions">
-              <button type="button" class="ghost" onclick={copyShareLink}>{copied ? "Copied" : "Copy link"}</button>
-              <button type="button" class="ghost" onclick={copyWc}>{copiedWc ? "Copied" : "Copy Web Component"}</button>
-              <button type="button" class="ghost" onclick={copyEmbed}>{copiedEmbed ? "Copied" : "Copy iframe"}</button>
+              <button type="button" class="ghost" onclick={() => copyText("shareLink")}>{copiedKey === "shareLink" ? "Copied" : "Copy link"}</button>
+              <button type="button" class="ghost" onclick={() => copyText("wc")}>{copiedKey === "wc" ? "Copied" : "Copy Web Component"}</button>
+              <button type="button" class="ghost" onclick={() => copyText("embed")}>{copiedKey === "embed" ? "Copied" : "Copy iframe"}</button>
             </div>
           {:else}
             <p class="line muted">Select the link or embed code above to copy it.</p>
@@ -838,7 +787,7 @@
         <p class="line muted">The second line is not optional. It sends the one small file that tells a reader the library is complete, and it has to arrive after everything else.</p>
         {#if canCopy}
           <div class="actions share-actions">
-            <button type="button" class="ghost" onclick={copyRclone}>{copiedRclone ? "Copied" : "Copy both commands"}</button>
+            <button type="button" class="ghost" onclick={() => copyText("rclone")}>{copiedKey === "rclone" ? "Copied" : "Copy both commands"}</button>
           </div>
         {/if}
         <p class="line"><strong>One setting on the bucket.</strong> {BUCKET_CORS_NOTE}</p>
@@ -1069,7 +1018,7 @@
                 <pre class="cmd"><code>{sitEmbedSnippet}</code></pre>
                 {#if canCopy}
                   <div class="actions share-actions">
-                    <button type="button" class="ghost" onclick={copySiteEmbed}>{copiedSiteEmbed ? "Copied" : "Copy embed code"}</button>
+                    <button type="button" class="ghost" onclick={() => copyText("siteEmbed")}>{copiedKey === "siteEmbed" ? "Copied" : "Copy embed code"}</button>
                   </div>
                 {:else}
                   <p class="note muted">Select the code above to copy it.</p>
@@ -1154,28 +1103,28 @@
         <div class="actions"><button type="button" class="ghost" onclick={backToChooser}>← Back</button></div>
 
       {:else if machine.state === "advanced"}
-        <!-- ADVANCED (token) form — verbatim pre-Task-10 dialog. -->
+        <!-- ADVANCED (token) form — the pre-Task-10 flow, now machine state (see the script's §advanced). -->
         <header>
           <p class="eyebrow">Publish</p>
           <h2>Connect to GitHub</h2>
           <p class="lede">Publish your whole library, every exhibit, to a GitHub Pages branch. Your token is used once to publish and is never stored.</p>
         </header>
 
-        {#if advPhase === "done"}
+        {#if machine.advPhase === "done"}
           <div class="result">
             <p class="ok">Published to GitHub Pages.</p>
-            <p class="line">Commit · <a href={commitUrlAdv} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, commitUrlAdv)}>{commitUrlAdv}</a></p>
-            {#if pagesEnabled}
-              <p class="line">Pages · <a href={pagesUrl} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, pagesUrl)}>{pagesUrl}</a> <span class="muted">(may take a minute to go live)</span></p>
+            <p class="line">Commit · <a href={machine.advCommitUrl} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, machine.advCommitUrl)}>{machine.advCommitUrl}</a></p>
+            {#if machine.advPagesEnabled}
+              <p class="line">Pages · <a href={machine.advPagesUrl} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, machine.advPagesUrl)}>{machine.advPagesUrl}</a> <span class="muted">(may take a minute to go live)</span></p>
             {:else}
-              <p class="line">Your files are on the <code>{branch}</code> branch. One step left to put them on the web: turn on GitHub Pages for this repository.</p>
-              <p class="line">Open <a href={pagesSettingsUrl} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, pagesSettingsUrl)}>Settings, then Pages</a>, choose <em>Deploy from a branch</em>, and pick the <code>{branch}</code> branch. Your site then appears at <a href={pagesUrl} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, pagesUrl)}>{pagesUrl}</a>.</p>
+              <p class="line">Your files are on the <code>{machine.advBranch}</code> branch. One step left to put them on the web: turn on GitHub Pages for this repository.</p>
+              <p class="line">Open <a href={machine.advPagesSettingsUrl} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, machine.advPagesSettingsUrl)}>Settings, then Pages</a>, choose <em>Deploy from a branch</em>, and pick the <code>{machine.advBranch}</code> branch. Your site then appears at <a href={machine.advPagesUrl} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, machine.advPagesUrl)}>{machine.advPagesUrl}</a>.</p>
             {/if}
             <p class="line muted">A published Pages site is read-only. To keep editing, open your library in Studio.</p>
             <button class="primary" onclick={close}>Done</button>
           </div>
         {:else}
-          <form onsubmit={(e) => { e.preventDefault(); if (canPublish) void advPublish(); }}>
+          <form onsubmit={(e) => { e.preventDefault(); if (machine.advCanPublish) void machine.publishAdvanced(); }}>
             {#if brokenLinks.length > 0}
               <div class="broken" role="status">
                 <p class="b-head">{brokenLinks.length} cited {brokenLinks.length === 1 ? "link" : "links"} will publish as plain text</p>
@@ -1278,22 +1227,22 @@
               </div>
             {/if}
             <div class="row">
-              <label>Owner<input bind:value={owner} placeholder="your-username" autocomplete="off" /></label>
-              <label>Repository<input bind:value={repo} placeholder="my-exhibit" autocomplete="off" /></label>
+              <label>Owner<input bind:value={machine.advOwner} placeholder="your-username" autocomplete="off" /></label>
+              <label>Repository<input bind:value={machine.advRepo} placeholder="my-exhibit" autocomplete="off" /></label>
             </div>
-            {#if nameError}<p class="err">{nameError}</p>{/if}
-            <label>Branch<input bind:value={branch} placeholder="gh-pages" autocomplete="off" /></label>
+            {#if machine.advNameError}<p class="err">{machine.advNameError}</p>{/if}
+            <label>Branch<input bind:value={machine.advBranch} placeholder="gh-pages" autocomplete="off" /></label>
             <p class="note">Publishing <strong>replaces everything</strong> on this branch with the current library — use a branch you keep for the published site (<code>gh-pages</code> by default).</p>
             <label>Access token (fine-grained, with Contents and Pages write access)
-              <input type="password" bind:value={token} placeholder="github_pat_…" autocomplete="off" />
+              <input type="password" bind:value={machine.advToken} placeholder="github_pat_…" autocomplete="off" />
             </label>
-            <label class="cb"><input type="checkbox" bind:checked={includeOriginals} /><span class="cb-text">Include source originals for citation <span class="cb-sub">— preserved un-edited uploads, published beside the exhibit</span></span></label>
+            <label class="cb"><input type="checkbox" bind:checked={machine.advIncludeOriginals} /><span class="cb-text">Include source originals for citation <span class="cb-sub">— preserved un-edited uploads, published beside the exhibit</span></span></label>
             <p class="note">Your token stays in this browser — it's sent only to GitHub to publish, then dropped the moment it's done. Archie never stores it. Giving the token <strong>Pages</strong> write access lets Archie switch on your live site for you; without it, publishing still works and you flip the switch yourself (we'll show you where).</p>
-            {#if advPhase === "publishing"}<p class="note" role="status">{progressText} <span class="muted">Keep this tab open.</span></p>{/if}
-            {#if advPhase === "error"}<p class="err">{advErrorMsg}</p>{/if}
+            {#if machine.advPhase === "publishing"}<p class="note" role="status">{machine.advProgressText} <span class="muted">Keep this tab open.</span></p>{/if}
+            {#if machine.advPhase === "error"}<p class="err">{machine.advErrorMsg}</p>{/if}
             <div class="actions">
               <button type="button" class="ghost" onclick={() => machine.backToIntro()}>← Back</button>
-              <button type="submit" class="primary" disabled={!canPublish}>{advPhase === "publishing" ? "Publishing…" : "Publish"}</button>
+              <button type="submit" class="primary" disabled={!machine.advCanPublish}>{machine.advPhase === "publishing" ? "Publishing…" : "Publish"}</button>
             </div>
           </form>
         {/if}
@@ -1483,7 +1432,7 @@
   .cb-sub { color: var(--ink-paper-secondary); }
 
 
-  /* --- advanced (token) form — verbatim styles --- */
+  /* --- advanced (token) form — styles carried over with the fold --- */
   form { display: flex; flex-direction: column; gap: var(--space-3); }
   .row { display: flex; gap: var(--space-3); }
   .row label { flex: 1; }

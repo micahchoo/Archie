@@ -3,16 +3,16 @@
 // this for free — getFileHandle/getDirectoryHandle reject a name containing "/" — so any
 // backend that string-joins a caller-supplied segment must re-establish it itself (the
 // tauri-fs-seam rule; donor pattern go-iiif doctor.go `safeBundleRelative`, landed in 42246f1).
+// The rule set itself lives once in `wadm/brand.ts` (`assertSafeSegment`); this module is the
+// fs backend's thin re-export with its own wording.
+
+import { assertSafeSegment } from "../wadm/brand.js";
 
 /**
  * Reject a child name that could escape its parent before it is joined onto a real path or URL.
- * Mirrors the FSA rule set: empty, ".", "..", or any name bearing a separator / NUL is invalid.
- * Callers upstream must NOT be trusted to have sanitized the segment — exhibit slugs, object ids,
- * and archive entry names are untrusted input (same trust boundary as the untrusted-archive
- * open seam).
+ * Thin re-export of the single predicate in `wadm/brand.ts` — `assertSafeSegment` with the
+ * fs-backend wording "unsafe path segment". See brand.ts for the rule set and trust posture.
  */
 export function assertSafeName(name: string): void {
-  if (name === "" || name === "." || name === ".." || /[/\\]/.test(name) || name.includes("\0")) {
-    throw new Error(`unsafe path segment: ${JSON.stringify(name)}`);
-  }
+  assertSafeSegment(name, "unsafe path segment");
 }

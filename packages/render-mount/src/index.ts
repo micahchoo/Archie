@@ -21,7 +21,7 @@ export { resolveOsdTileSources, type NativeFetch, type ResolvedTileSources } fro
 // Read-only OSD mount (ADR-0019 keystone): OSD kept, NO Annotorious/PixiJS, DOM-SVG overlay, no
 // unsafe-eval. Additive — the editor `createMount` seam above is untouched (Phase 0 boundary).
 export { createReadOnlyMount, wireReadOnlySurface, type ReadOnlyMountSurface, type ReadOnlyMountOptions } from "./read-mount.js";
-export { createReadOnlyOverlay, overlayShapeFor, type OverlayShape, type ReadOnlyOverlayController, type OverlayViewerLike } from "./read-overlay.js";
+export { createReadOnlyOverlay, overlayShapeFor, type OverlayShape, type OverlayShapeStyle, type StyleFor, type ReadOnlyOverlayController, type OverlayViewerLike } from "./read-overlay.js";
 export { createSelectionHalo, contrastInk, type SelectionHaloController, type HaloViewerLike } from "./selection-halo.js";
 
 // Viewer-side image-decode dimension cap (EMBED 5.5): rejects an oversized NON-TILED bitmap before

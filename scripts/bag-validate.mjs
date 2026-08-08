@@ -26,6 +26,7 @@ import { fileURLToPath } from "node:url";
 import { mkdtemp, readFile, writeFile, rm, readdir, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { createChecklist } from "./lib/checklist.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..");
@@ -36,11 +37,10 @@ const req = createRequire(path.join(VIEWER_DIR, "package.json"));
 const viteNodePkgPath = req.resolve("vite-node/package.json");
 const viteNodeCli = path.join(path.dirname(viteNodePkgPath), req(viteNodePkgPath).bin["vite-node"]);
 
-const results = [];
-function record(pass, label, detail) {
-  results.push({ pass, label, detail });
-  console.log(`${pass ? "PASS" : "FAIL"}  ${label} — ${detail}`);
-}
+// Per-item tolerant loop owned by scripts/lib/checklist.mjs; the default tail (summary line, exit
+// 0/1) is this gate's exit policy. The exit-2-unavailable bail for a missing bagit-python stays a
+// mid-run gate decision below (an unrun external-validator check is not a passed one).
+const { check: record, finish } = createChecklist();
 
 /** How to invoke bagit-python here, or null. Both packaging shapes are tried; the one that answers
  *  `--version` wins. */
@@ -161,6 +161,4 @@ try {
   else await rm(work, { recursive: true, force: true });
 }
 
-const failed = results.filter((r) => !r.pass);
-console.log(`\n${results.length - failed.length}/${results.length} checks passed`);
-process.exit(failed.length === 0 ? 0 : 1);
+await finish();

@@ -93,6 +93,39 @@ describe("parseContentStateTarget — decode + structural recovery (the donor ga
   it("rejects a non-string input gracefully (defensive — attribute could be coerced)", () => {
     expect(parseContentStateTarget(undefined as unknown as string)).toBeNull();
   });
+
+  it("recovers a fragment from the target.id #tail when the selector carries none — the SHARED head-parser", () => {
+    // encodeContentState always mirrors the fragment into the selector, so this foreign shape (a
+    // fragment only in `id`) is the one that exercises the codec's `id` tail path + the shared
+    // render-core parseMediaFragmentHead (target-resolve consumes the SAME parser).
+    const cs = {
+      "@context": "http://iiif.io/api/presentation/3/context.json",
+      id: "anno",
+      type: "Annotation",
+      motivation: "highlighting",
+      target: { id: `${CANVAS_IMG}#xywh=pixel:1,2,3,4`, type: "SpecificResource", source: CANVAS_IMG, selector: { type: "FragmentSelector" } },
+    };
+    const enc = btoa(encodeURIComponent(JSON.stringify(cs))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    expect(parseContentStateTarget(enc)).toEqual({
+      resourceIri: CANVAS_IMG, // the codec stripped the #tail from the match key
+      fragment: { kind: "xywh", value: "pixel:1,2,3,4" },
+    });
+  });
+
+  it("falls back to target.id (fragment-stripped) when the Content State has no source", () => {
+    const cs = {
+      "@context": "http://iiif.io/api/presentation/3/context.json",
+      id: "anno",
+      type: "Annotation",
+      motivation: "highlighting",
+      target: { id: `${CANVAS_AV}#t=12.5,30`, type: "SpecificResource", selector: { type: "FragmentSelector" } },
+    };
+    const enc = btoa(encodeURIComponent(JSON.stringify(cs))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    expect(parseContentStateTarget(enc)).toEqual({
+      resourceIri: CANVAS_AV,
+      fragment: { kind: "t", value: "12.5,30" },
+    });
+  });
 });
 
 // =====================================================================================================

@@ -6,7 +6,7 @@
 // behaviour, and jsdom has none of them. This is the gate that can fail.
 //
 // What it does, end to end:
-//   1. reads the committed published tree from disk into a MemoryFilesystem
+//   1. reads the committed published tree from disk through render-core's `NodeFilesystem`
 //   2. `loadLibrary` → `publishLibrary` with `getViewerBundle` wired to packages/archie-viewer/dist
 //   3. writes the result to a temp dir and serves it with a BARE static server (no framework, no
 //      dev server, no rewrites) — the "any static host" claim, tested rather than asserted
@@ -23,15 +23,17 @@
 //
 // Run:  cd apps/viewer && pnpm exec vite-node ../../scripts/proto/self-replicating-publish.mts
 import { createServer } from "node:http";
-import { readFile, readdir, stat, mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { readFile, readdir, stat, mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
+import { NodeFilesystem } from "@render/core/node";
 import {
-  MemoryFilesystem, publishLibrary, collectFiles, loadLibrary, appendNew, asClientId,
-  type AnnotationLog, type FsDirectory,
+  publishLibrary, loadLibrary, appendNew, asClientId,
+  type AnnotationLog,
 } from "@render/core";
 import { launchBrowser } from "../lib/driver.mjs";
+import { treeStats } from "../lib/tree-stats.js";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SOURCE_TREE = path.join(REPO, "apps/viewer/public/published");
@@ -63,21 +65,6 @@ const record = (ok: boolean, label: string, detail: string): void => {
 
 // ------------------------------------------------------------------ bake
 
-/** Read a disk directory into an fs-seam directory, recursively. */
-async function loadDirInto(dir: FsDirectory, diskPath: string): Promise<void> {
-  for (const name of await readdir(diskPath)) {
-    const p = path.join(diskPath, name);
-    if ((await stat(p)).isDirectory()) {
-      await loadDirInto(await dir.getDirectory(name, { create: true }), p);
-    } else {
-      const w = await (await dir.getFile(name, { create: true })).writable();
-      const buf = await readFile(p);
-      await w.write(new Uint8Array(buf).buffer as ArrayBuffer);
-      await w.close();
-    }
-  }
-}
-
 /** The embed bundle, exactly as `packages/archie-viewer/dist` holds it — flat, entry + chunks. */
 async function embedBundle(): Promise<Map<string, string | ArrayBuffer | Blob>> {
   const out = new Map<string, string | ArrayBuffer | Blob>();
@@ -89,8 +76,8 @@ async function embedBundle(): Promise<Map<string, string | ArrayBuffer | Blob>> 
 }
 
 async function bake(baseUrl: string): Promise<{ dir: string; bytes: number; files: number }> {
-  const src = new MemoryFilesystem();
-  await loadDirInto(await src.root(), SOURCE_TREE);
+  // The fixture tree straight off disk through the node:fs backend — no memory round-trip.
+  const src = new NodeFilesystem(SOURCE_TREE);
   const loaded = await loadLibrary(src);
 
   // Author one region note onto the offline exhibit's first canvas, so the click assertion has a
@@ -126,7 +113,9 @@ async function bake(baseUrl: string): Promise<{ dir: string; bytes: number; file
     } catch { return null; }
   };
 
-  const out = new MemoryFilesystem();
+  const dir = await mkdtemp(path.join(tmpdir(), "archie-selfrep-"));
+  // Publish straight to the temp dir through the node:fs backend — no memory-tree-then-dump step.
+  const out = new NodeFilesystem(dir);
   const bundle = NO_VIEWER ? undefined : await embedBundle();
   await publishLibrary(out, loaded.library, getLog, {
     baseUrl,
@@ -134,17 +123,8 @@ async function bake(baseUrl: string): Promise<{ dir: string; bytes: number; file
     ...(bundle ? { getViewerBundle: async () => bundle } : {}),
   });
 
-  const dir = await mkdtemp(path.join(tmpdir(), "archie-selfrep-"));
-  const files = await collectFiles(await out.root());
-  let bytes = 0;
-  for (const [rel, content] of Object.entries(files)) {
-    const dest = path.join(dir, rel);
-    await mkdir(path.dirname(dest), { recursive: true });
-    const buf = "text" in content ? Buffer.from(content.text, "utf8") : Buffer.from(content.base64, "base64");
-    await writeFile(dest, buf);
-    bytes += buf.length;
-  }
-  return { dir, bytes, files: Object.keys(files).length };
+  const { files, bytes } = await treeStats(out);
+  return { dir, bytes, files };
 }
 
 // ------------------------------------------------------------------ serve

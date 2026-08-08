@@ -31,7 +31,7 @@ describe("AnnotationSession · workingAnnotations is memoized", () => {
   it("returns the SAME array across repeated calls with no mutation in between", () => {
     // Reference identity is the assertion, not deep equality — `toEqual` would pass against the
     // un-memoized code and prove nothing. Injection that fails it: have workingAnnotations()
-    // call this.projectWorkingAnnotations() directly instead of this.working.get().
+    // re-project (recordsToWorking over heads) instead of reading this.working.get().
     const s = newSession();
     addNote(s);
     addNote(s);

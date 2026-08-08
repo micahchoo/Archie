@@ -6,8 +6,8 @@
 use tauri::menu::{MenuBuilder, SubmenuBuilder};
 use tauri::Manager;
 
-// GitHub publish handshake — device-flow sign-in + keyring token custody. See github.rs; the token
-// stays in Rust (Q-12) and the endpoints have no CORS, so the webview can't call them itself.
+// GitHub publish handshake — device-flow sign-in + keyring token custody. See the github module;
+// the token stays in Rust (Q-12) and the endpoints have no CORS, so the webview can't call them.
 mod github;
 
 // Native video transcode (Archie-7e6f) — the web quality tier's desktop encoder. WebKitGTK has no

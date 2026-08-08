@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   encodeContentState,
   decodeContentState,
+  parseMediaFragmentHead,
   detectLegacyAnnotationParam,
   buildNoteDeepLink,
   parseNoteDeepLink,
@@ -28,9 +29,60 @@ describe("IIIF Content State (round-trip, anvil share-url.ts)", () => {
     expect(decodeContentState("")).toBeNull();
   });
 
+  it("carries the referenced resource IRI (target.source) — the field consumers used to re-decode for", () => {
+    const enc = encodeContentState("urn:archie:note:abc", "https://ex.org/canvas/1", { type: "FragmentSelector", value: "xywh=pixel:10,20,30,40" });
+    const dec = decodeContentState(enc);
+    expect(dec).not.toBeNull();
+    expect(dec!.source).toBe("https://ex.org/canvas/1");
+    expect(dec!.id).toBe("https://ex.org/canvas/1#xywh=pixel:10,20,30,40"); // the authored target.id, tail intact
+  });
+
+  it("falls back to target.id (fragment-stripped) for a bare-IRI target with no source", () => {
+    const cs = {
+      "@context": "http://iiif.io/api/presentation/3/context.json",
+      id: "anno",
+      type: "Annotation",
+      motivation: "highlighting",
+      target: { id: "https://ex.org/canvas/1#xywh=pixel:1,2,3,4", type: "SpecificResource", selector: { type: "FragmentSelector" } },
+    };
+    const enc = btoa(encodeURIComponent(JSON.stringify(cs))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    const dec = decodeContentState(enc);
+    expect(dec).not.toBeNull();
+    expect(dec!.source).toBe("https://ex.org/canvas/1"); // the `#xywh=…` tail stripped from the match key
+    expect(dec!.id).toBe("https://ex.org/canvas/1#xywh=pixel:1,2,3,4"); // but kept on `id` for the tail's fragment
+  });
+
+  it("returns null when the Content State has no usable target IRI", () => {
+    const cs = {
+      "@context": "http://iiif.io/api/presentation/3/context.json",
+      id: "anno",
+      type: "Annotation",
+      motivation: "highlighting",
+      target: { type: "SpecificResource", selector: { type: "FragmentSelector", value: "xywh=1,2,3,4" } },
+    };
+    const enc = btoa(encodeURIComponent(JSON.stringify(cs))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    expect(decodeContentState(enc)).toBeNull();
+  });
+
   it("detects legacy ?annotation=urn: params for redirect", () => {
     expect(detectLegacyAnnotationParam("?annotation=urn:archie:note:x&image=y")).toBe("urn:archie:note:x");
     expect(detectLegacyAnnotationParam("?image=y")).toBeNull();
+  });
+});
+
+describe("parseMediaFragmentHead — the ONE fragment-head parser (xywh=/t= strip)", () => {
+  it("splits an xywh= value (unit prefix rides through unchanged)", () => {
+    expect(parseMediaFragmentHead("xywh=pixel:10,20,30,40")).toEqual({ kind: "xywh", value: "pixel:10,20,30,40" });
+  });
+  it("splits a t= value (offset/range rides through unchanged)", () => {
+    expect(parseMediaFragmentHead("t=12.5,30")).toEqual({ kind: "t", value: "12.5,30" });
+    expect(parseMediaFragmentHead("t=7")).toEqual({ kind: "t", value: "7" });
+  });
+  it("bare / unknown / absent → undefined (whole-resource)", () => {
+    expect(parseMediaFragmentHead(undefined)).toBeUndefined();
+    expect(parseMediaFragmentHead("")).toBeUndefined();
+    expect(parseMediaFragmentHead("pixel:10,20,30,40")).toBeUndefined();
+    expect(parseMediaFragmentHead("#xywh=1,2,3,4")).toBeUndefined(); // a raw IRI tail is not a fragment value
   });
 });
 

@@ -18,25 +18,30 @@
 // mediabunny supplies exactly the two missing halves and drives WebCodecs for the middle: its
 // `Conversion` reads through a demuxer, decodes with `VideoDecoder`/`AudioDecoder`, re-encodes with
 // `VideoEncoder`/`AudioEncoder`, and muxes to MP4 or WebM. So this module is thin ON PURPOSE — the
-// interesting content here is the TARGET choice and the refusals, not the pipeline.
+// interesting content here is the ORACLE (what this browser can encode) and the refusals, not the
+// pipeline.
 //
-// ── THE CONTAINER DECISION, WHICH IS THE ONE REAL DECISION IN THIS FILE ──────────────────────────
+// ── THE CONTAINER DECISION, WHICH IS THE ONE REAL DECISION ───────────────────────────────────────
 // The ticket requires both implementations to produce COMPATIBLE output, and Chromium cannot encode
 // AAC (measured: the probe was offered Opus and nothing else). Naively that forces a third artifact
 // shape. It does not, and the reason is that the desktop side already declares TWO profiles, not one:
-// `WEB_TIER_H264` and `WEB_TIER_VP9`. `pickTarget(report)` chooses between them from what the machine
-// reports. This module is the same function against a different oracle — `canEncodeVideo` /
-// `canEncodeAudio` instead of ffmpeg's encoder table — so a browser emits a profile the sidecar
+// `WEB_TIER_H264` and `WEB_TIER_VP9`. The ONE decision — `pickTarget(caps)` in `video-profiles.ts` —
+// chooses between them from what the machine reports, so a browser emits a profile the sidecar
 // ALREADY emits, and no third shape enters the published tree.
 //
 // **The refusal that makes that true is explicit, and it has to be.** mediabunny will happily write
 // Opus into MP4 (its own compatibility table marks the combination supported), so "H.264 video with
 // Opus audio in MP4" is one option object away — it would let a browser match the desktop DEFAULT's
-// container and codec. It is refused here: Safari does not decode Opus in MP4, so that file plays
-// with SILENT AUDIO on precisely the browser the H.264/MP4 choice exists to serve, and it fails that
-// way in a published tree read by visitors nobody can poll. A hybrid is therefore never assembled —
-// {@link pickBrowserTarget} returns one of the two DECLARED profiles or null, and null greys the
+// container and codec. It is refused in `pickTarget`: Safari does not decode Opus in MP4, so that
+// file plays with SILENT AUDIO on precisely the browser the H.264/MP4 choice exists to serve, and it
+// fails that way in a published tree read by visitors nobody can poll. A hybrid is therefore never
+// assembled — `pickTarget` returns one of the two DECLARED profiles or null, and null greys the
 // control with a reason (Archie-c367: never silently swapped).
+//
+// ── THIS MODULE IMPORTS NOTHING FROM THE DESKTOP SEAM ───────────────────────────────────────────
+// The shared contract (profiles, `pickTarget`, the typed error, the `VideoCapabilities` shape)
+// lives in `video-profiles.ts`, which imports nothing — so this browser path no longer transitively
+// drags `tauri-fs.js` (desktop glue) into the web graph.
 //
 // ── FAILURE POLICY: THROWS, LIKE ITS DESKTOP SIBLING ─────────────────────────────────────────────
 // Same contract as `transcodeVideo` and for the same reason (.claude/rules/perf-measure-the-flow.md
@@ -44,68 +49,30 @@
 // gigabytes the tier existed to avoid. Every failure here is a typed `VideoTranscodeError`; the
 // caller decides whether to ship the original and records that choice through `noteVideoSkipped()`.
 import {
+  NO_VIDEO_CAPABILITIES,
   VideoTranscodeError,
   WEB_TIER_H264,
   WEB_TIER_VP9,
+  type VideoCapabilities,
   type VideoTargetParams,
-} from "./video-transcode.js";
+} from "./video-profiles.js";
 
 // ---------------------------------------------------------------------------------------------------
-// Capability
+// Capability — the browser half of the ONE shape
 // ---------------------------------------------------------------------------------------------------
 
-/** What this realm can encode, as the two questions a target choice actually asks. Separated from
- *  {@link pickBrowserTarget} so the choice stays a PURE function over booleans and unit-tests without a
- *  browser — the same split `pickTarget(report)` uses on the desktop side, where `EncoderReport` is the
- *  impure half. */
-export interface BrowserVideoCaps {
-  /** `VideoEncoder` / `AudioEncoder` exist in this realm at all. False on Firefox, Safari < 26, and
-   *  the desktop app's WebKitGTK webview. */
-  webCodecs: boolean;
-  avc: boolean;
-  aac: boolean;
-  vp9: boolean;
-  opus: boolean;
-}
-
-export const NO_BROWSER_VIDEO_CAPS: BrowserVideoCaps = {
-  webCodecs: false, avc: false, aac: false, vp9: false, opus: false,
+/** The browser's canonical all-false capability, spread by {@link probeBrowserVideoCaps} whenever
+ *  this realm has no WebCodecs at all. Carries `webCodecsPresent: false` so the one
+ *  `unavailableReason` quotes the browser copy ("Chrome and Edge can…") rather than the desktop one. */
+export const NO_BROWSER_VIDEO_CAPS: VideoCapabilities = {
+  ...NO_VIDEO_CAPABILITIES,
+  webCodecsPresent: false,
 };
 
 /**
- * Which declared profile this browser should produce, or null when neither is reachable. PURE.
- *
- * Deliberately the same shape and the same preference order as `pickTarget(report)` in
- * `video-transcode.ts` — H.264/AAC/MP4 first because MDN calls MP4+AVC+AAC "a broadly-supported
- * combination—by every major browser, in fact"; VP9/Opus/WebM second. A browser that can do the
- * first produces a file byte-compatible IN FORMAT with what the desktop sidecar's default produces.
- *
- * Both halves of a profile are required together. That is the whole guard against the Opus-in-MP4
- * hybrid described in this file's header: `avc && !aac` falls THROUGH to the VP9 test rather than
- * quietly substituting a different audio codec into the MP4. Measured on Chromium 148, `avc && !aac`
- * is the live case, so this fall-through is the normal path and not a defensive branch.
- */
-export function pickBrowserTarget(caps: BrowserVideoCaps): VideoTargetParams | null {
-  if (!caps.webCodecs) return null;
-  if (caps.avc && caps.aac) return WEB_TIER_H264;
-  if (caps.vp9 && caps.opus) return WEB_TIER_VP9;
-  return null;
-}
-
-/** Why the browser control is greyed, in the author's language. Empty string when a target IS
- *  reachable — callers branch on {@link pickBrowserTarget}, not on this. Mirrors `unavailableReason`. */
-export function browserUnavailableReason(caps: BrowserVideoCaps): string {
-  if (!caps.webCodecs) {
-    return "This browser cannot convert video. Chrome and Edge can; Firefox and Safari cannot yet.";
-  }
-  if (pickBrowserTarget(caps) === null) {
-    return "This browser has no video and sound format Archie can publish together, so videos will publish at their original size.";
-  }
-  return "";
-}
-
-/**
- * Ask the running browser what it can encode. IMPURE — the one impure half of the target choice.
+ * Ask the running browser what it can encode, as the ONE capability shape both platforms report.
+ * IMPURE — the impure half of the target choice, whose PURE half (`pickTarget`) lives in
+ * `video-profiles.ts`.
  *
  * Every probe is a REAL encodability check at the profile's own dimensions and bitrate, not a bare
  * `'VideoEncoder' in globalThis`. That matters twice over: freecut documents the declarative
@@ -118,9 +85,12 @@ export function browserUnavailableReason(caps: BrowserVideoCaps): string {
  * {@link NO_BROWSER_VIDEO_CAPS} so the surface greys a control with a reason instead of raising an
  * error the author cannot act on — the same contract as `probeVideoEncoders`.
  */
-export async function probeBrowserVideoCaps(): Promise<BrowserVideoCaps> {
+export async function probeBrowserVideoCaps(): Promise<VideoCapabilities> {
   const g = globalThis as { VideoEncoder?: unknown; AudioEncoder?: unknown };
   if (typeof g.VideoEncoder !== "function" || typeof g.AudioEncoder !== "function") {
+    // No WebCodecs ⇒ no encoder realm, whatever else the environment claims. Mapped onto the one
+    // shape as `ffmpeg: false` (the realm-present flag), so `pickTarget` refuses it exactly like a
+    // desktop with no sidecar — the stale-caps guard is structural now, not a second decision.
     return NO_BROWSER_VIDEO_CAPS;
   }
   try {
@@ -139,7 +109,7 @@ export async function probeBrowserVideoCaps(): Promise<BrowserVideoCaps> {
       canEncodeVideo("vp9", videoOpts(WEB_TIER_VP9)),
       canEncodeAudio("opus", audioOpts(WEB_TIER_VP9)),
     ]);
-    return { webCodecs: true, avc, aac, vp9, opus };
+    return { ffmpeg: true, h264: avc, vp9, aac, opus, webCodecsPresent: true };
   } catch {
     return NO_BROWSER_VIDEO_CAPS;
   }

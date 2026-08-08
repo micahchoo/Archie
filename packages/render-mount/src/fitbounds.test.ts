@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { fitBoundsRect, applyFitBounds, clampedFitRect, clampToContentBounds, type FitOptions, type ViewportLike } from "./fitbounds.js";
+import {
+  fitBoundsRect,
+  applyFitBounds,
+  clampedFitRect,
+  clampToContentBounds,
+  clampViewportToRegion,
+  type FitOptions,
+  type ViewportLike,
+  type ClampViewportLike,
+} from "./fitbounds.js";
 import type { W3CFragmentSelector, W3CSvgSelector } from "@render/core";
 
 // The fit oracle. `fitBoundsRect` is a PURE image-space-rect computation, so the @render/mount path
@@ -224,5 +233,101 @@ describe("clampedFitRect (bounded-map note fit)", () => {
     const note = { x: -10, y: 40, w: 200, h: 20 }; // centre x=90; grown box (200 wide) exceeds region.w
     const fit = clampedFitRect(note, 1, region);
     expect(fit.x + fit.w / 2).toBe(90); // centre untouched on the oversize (x) axis
+  });
+});
+
+// clampViewportToRegion — the LIVE bounded-map clamp (ADR-0015), the animation-finish settle that
+// used to live inline in mount.ts. One clamp math for the yank-bug class: it floors the zoom at the
+// region-fit level (the branch a note LARGER than the whole extent falls through) and nudges the
+// centre back inside the region. Pure + mockable, so the settle behavior is pinned without OSD.
+describe("clampViewportToRegion (the live bounded-map clamp, ADR-0015)", () => {
+  const region = { x: 0, y: 0, w: 100, h: 100 };
+
+  function mockClamp(over: {
+    zoom?: number;
+    bounds?: { x: number; y: number; width: number; height: number };
+    center?: { x: number; y: number };
+  }) {
+    const zoomTo: Array<{ zoom: number; immediately: boolean }> = [];
+    const panTo: Array<{ point: { x: number; y: number }; immediately: boolean }> = [];
+    const viewport: ClampViewportLike = {
+      getZoom: () => over.zoom ?? 1,
+      getBounds: () => over.bounds ?? { x: 40, y: 40, width: 20, height: 20 },
+      getCenter: () => over.center ?? { x: 50, y: 50 },
+      zoomTo: (zoom, _ref, immediately) => zoomTo.push({ zoom, immediately: immediately ?? false }),
+      panTo: (point, immediately) => panTo.push({ point, immediately: immediately ?? false }),
+    };
+    return { viewport, zoomTo, panTo };
+  }
+
+  it("floors the zoom at the region-fit level — the note-larger-than-the-region branch", () => {
+    // A note bigger than the whole extent fits below the region floor; the settle must zoom back up.
+    const { viewport, zoomTo, panTo } = mockClamp({ zoom: 0.4, bounds: { x: 0, y: 0, width: 250, height: 250 }, center: { x: 50, y: 50 } });
+    expect(clampViewportToRegion(viewport, region, 0.5)).toBe(true);
+    expect(zoomTo).toEqual([{ zoom: 0.5, immediately: true }]);
+    expect(panTo).toHaveLength(0); // the next settle pass handles panning
+  });
+
+  it("leaves an in-region viewport alone (returns false, actuates nothing)", () => {
+    const { viewport, zoomTo, panTo } = mockClamp({});
+    expect(clampViewportToRegion(viewport, region, 0.5)).toBe(false);
+    expect(zoomTo).toHaveLength(0);
+    expect(panTo).toHaveLength(0);
+  });
+
+  it("pans an off-region centre back inside — the yank it prevents", () => {
+    // A 20×20 box centred at x=5 spills 5 units past region.x=0; the clamp pushes the centre to x=10.
+    const { viewport, zoomTo, panTo } = mockClamp({ bounds: { x: -5, y: 40, width: 20, height: 20 }, center: { x: 5, y: 50 } });
+    expect(clampViewportToRegion(viewport, region, 0.5)).toBe(true);
+    expect(zoomTo).toHaveLength(0);
+    expect(panTo).toEqual([{ point: { x: 10, y: 50 }, immediately: true }]);
+  });
+
+  it("does NOT clamp an axis where the box is larger than the region (can't centre an oversize fit)", () => {
+    // 250-wide box exceeds region.w=100 on x, so only the y axis is corrected. The 40-tall box may
+    // centre anywhere in [20, 80]; centre 90 clamps to 80 (the minimal correction — the same math
+    // clampedFitRect pins: box spans 60..100, flush inside region.y+h=100).
+    const { viewport, panTo } = mockClamp({ bounds: { x: -75, y: 70, width: 250, height: 40 }, center: { x: 50, y: 90 } });
+    clampViewportToRegion(viewport, region, 0.5);
+    expect(panTo).toEqual([{ point: { x: 50, y: 80 }, immediately: true }]);
+  });
+
+  it("a centre nudged by less than the epsilon is not re-panned (convergence)", () => {
+    const { viewport, panTo } = mockClamp({ bounds: { x: 40.0000000001, y: 40, width: 20, height: 20 }, center: { x: 50.0000000001, y: 50 } });
+    expect(clampViewportToRegion(viewport, region, 0.5)).toBe(false);
+    expect(panTo).toHaveLength(0);
+  });
+});
+
+// applyFitBounds + region — the bounded-map fit folded into the ONE dispatch (ADR-0015): the rect is
+// clamped inside the region in one motion, so the animation-finish clamp finds nothing to correct.
+describe("applyFitBounds + region (the one-motion bounded-map fit)", () => {
+  const region = { x: 0, y: 0, w: 100, h: 100 };
+
+  function mockViewport() {
+    const calls: Array<{ rect: unknown; immediately: boolean | undefined }> = [];
+    const vp: ViewportLike = {
+      // OSD's real imageToViewportRectangle returns a Rect (x/y/width/height), NOT a Box — the mock
+      // reproduces that shape so the region path's Rect→Box conversion is exercised for real.
+      imageToViewportRectangle: (x, y, w, h) => ({ x, y, width: w, height: h }),
+      fitBounds: (rect, immediately) => calls.push({ rect, immediately }),
+      getAspectRatio: () => 1, // square viewport — the map path always supplies one
+    };
+    return { vp, calls };
+  }
+
+  it("clamps an edge note's fit inside the region (landing in-region in one motion)", () => {
+    const { vp, calls } = mockViewport();
+    // xywh=pixel:0,40,10,20 → viewport Rect {x:0, y:40, width:10, height:20}; aspect-grown to 20×20,
+    // centre pushed to x=10 so the box sits exactly on region.x=0 (the same math clampedFitRect pins).
+    expect(applyFitBounds(vp, { type: "FragmentSelector", value: "xywh=pixel:0,40,10,20" }, { region, margin: 0 })).toBe(true);
+    expect(calls[0]!.rect).toEqual({ x: 0, y: 40, w: 20, h: 20 });
+  });
+
+  it("without region behaves exactly as the historical dispatch (no regression)", () => {
+    const { vp, calls } = mockViewport();
+    applyFitBounds(vp, rect, sheet);
+    expect(calls[0]!.rect).toEqual({ x: 100, y: 50, width: 200, height: 80 });
+    expect(calls[0]!.immediately).toBe(false);
   });
 });

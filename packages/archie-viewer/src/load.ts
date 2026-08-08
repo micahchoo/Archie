@@ -27,13 +27,17 @@ import {
   // apps/viewer/src/published.ts — both now compose these instead of redefining them.
   openArchieLibrary,
   openArchieLibraryFromUrl,
-  looksLikeZip,
   SRC_MAX_BYTES,
   FailedReadError,
-  // The tree path's byte source: the READ-ONLY HTTP backend (ticket C1, the fourth backend) behind
-  // the shared fs-walking JsonSource — replaces this file's hand-rolled fetch/classify loop.
-  HttpFilesystem,
-  fsJsonSource,
+  // The tree path's byte source: core's `httpJsonSource` — the TREE half of the open seam
+  // (publish/read.ts), composing the READ-ONLY HTTP backend (ticket C1, the fourth backend) over
+  // the shared fs-walking JsonSource. The absent-vs-failed classification, name containment, and
+  // the SRC_MAX_BYTES cap live in core; this file's local `httpJsonSource` keeps only the
+  // surface's friendly-error copy.
+  httpJsonSource as coreHttpJsonSource,
+  // The shared zip-fallback byte sniff (the `.zip`-less-URL carve-out): was this file's
+  // openSrcAsZipIfBytesAreZip fetch+sniff body, now the primitive in publish/open.ts.
+  fetchZipBytesIfAny,
   type JsonSource,
   type Filesystem,
   type ExhibitsJson,
@@ -138,40 +142,28 @@ export async function openLibraryFromSrc(
  *  (`looksLikeZip`), open them as a zip (enforcing `maxBytes`). Returns `null` when the bytes aren't a
  *  zip — the caller then surfaces the original tree-open error.
  *
- *  NOT rebuilt on `@render/core`'s `fetchArchieLibraryBytes` (ISSUES.md Issue 5): that helper always
- *  THROWS on a network failure/non-OK response, but this fallback must SWALLOW those to `null` so the
- *  original tree-open error surfaces instead — a genuinely different error-handling contract, not an
- *  overlooked duplicate. Only the (rare) declared-too-large case still throws here, matching today's
- *  behavior. */
+ *  The fetch+sniff body is core's `fetchZipBytesIfAny` (publish/open.ts — the shared zip-fallback
+ *  byte sniff, ISSUES.md Issue 5): it swallows a network failure / non-OK response to `null` so the
+ *  original tree-open error surfaces instead — a genuinely different error contract from
+ *  `fetchArchieLibraryBytes` (which always throws). Only the (rare) declared-too-large case still
+ *  throws here, matching today's behavior. */
 async function openSrcAsZipIfBytesAreZip(
   url: string,
   maxBytes: number,
   fetchImpl: typeof fetch,
 ): Promise<LoadedLibrary | null> {
-  let res: Response;
-  try {
-    res = await fetchImpl(url);
-  } catch {
-    return null;
-  }
-  if (!res.ok) return null;
-  const declared = Number(res.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > maxBytes) throw new Error("That library is too large to open here.");
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  if (!looksLikeZip(bytes)) return null;
-  if (bytes.byteLength > maxBytes) throw new Error("That library is too large to open here.");
-  return openZipBytes(bytes);
+  const bytes = await fetchZipBytesIfAny(url, { fetch: fetchImpl, maxBytes });
+  return bytes === null ? null : openZipBytes(bytes);
 }
 
 /** An HTTP `JsonSource` over a published-tree base — GETs tree-relative paths (`exhibits.json`,
- *  `${slug}/manifest.json`) under `base`. Now composed over `@render/core`'s read-only
- *  `HttpFilesystem` (the fourth backend) + the shared `fsJsonSource`, instead of a hand-rolled
- *  fetch loop — which buys name containment on every path segment (a hostile slug can't escape
- *  `base`) and the canonical `SRC_MAX_BYTES` response cap for free. Instance-scoped as before
- *  (`fetchImpl` + `base` captured here, NO module global; base-slash normalization lives in the
- *  backend).
+ *  `${slug}/manifest.json`) under `base`. The CLASSIFICATION (absent-vs-failed, name containment,
+ *  `SRC_MAX_BYTES` cap) is now core's `httpJsonSource` (publish/read.ts — the tree half of the open
+ *  seam); what remains here is this surface's friendly-error `get` copy — per-surface product copy,
+ *  not classification. Instance-scoped as before (`fetchImpl` + `base` captured here, NO module
+ *  global; base-slash normalization lives in the backend).
  *
- *  Error contract (preserved from the hand-rolled version):
+ *  Error contract (unchanged from the pre-core version):
  *   • `get`: any HTTP status (404/5xx), or a torn-200 body → console diagnosis + the friendly
  *     open error; a NETWORK fault (offline/DNS/CORS — `fetch` itself failing) propagates raw,
  *     exactly as before (only `res.ok`/`res.json()` were ever wrapped). One narrowing: a fault
@@ -180,10 +172,10 @@ async function openSrcAsZipIfBytesAreZip(
  *   • `getOptional`: Issue 23 absent-vs-failed verbatim — 404 → null (genuinely absent, e.g. a
  *     base-only exhibit's readings.json); a 5xx/403, a fetch throw, or a torn-200 body →
  *     `FailedReadError` (a failed read is NOT "no data"); readExhibitTree catches it to flag a
- *     partial exhibit instead of silently rendering it as complete. The classification now lives
- *     in `HttpFilesystem`/`fsJsonSource` rather than here. */
+ *     partial exhibit instead of silently rendering it as complete. The classification lives
+ *     in `HttpFilesystem`/`fsJsonSource`, composed by core's `httpJsonSource`. */
 function httpJsonSource(base: string, fetchImpl: typeof fetch): JsonSource {
-  const src = fsJsonSource(new HttpFilesystem(base, { fetch: fetchImpl }));
+  const src = coreHttpJsonSource(base, { fetch: fetchImpl });
   return {
     get: async <T>(path: string): Promise<T> => {
       try {

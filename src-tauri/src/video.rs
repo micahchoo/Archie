@@ -66,7 +66,7 @@ pub const PROGRESS_EVENT: &str = "archie://video-transcode-progress";
 /// is the runtime's own, and on other platforms `PATH` is the only sane answer.
 const FFMPEG: &str = "ffmpeg";
 
-/// A typed, safe-to-serialize failure — same shape and contract as `DeployError` in github.rs, so a
+/// A typed, safe-to-serialize failure — same shape and contract as `DeployError` in github/mod.rs, so a
 /// command `Err` rejects the JS promise with a value the TS seam can classify without string
 /// sniffing. `kind` is the stable part; `message` is for humans and may change.
 #[derive(Debug, Serialize, PartialEq, Clone)]

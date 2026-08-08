@@ -19,7 +19,8 @@
   import { navPosition, navRegionName, navStepName, noteIndexOpenMark } from "../product-copy.js";
   import { stripMarkdown, metadataRows } from "@render/core";
   import { type MarkerStyle, formatZoomRatio, zoomBand } from "@render/svelte";
-  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, readingIdOf, geoOf, geoCenter, formatLngLat, arrivalPulseIntensity, withArrivalPulse, withZoomBand, type MarkerStyleSpec, type NoteMediaItem, type RightsFields, type W3CAnnotation, type Reading, type TileSourceDescriptor } from "@render/core";
+  import { commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, readingIdOf, arrivalPulseIntensity, withArrivalPulse, withZoomBand, type MarkerStyleSpec, type RightsFields, type W3CAnnotation, type Reading, type TileSourceDescriptor } from "@render/core";
+  import { createNoteSurface } from "../note-surface.svelte.js";
 
   // Resizable / collapsible reader sidebar (Phase-2 expandability). `asideWidth` is a px OVERRIDE of the
   // responsive clamp() default (null ⇒ default); persisted per the archie.*.v1 metadata idiom. Drag math
@@ -28,10 +29,6 @@
   const ASIDE_COLLAPSED_KEY = "archie.readerAsideCollapsed.v1";
   let asideWidth = $state<number | null>(loadAsideWidth(ASIDE_W_KEY));
   let asideCollapsed = $state<boolean>(loadAsideCollapsed(ASIDE_COLLAPSED_KEY));
-  // Expand the open note into the centred reading sheet (Phase-3 focus surface). A BOOLEAN, not a text
-  // snapshot: the sheet renders the same `current` note the card does (Archie-dbbc), so there is nothing
-  // to copy into it and no way for the two to describe different notes.
-  let readingSheet = $state(false);
 
   let {
     object,
@@ -110,6 +107,24 @@
     onreadinginfo?: () => void;
   } = $props();
 
+  // THE OPEN-NOTE SURFACE — ONE state machine (note-surface.svelte.ts, Phase 5). This reader used
+  // to hold `selected`/`readingSheet`/`lightbox` + the current/noteParts/geoCoord derivations + the
+  // mount handlers itself (~100 ln duplicated across the three reading hosts). The host keeps only
+  // what is genuinely per-host: the Canvas binding (`bind:selected` + `zoomOnSelect` below — the
+  // surface's `onSelect` stays unset here), the eyebrow (the object label), the tag-chip finder
+  // wiring, and the Escape ladder's up-a-level rung (`onback`). `reset()` is called by the
+  // object-change effect so a carousel step can never leave a sheet or lightbox behind.
+  // svelte-ignore state_referenced_locally -- initial-capture is the contract: `initialSelected` seeds
+  // the surface's selection once; LATER changes are adopted by the re-selection $effect below
+  // (prevInitialSelected).
+  const surface = createNoteSurface({
+    annotations: () => annotations,
+    textOf: commentOf,
+    eyebrow: () => object.label,
+    onopenfinder: (t) => onopenfinder?.(t),
+    initialSelected,
+  });
+
   // Show the sidebar footer only with real siblings AND the wiring to drive it. When present it owns
   // "back to the overview", so the top "← Back to exhibit" would be redundant — suppressed below.
   const objectNav = $derived(
@@ -187,9 +202,9 @@
     return rid !== undefined ? readings.find((r) => r.id === rid)?.colour : undefined;
   };
 
-  // svelte-ignore state_referenced_locally -- initial-capture is the contract: `initialSelected` seeds
-  // selection once; LATER changes are adopted by the re-selection $effect below (prevInitialSelected).
-  let selected = $state<string | null>(initialSelected);
+  // Selection lives on the shared note surface (`surface.selected`, seeded from `initialSelected` by
+  // the factory — same initial-capture contract as the old `$state(initialSelected)`; LATER changes
+  // are adopted by the re-selection $effect below via prevInitialSelected).
   // Scale cue (Archie-93fd): current zoom / home zoom, streamed live from Canvas's onzoom. Defaults
   // to 1 (home/fit) — the value it settles back to once the canvas mounts and reports its own home.
   let zoomRatio = $state(1);
@@ -199,7 +214,7 @@
   // rides along only while the arrival region is still the one being shown — once the reader picks a
   // different note, the old `?xywh=` no longer describes anything and must not stick to the address.
   $effect(() => {
-    onlocus?.({ noteId: selected, xywh: selected !== null && selected === initialSelected ? initialRegion : null });
+    onlocus?.({ noteId: surface.selected, xywh: surface.selected !== null && surface.selected === initialSelected ? initialRegion : null });
   });
 
   // Deep-link sub-region (4.2): the camera target fragment for Canvas's `focus`. The route gives the raw
@@ -279,17 +294,17 @@
   let prevCanvas: string | undefined;
   $effect(() => {
     const c = object.canvasId;
-    // Object actually changed: clear the selection. (The `stepIntoReading` carry that used to keep a
-    // note open across a popup-stepper step went with the popup stepper — Archie-01a6.)
+    // Object actually changed: reset the note surface. (The `stepIntoReading` carry that used to keep
+    // a note open across a popup-stepper step went with the popup stepper — Archie-01a6.)
     //
     // `readingSheet` must be cleared with it. The sheet renders under `{#if readingSheet && current}`,
     // so clearing `selected` alone UNMOUNTS the sheet while leaving the flag true — and the next plain
     // note selection would then open a reading sheet nobody asked for. Latent rather than shipping
     // today (the scrim covers every control that could change the object while the sheet is open, and
     // `use:dialog` traps Tab), but it stops being latent the moment any control lands above z-index 60
-    // or the finder gains a cross-object result. Clear the flag where the selection is cleared, not
-    // where the sheet happens to be unreachable.
-    if (prevCanvas !== undefined && prevCanvas !== c) { selected = null; readingSheet = false; }
+    // or the finder gains a cross-object result. Clear the surface where the selection is cleared, not
+    // where the sheet happens to be unreachable. `surface.reset()` clears the lightbox with them.
+    if (prevCanvas !== undefined && prevCanvas !== c) surface.reset();
     prevCanvas = c;
     armArrival = true; // every landing (first paint or carousel switch) arms the reveal; the
                        // canvas-ready onzoom below fires it once marks are actually on screen
@@ -309,7 +324,7 @@
     // membership guard (review): only adopt a target that exists in THIS object's notes — defends a
     // stale initialSelected on a manual carousel switch, and keeps the cross-object jump correct
     // regardless of effect order (object-change clears, this re-selects the now-present note).
-    if (next !== null && next !== prevInitialSelected && annotations.some((a) => a.id === next)) selected = next;
+    if (next !== null && next !== prevInitialSelected && annotations.some((a) => a.id === next)) surface.selected = next;
     prevInitialSelected = next;
   });
 
@@ -321,22 +336,17 @@
   // the canvas at all. Declutter means "hide the REGION marks", not "remove the keyboard
   // infrastructure"; the dashed border is a hairline and costs the decluttered view almost nothing.
   const canvasFrame = $derived<FrameOverlay | null>(
-    frame ? { colour: frame.colour, onActivate: () => (selected = frame.markId) } : null,
+    frame ? { colour: frame.colour, onActivate: () => (surface.selected = frame.markId) } : null,
   );
   // The notes list + detail (`current`) keep the FULL array — only the canvas drops the framed rect.
   // Hide-all: the canvas shows ONLY the selected note's mark (or nothing), decluttering the basemap
   // while a list pick still reveals its single pin (the camera fit then centres it).
   const canvasAnnotations = $derived.by(() => {
-    if (notesHidden) { const sel = annotations.find((a) => a.id === selected); return sel ? [sel] : []; }
+    if (notesHidden) { const sel = annotations.find((a) => a.id === surface.selected); return sel ? [sel] : []; }
     return frame ? annotations.filter((a) => a.id !== frame.markId) : annotations;
   });
-
-  const current = $derived(annotations.find((it) => it.id === selected));
-  // Split the selected note into media (clickable tiles → lightbox) + prose (CONTEXT §"Local view loop").
-  const noteParts = $derived(current ? splitNoteMedia(commentOf(current)) : { media: [] as NoteMediaItem[], text: "" });
-  // Geo readout (Q7): a Map note shows its centre lng/lat in the opened note — supplementary, not chrome.
-  const geoCoord = $derived.by(() => { if (!current) return null; const g = geoOf(current); return g ? formatLngLat(geoCenter(g)) : null; });
-  let lightbox = $state<{ media: NoteMediaItem[]; text: string; index: number } | null>(null);
+  // `current`/`noteParts`/`geoCoord`/`lightbox` all live on `surface` now (note-surface.svelte.ts) —
+  // the popup, sheet and lightbox below render from its state.
 
   // Esc closes the open note (#3): the most-travelled loop is open-read-dismiss-next, and until now Esc
   // worked in the lightbox/reading-sheet but NOT in the note state itself. Guarded so the lightbox/sheet
@@ -356,9 +366,9 @@
   //      focus is there, and the reader had no announced way to take them back)
   //   3. otherwise                → up a level, to the exhibit
   function onkey(e: KeyboardEvent) {
-    if (lightbox || readingSheet) return; // those surfaces own Esc while open
+    if (surface.lightbox || surface.readingSheet) return; // those surfaces own Esc while open
     if (e.key !== "Escape") return;
-    if (selected !== null) { selected = null; e.preventDefault(); return; }
+    if (surface.selected !== null) { surface.close(); e.preventDefault(); return; }
     const active = document.activeElement as HTMLElement | null;
     if (active?.closest(".openseadragon-container")) {
       // Hand focus back to the reader's own frame rather than to <body>: blurring to nothing is how
@@ -436,10 +446,10 @@
       <!-- Key on the object so the OSD viewer REMOUNTS (loads the new image) when the carousel switches
            objects — Canvas creates the viewer once in onMount, so without this only annotations swap. -->
       {#key object.canvasId}
-        <Canvas source={object.source} tileSource={object.tileSource} canvasId={object.canvasId} annotations={canvasAnnotations} styleOf={pulsedStyleOf} frame={canvasFrame} focus={focusRegion} zoomOnSelect locator bind:selected onzoom={onCanvasZoom} />
+        <Canvas source={object.source} tileSource={object.tileSource} canvasId={object.canvasId} annotations={canvasAnnotations} styleOf={pulsedStyleOf} frame={canvasFrame} focus={focusRegion} zoomOnSelect locator bind:selected={surface.selected} onzoom={onCanvasZoom} />
       {/key}
     </main>
-    {#if current}
+    {#if surface.current}
       <!-- THE NOTE (shared NotePopup), on ANY marker/note selection — parity with the narrative. It
            carries no stepper: object nav is canvas chrome now (Archie-01a6).
 
@@ -484,17 +494,17 @@
            to also have to be right for the `getFitOptions` reservation, which read `.note-pop`'s 0×0 box
            as "not occluding"; that reservation is gone.) -->
 
-      <div class="note-slot note-dock" class:hidden-behind-sheet={readingSheet}>
+      <div class="note-slot note-dock" class:hidden-behind-sheet={surface.readingSheet}>
       <NotePopup
-        eyebrow={object.label}
-        text={noteParts.text}
-        media={noteParts.media}
-        tags={tagsOf(current)}
-        {geoCoord}
-        onclose={() => (selected = null)}
-        onexpand={() => { if (noteParts.text) readingSheet = true; else if (noteParts.media.length) lightbox = { media: noteParts.media, text: noteParts.text, index: 0 }; }}
-        onopenfinder={(t) => onopenfinder?.(t)}
-        onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
+        eyebrow={surface.eyebrow}
+        text={surface.noteParts.text}
+        media={surface.noteParts.media}
+        tags={surface.tags}
+        geoCoord={surface.geoCoord}
+        onclose={surface.close}
+        onexpand={surface.expand}
+        onopenfinder={surface.openFinder}
+        onmedia={surface.media}
       />
       </div>
     {/if}
@@ -548,8 +558,8 @@
                entry keeps everything only an index can give (reading colour, tags, where you are in the
                list); what it drops is the copy of the prose that is, right now, fully legible on screen.
                `aria-current` says the same thing to a screen reader that `.active` says to the eye. -->
-          <button class:active={it.id === selected} aria-current={it.id === selected ? "true" : undefined} style="border-left-color: {readingColourOf(it) ?? 'transparent'}" onclick={() => (selected = it.id)} onfocus={() => onnotehover?.(it.id ?? null)} onblur={() => onnotehover?.(null)}>
-            {#if it.id === selected}
+          <button class:active={it.id === surface.selected} aria-current={it.id === surface.selected ? "true" : undefined} style="border-left-color: {readingColourOf(it) ?? 'transparent'}" onclick={() => (surface.selected = it.id)} onfocus={() => onnotehover?.(it.id ?? null)} onblur={() => onnotehover?.(null)}>
+            {#if it.id === surface.selected}
               <span class="card-open">{noteIndexOpenMark(i, annotations.length)}</span>
             {:else}
               <span class="card-preview">{stripMarkdown(commentOf(it))}</span>
@@ -614,11 +624,11 @@
     {/if}
   </aside>
 
-  {#if lightbox}
-    <NoteLightbox media={lightbox.media} text={lightbox.text} index={lightbox.index} onclose={() => (lightbox = null)} />
+  {#if surface.lightbox}
+    <NoteLightbox media={surface.lightbox.media} text={surface.lightbox.text} index={surface.lightbox.index} onclose={surface.closeLightbox} />
   {/if}
 
-  {#if readingSheet && current}
+  {#if surface.readingSheet && surface.current}
     <!-- The sheet is the SAME note at reading size: it takes the card's props, not a text snapshot. That
          is what makes the sheet's header identical to the card's by construction (V64) and what stops
          media/tags/geo vanishing on expand.
@@ -648,14 +658,14 @@
          "render them inert", it leaves no control that looks clickable and isn't. -->
 
     <ReadingSheet
-      eyebrow={object.label}
-      text={noteParts.text}
-      media={noteParts.media}
-      tags={tagsOf(current)}
-      {geoCoord}
-      onclose={() => (readingSheet = false)}
-      onopenfinder={(t) => { readingSheet = false; onopenfinder?.(t); }}
-      onmedia={(idx) => { readingSheet = false; lightbox = { media: noteParts.media, text: noteParts.text, index: idx }; }}
+      eyebrow={surface.eyebrow}
+      text={surface.noteParts.text}
+      media={surface.noteParts.media}
+      tags={surface.tags}
+      geoCoord={surface.geoCoord}
+      onclose={surface.sheetClose}
+      onopenfinder={surface.sheetFinder}
+      onmedia={surface.sheetMedia}
     />
   {/if}
 </div>

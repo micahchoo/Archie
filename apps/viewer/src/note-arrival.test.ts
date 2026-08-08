@@ -1,17 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { resolveNoteArrival, type NoteArrivalData } from "./note-arrival.js";
 
-// A note in the base page resolves with reading:null; a note only on a per-reading page resolves with
-// that reading id; an unknown id (tombstoned cite) resolves null. Mirrors the deep-link owner search.
-//
-// REALISTIC IDS, DELIBERATELY (V100, Archie-67b6). This fixture used to use `"n-base"` as BOTH the
-// queried id and the annotation's id. Every case then passed under the broken `a.id === noteId`
-// comparison, because the two sides were literally the same string — the suite was structurally
-// incapable of modelling the bug, which is how a cite rung that had NEVER resolved kept a green file.
-//
-// The real shapes: an annotation's `id` is the published IRI `{base}{slug}/annotations/{ULID}/v{n}`
-// (publish/site.ts `citeBase`), while the address bar carries only the bare ULID (`#/<slug>/a/<ULID>`).
-// Both must resolve, and the resolver must hand back the PUBLISHED id.
+// resolveNoteArrival is now a THIN composition over note-tree.locate (Phase 5) — the canonical walk.
+// The full V100 regression suite (bare ULID / full IRI / versioned / tombstoned / malformed, plus
+// the published-id return contract) moved to note-tree.test.ts, where the ONE implementation lives.
+// This file pins the public seam ExhibitView calls: same signature, same resolution, via the walk.
+
+// REALISTIC IDS (V100, Archie-67b6): an annotation's `id` is the published IRI
+// `{base}{slug}/annotations/{ULID}/v{n}`; the address bar carries the bare ULID.
 const BASE = "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations";
 const ULID_BASE = "01KVPP7FN3KRAF8B45HJQKYSZG";
 const ULID_CIPHER = "01KVPP80S5NHFMEBP6XPB5X6B5";
@@ -33,9 +29,8 @@ const data: NoteArrivalData = {
   },
 };
 
-describe("resolveNoteArrival", () => {
+describe("resolveNoteArrival — the A0 seam resolves through the canonical walk", () => {
   it("resolves a base-page note from the ADDRESS-BAR form (a bare ULID)", () => {
-    // The exact shape that never resolved: one path segment in, a full IRI in the data.
     expect(resolveNoteArrival(ULID_BASE, objects, data)).toEqual({
       objectId: "o1", reading: null, noteId: ID_BASE,
     });
@@ -47,34 +42,11 @@ describe("resolveNoteArrival", () => {
     });
   });
 
-  it("also accepts the FULL IRI — internal callers (search, keyboard index) pass that", () => {
-    expect(resolveNoteArrival(ID_BASE, objects, data)).toEqual({
-      objectId: "o1", reading: null, noteId: ID_BASE,
-    });
-  });
-
-  it("hands back the PUBLISHED id, not the id it was asked with", () => {
-    // The second half of V100: `arrivedNote` feeds Reader's `initialSelected`, which is matched
-    // against `annotation.id`. Returning the caller's bare ULID re-opened the same gap one layer
-    // down — the object would open and the note still never select.
+  it("hands back the PUBLISHED id, not the id it was asked with (V100's second half)", () => {
     expect(resolveNoteArrival(ULID_BASE, objects, data)!.noteId).toBe(ID_BASE);
-  });
-
-  it("ignores the VERSION — a cite minted before an edit still lands (ADR-0003)", () => {
-    // ID_CIPHER is /v2; a citation captured at /v1 names the same logical note.
-    expect(resolveNoteArrival(`${BASE}/${ULID_CIPHER}/v1`, objects, data)).toEqual({
-      objectId: "o2", reading: "cipher", noteId: ID_CIPHER,
-    });
   });
 
   it("resolves an unknown id to null (tombstoned cite, ADR-0003)", () => {
     expect(resolveNoteArrival("01KVPQ3WXQ4PJ0614J4BEAC2XN", objects, data)).toBeNull();
-  });
-
-  it("degrades on a malformed id rather than throwing", () => {
-    // A hand-edited address must land somewhere honest, never break the page.
-    for (const bad of ["", "   ", "not-a-ulid", "../../etc/passwd", `${BASE}/nope/v1`]) {
-      expect(resolveNoteArrival(bad, objects, data)).toBeNull();
-    }
   });
 });

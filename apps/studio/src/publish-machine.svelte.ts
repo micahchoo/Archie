@@ -10,12 +10,13 @@
 // `.claude/rules/svelte-no-typecheck-net.md`: `tsc --noEmit` skips `.svelte` but DOES typecheck a
 // `.svelte.ts`, so the copy-heavy transition logic gets a type net the template can't have.
 //
-// The machine takes its platform seams as injected deps (signIn / deploy / openUrl / copy / now) so the
-// view wires the real deploy-flows (Task 13) while tests pass fakes. TOKEN SAFETY (Q-12): the token
+// The machine takes its platform seams as injected deps (signIn / deploy / openUrl / copy / onpublish /
+// now) so the view wires the real deploy-flows (Task 13) while tests pass fakes. TOKEN SAFETY (Q-12): the token
 // lives only inside the in-memory DeploySession this machine holds; it is never read into any copy,
 // preview, or persisted target.
 
 import { pagesUrlFor } from "@render/core";
+import type { GitHubTarget, GitHubPublishResult, PublishProgress } from "@render/core";
 import type { DeploySession, DeployTarget, DeployProgress, DeployError } from "./deploy/types.js";
 import type { DeployResult } from "./deploy/deploy-flows.svelte.js";
 
@@ -96,6 +97,15 @@ export interface PublishMachineDeps {
    *  steps still stand). `| undefined` explicit for the same live-getter reason as `checkRepoExists`.
    *  Wired in Task 13. */
   recheckPages?: ((session: DeploySession, target: DeployTarget) => Promise<boolean>) | undefined;
+  /** The raw-token publish (publish-flows' publishToGitHub) — the advanced form's seam (the pre-Task-10
+   *  flow folded in). Optional: unwired, the advanced screen's Publish button is disabled (the token
+   *  form is the fallback when the device flow can't run — a fork with no publish engine offers nothing
+   *  to press). `| undefined` explicit for the same live-getter reason as `checkRepoExists` above. */
+  onpublish?: ((target: GitHubTarget, opts: { includeOriginals: boolean }, onProgress: (p: PublishProgress) => void) => Promise<GitHubPublishResult>) | undefined;
+  /** Live gate wired by the view: true when a `block` preflight finding refuses the publish (render-core's
+   *  blocksPublish is the single definition — this is its wiring, not a second predicate written here).
+   *  Optional: unwired, no preflight gate. `| undefined` explicit for the same live-getter reason. */
+  publishBlocked?: (() => boolean) | undefined;
   /** Clock seam so the countdown is testable. Defaults to `Date.now`. */
   now?: () => number;
 }
@@ -210,6 +220,23 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     recheckPending: boolean; // manual-pages: a [recheck] round-trip is in flight
     recheckSaysOff: boolean; // manual-pages: the last recheck came back "still not on" (honest, non-fatal)
     openUrlFailed: boolean; // the last "open in browser" was rejected (Archie-2139) — honest, non-fatal
+    // --- advanced (token) form state (the pre-Task-10 flow, folded into the machine) ---
+    // `token` here is THE SECRET: held only for the duration of ONE publish and dropped on success,
+    // error, AND close (the token-secret lifecycle). It is distinct from the device-flow session token
+    // above and never read into any copy, preview, or persisted target (Q-12).
+    advanced: {
+      owner: string; // the author's GitHub login (bare name)
+      repo: string; // the repository name (bare name)
+      branch: string; // which branch to publish onto ("gh-pages" default)
+      token: string; // the paste-in PAT
+      includeOriginals: boolean; // opt-in: ship preserved source originals for citation (CONTEXT §89.1)
+      phase: "idle" | "publishing" | "done" | "error";
+      commitUrl: string;
+      pagesUrl: string; // visitor-facing URL, returned by publishToGitHub (project- vs user-site aware)
+      pagesEnabled: boolean; // false ⇒ the push landed but Pages must be enabled manually
+      error: string;
+      progress: PublishProgress | null; // live step from onpublish while publishing
+    };
   }>({
     state: "intro-desktop",
     session: null,
@@ -230,6 +257,19 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     recheckPending: false,
     recheckSaysOff: false,
     openUrlFailed: false,
+    advanced: {
+      owner: "",
+      repo: "",
+      branch: "gh-pages",
+      token: "",
+      includeOriginals: false,
+      phase: "idle",
+      commitUrl: "",
+      pagesUrl: "",
+      pagesEnabled: false,
+      error: "",
+      progress: null,
+    },
   });
 
   /** Compute the opening screen from the runtime + any restored session (GHPAGES-PUBLISH-UX §states). A
@@ -361,6 +401,47 @@ export function createPublishMachine(deps: PublishMachineDeps) {
 
   function openAdvanced(): void { s.state = "advanced"; }
   function backToIntro(): void { s.state = computeInitial(); }
+
+  // --- advanced (token) form (the pre-Task-10 flow, folded into the machine) ---
+
+  /** Run the raw-token publish. The secret lives only for the duration of ONE publish — dropped the
+   *  instant we're done with it, on success AND error (never retained across a failure either). A
+   *  no-op when the seam is unwired (the button is disabled then anyway, via `advCanPublish`). */
+  async function publishAdvanced(): Promise<void> {
+    const onpub = deps.onpublish;
+    if (!onpub) return;
+    s.advanced.phase = "publishing";
+    s.advanced.error = "";
+    s.advanced.progress = null;
+    try {
+      const target: GitHubTarget = {
+        owner: s.advanced.owner.trim(),
+        repo: s.advanced.repo.trim(),
+        branch: s.advanced.branch.trim() || "gh-pages",
+        token: s.advanced.token.trim(),
+      };
+      const res = await onpub(target, { includeOriginals: s.advanced.includeOriginals }, (p) => (s.advanced.progress = p));
+      s.advanced.commitUrl = res.commitUrl;
+      s.advanced.pagesUrl = res.pagesUrl;
+      s.advanced.pagesEnabled = res.pagesEnabled;
+      s.advanced.phase = "done";
+      s.advanced.token = ""; // drop the secret the instant we're done with it
+    } catch (e) {
+      s.advanced.error = e instanceof Error ? e.message : "Couldn't publish. Check the repository name and that your token has Contents and Pages write access.";
+      s.advanced.phase = "error";
+      s.advanced.token = ""; // never retain the secret across an error either
+    }
+  }
+
+  /** Drop the token-form secret + reset its phase — the view calls this on surface close. The paste-in
+   *  token is never retained past the close that hides the form, and a finished/failed attempt's screen
+   *  must not re-appear on a later visit (phase back to `idle`; the result fields stay readable until
+   *  the next publish overwrites them, matching the pre-fold behavior). */
+  function resetAdvanced(): void {
+    s.advanced.phase = "idle";
+    s.advanced.token = "";
+    s.advanced.progress = null;
+  }
 
   /** Publish from the name step. A `new` site is pre-flight checked so we never force-overwrite an
    *  existing repo (deploy replaces gh-pages wholesale) — a hit routes to `name-taken`. An `update`
@@ -615,6 +696,61 @@ export function createPublishMachine(deps: PublishMachineDeps) {
       return q === "" ? s.repoList : s.repoList.filter((r) => r.toLowerCase().includes(q));
     },
 
+    // --- advanced (token) form ---
+
+    get advOwner(): string { return s.advanced.owner; },
+    set advOwner(v: string) { s.advanced.owner = v; },
+    get advRepo(): string { return s.advanced.repo; },
+    set advRepo(v: string) { s.advanced.repo = v; },
+    get advBranch(): string { return s.advanced.branch; },
+    set advBranch(v: string) { s.advanced.branch = v; },
+    get advToken(): string { return s.advanced.token; },
+    set advToken(v: string) { s.advanced.token = v; },
+    get advIncludeOriginals(): boolean { return s.advanced.includeOriginals; },
+    set advIncludeOriginals(v: boolean) { s.advanced.includeOriginals = v; },
+    get advPhase(): "idle" | "publishing" | "done" | "error" { return s.advanced.phase; },
+    get advCommitUrl(): string { return s.advanced.commitUrl; },
+    get advPagesUrl(): string { return s.advanced.pagesUrl; },
+    get advPagesEnabled(): boolean { return s.advanced.pagesEnabled; },
+    get advErrorMsg(): string { return s.advanced.error; },
+    /** Validation for the token form's Owner + Repository fields — BOTH are bare GitHub names, so the
+     *  drifted pre-Task-10 `/[/\s]/` check collapses onto the one name-site validator (the empty case
+     *  is not an error here either; the Publish button is separately disabled). */
+    get advNameError(): string {
+      const ownerMsg = validateSiteName(s.advanced.owner);
+      if (ownerMsg !== "") return ownerMsg;
+      return validateSiteName(s.advanced.repo);
+    },
+    /** The token form's Publish gate: both names + the token filled, both names valid, not already
+     *  publishing, and no `block` preflight finding (render-core's blocksPublish — the single
+     *  definition — wired through the `publishBlocked` dep, not a second predicate). */
+    get advCanPublish(): boolean {
+      return (
+        s.advanced.owner.trim() !== "" &&
+        s.advanced.repo.trim() !== "" &&
+        s.advanced.token.trim() !== "" &&
+        this.advNameError === "" &&
+        s.advanced.phase !== "publishing" &&
+        deps.publishBlocked?.() !== true
+      );
+    },
+    /** Where the author flips Pages on if the token couldn't (private repo / token without Pages scope). */
+    get advPagesSettingsUrl(): string {
+      return `https://github.com/${s.advanced.owner.trim()}/${s.advanced.repo.trim()}/settings/pages`;
+    },
+    /** Human-readable progress for the long push (media upload is one request per asset → show the
+     *  count). The republish case says what it SKIPPED as well as what it's sending: a publish that
+     *  uploads 3 of 4,132 files and one that uploads all 4,132 look identical without it (Archie-53e3). */
+    get advProgressText(): string {
+      const p = s.advanced.progress;
+      return p?.phase === "comparing" ? "Checking what's already published…"
+        : p?.phase === "uploading"
+          ? `Uploading media — ${p.done} of ${p.total}…${p.unchanged > 0 ? ` (${p.unchanged} already up to date)` : ""}`
+          : p?.phase === "committing" ? "Creating the commit…"
+          : p?.phase === "enabling-pages" ? "Turning on GitHub Pages…"
+          : "Preparing the library…";
+    },
+
     // --- transitions ---
     open,
     continueWithGitHub,
@@ -624,6 +760,8 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     retryAuth,
     openAdvanced,
     backToIntro,
+    publishAdvanced,
+    resetAdvanced,
     publish,
     retryPublish,
     signInAgain,

@@ -15,7 +15,9 @@ import { dirname, join } from "node:path";
 const here = dirname(fileURLToPath(import.meta.url));
 
 // The read-only module graph (the files createReadOnlyMount/createReadOnlyOverlay actually import).
-const READ_ONLY_MODULES = ["read-mount.ts", "read-overlay.ts"];
+// Phase 6: OSD construction moved to the shared osd-open.ts, and the overlay lifecycle to
+// overlay-core.ts — both join the graph the keystone premise must hold over.
+const READ_ONLY_MODULES = ["read-mount.ts", "read-overlay.ts", "osd-open.ts", "overlay-core.ts"];
 const FORBIDDEN = ["@annotorious/openseadragon", "@annotorious/plugin-tools", "@annotorious", "pixi", "@pixi"];
 
 /** Extract the module specifiers from `import ... from "x"` / `import "x"` statements. */
@@ -41,7 +43,9 @@ describe("read-only mount path contains NO @annotorious/* or pixi import (the no
   }
 
   it("the read-only modules DO keep openseadragon (deep-zoom tiles stay — ADR-0019)", () => {
-    const src = readFileSync(join(here, "read-mount.ts"), "utf8");
+    // The construction lives in the shared osd-open.ts since Phase 6; read-mount.ts itself no
+    // longer imports OSD directly — this is the file that must.
+    const src = readFileSync(join(here, "osd-open.ts"), "utf8");
     expect(importSpecifiers(src)).toContain("openseadragon");
   });
 });

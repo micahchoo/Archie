@@ -64,7 +64,7 @@ export * from "./query/marker-contrast.js";
 // Published-shape (W3CAnnotation) accessors — the canonical home for the viewer's body/reading/overlay reads.
 export * from "./query/published.js";
 // The source-parameterized published-tree reader (the domino) — site/portable/viewer adapt over it.
-export { readExhibitTree, fsJsonSource, migratingJsonSource, migratedFsJsonSource, FailedReadError, assertArchieTreeMarker, type JsonSource, type NoteTransform } from "./publish/read.js";
+export { readExhibitTree, fsJsonSource, httpJsonSource, migratingJsonSource, migratedFsJsonSource, FailedReadError, assertArchieTreeMarker, type JsonSource, type NoteTransform } from "./publish/read.js";
 // Archie-69f9: tree-level schema migration — the registry a schema bump appends to, plus the planner
 // whose refusal keeps ADR-0020s clean-refusal guarantee intact when the gate accepts an older tree.
 export { TREE_MIGRATIONS, treeMigrationsSince, migrateTreeDoc, migrationGapMessage, type TreeMigration, type TreeMigrationScope, type TreeMigrationGap } from "./migrate/tree.js";
@@ -143,6 +143,9 @@ export * from "./iiif/metadata.js";
 // The Filesystem seam (source interface) + its backend projections (Q-5):
 // memory (tests/Playground), zip (DownloadFilesystem core), fsa (Chromium folder, browser).
 export * from "./fs/seam.js";
+// resolve (tryResolveFile — the ONE classified absent-vs-failed traversal; the read/portable/working
+// walk sites collapse onto it, Phase 1 Wave 1). Callers keep their own null-vs-throw decision.
+export * from "./fs/resolve.js";
 export * from "./fs/memory.js";
 export * from "./fs/zip.js";
 // zip-stream (ZipStreamFilesystem — WRITE-THROUGH streaming .archie.zip sink; SCALE bounded-memory
@@ -152,6 +155,11 @@ export * from "./fs/fsa.js";
 // tauri (TauriFilesystem, desktop folder backend). Pure over a path-based TauriFsBridge; the real
 // @tauri-apps/plugin-fs binding lives in apps/studio/src/tauri-fs.ts (headless-core / app-glue split).
 export * from "./fs/tauri.js";
+// node (NodeFilesystem — the REAL node:fs directory backend; Node-only by construction, the script
+// toolbelt's writable disk store). NOT exported from this barrel: it imports node:fs/promises, which
+// breaks browser bundlers (esbuild can't resolve it). Reach it via the `@render/core/node` subpath
+// export (package.json exports map, the `./worker` precedent) — Node runtimes only.
+// export * from "./fs/node.js";
 // copy-tree (backend-agnostic recursive Filesystem→Filesystem copy). Content-first, bounded-memory;
 // the primitive under the OPFS→folder desktop migration (Archie-623e).
 export * from "./fs/copy-tree.js";

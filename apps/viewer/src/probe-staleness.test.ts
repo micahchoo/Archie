@@ -16,6 +16,11 @@ function stub(handler: Handler): string[] {
       status: r.status,
       json: async () => { if (r.body === undefined) throw new SyntaxError("bad json"); return r.body; },
       text: async () => r.text ?? "",
+      // Hosted reads go through core's httpJsonSource → HttpFilesystem, which consumes the body via
+      // arrayBuffer (not json) and reads the declared content-length from headers — the mock must
+      // serve both so the migration stays green.
+      headers: { get: () => null },
+      arrayBuffer: async () => new TextEncoder().encode(r.text ?? (r.body === undefined ? "" : JSON.stringify(r.body))).buffer,
     } as unknown as Response;
   }));
   return urls;

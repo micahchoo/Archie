@@ -1,12 +1,13 @@
 <script lang="ts">
   // Thin Svelte 5 shell over @render/mount (ADR-0002 / Q-2). Binding/edit LOGIC lives in
-  // createCanvasController + the @render/core AnnotationSession (both headless-tested); this
-  // component only wires the surface to $state, drawing props, and lifecycle callbacks.
+  // createCanvasController + createDotLayer + the @render/core AnnotationSession (all headless-
+  // tested); this component only wires the surface to $state, drawing props, and lifecycle
+  // callbacks.
   // NOT in the tsc/test gate (real OSD render = browser verification).
   import { onMount, onDestroy } from "svelte";
-  import { createMount, zoomBand, dotsVisibleForBand, rectCenter, type ZoomBand, type ScreenRect, type MountSurface, type DrawTool, type MarkerStyle, type FrameOverlay, type NativeFetch } from "@render/mount";
+  import { createMount, dotsVisibleForBand, rectCenter, type ZoomBand, type ScreenRect, type MountSurface, type DrawTool, type MarkerStyle, type FrameOverlay, type NativeFetch } from "@render/mount";
   import { type W3CAnnotation, type TileSourceDescriptor } from "@render/core";
-  import { createCanvasController, type CanvasController } from "./controller.js";
+  import { createCanvasController, createDotLayer, type CanvasController, type DotLayer } from "./controller.js";
 
   let {
     zoomOnSelect = false,
@@ -22,7 +23,6 @@
     oncreate,
     onupdate,
     ondelete,
-    onmarkerrect,
     rectIds,
     onmarkerrects,
     styleOf,
@@ -50,14 +50,10 @@
     oncreate?: (a: W3CAnnotation) => void;
     onupdate?: (a: W3CAnnotation) => void;
     ondelete?: (id: string) => void;
-    /** The selected marker's on-screen rect — streamed on select, every pan/zoom frame, and after a
-     *  geometry edit — so the host can anchor an editing popover to it (ADR-0006). Null when nothing is
-     *  selected or the marker isn't resolvable (e.g. off-screen during an animation frame). */
-    onmarkerrect?: (rect: { left: number; top: number; right: number; bottom: number } | null) => void;
     /** Worklist 2.1 (marginalia): which markers to stream rects for (usually every listed note). */
     rectIds?: string[];
     /** Batched rect stream — ALL `rectIds` rects per viewport frame (rAF-throttled), the
-     *  MarginColumn's input. Unresolvable ids map to null. */
+     *  marginalia rail's input. Unresolvable ids map to null. */
     onmarkerrects?: (rects: Record<string, { left: number; top: number; right: number; bottom: number } | null>) => void;
     /** Per-marker style by annotation id — colours a marker by its Reading (ADR-0007). Undefined = default. */
     styleOf?: (id: string) => MarkerStyle | undefined;
@@ -82,10 +78,6 @@
     nativeFetch?: NativeFetch;
   } = $props();
 
-  // Emit the selected marker's current screen rect (OSD re-anchors natively, so this just re-reads).
-  function emitRect() {
-    if (surface && onmarkerrect) onmarkerrect(selected != null ? surface.markerScreenRect(selected) : null);
-  }
   // Batched stream for the marginalia column (worklist 2.1) — rAF-throttled so a pan emits at most
   // one batched read per frame regardless of how often OSD fires update-viewport.
   let rectsRaf = 0;
@@ -97,7 +89,7 @@
     });
   }
   // Scale cue (Archie-93fd) — OSD re-derives the ratio itself (getZoomRatio), so this just re-reads,
-  // same shape as emitRect. Not rAF-throttled: it's a single division, and the host only ever renders
+  // same shape as emitRects. Not rAF-throttled: it's a single division, and the host only ever renders
   // the ROUNDED text (formatZoomRatio), so an extra call between two identical-looking frames is free.
   function emitZoom() {
     if (surface && onzoom) onzoom(surface.getZoomRatio());
@@ -105,10 +97,12 @@
 
   // LOD far-band dots (Archie-c1d9) — at the FAR band a region outline is a near-invisible few-pixel
   // box, so we paint a small dot per note at its marker's on-screen centre as a LOCATION signal; the
-  // dots hide in mid/near where the real WebGL marks carry it. Positions ride the SAME rAF-throttled
-  // markerScreenRects stream the marginalia column uses (so a pan emits at most one batched read per
-  // frame), and the band is re-read off getZoomRatio each frame. `dotBand`/`dotRects` are $state so the
-  // template re-renders; `dotsVisibleForBand` owns the band gate, `rectCenter` the placement.
+  // dots hide in mid/near where the real WebGL marks carry it. The SOLVER lives in createDotLayer
+  // (plain TS, headless-tested — controller.ts): it owns the band gate, the rAF throttle (at most one
+  // solve per frame, riding the SAME markerScreenRects stream the marginalia rail uses) and the band
+  // re-read off getZoomRatio each frame, pushing solved frames through onSolve. This component keeps
+  // only the rendered $state + the subscription; `dotsVisibleForBand` owns the band gate in the
+  // template, `rectCenter` the placement.
   //
   // These dots ARE the marker-level a11y contract now (Archie-3e12): each is a real, positioned,
   // clickable <button> carrying the note's aria-label (its prose snippet) but tabindex="-1" — OUT of
@@ -119,18 +113,8 @@
   // tab maze through off-screen marks.
   let dotBand = $state<ZoomBand>("far");
   let dotRects = $state<Record<string, ScreenRect | null>>({});
-  let dotsRaf = 0;
-  function emitDots() {
-    if (!surface || !dots || dots.length === 0 || dotsRaf) return;
-    dotsRaf = requestAnimationFrame(() => {
-      dotsRaf = 0;
-      if (!surface || !dots) return;
-      dotBand = zoomBand(surface.getZoomRatio());
-      // Off-band the {#each} is gone entirely — skip the O(annotations) rect pass too (review nit).
-      if (!dotsVisibleForBand(dotBand)) return;
-      dotRects = surface.markerScreenRects(dots.map((d) => d.id));
-    });
-  }
+  let dotLayer: DotLayer | undefined;
+  let offDots: (() => void) | undefined;
   // Navigator note-dots (Archie-c1d9): plotted inside the OSD navigator by the mount (setNavigatorDots),
   // which owns that DOM. Only the id+colour cross the seam; the mount resolves each note's image-space
   // position and maps it into navigator px. No-op when the locator is off.
@@ -165,6 +149,9 @@
       controller.onSelectChange((id) => {
         selected = id;
       });
+      // Far-band dot solver: solved frames (band + rects) flow into the template's $state.
+      dotLayer = createDotLayer(surface, () => dots);
+      offDots = dotLayer.onSolve(({ band, rects }) => { dotBand = band; dotRects = rects; });
       if (selected !== null) controller.select(selected);
       // Apply the CURRENT drawing state now that surface exists — the $effects below only
       // re-run on tool/drawing CHANGES, so a state set during the async mount gap would be lost.
@@ -177,12 +164,11 @@
       // narrative card → another object, and the viewer's cross-object section) never frames its region.
       if (focus) surface.fitRegion(focus);
       // Follow the selected marker as the viewport moves (OSD-native re-anchor — donor pattern, no dep).
-      offViewport = surface.onViewportChange(() => { emitRect(); emitRects(); emitZoom(); emitDots(); });
-      emitRect();
+      offViewport = surface.onViewportChange(() => { emitRects(); emitZoom(); dotLayer?.requestSolve(); });
       emitRects();
       emitZoom();
       syncNavDots();
-      emitDots();
+      dotLayer.requestSolve();
       status = "ready";
     } catch (e) {
       status = "error";
@@ -193,10 +179,10 @@
   // Read the reactive props FIRST, before any `surface?.`/`if (surface)` guard — otherwise the
   // optional-chain short-circuits on the (async) initially-undefined surface and the effect never
   // subscribes to the prop, so it never re-runs when the prop changes (Svelte 5 dep-tracking gotcha).
-  $effect(() => { const a = annotations; if (surface) { surface.setAnnotations(a); emitRect(); } });
+  $effect(() => { const a = annotations; if (surface) { surface.setAnnotations(a); } });
   $effect(() => { void rectIds; void annotations; if (surface) emitRects(); });
   // Far-band dots ride the marker rect stream; re-solve when the dot set or annotations change.
-  $effect(() => { void dots; void annotations; if (surface) emitDots(); });
+  $effect(() => { void dots; void annotations; if (surface) dotLayer?.requestSolve(); });
   // Navigator note-dots: re-sync when the dot set (or locator) changes — the mount reconciles the DOM.
   $effect(() => { void dots; void locator; if (surface) syncNavDots(); });
   $effect(() => { const sf = styleOf; if (surface) surface.setStyle(sf); });
@@ -204,11 +190,11 @@
   $effect(() => { const fr = frame; if (surface && fr !== undefined) surface.setFrame(fr); });
   $effect(() => { const t = tool; if (surface) surface.setDrawingTool(t); });
   $effect(() => { const d = drawing; if (surface) surface.setDrawingEnabled(d); });
-  $effect(() => { const s = selected; if (controller && s !== controller.selected) controller.select(s); emitRect(); });
+  $effect(() => { const s = selected; if (controller && s !== controller.selected) controller.select(s); });
   // A Section's camera target (not an annotation) → fit the region. Read `focus` first (dep-tracking gotcha).
   $effect(() => { const f = focus; if (f && surface) surface.fitRegion(f); });
 
-  onDestroy(() => { destroyed = true; if (rectsRaf) cancelAnimationFrame(rectsRaf); if (dotsRaf) cancelAnimationFrame(dotsRaf); offViewport?.(); controller?.destroy(); });
+  onDestroy(() => { destroyed = true; if (rectsRaf) cancelAnimationFrame(rectsRaf); offDots?.(); dotLayer?.destroy(); offViewport?.(); controller?.destroy(); });
 </script>
 
 <div class="archie-canvas-wrap">

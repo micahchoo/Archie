@@ -7,11 +7,13 @@
 // foreign Content State lands on the gallery, a malformed one is rejected gracefully (no throw).
 //
 // DONOR (the canonical codec, NOT re-implemented for validity): render-core url/deeplink.ts —
-//   decodeContentState(encoded): { annotationId, selector } | null   (deeplink.ts:45-60)
-//     — the Annotation/motivation:"highlighting" gate + base64url+atob+JSON.parse, null on garbage.
-//   We USE it as the validity gate. But its return DROPS `target.source` (the Canvas IRI we must
-//   match against `exhibit.canvasIdByObject`), so we additionally recover the target IRI here from the
-//   same decoded JSON. Self-contained: no apps/viewer import (ADR-0019 bundle rule), render-core only.
+//   decodeContentState(encoded): { annotationId, selector, source, id } | null
+//     — the Annotation/motivation:"highlighting" gate + base64url+atob+JSON.parse, null on garbage,
+//       now carrying the resource IRI (`source`) its return used to DROP. ADR-0022's codec-shape
+//       change is what removed the workaround this file used to perform: the old recovery pass
+//       re-decoded the SAME base64 payload by hand ("in lock-step" with the gate) to read
+//       `target.source`; that hand re-decode is gone — the codec's return carries it. Self-contained:
+//       no apps/viewer import (ADR-0019 bundle rule), render-core only.
 //
 // CANVAS/MANIFEST IRI shape (render-core iiif/manifest.ts:65,361 — published trees):
 //   Canvas IRI   = `{base}{slug}/canvas/{objectId}`
@@ -21,13 +23,13 @@
 // Content State that references only a Manifest (no Canvas) maps to a SLUG via the shared `{base}{slug}/`
 // prefix of that exhibit's canvas IRIs.
 
-import { decodeContentState, type SelectorRef } from "@render/core";
+import { decodeContentState, parseMediaFragmentHead } from "@render/core";
 import type { ExhibitsJson, PortableExhibit, ViewerRoute } from "@render/core";
 
 /** The bits of a Content State we resolve against the loaded library: the referenced resource IRI
- *  (a Canvas IRI via `target.source`, falling back to `target.id` stripped of its fragment), and any
- *  selector fragment (`xywh=` spatial / `t=` temporal). `decodeContentState` is the VALIDITY gate;
- *  this is the structural recovery the gate's return value omits (it keeps only annotationId+selector). */
+ *  and any media fragment (`xywh=` spatial / `t=` temporal). The codec (decodeContentState) is the
+ *  WHOLE recovery now — its return carries the resource IRI (ADR-0022 codec-shape change) — so this
+ *  file only maps the codec's shape onto what the resolver needs. */
 export interface ContentStateTarget {
   /** The referenced resource IRI — a Canvas IRI to match against `canvasIdByObject`, or a Manifest IRI. */
   resourceIri: string;
@@ -35,58 +37,30 @@ export interface ContentStateTarget {
   fragment?: { kind: "xywh" | "t"; value: string };
 }
 
-/** Parse the raw `xywh=`/`t=` head off a FragmentSelector value (or a `#…` IRI tail), returning the
- *  typed fragment. Bare/unknown → undefined (whole-resource). Mirrors target-resolve fragmentOfStart. */
-function fragmentFromSelectorValue(value: string | undefined): ContentStateTarget["fragment"] {
-  if (!value) return undefined;
-  if (value.startsWith("xywh=")) return { kind: "xywh", value: value.slice("xywh=".length) };
-  if (value.startsWith("t=")) return { kind: "t", value: value.slice("t=".length) };
-  return undefined;
-}
-
 /**
- * Decode + structurally recover a Content State into the resource IRI + fragment we resolve against the
- * library. Returns null on ANYTHING malformed — `decodeContentState` rejects non-Annotation / wrong
- * motivation / bad base64 / bad JSON (deeplink.ts:50-52,57), and we additionally reject a Content State
- * with no usable target IRI. NEVER throws (the gate + our guards are total).
+ * Decode a Content State into the resource IRI + fragment we resolve against the library. Returns
+ * null on ANYTHING malformed — `decodeContentState` rejects non-Annotation / wrong motivation / bad
+ * base64 / bad JSON / a state with no usable target IRI (deeplink.ts). NEVER throws (the codec's
+ * gate is total).
  */
 export function parseContentStateTarget(encoded: string): ContentStateTarget | null {
   if (typeof encoded !== "string" || encoded.length === 0) return null;
-  // 1. VALIDITY GATE (donor): rejects garbage / wrong-motivation / bad base64. null ⇒ reject.
+  // THE CODEC IS THE GATE AND THE RECOVERY. The hand re-decode ("in lock-step" with the gate's
+  // base64url normalisation) died with the codec-shape change: `source` is the resource IRI
+  // (`target.source`, else `target.id` fragment-stripped), and `id` keeps the authored `#…` tail.
   const gated = decodeContentState(encoded);
   if (!gated) return null;
 
-  // 2. STRUCTURAL RECOVERY: re-decode the SAME base64url JSON to read `target.source`/`target.id`,
-  //    which the gate's return drops. Re-using the gate's exact base64url normalisation keeps the two
-  //    in lock-step; any decode error here is impossible (the gate already parsed it) but is guarded.
-  let cs: { target?: { source?: unknown; id?: unknown; selector?: unknown } };
-  try {
-    let b64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
-    while (b64.length % 4) b64 += "=";
-    cs = JSON.parse(decodeURIComponent(atob(b64)));
-  } catch {
-    return null;
-  }
-  const target = cs?.target;
-  if (!target || typeof target !== "object") return null;
-
-  // The referenced resource: prefer `source` (the Canvas IRI per the SpecificResource shape,
-  // deeplink.ts:33-38); fall back to `id` with any `#fragment` stripped.
-  const rawId = typeof target.id === "string" ? target.id : undefined;
-  const hashIdx = rawId ? rawId.indexOf("#") : -1;
-  const idIri = rawId ? (hashIdx === -1 ? rawId : rawId.slice(0, hashIdx)) : undefined;
-  const source = typeof target.source === "string" ? target.source : undefined;
-  const resourceIri = source ?? idIri;
-  if (!resourceIri) return null;
-
-  // The fragment: the selector value (gate already validated selector.type is a string), else the
-  // `#…` tail of `target.id`. A `pixel:`/`percent:` xywh or a `t=` offset rides through unchanged.
-  const sel = gated.selector as SelectorRef;
-  const fromSelector = fragmentFromSelectorValue(sel?.value);
-  const fromHash = hashIdx >= 0 && rawId ? fragmentFromSelectorValue(rawId.slice(hashIdx + 1)) : undefined;
+  // The fragment: the selector value first, else the `#…` tail of `target.id` (the codec's `source`
+  // is fragment-stripped, so a tail only carried by the authored id lives on `gated.id`). ONE
+  // head-parser, shared with target-resolve (render-core parseMediaFragmentHead — the two used to
+  // carry identical copies). A `pixel:`/`percent:` xywh or a `t=` offset rides through unchanged.
+  const fromSelector = parseMediaFragmentHead(gated.selector.value);
+  const rawId = gated.id;
+  const fromHash = rawId && rawId.includes("#") ? parseMediaFragmentHead(rawId.slice(rawId.indexOf("#") + 1)) : undefined;
   const fragment = fromSelector ?? fromHash;
 
-  return fragment ? { resourceIri, fragment } : { resourceIri };
+  return fragment ? { resourceIri: gated.source, fragment } : { resourceIri: gated.source };
 }
 
 /** The slug + (optional) objectId a Content State resource IRI maps to, within ONE loaded exhibit. */

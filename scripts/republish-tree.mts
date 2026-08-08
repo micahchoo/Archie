@@ -8,7 +8,7 @@
 // of `publishLibrary`. So the fix needs no substitute content: read the user's own tree back, and
 // re-publish it at the base it is actually served from, with the embed bundle inside it.
 //
-// The two things `loadLibrary` deliberately DROPS, and why each is handed back here:
+// The two things `loadLibrary` deliberately DROPS by default, and why this script keeps them:
 //
 //   `recoverAssetSources` (site.ts:846-847) deletes `tileSource` and `thumbnail` when it inverts a
 //   published `{base}{slug}/assets/{name}` source back to the working `/assets/{name}` form. That is
@@ -17,10 +17,14 @@
 //   pyramid (a 5184x3456 master loaded whole) and a DANGLING `cover` in exhibits.json, because
 //   `card.cover` round-trips through loadLibrary while the bytes it names would never be rewritten.
 //
-//   So `tileObject` here does NOT slice anything — it REUSES the pyramid already in the tree, read
-//   off disk, with the descriptor recovered from the old manifest's `archie:tileSource`. publish
-//   re-stamps `filesPath` at the new base (site.ts:536). Re-slicing would need OffscreenCanvas, which
-//   is browser-only; the tiles are right there and they are not origin-dependent.
+//   So this script loads with `{ preservePublishFields: true }` (loadLibrary's lossless-on-request
+//   option): the DZI descriptor and the baked-thumbnail ref ride through on the objects, and
+//   `tileObject` here does NOT slice anything — it REUSES the pyramid already in the tree, read off
+//   disk, descriptor taken from the preserved `tileSource` (which the manifest's `archie:tileSource`
+//   round-trips through objectsFromManifest). publish re-stamps `filesPath` at the new base
+//   (site.ts:536) and re-bakes the thumbnail. No manifest walk, no objId↔asset join, no thumbnail
+//   stamping — the whole recovery is the load→publish composition. Re-slicing would need
+//   OffscreenCanvas, which is browser-only; the tiles are right there and they are not origin-dependent.
 //
 // Usage:
 //   pnpm exec vite-node ../../scripts/republish-tree.mts -- \
@@ -28,13 +32,15 @@
 //
 // --no-viewer is the RED control: same tree, `getViewerBundle` omitted, so viewer.html / _viewer/ /
 // .nojekyll are absent and every drive assertion that depends on them must fail.
-import { readFile, readdir, stat, mkdir, writeFile, rm } from "node:fs/promises";
+import { readFile, readdir, mkdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { NodeFilesystem } from "@render/core/node";
 import {
-  MemoryFilesystem, publishLibrary, collectFiles, loadLibrary,
-  type AnnotationLog, type FsDirectory, type AObject,
+  publishLibrary, loadLibrary,
+  type AnnotationLog, type FsDirectory, type AObject, type DziTileSource,
 } from "@render/core";
+import { treeStats } from "./lib/tree-stats.js";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const EMBED_DIST = path.join(REPO, "packages/archie-viewer/dist");
@@ -52,22 +58,6 @@ const NO_VIEWER = process.argv.includes("--no-viewer");
 const PUBLISHED_AT = arg("published-at", new Date().toISOString());
 
 if (!BASE.endsWith("/")) throw new Error(`--base must end with "/" (got ${BASE})`);
-
-/** Read a disk directory into an fs-seam directory, recursively. `.git` is not part of the tree. */
-async function loadDirInto(dir: FsDirectory, diskPath: string): Promise<void> {
-  for (const name of await readdir(diskPath)) {
-    if (name === ".git") continue;
-    const p = path.join(diskPath, name);
-    if ((await stat(p)).isDirectory()) {
-      await loadDirInto(await dir.getDirectory(name, { create: true }), p);
-    } else {
-      const w = await (await dir.getFile(name, { create: true })).writable();
-      const buf = await readFile(p);
-      await w.write(new Uint8Array(buf).buffer as ArrayBuffer);
-      await w.close();
-    }
-  }
-}
 
 /** The embed bundle, exactly as `packages/archie-viewer/dist` holds it — flat, entry + chunks. */
 async function embedBundle(): Promise<Map<string, string | ArrayBuffer | Blob>> {
@@ -95,42 +85,15 @@ async function readPyramid(dir: FsDirectory): Promise<Map<string, Blob>> {
 }
 
 async function main(): Promise<void> {
-  const src = new MemoryFilesystem();
-  await loadDirInto(await src.root(), SRC);
-  const loaded = await loadLibrary(src);
+  // The source tree straight off disk through the node:fs backend — no memory round-trip.
+  // preservePublishFields (loadLibrary's lossless-on-request): the DZI descriptor + baked-thumbnail
+  // ref ride through on the objects, so publish can REUSE them (see the header) — no manifest walk
+  // for `archie:tileSource`, no objId↔asset join table, no thumbnail presence stamping. The DEFAULT
+  // loadLibrary strips both as publish projections, which is right for a working-store import but
+  // wrong for a re-publish of this same tree.
+  const src = new NodeFilesystem(SRC);
+  const loaded = await loadLibrary(src, { preservePublishFields: true });
   const srcRoot = await src.root();
-
-  // The OLD manifests, read before anything is rewritten: the only place the published DZI
-  // descriptors survive (`archie:tileSource` per canvas). Keyed by `${slug} ${objectId}`.
-  const oldTiles = new Map<string, Record<string, unknown>>();
-  for (const ex of loaded.library.exhibits) {
-    const m = JSON.parse(new TextDecoder().decode(
-      await (await (await srcRoot.getDirectory(ex.slug)).getFile("manifest.json")).readable(),
-    )) as { items?: { id?: string; "archie:tileSource"?: Record<string, unknown> }[] };
-    for (const canvas of m.items ?? []) {
-      const ts = canvas["archie:tileSource"];
-      const id = canvas.id ?? "";
-      const objId = id.slice(id.lastIndexOf("/canvas/") + "/canvas/".length);
-      if (ts && objId) oldTiles.set(`${ex.slug} ${objId}`, ts);
-    }
-  }
-
-  // Hand `thumbnail` back so publish's `wantThumbs` gate (site.ts:509) opens and `getThumbnail` is
-  // consulted. The VALUE is irrelevant — publish deletes it and re-mints at the new base
-  // (site.ts:541,549) — but its PRESENCE is what decides whether assets-thumb/ ships at all, and
-  // `exhibits.json`'s `cover` (which round-trips independently of it) names a file in that directory.
-  //
-  // `tileObject` is keyed by ASSET NAME while `archie:tileSource` is keyed by object id, so the two
-  // need joining; this is the join table, built during the walk that is happening anyway.
-  const objIdByAsset = new Map<string, string>();
-  for (const ex of loaded.library.exhibits) {
-    ex.objects = ex.objects.map((o: AObject): AObject => {
-      if (!o.source.startsWith("/assets/")) return o;
-      const name = o.source.slice("/assets/".length);
-      objIdByAsset.set(`${ex.slug} ${name}`, o.id);
-      return { ...o, thumbnail: `/assets-thumb/${name}` };
-    });
-  }
 
   const bytesFrom = async (slug: string, dirName: string, name: string): Promise<ArrayBuffer | null> => {
     try {
@@ -144,11 +107,12 @@ async function main(): Promise<void> {
   const getThumbnail = (slug: string, name: string): Promise<ArrayBuffer | null> => bytesFrom(slug, "assets-thumb", name);
 
   // REUSE, never re-slice. The pyramid in the source tree is already the right pixels; only its
-  // `filesPath` named the dead origin, and publish re-stamps that.
+  // `filesPath` named the dead origin, and publish re-stamps that (site.ts asset pass). The
+  // descriptor rides on the LOADED object — publish hands it over as the 4th tileObject argument —
+  // so there is no manifest walk and no objId↔asset join table.
   let reusedPyramids = 0;
-  const tileObject = async (slug: string, name: string): Promise<{ descriptor: never; tiles: Map<string, Blob> } | null> => {
-    const objId = objIdByAsset.get(`${slug} ${name}`);
-    const descriptor = objId ? oldTiles.get(`${slug} ${objId}`) : undefined;
+  const tileObject = async (slug: string, name: string, _bytes: ArrayBuffer | Blob, obj: AObject): Promise<{ descriptor: DziTileSource; tiles: Map<string, Blob> } | null> => {
+    const descriptor = obj.tileSource?.kind === "dzi" ? obj.tileSource : undefined;
     if (!descriptor) return null;
     let dir: FsDirectory;
     try { dir = await (await srcRoot.getDirectory(slug)).getDirectory(`${name}_files`); }
@@ -159,11 +123,15 @@ async function main(): Promise<void> {
     console.log(`  reusing published pyramid ${slug}/${name}_files — ${tiles.size} tiles`);
     // `filesPath` is overwritten by publish at the new base; the rest of the descriptor (width,
     // height, tileSize, overlap, format) describes the PIXELS and is origin-independent.
-    return { descriptor: descriptor as never, tiles };
+    return { descriptor, tiles };
   };
 
   const bundle = NO_VIEWER ? undefined : await embedBundle();
-  const out = new MemoryFilesystem();
+  // Publish straight to disk through the node:fs backend — no memory-tree-then-dump step. The
+  // destination is cleared first so stale files from an earlier run cannot linger in the tree.
+  await rm(OUT, { recursive: true, force: true });
+  await mkdir(OUT, { recursive: true });
+  const out = new NodeFilesystem(OUT);
   const report = await publishLibrary(out, loaded.library, getLog, {
     baseUrl: BASE,
     publishedAt: PUBLISHED_AT,
@@ -172,17 +140,7 @@ async function main(): Promise<void> {
     tileObject,
     ...(bundle ? { getViewerBundle: async () => bundle } : {}),
   });
-
-  await rm(OUT, { recursive: true, force: true });
-  const files = await collectFiles(await out.root());
-  let bytes = 0;
-  for (const [rel, content] of Object.entries(files)) {
-    const dest = path.join(OUT, rel);
-    await mkdir(path.dirname(dest), { recursive: true });
-    const buf = "text" in content ? Buffer.from(content.text, "utf8") : Buffer.from(content.base64, "base64");
-    await writeFile(dest, buf);
-    bytes += buf.length;
-  }
+  const { files, bytes } = await treeStats(out);
 
   // PRINT THE SUBJECT, not only the verdict. A publish of an EMPTY library writes a valid tree and
   // reports success; these counts are what distinguish that from the real thing.
@@ -190,7 +148,7 @@ async function main(): Promise<void> {
   console.log(`exhibits    ${loaded.library.exhibits.length} — ${loaded.library.exhibits.map((e) => `${e.slug}(${e.objects.length} obj)`).join(", ")}`);
   console.log(`annotations ${Object.values(loaded.logs).reduce((n, l) => n + l.length, 0)} record(s) carried`);
   console.log(`pyramids    ${reusedPyramids} reused${NO_VIEWER ? "" : `; viewer bundle ${bundle!.size} files`}`);
-  console.log(`written     ${Object.keys(files).length} files / ${bytes} bytes -> ${OUT}${NO_VIEWER ? "  [--no-viewer: RED control]" : ""}`);
+  console.log(`written     ${files} files / ${bytes} bytes -> ${OUT}${NO_VIEWER ? "  [--no-viewer: RED control]" : ""}`);
   if (report.missingAssets.length > 0) console.log(`MISSING ASSETS: ${JSON.stringify(report.missingAssets)}`);
   if (report.brokenLinks.length > 0) console.log(`BROKEN LINKS: ${JSON.stringify(report.brokenLinks)}`);
   if (report.incompleteCanvases.length > 0) console.log(`INCOMPLETE CANVASES: ${JSON.stringify(report.incompleteCanvases)}`);

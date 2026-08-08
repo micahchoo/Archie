@@ -8,15 +8,17 @@
 // belong to `apps/viewer/e2e` and `recipes/smoke.mjs` (see .claude/rules/osd-overlay-wrapper.md for
 // the case where every cheap test passes against code a real mouse can't use).
 //
-// Fake viewer: the read-overlay.test.ts:11-30 donor, unchanged.
+// Fake viewer: the read-overlay.test.ts:11-30 donor, unchanged. Phase 6: it drives the ONE shared
+// duck type (overlay-core.ts); HaloViewerLike is a compatibility alias for the same surface.
 import { describe, it, expect } from "vitest";
-import { createSelectionHalo, contrastInk, type HaloViewerLike } from "./selection-halo.js";
+import { createSelectionHalo, contrastInk } from "./selection-halo.js";
+import type { OverlayViewerLike } from "./overlay-core.js";
 import type { OverlayShape } from "./overlay-shape.js";
 import type { AnnotationLike } from "@render/core";
 
 type Overlay = { element: SVGElement | HTMLElement; location: unknown };
 
-function fakeViewer(opts: { hasItem?: boolean } = {}): HaloViewerLike & {
+function fakeViewer(opts: { hasItem?: boolean } = {}): OverlayViewerLike & {
   overlays: Overlay[];
   removed: (SVGElement | HTMLElement)[];
   openHandlers: (() => void)[];

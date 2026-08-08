@@ -11,8 +11,14 @@ import {
   // The untrusted-archive open seam (ISSUES.md Issue 5 canonicalization): the zip-bomb-cap +
   // ADR-0020-marker-validate + capped-fetch logic used to be copy-pasted here and in
   // packages/archie-viewer/src/load.ts — both now compose these instead of redefining them.
-  openArchieLibrary, openArchieLibraryFromUrl, looksLikeZip, SRC_MAX_BYTES, fsJsonSource, FailedReadError, assertArchieTreeMarker,
+  openArchieLibrary, openArchieLibraryFromUrl, SRC_MAX_BYTES, fsJsonSource, assertArchieTreeMarker,
   migratingJsonSource,
+  // The tree half of the open seam (Phase 1 Wave 2): core's `httpJsonSource` (the ONE composition
+  // of fsJsonSource over the read-only HttpFilesystem) replaces this file's hand-rolled
+  // fetchJson/fetchJsonOptional — absent-vs-failed classification, name containment, and the
+  // SRC_MAX_BYTES cap all live in core now. `fetchZipBytesIfAny` is the shared zip-fallback byte
+  // sniff that replaces this file's `fetchIfZipBytes`.
+  httpJsonSource, fetchZipBytesIfAny,
   // V7/V11: ONE rule for resolving a tree-relative asset ref against its library base.
   assetUrlAgainst,
   type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit, type ImageIndex, type NoteTransform,
@@ -28,9 +34,9 @@ const OWN_TREE = `${import.meta.env.BASE_URL}published`;
 //
 // It used to be pinned to this deploy's own `/published`, so no URL existed that opened SOMEBODY
 // ELSE's published tree in a hosted viewer — `?src=` accepted zip bytes only. Repointing this one
-// variable is what makes `#/?src=<tree base>` work, because `genUrl` is the single place a hosted
-// path is turned into a URL and `toServingOrigin` is the single place a canonical asset URL is
-// rebased onto the serving origin. Both read it live.
+// variable is what makes `#/?src=<tree base>` work, because the hosted reader's `httpSource` is
+// derived from it live (per read) and `toServingOrigin` is the single place a canonical asset URL
+// is rebased onto the serving origin. Both read it live.
 let PUBLISHED = OWN_TREE;
 
 /** Point the hosted reader at a foreign published tree (`?src=<base>`), or back at our own. Clears
@@ -359,7 +365,7 @@ export async function openLibraryFromFile(file: Blob): Promise<void> {
  */
 export async function openLibraryFromSrc(url: string, maxBytes: number = SRC_MAX_BYTES): Promise<void> {
   // A non-`.zip` src is a published TREE BASE, read lazily over HTTP rather than pulled down as one
-  // payload. This is the dispatch the embed already ships and tests (archie-viewer/src/load.ts:120-128);
+  // payload. This is the dispatch the embed already ships and tests (archie-viewer/src/load.ts:128-135);
   // ported here so the same URL opens in the hosted viewer, which is what the static pages' exhibit
   // links need when a tree is read from anywhere but its canonical host.
   //
@@ -399,22 +405,10 @@ async function openHostedTree(base: string): Promise<void> {
 
 /** Fetch a `.zip`-less URL once and return its bytes IFF they are a zip. `null` for anything else —
  *  including a network failure, so the caller can surface the original TREE error instead of this
- *  one. That swallow is why this isn't core's `fetchArchieLibraryBytes`, which always throws; same
- *  carve-out the embed documents at `load.ts` `openSrcAsZipIfBytesAreZip`. */
+ *  one. Now core's `fetchZipBytesIfAny` (publish/open.ts — the shared zip-fallback byte sniff, the
+ *  same carve-out the embed composes at `load.ts` `openSrcAsZipIfBytesAreZip`). */
 async function fetchIfZipBytes(url: string, maxBytes: number): Promise<Uint8Array | null> {
-  let res: Response;
-  try {
-    res = await fetch(url);
-  } catch {
-    return null;
-  }
-  if (!res.ok) return null;
-  const declared = Number(res.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > maxBytes) throw new Error("That library is too large to open here.");
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  if (!looksLikeZip(bytes)) return null;
-  if (bytes.byteLength > maxBytes) throw new Error("That library is too large to open here.");
-  return bytes;
+  return fetchZipBytesIfAny(url, { maxBytes }); // fetch defaults to the (bound) global fetch
 }
 // ----------------------------------------------------------------------------------------------
 
@@ -480,10 +474,11 @@ export async function loadGallery(): Promise<ExhibitsJson> {
 export async function loadImageIndex(): Promise<ImageIndex | null> {
   try {
     if (portableFs) return await fsJsonSource(portableFs).getOptional<ImageIndex>("images.json");
-    // fetchJsonOptional keeps a missing index SILENT (404 → null = the expected ADR-0023 degradation); a
+    // `getOptional` keeps a missing index SILENT (404 → null = the expected ADR-0023 degradation); a
     // FAILED read (5xx / torn body) throws `FailedReadError` → the outer catch degrades the wall to null
-    // (a broken index safely hides the wall, cards still work). Don't use fetchJson (it error-logs a
-    // user-facing message for every old tree that legitimately has no images.json).
+    // (a broken index safely hides the wall, cards still work). An absent index must NOT log a
+    // user-facing message for every old tree that legitimately has no images.json — which is why this
+    // goes through getOptional, not get.
     const hosted = await hostedSource().getOptional<ImageIndex>("images.json");
     // STALENESS st3: front the LIVE working-store wall over the hosted one, dropping hosted entries for a
     // slug the live source FRONTS (so a colliding-slug wall tile can't route to the live exhibit with a
@@ -523,12 +518,13 @@ const hostedCache = new Map<string, PublishedExhibit>();
 // `loadGallery` (refreshLive) detects the mismatch, clears the session cache, and re-keys the next reads.
 let hostedGeneration: string | null = null;
 
-/** Append the generation cache-key to a hosted CONTENT path. NOT applied to `archie.json` itself — the
- *  marker is the generation ORACLE, so it must be fetched fresh, never pinned to a (possibly stale)
- *  generation of its own. */
-function genUrl(path: string): string {
-  const q = hostedGeneration && path !== "archie.json" ? `?g=${encodeURIComponent(hostedGeneration)}` : "";
-  return `${PUBLISHED}/${path}${q}`;
+/** Append the generation cache-key to a hosted CONTENT fetch. NOT applied to `archie.json` itself —
+ *  the marker is the generation ORACLE, so it must be fetched fresh, never pinned to a (possibly stale)
+ *  generation of its own. A URL that already carries a query is left alone (never double-keyed). */
+function applyGen(input: RequestInfo | URL): RequestInfo | URL {
+  const url = String(input);
+  if (!hostedGeneration || url.includes("archie.json") || url.includes("?")) return input;
+  return `${url}?g=${encodeURIComponent(hostedGeneration)}`;
 }
 
 /** Adopt the generation the marker just reported. On a CHANGE (incl. the first non-null, and any mid-session
@@ -537,42 +533,6 @@ function syncHostedGeneration(generation: string | null): void {
   if (generation === hostedGeneration) return;
   hostedCache.clear();
   hostedGeneration = generation;
-}
-
-async function fetchJson<T>(path: string): Promise<T> {
-  const res = await fetch(genUrl(path));
-  if (!res.ok) {
-    console.error(`Archie: failed to fetch ${path} — HTTP ${res.status}`);
-    throw new Error("Couldn't load this exhibit. Reload to try again.");
-  }
-  try {
-    return (await res.json()) as T;
-  } catch (e) {
-    // A 200 with an unparsable body (a host's HTML error / SPA-fallback page → "Unexpected token <") is a
-    // corrupt deployment, not a network miss — name it so the failure isn't an undebuggable blank error.
-    console.error(`Archie: ${path} returned 200 but wasn't valid JSON —`, e);
-    throw new Error("Couldn't load this exhibit. Reload to try again.");
-  }
-}
-
-/** Fetch a file that may not exist (e.g. readings.json on a base-only exhibit). Issue 23 absent-vs-failed
- *  contract: **404 → null (genuinely absent)**; a 5xx/403, a fetch throw, or a torn-200 body → **throw
- *  `FailedReadError`** (a failed read is NOT "no data"). `readExhibitTree` catches this to flag a partial
- *  exhibit; `loadImageIndex` catches it to degrade the wall — neither silently renders complete. */
-async function fetchJsonOptional<T>(path: string): Promise<T | null> {
-  let res: Response;
-  try {
-    res = await fetch(genUrl(path));
-  } catch (e) {
-    throw new FailedReadError(path, e); // network/DNS/CORS throw = failed, not absent
-  }
-  if (res.status === 404) return null; // genuinely absent (a base-only exhibit / an old tree's images.json)
-  if (!res.ok) throw new FailedReadError(path, new Error(`HTTP ${res.status}`)); // 5xx/403 = transient failure
-  try {
-    return (await res.json()) as T;
-  } catch (e) {
-    throw new FailedReadError(path, e); // 200 with an unparsable/torn body = corrupt, not absent
-  }
 }
 
 /**
@@ -600,18 +560,35 @@ export function publishedAssetUrl(ref: string | undefined | null): string | unde
   return assetUrlAgainst(PUBLISHED, ref);
 }
 
-/** HTTP byte source for the shared reader — GETs tree-relative paths under `${PUBLISHED}`. */
-const httpSource: JsonSource = { get: fetchJson, getOptional: fetchJsonOptional };
+/** HTTP byte source for the shared reader — GETs tree-relative paths under `${PUBLISHED}`. The TREE
+ *  half of the open seam: core's `httpJsonSource` (the ONE composition of `fsJsonSource` over the
+ *  read-only `HttpFilesystem` backend) — absent-vs-failed classification, name containment on every
+ *  path segment, and the `SRC_MAX_BYTES` response cap all live in core.
+ *
+ *  HARDENING (Phase 1 Wave 2): the old hand-rolled `fetchJson` had NO response cap — every hosted
+ *  read now inherits HttpFilesystem's canonical `SRC_MAX_BYTES` cap (a cheap content-length
+ *  pre-check before the body is read, plus a post-read byte-length check). Manifest/page reads sit
+ *  far under the cap for legitimate trees, so this is a real gap closed, not a behavior change for
+ *  them.
+ *
+ *  The `?g=<generation>` cache key is applied at the fetch boundary via `genFetch`, so a caching
+ *  layer can't serve one file from generation A next to another from B — and the BASE is read live
+ *  per read (`PUBLISHED` is repointed by `setHostedTreeBase`), so a repointed tree takes effect on
+ *  the next read without rebuilding this object. */
+const genFetch: typeof fetch = (input, init) => fetch(applyGen(input), init);
+const httpSource: JsonSource = {
+  get: <T>(path: string) => httpJsonSource(PUBLISHED, { fetch: genFetch }).get<T>(path),
+  getOptional: <T>(path: string) => httpJsonSource(PUBLISHED, { fetch: genFetch }).getOptional<T>(path),
+};
 
 // Archie-5c8d / Archie-69f9: the schema version the hosted tree declared, learned by the ADR-0020 gate
 // and remembered so every subsequent read migrates. `null` = not yet gated (or no marker), which reads
 // as "nothing to migrate".
 //
-// Why a module-level accessor and not a wrap at the gate's call site: the hosted content reads do NOT
-// all go through `httpSource` — `loadGallery` calls `fetchJson` directly and `loadImageIndex` calls
-// `fetchJsonOptional`, so wrapping the object one call site holds would have covered two of four
-// readers and silently missed the other two, including `readExhibitTree` (every manifest and
-// annotation page). One accessor is the only shape where a new reader can't forget.
+// Why a module-level accessor: every hosted CONTENT read goes through `hostedSource()` — loadGallery's
+// exhibits.json, loadImageIndex's images.json, readExhibitTree's manifest + annotation pages, and the
+// tree-open validation's exhibits.json — so wrapping at this one seam covers every reader. (The only
+// raw `httpSource` read left is the gate's own `archie.json` marker read, which must not migrate.)
 let hostedSchemaFrom: number | null = null;
 function hostedSource(): JsonSource {
   return hostedSchemaFrom === null ? httpSource : migratingJsonSource(httpSource, hostedSchemaFrom);

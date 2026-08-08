@@ -40,9 +40,26 @@ const clamp01 = (n: number): number => Math.min(1, Math.max(0, n));
 // comparing/solo/highlight regime instead of a competing style pass.
 // ---------------------------------------------------------------------------
 
-/** Coarse zoom band (mirrors @render/mount's zoomBand thresholds — the mount owns the ratio→band
- *  contract; this file owns band→style). far ≈ fit-width, near = inside-a-mark territory. */
+/** Coarse zoom band (the ONE ratio→band contract — was @render/mount's zoomBand; the mount now
+ *  re-exports this definition so the studio can derive the band without importing the mount's OSD
+ *  graph, and no second copy of the thresholds can drift). far ≈ fit-width, near = inside-a-mark
+ *  territory. */
 export type ZoomBand = "far" | "mid" | "near";
+
+/** Band for a zoom ratio (current zoom / home zoom). ≤1.25 = far (around fit-width), ≤4 = mid,
+ *  beyond = near (inside-a-mark territory). Non-finite ratios are far (treat unknown as fit-width). */
+export function zoomBand(ratio: number): ZoomBand {
+  if (!Number.isFinite(ratio) || ratio <= 1.25) return "far";
+  return ratio <= 4 ? "mid" : "near";
+}
+
+/** The far-band dot layer shows ONLY at `far` (fit-width, marks are tiny → need a location signal);
+ *  at `mid`/`near` the real shapes carry the signal, so the dots hide. The ONE band→visibility rule
+ *  (was @render/mount's marker-dots — moved beside zoomBand so the studio's dot solver derives both
+ *  band and visibility from one module without importing the mount's OSD graph). */
+export function dotsVisibleForBand(band: ZoomBand): boolean {
+  return band === "far";
+}
 
 /** Weight a mark by how far the reader has zoomed IN. At fit-width (`far`) a mark is a few pixels
  *  and needs PRESENCE — heavier stroke. Inside a mark (`near`) the outline should RECEDE off the

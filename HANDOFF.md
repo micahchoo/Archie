@@ -1,3 +1,28 @@
+# HANDOFF — 2026-08-08: architecture deepening landed in the WORKING TREE, uncommitted
+
+Primary checkout is `main` @ **`b7fb4ec`** (2026-07-28). The 08-07
+`improve-codebase-architecture` sweep + 9-phase deepening (plan +
+abstractive analysis + execution record:
+`docs/plans/ARCHITECTURE-DEEPENING-2026-08-07.md`) is **UNCOMMITTED** in the
+working tree: 137 tracked files changed (+3913/−7038; 116 M + 21 D — the D's
+are old embed dist chunks + github.rs) plus 74 new files, verified gate-by-gate on
+2026-08-08 — all green after three fixes (see the doc's "Verification record"
+section): Publish.svelte publishBlocked predicate, root `dist/` resync,
+2 unused imports. **Whoever commits next: commit the whole working tree**
+(the doc's file counts are pre-verification; the 3 extra changes are the fixes
++ resynced dist). Do NOT cherry-pick — the phases compose.
+
+- Branch/map state is as recorded below (fix/flaky-gates work already merged
+  into main per HANDOFF history; no maps open).
+- `.seeds/issues.jsonl` still carries uncommitted live edits — same
+  shared-worktree collision rule as before (declare the id set on commit).
+- Standout regression-catch this cycle: **svelte-check catches wiring bugs
+  tsc can't see** — `get publishBlocked() { return blocksPublish(preflight); }`
+  type-errored only under svelte-check (publish-machine needs `() => boolean`;
+  runtime would have thrown "not a function" on the advanced-token form).
+
+---
+
 # HANDOFF — non-map backlog + knowledge layer (deduped 2026-07-28)
 
 Primary checkout is branch **`fix/flaky-gates`** and it is **SHARED** — other sessions commit here,

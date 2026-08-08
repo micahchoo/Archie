@@ -12,6 +12,8 @@
 //   {project}/exhibits/{slug}/annotations/       — every OTHER exhibit's annotations
 //   {project}/exhibits/{slug}/assets/{name}      — imported display masters
 import type { Filesystem, FsDirectory } from "../fs/seam.js";
+// The ONE classified absent-vs-failed traversal — getAsset/getThumbnail collapse their hand-rolled walks onto it.
+import { tryResolveFile } from "../fs/resolve.js";
 import type { Library, Section, Reading, RightsFields, MediaType, LayoutType } from "../model/model.js";
 import type { TileSourceDescriptor } from "../iiif/resolve.js";
 import type { OrientationTransform } from "../exif/orientation.js";
@@ -313,10 +315,11 @@ async function readExhibitLog(projectDir: FsDirectory, slug: string, _editor: Cl
  * fall back to published sources. NEVER creates: a read must not materialize an empty store.
  */
 export async function loadWorkingLibrary(fs: Filesystem, opts: LoadWorkingOptions = {}): Promise<WorkingLibrary | null> {
+  const project = opts.project ?? WORKING_PROJECT;
   let projectDir: FsDirectory;
   let meta: WorkingLibraryMeta;
   try {
-    projectDir = await (await fs.root()).getDirectory(opts.project ?? WORKING_PROJECT);
+    projectDir = await (await fs.root()).getDirectory(project);
     const file = await projectDir.getFile("library.json");
     meta = JSON.parse(new TextDecoder().decode(await file.readable())) as WorkingLibraryMeta;
   } catch {
@@ -338,20 +341,14 @@ export async function loadWorkingLibrary(fs: Filesystem, opts: LoadWorkingOption
   );
   for (const [id, log] of loaded) logs[id] = log;
   const getAsset = async (slug: string, name: string): Promise<ArrayBuffer | null> => {
-    try {
-      const dir = await (await (await projectDir.getDirectory("exhibits")).getDirectory(slug)).getDirectory("assets");
-      return await (await dir.getFile(name)).readable();
-    } catch {
-      return null; // not an imported asset (external URL) — publishLibrary leaves the source as-is
-    }
+    const file = await tryResolveFile(fs, [project, "exhibits", slug, "assets", name]);
+    if (file === null) return null; // not an imported asset (external URL) — publishLibrary leaves the source as-is
+    return file.readable();
   };
   const getThumbnail = async (slug: string, name: string): Promise<ArrayBuffer | null> => {
-    try {
-      const dir = await (await (await projectDir.getDirectory("exhibits")).getDirectory(slug)).getDirectory("assets-thumb");
-      return await (await dir.getFile(name)).readable();
-    } catch {
-      return null; // no baked thumbnail for this asset — publishLibrary drops the ref
-    }
+    const file = await tryResolveFile(fs, [project, "exhibits", slug, "assets-thumb", name]);
+    if (file === null) return null; // no baked thumbnail for this asset — publishLibrary drops the ref
+    return file.readable();
   };
   return { meta, library, logs, getLog: (id) => logs[id] ?? [], getAsset, getThumbnail };
 }

@@ -5,14 +5,16 @@
 // (labelFor — Archie-9413; locator — Archie-6f25) without constructing OSD.
 import { describe, it, expect, vi } from "vitest";
 import { createReadOnlyMount } from "@render/mount";
+import { readingMarkerStyle } from "@render/core";
 import { isRemoteSource, openObject, labelFromAnnotations, OfflineRemoteBlockedError } from "./reader.js";
+import { BASE_MARK_COLOUR } from "./reader-chrome.js";
 import type { AObject, W3CAnnotation } from "@render/core";
 
-vi.mock("@render/mount", async (importOriginal) => ({
-  // Spread the REAL module first: openObject's reading-mark pass (reading-marks.ts) calls the genuine
-  // `overlayShapeFor` to work out which records the overlay will draw, and a mock that omitted it would
-  // make the pass throw rather than degrade. Only the mount is faked — a live OSD can't run here.
-  ...(await importOriginal<typeof import("@render/mount")>()),
+// The mount is faked — a live OSD can't run under happy-dom (read-mount.test.ts idiom). Phase 7:
+// reader.ts no longer reaches back into the REAL @render/mount for anything (the reading-marks
+// post-pass that needed overlayShapeFor is gone — the style channel lives in the mount's own
+// draw), so the mock no longer has to spread the real module.
+vi.mock("@render/mount", () => ({
   createReadOnlyMount: vi.fn(async () => ({
     setAnnotations: vi.fn(),
     setSelected: vi.fn(),
@@ -121,5 +123,81 @@ describe("openObject — mount options wiring (Archie-9413 labelFor, Archie-6f25
     expect(opts.labelFor?.("nope")).toBe("annotation nope");
     // The surface got the annotations (the overlay draw path).
     expect(surface.setAnnotations).toHaveBeenCalled();
+  });
+});
+
+describe("openObject — colours applied AT DRAW TIME via the mount's style channel (V56, Phase 7)", () => {
+  it("derives the style resolver from the reading colours — readingMarkerStyle numbers, BASE fallback", async () => {
+    vi.mocked(createReadOnlyMount).mockClear();
+    const container = document.createElement("div");
+    const readingAnn = noteAnn("a1", "**Sun face** in the margin");
+    await openObject(container, {
+      object: obj({ source: "blob:fake" }),
+      annotations: [readingAnn, noteAnn("a2", "base note")],
+      markColourOf: (id) => (id === "a1" ? "#3a6b4c" : undefined),
+    });
+    const styleFor = vi.mocked(createReadOnlyMount).mock.calls[0]![1].styleFor!;
+    expect(typeof styleFor).toBe("function"); // the mount styles each mark at draw time — no post-pass
+
+    // A note ON the reading takes the reading's colour, with the ONE canonical style numbers
+    // (readingMarkerStyle — the same call the legend swatches make; no second copy of 0.18/0.95/2).
+    const want = readingMarkerStyle("#3a6b4c", "normal");
+    expect(styleFor("a1", readingAnn)).toEqual({
+      stroke: want.stroke, fill: want.fill,
+      fillOpacity: String(want.fillOpacity), strokeOpacity: String(want.strokeOpacity),
+      strokeWidth: String(want.strokeWidth),
+    });
+    // A base note (no reading colour) takes BASE_MARK_COLOUR — the chip and the mark agree.
+    const base = readingMarkerStyle(BASE_MARK_COLOUR, "normal");
+    const baseStyle = styleFor("a2", noteAnn("a2"));
+    expect(baseStyle!.stroke).toBe(base.stroke);
+    expect(baseStyle!.strokeOpacity).toBe(String(base.strokeOpacity));
+  });
+
+  it("absent markColourOf styles every mark with the BASE colour (the old post-pass default)", async () => {
+    vi.mocked(createReadOnlyMount).mockClear();
+    const container = document.createElement("div");
+    await openObject(container, { object: obj({ source: "blob:fake" }), annotations: [noteAnn("a1")] });
+    const styleFor = vi.mocked(createReadOnlyMount).mock.calls[0]![1].styleFor!;
+    const base = readingMarkerStyle(BASE_MARK_COLOUR, "normal");
+    expect(styleFor("a1", noteAnn("a1"))!.fill).toBe(base.fill);
+  });
+});
+
+describe("openObject — the surface owns its note card (Phase 7 openNote contract)", () => {
+  it("openNote selects + fits + shows the body in the surface's own card; unknown id → false, no-op", async () => {
+    vi.mocked(createReadOnlyMount).mockClear();
+    const container = document.createElement("div");
+    const surface = await openObject(container, {
+      object: obj({ source: "blob:fake" }),
+      annotations: [noteAnn("a1", "**Sun face** in the margin")],
+    });
+
+    // The card mounted into the container (no noteCardHost given → the mount container).
+    const card = container.querySelector<HTMLElement>(".archie-note-card");
+    expect(card).not.toBeNull();
+    expect(card!.hidden).toBe(true); // nothing open yet
+
+    const created = await vi.mocked(createReadOnlyMount).mock.results[0]!.value;
+
+    expect(surface.openNote("a1")).toBe(true);
+    expect(created.setSelected).toHaveBeenCalledWith("a1");
+    expect(created.fitBounds).toHaveBeenCalledWith("a1");
+    expect(card!.hidden).toBe(false);
+    expect(card!.textContent).toContain("Sun face in the margin"); // markdown stripped, sanitized
+
+    // An unknown id opens nothing — the S1 rule's "don't style a row that didn't open" needs the truth.
+    const before = created.setSelected.mock.calls.length;
+    expect(surface.openNote("nope")).toBe(false);
+    expect(created.setSelected.mock.calls.length).toBe(before);
+  });
+
+  it("destroy() tears the card down with the surface", async () => {
+    vi.mocked(createReadOnlyMount).mockClear();
+    const container = document.createElement("div");
+    const surface = await openObject(container, { object: obj({ source: "blob:fake" }), annotations: [] });
+    expect(container.querySelector(".archie-note-card")).not.toBeNull();
+    surface.destroy();
+    expect(container.querySelector(".archie-note-card")).toBeNull();
   });
 });

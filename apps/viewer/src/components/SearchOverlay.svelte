@@ -4,15 +4,10 @@
   // its only finder). It is a PURE FINDER: it never touches canvas/reading state — selecting a result
   // emits `select(noteId)` and ExhibitView's arriveAtNote flips to the right reading + object + fits the
   // camera. The index is built over the FLATTENED note tree (base + every reading page), so a note that
-  // lives only in a non-active reading is still findable (search-index.flattenExhibitNotes).
+  // lives only in a non-active reading is still findable (note-tree.flattenNotes — the ONE walk).
   import { tagsOfAnnotation, type W3CAnnotation } from "@render/core";
-  import {
-    buildSearchIndex,
-    filterResults,
-    flattenExhibitNotes,
-    locateNotes,
-    type StoredDoc,
-  } from "../lib/search-index.js";
+  import { buildSearchIndex, filterResults, locateNotes, type StoredDoc } from "../lib/search-index.js";
+  import { flattenNotes } from "../note-tree.js";
   import { dialog } from "../lib/dialog-a11y.js";
 
   let { data, objects = [], sections = null, initialTag = null, onselect, onclose }: {
@@ -35,11 +30,11 @@
     onclose: () => void;
   } = $props();
 
-  // Build the flat index ONCE per open (the note tree is stable for a loaded exhibit). flattenExhibitNotes
+  // Build the flat index ONCE per open (the note tree is stable for a loaded exhibit). flattenNotes
   // de-dupes by id across base + reading overlays, so each note is one searchable doc.
   // svelte-ignore state_referenced_locally -- ONCE-per-open is the design (comment above): the note
   // tree is stable for a loaded exhibit, and the overlay remounts per open.
-  const flat = flattenExhibitNotes(data);
+  const flat = flattenNotes(data);
   const index = buildSearchIndex(flat);
 
   // The full tag vocabulary across the exhibit — the facet chips the finder offers (sorted, de-duped).

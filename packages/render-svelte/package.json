@@ -3,14 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Thin Svelte adapter over @render/mount. Owns reactivity (binds selectedId to setSelected, subscribes onSelect). Budget <500 LOC = logic-leak detector (ADR-0002 / Q-2). Filled in Phase 1.",
+  "description": "Thin Svelte adapter over @render/mount. Owns reactivity (binds selectedId to setSelected, subscribes onSelect). Dependency-hygiene seam: the viewer does not depend on @render/mount directly (fixture-reach.test.ts), so it reaches mount's named pieces through this barrel. Budget <500 LOC = logic-leak detector (ADR-0002 / Q-2).",
   "license": "GPL-3.0-only",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
     "./Canvas.svelte": "./src/Canvas.svelte",
-    "./MarginColumn.svelte": "./src/MarginColumn.svelte",
     "./ResizeDivider.svelte": "./src/ResizeDivider.svelte"
   },
   "scripts": {

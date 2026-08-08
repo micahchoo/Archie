@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { computeDelta } from "./delta.js";
-import type { FileContent } from "./ghpages.js";
+import type { FileContent } from "./snapshot.js";
 
 const text = (s: string): FileContent => ({ text: s });
 const b64 = (s: string): FileContent => ({ base64: s });

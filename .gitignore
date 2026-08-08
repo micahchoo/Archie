@@ -18,6 +18,8 @@ build/
 # (canonical source is docs/learn; this copy is a build artifact).
 apps/studio/public/learn/
 gh-pages-dist/
+# Local flatpak build store (scripts/build-flatpak.sh output); never repo content.
+.flatpak-repo/
 .astro/
 .svelte-kit/
 .vite/
@@ -31,6 +33,7 @@ gh-pages-dist/
 .eslintcache
 node-compile-cache/
 v8-compile-cache-*/
+playwright-transform-cache-*/
 .foxhound/
 
 # ─────────────────────────────────────────────────────────────
@@ -44,6 +47,8 @@ blob-report/
 playwright/.cache/
 playwright-artifacts-*/
 playwright_chromiumdev_profile-*/
+# Chromium profile singleton files dropped at cwd by some launches.
+.org.chromium.Chromium.*
 
 # ─────────────────────────────────────────────────────────────
 # Logs (keep the deliberately-tracked deps-index promotion log)
@@ -72,6 +77,8 @@ pnpm-debug.log*
 # regenerate with whatever external tool produced it, never commit the output.
 # ─────────────────────────────────────────────────────────────
 /anti-pattern-report.txt
+# Self-replicating-publish loop output (verify-publish fixture candidate, regen per loop).
+/archie-loop-adAtKv/
 
 # ─────────────────────────────────────────────────────────────
 # Editor / OS

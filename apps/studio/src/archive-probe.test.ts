@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { MAX_MASTER_DIM, ZIP_FORMAT_LIMITS } from "@render/core";
+import { WEB_TIER_H264, WEB_TIER_VP9 } from "./video-profiles.js";
 import {
   probeArchive, probedKind, cappedPixels, tileFileCount, humanBytes,
   WEB_TIER, ARCHIVAL_WEBP_BYTES_PER_PIXEL, WEB_TIER_OPUS_KBPS, AUDIO_SOURCE_KBPS,
@@ -331,6 +332,9 @@ describe("inventory 3 — an AV-heavy folder (Opus is the difference between bor
 
 // ===============================================================================================
 describe("video is told, never transcoded (Archie-4b0a graduated it out to Archie-7e6f)", () => {
+  // This suite pins the NO-TARGET case — a probe that has not resolved a transcode must not claim a
+  // shrink it has not verified. The target-aware case (the Archie-7e6f follow-up, now landed) is the
+  // describe below it.
   const withVideo: ProbedFile[] = [
     ...Array.from({ length: 50 }, (_, i) => img(i, { bytes: 5 * MB, width: 3000, height: 2000 })),
     ...Array.from({ length: 12 }, (_, i) => video(i, { bytes: 8 * GB, durationSec: 3600 })),
@@ -354,6 +358,49 @@ describe("video is told, never transcoded (Archie-4b0a graduated it out to Archi
     const os = verdict(p, "object-storage", "web");
     expect(os.fits).toBe(true);
     expect(os.estimatedMonthlyCostUsd).toBeGreaterThan(1);
+  });
+});
+
+// ===============================================================================================
+describe("video IS modelled when a transcode is reachable (Archie-7e6f's named follow-up, now landed)", () => {
+  // `ProbeOptions.videoTarget` is the profile THIS machine resolved. With it, the web tier quotes
+  // the honest `target bitrate × sampled duration` figure instead of the full-size over-estimate;
+  // without it (the suite above) nothing changes. The archival tier is untouched in both cases.
+  const withVideo: ProbedFile[] = [
+    ...Array.from({ length: 50 }, (_, i) => img(i, { bytes: 5 * MB, width: 3000, height: 2000 })),
+    ...Array.from({ length: 12 }, (_, i) => video(i, { bytes: 8 * GB, durationSec: 3600 })),
+  ];
+
+  it("counts the H.264 web tier at WEB_TIER_VIDEO_KBPS × duration, not full size", () => {
+    const p = probeArchive(withVideo, { exhibitCount: 2, videoTarget: WEB_TIER_H264 });
+    // 12 videos × 1 h at (2000 + 128) kbit/s — the same stated-bitrate model `estimateWebTierVideoBytes`
+    // uses, so the probe and the tell can never disagree about the default profile.
+    const perVideo = Math.round(((WEB_TIER_H264.webBitrateKbps + WEB_TIER_H264.audioKbps) * 1000 * 3600) / 8);
+    expect(p.tiers.web.bytesByMedia.video).toBe(12 * perVideo);
+    expect(p.tiers.web.bytesByMedia.video).toBeLessThan(12 * 8 * GB);
+    // The archival tier keeps counting the originals — a web-tier shrink never touches it.
+    expect(p.tiers.archival.bytesByMedia.video).toBe(12 * 8 * GB);
+  });
+
+  it("follows the RESOLVED profile's own bitrate — VP9's lower figure, not H.264's", () => {
+    const p = probeArchive(withVideo, { exhibitCount: 2, videoTarget: WEB_TIER_VP9 });
+    const perVideo = Math.round(((WEB_TIER_VP9.webBitrateKbps + WEB_TIER_VP9.audioKbps) * 1000 * 3600) / 8);
+    expect(p.tiers.web.bytesByMedia.video).toBe(12 * perVideo);
+    expect(p.tiers.web.bytesByMedia.video).toBeLessThan(12 * 8 * GB);
+  });
+
+  it("keeps the full-size count for a video whose duration was never sampled — the SAFE direction", () => {
+    const unsampled = [video(0, { bytes: 8 * GB })];
+    const p = probeArchive(unsampled, { exhibitCount: 1, videoTarget: WEB_TIER_H264 });
+    expect(p.tiers.web.bytesByMedia.video).toBe(8 * GB);
+    expect(p.tiers.archival.bytesByMedia.video).toBe(8 * GB);
+  });
+
+  it("an explicit null target behaves exactly like no target at all", () => {
+    const explicit = probeArchive(withVideo, { exhibitCount: 2, videoTarget: null });
+    const absent = probeArchive(withVideo, { exhibitCount: 2 });
+    expect(explicit.tiers.web.bytesByMedia.video).toBe(absent.tiers.web.bytesByMedia.video);
+    expect(explicit.tiers.web.bytesByMedia.video).toBe(12 * 8 * GB);
   });
 });
 

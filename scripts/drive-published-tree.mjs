@@ -19,6 +19,7 @@ import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { launchBrowser } from "./lib/driver.mjs";
+import { createChecklist } from "./lib/checklist.mjs";
 
 const arg = (name, fallback) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -33,11 +34,14 @@ const SLUG = arg("slug", "documents-d");
 const REWRITE_ORIGIN = process.argv.includes("--rewrite-origin") ? arg("rewrite-origin") : null;
 if (!DIR && !URL_TARGET) throw new Error("pass --dir <baked tree> or --url <live base>");
 
-const results = [];
-const record = (ok, label, detail) => {
-  results.push({ ok, label, detail });
-  console.log(`${ok ? "PASS" : "FAIL"}  ${label} — ${detail}`);
-};
+// Per-item tolerant loop owned by scripts/lib/checklist.mjs. This gate's tail is its RESULT line
+// (naming the TARGET — the artifact under test) plus the 0/1 exit mapping.
+const { check: record, finish } = createChecklist({
+  onExit: (ctx) => {
+    console.log(`\nRESULT: ${ctx.failed.length === 0 ? "PASS" : "FAIL"}  (${ctx.passed}/${ctx.total})  [target ${DIR ?? URL_TARGET}]`);
+    process.exit(ctx.failed.length === 0 ? 0 : 1);
+  },
+});
 
 const MIME = {
   ".html": "text/html", ".js": "text/javascript", ".json": "application/json",
@@ -236,9 +240,7 @@ async function main() {
     await stop();
   }
 
-  const failed = results.filter((r) => !r.ok);
-  console.log(`\nRESULT: ${failed.length === 0 ? "PASS" : "FAIL"}  (${results.length - failed.length}/${results.length})  [target ${DIR ?? URL_TARGET}]`);
-  process.exit(failed.length === 0 ? 0 : 1);
+  await finish();
 }
 
 await main();

@@ -28,5 +28,7 @@ describe("@render/mount scaffold", () => {
     expectTypeOf<ReadOnlyMountSurface>().toHaveProperty("onSelect");
     expectTypeOf<ReadOnlyMountSurface>().toHaveProperty("destroy");
     expectTypeOf<ReadOnlyMountOptions>().toHaveProperty("source");
+    // Phase 7 style channel — the per-annotation resolver the overlay applies at draw time.
+    expectTypeOf<ReadOnlyMountOptions>().toHaveProperty("styleFor");
   });
 });

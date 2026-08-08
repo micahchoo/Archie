@@ -5,21 +5,21 @@
 // `createReadOnlyOverlay` (read-overlay.ts). fitBounds routes through the SAME pure dispatchFitBounds
 // oracle createMount uses (the gate-pinned rect+polygon→bbox path) — NOT a new fit computation.
 //
-// Donor: mount.ts:74-170 (the OSD-construction half — resolveTileSource, tileSources, crossOriginPolicy,
-// the open/open-failed promise, showNavigationControl:false), STOPPING at createOSDAnnotator (mount.ts:172).
-// The overlay-wiring is factored into the PURE `wireReadOnlySurface(viewport, overlay, getAnnotations)`
-// seam the test drives without a live OSD (mirrors how gate.test.ts mocks the viewport, not OSD).
+// Phase 6: OSD construction + the open-await now come from the ONE shared openOsdViewer (osd-open.ts)
+// — parity with createMount by construction. This module keeps only its two differentiators: the
+// `drawer: "canvas"` choice and the decode-cap guard on open (guardOpenedImageSource, threaded as the
+// open hook). The overlay-wiring stays factored into the PURE `wireReadOnlySurface(viewport, overlay,
+// getAnnotations)` seam the test drives without a live OSD (mirrors how gate.test.ts mocks the
+// viewport, not OSD).
 
-import OpenSeadragon from "openseadragon";
 import { resolveTileSource, selectorOf, wholeObjectFlagOf } from "@render/core";
 import type { TileSourceDescriptor, W3CAnnotation, AnnotationLike, W3CSelector } from "@render/core";
 import { dispatchFitBounds, applyFitBounds, type ViewportLike } from "./fitbounds.js";
-import { createReadOnlyOverlay, type LabelFor } from "./read-overlay.js";
+import { openOsdViewer } from "./osd-open.js";
+import { createReadOnlyOverlay, type LabelFor, type StyleFor } from "./read-overlay.js";
 import { createFrameOverlay } from "./frame-overlay.js";
 import { createSelectionHalo } from "./selection-halo.js";
-import { applyCanvasA11y, type A11yViewerLike } from "./canvas-a11y.js";
-import { xyzTileSource } from "./xyz.js";
-import { dziOsdSource } from "./dzi.js";
+import type { OverlayViewerLike } from "./overlay-core.js";
 import type { SelectionId } from "./surface.js";
 import { guardImageDimensions, MAX_DECODE_DIM, type ImageGuardResult } from "./image-cap.js";
 
@@ -56,10 +56,14 @@ export interface ReadOnlyMountOptions {
  canvasId?: string;
  /** Fired on user selection. */
  onSelect?: (id: SelectionId | null) => void;
- /** Accessible-name source for an overlay shape (P0-6). */
- labelFor?: LabelFor;
- /** Show the OSD locator mini-map (worklist 1.1). */
- locator?: boolean;
+/** Accessible-name source for an overlay shape (P0-6). */
+labelFor?: LabelFor;
+/** Per-annotation style resolver (Phase 7 — the reading-marks post-pass seam). Threaded into the
+ *  overlay's style channel so every drawn mark is coloured AT DRAW TIME; absent → the overlay's
+ *  default styling (every existing caller's visual, unchanged). */
+styleFor?: StyleFor;
+/** Show the OSD locator mini-map (worklist 1.1). */
+locator?: boolean;
 }
 
 /** The read subset of the overlay this surface drives — kept minimal so the seam is test-injectable. */
@@ -209,50 +213,32 @@ export function guardOpenedImageSource(item: OpenedSourceLike, tiled: boolean): 
 
 /**
  * Mount a read-only OSD deep-zoom surface with a DOM-SVG overlay over `container`. Resolves once the
- * image has opened. Builds OSD EXACTLY as createMount does (donor: mount.ts:74-170), then instantiates
- * `createReadOnlyOverlay(viewer)` INSTEAD of the Annotorious annotator (mount.ts:172 onward is omitted).
+ * image has opened. Constructs OSD through the SAME shared openOsdViewer (osd-open.ts) createMount
+ * uses — parity by construction — with its two differentiators: the 2D canvas drawer and the
+ * decode-cap guard on open. Then instantiates `createReadOnlyOverlay(viewer)` INSTEAD of the
+ * Annotorious annotator (the editor's post-open wiring is omitted).
  */
 export async function createReadOnlyMount(
  container: HTMLElement,
  opts: ReadOnlyMountOptions,
 ): Promise<ReadOnlyMountSurface> {
  const ts = resolveTileSource(opts.tileSource ?? opts.source);
- const tileSources =
-  ts.kind === "image" ? { type: "image", url: ts.url }
-   : ts.kind === "xyz" ? xyzTileSource(ts)
-    : ts.kind === "dzi" ? dziOsdSource(ts)
-     : ts.infoUrl;
-
- const viewer = OpenSeadragon({
-  element: container,
-  tileSources,
-  // OSD 5 CanvasDrawer (not the default WebGL drawer): each WebGL drawer holds a scarce WebGL
-  // context, and several embeds on one page exhaust the browser's context cap ("WebGL context lost"
-  // on recipes/08). The 2D canvas drawer has no such cap. The SVG region overlay + whole-object
-  // frame are DOM addOverlay layers (drawer-independent), so they still position over the canvas.
-  drawer: "canvas",
-  crossOriginPolicy: "Anonymous",
-  timeout: 60000,
-  showNavigationControl: false,
-  gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: false },
-  immediateRender: true,
-  maxZoomPixelRatio: 16,
-  minZoomImageRatio: 0.5,
-  ...(opts.locator ? { showNavigator: true, navigatorPosition: "BOTTOM_RIGHT", navigatorSizeRatio: 0.15, navigatorAutoFade: true } : {}),
- });
-
- // V90 (Archie-3d55) — name the canvas immediately, before the open await (same reasoning as
- // mount.ts: OSD builds it in the constructor, and a failed open must not leave an unnamed stop).
- applyCanvasA11y(viewer as unknown as A11yViewerLike);
 
  // A non-tiled `{ type:"image" }` source decodes its WHOLE bitmap into webview memory; tiled
  // sources (dzi/xyz/iiif) are pyramids and are never capped (image-cap.ts).
  const tiled = ts.kind !== "image";
 
- await new Promise<void>((resolve, reject) => {
-  viewer.addOnceHandler("open", () => {
-   // Decode-cap guard: once OSD reports the source dims, reject an oversized non-tiled bitmap
-   // BEFORE it is decoded for display — degrade to an error rather than crashing the webview.
+ const { viewer } = await openOsdViewer(container, ts, {
+  // OSD 5 CanvasDrawer (not the default WebGL drawer): each WebGL drawer holds a scarce WebGL
+  // context, and several embeds on one page exhaust the browser's context cap ("WebGL context lost"
+  // on recipes/08). The 2D canvas drawer has no such cap. The SVG region overlay + whole-object
+  // frame are DOM addOverlay layers (drawer-independent), so they still position over the canvas.
+  drawer: "canvas",
+  ...(opts.locator ? { locator: opts.locator } : {}),
+  logPrefix: "[@render/mount] read-only",
+  // Decode-cap guard: once OSD reports the source dims, reject an oversized non-tiled bitmap
+  // BEFORE it is decoded for display — degrade to an error rather than crashing the webview.
+  onOpen(viewer, reject) {
    try {
     const item = viewer.world.getItemAt(0) as unknown as OpenedSourceLike | undefined;
     if (item) {
@@ -269,32 +255,30 @@ export async function createReadOnlyMount(
     // A missing world item / API shape is non-fatal — degrade upward, let the open succeed.
     console.warn("[@render/mount] read-only decode-cap guard skipped:", err);
    }
-   resolve();
-  });
-  viewer.addOnceHandler("open-failed", (e: { message?: string }) => {
-   console.error("[@render/mount] read-only OpenSeadragon open-failed:", e.message ?? "unknown");
-   reject(new Error("Couldn't load this media item."));
-  });
+  },
  });
 
  // The DOM-SVG overlay replaces the Annotorious annotator (no @annotorious/* / pixi here). Both the
  // region overlay AND the whole-object frame are DOM addOverlay layers — drawer-independent, so they
  // position over the canvas drawer's pixels exactly as they did over the WebGL drawer.
  const overlay = createReadOnlyOverlay(
-  viewer as unknown as Parameters<typeof createReadOnlyOverlay>[0],
-  opts.labelFor ? { labelFor: opts.labelFor } : {},
+  viewer as unknown as OverlayViewerLike,
+  {
+   ...(opts.labelFor ? { labelFor: opts.labelFor } : {}),
+   ...(opts.styleFor ? { styleFor: opts.styleFor } : {}),
+  },
  );
  // The object-spanning clickable frame for WHOLE-OBJECT notes (donor: frame-overlay.ts, already wired
  // into the editor mount). A whole-object note has no region geometry, so instead of read-overlay
  // warn-and-dropping it (invisible + unclickable), it gets a frame whose click routes its id through
  // the same onSelect path the region shapes use.
  const frame: ReadOnlyFrameLike = createFrameOverlay(
-  viewer as unknown as Parameters<typeof createFrameOverlay>[0],
+  viewer as unknown as OverlayViewerLike,
  );
  // The selection ring (Archie-52a0) — a third DOM addOverlay layer, drawer-independent like the
  // other two, and the SAME module the editor mount draws so both renderers agree.
  const halo: SelectionHaloLike = createSelectionHalo(
-  viewer as unknown as Parameters<typeof createSelectionHalo>[0],
+  viewer as unknown as OverlayViewerLike,
  );
 
  // The surface's one source of truth for the annotation list (fitBounds resolves ids against it).

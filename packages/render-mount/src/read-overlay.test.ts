@@ -2,8 +2,11 @@
 // (createElementNS only), hit-tests them to onSelect, and labels them for a11y. happy-dom gives a
 // real createElementNS; a fake viewer (donor: frame-overlay.test.ts:10-28) captures overlays/removed/
 // openHandlers + a fake viewport. No live OSD (memory: leave real-render visuals to the human).
+// Phase 6: the fake drives the ONE shared duck type (overlay-core.ts) the lifecycle now owns.
 import { describe, it, expect, vi } from "vitest";
-import { createReadOnlyOverlay, type OverlayViewerLike } from "./read-overlay.js";
+import { createReadOnlyOverlay } from "./read-overlay.js";
+import type { OverlayShapeStyle } from "./read-overlay.js";
+import type { OverlayViewerLike } from "./overlay-core.js";
 import type { W3CAnnotation } from "@render/core";
 
 type Overlay = { element: SVGElement | HTMLElement; location: unknown };
@@ -94,6 +97,65 @@ describe("createReadOnlyOverlay.setAnnotations — draw", () => {
     Object.assign(v.world, fakeViewer().world);
     v.openHandlers[0]!();
     expect(v.overlays).toHaveLength(1);
+  });
+});
+
+describe("createReadOnlyOverlay — per-annotation style channel (Phase 7, the reading-marks seam)", () => {
+  const spec = (stroke: string): OverlayShapeStyle => ({
+    stroke, fill: stroke, fillOpacity: "0.18", strokeOpacity: "0.95", strokeWidth: "2",
+  });
+
+  it("applies each shape's style AT DRAW TIME: the hue on the svg, the numbers on the geometry", () => {
+    const v = fakeViewer();
+    createReadOnlyOverlay(v, { styleFor: (id) => spec(id === "r" ? "#3a6b4c" : "#a3553a") })
+      .setAnnotations([rectAnn("r"), rectAnn("q", "xywh=pixel:0,0,10,10")]);
+    const [a, b] = v.overlays.map((o) => o.element as SVGSVGElement) as [SVGSVGElement, SVGSVGElement];
+    // The hue lands on the svg's `color` — the geometry strokes currentColor, so the halo and any
+    // future descendant inherit it (the reading-marks halo rule, preserved at the new seam).
+    expect(a.style.color).toBe("#3a6b4c");
+    expect(b.style.color).toBe("#a3553a");
+    const geomA = a.querySelector("rect")!;
+    expect(geomA.getAttribute("fill")).toBe("#3a6b4c");
+    expect(geomA.getAttribute("fill-opacity")).toBe("0.18");
+    expect(geomA.getAttribute("stroke-opacity")).toBe("0.95");
+    expect(geomA.getAttribute("stroke-width")).toBe("2");
+    expect(geomA.getAttribute("stroke")).toBe("currentColor");
+  });
+
+  it("the resolver receives the ANNOTATION (per-note emphasis lives there), not just the id", () => {
+    const v = fakeViewer();
+    const seen: Array<{ id: string; body: W3CAnnotation["body"] }> = [];
+    createReadOnlyOverlay(v, {
+      styleFor: (id, ann) => {
+        seen.push({ id, body: ann.body });
+        return spec("#000");
+      },
+    }).setAnnotations([rectAnn("r")]);
+    expect(seen).toEqual([{ id: "r", body: undefined }]);
+  });
+
+  it("absent styleFor leaves today's identical default styling (no opacity attributes, host colour)", () => {
+    const v = fakeViewer();
+    createReadOnlyOverlay(v).setAnnotations([rectAnn("r")]);
+    const svg = v.overlays[0]!.element as SVGSVGElement;
+    const rect = svg.querySelector("rect")!;
+    expect(rect.getAttribute("fill")).toBe("rgba(0,0,0,0)");
+    expect(rect.getAttribute("stroke")).toBe("currentColor");
+    expect(rect.getAttribute("stroke-width")).toBe("1.5");
+    expect(rect.getAttribute("fill-opacity")).toBeNull();
+    expect(rect.getAttribute("stroke-opacity")).toBeNull();
+    expect(svg.style.color).toBe(""); // no hue forced — the host's inherited color shows through
+  });
+
+  it("a QUEUED draw (image not painted yet) styles identically to a sync draw — the retry race is gone", () => {
+    const v = fakeViewer({ hasItem: false });
+    createReadOnlyOverlay(v, { styleFor: () => spec("#3a6b4c") }).setAnnotations([rectAnn("r")]);
+    expect(v.overlays).toHaveLength(0); // deferred to `open`
+    Object.assign(v.world, fakeViewer().world);
+    v.openHandlers[0]!();
+    const svg = v.overlays[0]!.element as SVGSVGElement;
+    expect(svg.style.color).toBe("#3a6b4c"); // styled in the replay, not by a later post-pass
+    expect(svg.querySelector("rect")!.getAttribute("fill-opacity")).toBe("0.18");
   });
 });
 

@@ -8,14 +8,20 @@
 // classification. Those live in `src-tauri/src/video.rs`'s own `#[cfg(test)]` module against verbatim
 // captured fixtures, and neither suite substitutes for a packaged run.
 import { describe, it, expect, beforeEach, vi } from "vitest";
+// The DECISION and the shared contract moved to the neutral module (video-profiles.ts) — this suite
+// pins that decision from its new home, and the seam's own halves from the seam.
 import {
   WEB_TIER_H264,
   WEB_TIER_VP9,
   isTranscodableVideoMime,
   pickTarget,
   unavailableReason,
-  classifyVideoError,
   VideoTranscodeError,
+  type VideoCapabilities,
+  type VideoProgress,
+} from "./video-profiles.js";
+import {
+  classifyVideoError,
   isProgressFor,
   progressFraction,
   probeVideoEncoders,
@@ -26,17 +32,16 @@ import {
   estimateWebTierVideoBytes,
   formatBytes,
   videoTierTell,
-  type EncoderReport,
   type VideoBridge,
-  type VideoProgress,
 } from "./video-transcode.js";
 
 // isTauri() is false in vitest; every test here passes an explicit bridge, which is also the branch
 // that proves the seam does not REQUIRE a webview to be exercised.
 vi.mock("./tauri-fs.js", () => ({ isTauri: () => false }));
 
-const report = (over: Partial<EncoderReport> = {}): EncoderReport => ({
-  ffmpeg: true, version: "7.1.3", h264: true, vp9: true, aac: true, opus: true, h264Decode: true,
+/** A DESKTOP capability fixture on the ONE shape — `h264Decode` set, `webCodecsPresent` absent. */
+const caps = (over: Partial<VideoCapabilities> = {}): VideoCapabilities => ({
+  ffmpeg: true, h264: true, vp9: true, aac: true, opus: true, h264Decode: true,
   ...over,
 });
 
@@ -64,33 +69,33 @@ beforeEach(() => resetVideoSkipCount());
 
 describe("target selection", () => {
   it("prefers H.264/MP4 — the format every major browser plays", () => {
-    expect(pickTarget(report())).toBe(WEB_TIER_H264);
+    expect(pickTarget(caps())).toBe(WEB_TIER_H264);
   });
 
   it("falls back to VP9/WebM when the machine has no H.264 encoder (the stock GNOME 49 case)", () => {
     // Measured base org.gnome.Platform//49: no libx264 either direction, but libvpx-vp9 + libopus
     // are in the base runtime.
-    expect(pickTarget(report({ h264: false, h264Decode: false }))).toBe(WEB_TIER_VP9);
+    expect(pickTarget(caps({ h264: false, h264Decode: false }))).toBe(WEB_TIER_VP9);
   });
 
   it("refuses rather than guessing when neither pair is complete", () => {
-    expect(pickTarget(report({ h264: false, vp9: false }))).toBeNull();
+    expect(pickTarget(caps({ h264: false, vp9: false }))).toBeNull();
     // An encoder with no matching AUDIO codec is not a usable target either.
-    expect(pickTarget(report({ h264: true, aac: false, vp9: true, opus: false }))).toBeNull();
+    expect(pickTarget(caps({ h264: true, aac: false, vp9: true, opus: false }))).toBeNull();
   });
 
   it("refuses when there is no ffmpeg at all", () => {
-    expect(pickTarget(report({ ffmpeg: false }))).toBeNull();
-    expect(unavailableReason(report({ ffmpeg: false }))).toMatch(/no video converter/i);
+    expect(pickTarget(caps({ ffmpeg: false }))).toBeNull();
+    expect(unavailableReason(caps({ ffmpeg: false }))).toMatch(/no video converter/i);
   });
 
   it("says nothing when a target IS available — the caller branches on pickTarget, not on prose", () => {
-    expect(unavailableReason(report())).toBe("");
-    expect(unavailableReason(report({ h264: false }))).toBe("");
+    expect(unavailableReason(caps())).toBe("");
+    expect(unavailableReason(caps({ h264: false }))).toBe("");
   });
 
   it("greys with a reason when the converter is there but has no usable codecs", () => {
-    const r = report({ h264: false, h264Decode: false, vp9: false, opus: false });
+    const r = caps({ h264: false, h264Decode: false, vp9: false, opus: false });
     expect(pickTarget(r)).toBeNull();
     expect(unavailableReason(r)).toMatch(/missing its codecs/i);
   });

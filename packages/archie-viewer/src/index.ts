@@ -25,9 +25,17 @@ import type { ReadOnlyMountSurface } from "@render/mount";
 import type { OpenObjectOptions } from "./reader-guards.js";
 
 /**
- * Mount the read-only deep-zoom surface for ONE object into `container` (see reader.ts for the real
- * implementation and its contract). Lazy by construction: the OSD chunk is fetched on the first call,
- * not at import. Programmatic callers see no difference — same signature, same returned Promise.
+ * LOW-LEVEL MOUNT (Phase 7 — demoted, deliberately). Mount the read-only deep-zoom surface for ONE
+ * object into `container`. The ELEMENT is the documented entrance: <archie-viewer> owns the reading
+ * layer, the note card, the chrome, the address ladder and the style channel — this wrapper exposes
+ * NONE of that. It is the raw OSD mount for a programmatic host that wants a bare canvas + overlay
+ * and is willing to feed it annotations + a `markColourOf`/`styleFor` channel itself. Kept rather
+ * than deleted because the wrapper is cheap and programmatic hosts exist; the element's #openObject
+ * does NOT go through here (it lazy-imports reader.js directly so the reading layer's options — the
+ * noteCardHost, the layer-bound colour source — stay element-private).
+ *
+ * Lazy by construction: the OSD chunk is fetched on the first call, not at import. Programmatic
+ * callers see no difference — same signature, same returned Promise.
  */
 export async function openObject(
   container: HTMLElement,

@@ -12,7 +12,10 @@
 // Kept framework-free and DOM-free so the band→visibility and image→navigator mappings are unit-
 // tested here (the mount/Canvas wiring that feeds them is browser-verified).
 
-import type { ZoomBand } from "./zoom-band.js";
+// The band→visibility rule moved to @render/core (query/marker-style.ts, beside zoomBand — both are
+// pure ratio/band contracts the studio's dot solver derives without importing this package's OSD
+// graph); re-exported here so existing @render/mount consumers keep resolving unchanged.
+export { dotsVisibleForBand } from "@render/core";
 
 /** An on-screen marker rect (viewer-element / viewport px) — the shape MountSurface.markerScreenRect(s) returns. */
 export interface ScreenRect {
@@ -26,12 +29,6 @@ export interface ScreenRect {
 export interface NavigatorDot {
   id: string;
   colour: string;
-}
-
-/** The far-band dot layer shows ONLY at `far` (fit-width, marks are tiny → need a location signal);
- *  at `mid`/`near` the real shapes carry the signal, so the dots hide. The ONE band→visibility rule. */
-export function dotsVisibleForBand(band: ZoomBand): boolean {
-  return band === "far";
 }
 
 /** Centre of a marker's on-screen rect — where its far-band dot sits. */

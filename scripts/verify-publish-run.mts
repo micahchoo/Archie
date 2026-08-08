@@ -3,22 +3,19 @@
 // `@render/core`.
 //
 // Reads the published tree back through the SAME two real byte sources the apps use — an http(s)
-// base through render-core's `HttpFilesystem` (the fourth Filesystem backend, read-only; exactly
-// what `<archie-viewer src=…>`'s `openLibraryFromTree` and apps/viewer's hosted mode use), or a local
-// directory through a small node:fs-backed reader (render-core has no Filesystem backend targeting a
-// plain node:fs directory — every existing backend is FSA/OPFS/Zip/Tauri/Memory/Http, none of which
-// fit "a folder on the CI runner's disk" — so this one function is the unavoidable hand roll; it
-// mirrors `fsJsonSource`'s absent-vs-failed contract exactly). Both sources feed the REAL
+// base through render-core's `HttpFilesystem` (read-only; exactly what `<archie-viewer src=…>`'s
+// `openLibraryFromTree` and apps/viewer's hosted mode use), or a local directory through render-core's
+// `NodeFilesystem` (the node:fs directory backend — the seam's answer to "a folder on the CI
+// runner's disk"). Both modes compose the REAL `fsJsonSource` over their backend and feed the REAL
 // `readExhibitTree` / `assertArchieTreeMarker` — this script exercises the identical read path the
 // viewer does, not a re-implementation that could silently drift from it.
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import {
   SCHEMA_VERSION,
+  assertArchieTreeMarker,
   readExhibitTree,
   HttpFilesystem,
   fsJsonSource,
-  FailedReadError,
+  tryResolveFile,
   isNotFound,
   FIXITY_MANIFEST_NAME,
   parseFixityManifest,
@@ -28,6 +25,8 @@ import {
   type ExhibitsJson,
   type ArchieMarker,
 } from "@render/core";
+import { NodeFilesystem } from "@render/core/node";
+import { createChecklist } from "./lib/checklist.mjs";
 
 // ---------------------------------------------------------------------------
 // CLI
@@ -48,26 +47,30 @@ console.log(`verify-publish: checking ${isUrl ? "http base" : "directory"} ${bas
 
 // ---------------------------------------------------------------------------
 // Reporting — per-item tolerant: every check runs and prints, PASS or FAIL, with its SUBJECT (a
-// count/value), never just a verdict. Nothing here stops at the first failure.
+// count/value), never just a verdict. Nothing here stops at the first failure. The loop is owned by
+// scripts/lib/checklist.mjs; this gate supplies only its tail: the FAIL re-list + the 0/1 exit.
 // ---------------------------------------------------------------------------
-interface CheckResult {
-  pass: boolean;
-  label: string;
-  detail: string;
-}
-const results: CheckResult[] = [];
-function check(pass: boolean, label: string, detail: string): boolean {
-  results.push({ pass, label, detail });
-  console.log(`${pass ? "PASS" : "FAIL"}  ${label} — ${detail}`);
-  return pass;
-}
+const { check, finish } = createChecklist({
+  onExit: (ctx: { passed: number; total: number; failed: { label: string; detail: string }[] }) => {
+    console.log(`\n${ctx.passed}/${ctx.total} checks passed`);
+    if (ctx.failed.length > 0) {
+      console.log(`${ctx.failed.length} FAILURE(S):`);
+      for (const f of ctx.failed) console.log(`  FAIL  ${f.label} — ${f.detail}`);
+      process.exit(1);
+    }
+    process.exit(0);
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Byte source: ONE `readRaw(path) -> bytes | null` (null = absent, throw = failed — the
 // render-core-data-integrity contract #2 absent-vs-failed rule, applied uniformly to both modes) that
-// both the JsonSource and the raw-text reads (index.html, the archie.demo scan) share.
+// both the JsonSource and the raw-text reads (index.html, the archie.demo scan, the fixity sweep)
+// share. Both modes walk their backend through the seam, so absence classifies by the canonical
+// `isNotFound` in exactly one place.
 // ---------------------------------------------------------------------------
 let httpFs: Filesystem | undefined;
+let nodeFs: NodeFilesystem | undefined;
 let readRaw: (path: string) => Promise<Uint8Array | null>;
 
 if (isUrl) {
@@ -86,14 +89,15 @@ if (isUrl) {
     }
   };
 } else {
-  // The hand-rolled half (see header): a plain node:fs directory walk, ENOENT -> absent.
+  // Local-dir mode: the REAL node:fs directory backend, driven the same way the http mode drives
+  // its backend. JSON reads compose `fsJsonSource(nodeFs)` below — the literal code the viewer
+  // runs; these raw byte reads (index.html, the fixity sweep) walk the same seam instance rather
+  // than a second node:fs path, so absent-vs-failed is classified by the one `isNotFound`.
+  nodeFs = new NodeFilesystem(base);
   readRaw = async (path: string): Promise<Uint8Array | null> => {
-    try {
-      return new Uint8Array(await readFile(join(base, ...path.split("/"))));
-    } catch (e) {
-      if ((e as NodeJS.ErrnoException)?.code === "ENOENT") return null;
-      throw e;
-    }
+    const file = await tryResolveFile(nodeFs!, path.split("/"));
+    if (file === null) return null;
+    return new Uint8Array(await file.readable());
   };
 }
 
@@ -113,76 +117,45 @@ async function tryReadText(path: string): Promise<{ ok: true; text: string | nul
   }
 }
 
-/** A JsonSource over `readRaw`, matching `fsJsonSource`'s contract (absent -> null on getOptional,
- *  throw on get; a present-but-torn file -> FailedReadError, never silently "no data"). Used ONLY for
- *  local-dir mode; the http mode below uses render-core's REAL `fsJsonSource(HttpFilesystem)` — the
- *  literal code the viewer runs — instead of this derived version. */
-function jsonSourceFromRaw(raw: (path: string) => Promise<Uint8Array | null>): JsonSource {
-  const parse = <T,>(bytes: Uint8Array, path: string): T => {
-    try {
-      return JSON.parse(new TextDecoder().decode(bytes)) as T;
-    } catch (e) {
-      throw new FailedReadError(path, e);
-    }
-  };
-  return {
-    get: async <T,>(path: string): Promise<T> => {
-      const bytes = await raw(path);
-      if (bytes === null) throw new Error(`no such file: ${path}`);
-      return parse<T>(bytes, path);
-    },
-    getOptional: async <T,>(path: string): Promise<T | null> => {
-      let bytes: Uint8Array | null;
-      try {
-        bytes = await raw(path);
-      } catch (e) {
-        if (e instanceof FailedReadError) throw e;
-        throw new FailedReadError(path, e);
-      }
-      return bytes === null ? null : parse<T>(bytes, path);
-    },
-  };
-}
-
-const src: JsonSource = isUrl ? fsJsonSource(httpFs!) : jsonSourceFromRaw(readRaw);
+const src: JsonSource = isUrl ? fsJsonSource(httpFs!) : fsJsonSource(nodeFs!);
 
 // ---------------------------------------------------------------------------
-// 1. Marker present + valid (ADR-0020).
+// 1. Marker present + valid (ADR-0020), STRICT.
 //
-// NOT `assertArchieTreeMarker` (the DESIGN brief's "validateArchieMarker" is the zip-path validator;
-// the tree-path twin is this one) — deliberately not delegated to it either, because that function is
-// LENIENT-ON-ABSENT (a tree need not ship a marker at all; the read.ts doc comment: "some static
-// hosts strip dotted files"). That's the right policy for OPENING an arbitrary tree, and the wrong
-// one for VERIFYING a tree this repo's own `publishLibrary` just wrote — render-core-data-integrity
-// rule 1 states `archie.json` is written LAST as the commit point, so a fresh publish must always
-// carry it; its absence here is a failure to report, not to tolerate. So: read it directly with the
-// same `src.getOptional` contract, and apply the SAME field checks (format / SCHEMA_VERSION) by hand.
+// `assertArchieTreeMarker(src, { requirePresent: true })` — the SAME gate the viewer's open path uses,
+// with its strict option: a tree this repo's own `publishLibrary` just wrote must ALWAYS carry the
+// marker (render-core-data-integrity rule 1: archie.json is written LAST as the commit point), so
+// absence is a failure to report, not to tolerate — and a marker read fault (5xx/torn) is a real
+// verification failure too, not a transient blip worth skipping (the strict gate throws on it; see
+// read.ts's doc comment for the decision). The strict gate throws NotAnArchieLibraryError for all three
+// failure classes (read fault / absent / invalid marker) with the stable message prefixes matched below,
+// so the old labels stay honest: a torn read is "reads cleanly", an absent marker is "is present", and
+// only an actually-invalid marker gets the field-check label.
 // ---------------------------------------------------------------------------
+const STRICT_READ_FAILED_PREFIX = "This published tree's archie.json marker could not be read";
+const STRICT_ABSENT_PREFIX = "This published tree has no archie.json marker";
+
 let marker: Partial<ArchieMarker> | null = null;
-let markerReadFailed: unknown;
+let markerError: unknown;
 try {
-  marker = await src.getOptional<Partial<ArchieMarker>>("archie.json");
+  marker = await assertArchieTreeMarker(src, { requirePresent: true });
 } catch (e) {
-  markerReadFailed = e;
+  markerError = e;
 }
 
-if (markerReadFailed !== undefined) {
-  check(
-    false,
-    "marker: archie.json reads cleanly",
-    String(markerReadFailed instanceof Error ? markerReadFailed.message : markerReadFailed),
-  );
-} else if (marker === null) {
-  check(
-    false,
-    "marker: archie.json is present",
-    "ABSENT — publishLibrary writes archie.json LAST as the commit point (render-core-data-integrity rule 1); a fresh publish must carry it",
-  );
+if (markerError !== undefined) {
+  const msg = markerError instanceof Error ? markerError.message : String(markerError);
+  const label = msg.startsWith(STRICT_READ_FAILED_PREFIX)
+    ? "marker: archie.json reads cleanly"
+    : msg.startsWith(STRICT_ABSENT_PREFIX)
+      ? "marker: archie.json is present"
+      : "marker: archie.json is a valid current-schema Archie marker";
+  check(false, label, msg);
 } else {
   check(
-    marker.format === "archie-library" && marker.version === SCHEMA_VERSION,
+    true,
     "marker: archie.json is a valid current-schema Archie marker",
-    `format=${String(marker.format)} version=${String(marker.version)} (want format=archie-library version=${SCHEMA_VERSION}) generation=${marker.generation ?? "<absent>"}`,
+    `format=${String(marker!.format)} version=${String(marker!.version)} (want format=archie-library version=${SCHEMA_VERSION}) generation=${marker!.generation ?? "<absent>"}`,
   );
 }
 
@@ -412,11 +385,4 @@ function countOccurrences(haystack: string, needle: string): number {
 }
 
 // ---------------------------------------------------------------------------
-const failed = results.filter((r) => !r.pass);
-console.log(`\n${results.length - failed.length}/${results.length} checks passed`);
-if (failed.length > 0) {
-  console.log(`${failed.length} FAILURE(S):`);
-  for (const f of failed) console.log(`  FAIL  ${f.label} — ${f.detail}`);
-  process.exit(1);
-}
-process.exit(0);
+await finish();

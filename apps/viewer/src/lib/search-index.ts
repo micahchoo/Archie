@@ -7,6 +7,10 @@
 // words a reader sees, never the `[text](url)` / `#heading` / `*emphasis*` markup. We reuse
 // render-core's `stripMarkdown` (the one canonical strip — same helper Reader uses for list
 // snippets) so there's one source of truth, not a viewer-local reinvention.
+//
+// Phase 5: this module keeps the MiniSearch wrapping and the V106 locus projection only — the
+// note-tree WALK (flat list + owner search) lives in `note-tree.ts` now; `flattenExhibitNotes`
+// was that module's copy and is gone. Callers flatten via `noteTree.flattenNotes`.
 
 import MiniSearch from "minisearch";
 import {
@@ -55,27 +59,6 @@ export function buildSearchIndex(annotations: W3CAnnotation[]): MiniSearch<Searc
   return index;
 }
 
-/** Pull EVERY note in the exhibit into one flat array — the base page per object PLUS every
- *  per-reading page (Q-4): the finder is mode-independent and scopes ALL readings, so a note that
- *  lives only in a non-active reading is still findable. A note id can repeat across the base + a
- *  reading overlay; we de-dupe by id (first wins) so the index carries one doc per note. */
-export function flattenExhibitNotes(data: {
-  annotationsByObject: Record<string, W3CAnnotation[]>;
-  readingAnnotationsByObject: Record<string, Record<string, W3CAnnotation[]>>;
-}): W3CAnnotation[] {
-  const seen = new Set<string>();
-  const out: W3CAnnotation[] = [];
-  const take = (a: W3CAnnotation) => {
-    if (!a.id || seen.has(a.id)) return;
-    seen.add(a.id);
-    out.push(a);
-  };
-  for (const list of Object.values(data.annotationsByObject)) for (const a of list) take(a);
-  for (const byReading of Object.values(data.readingAnnotationsByObject))
-    for (const list of Object.values(byReading)) for (const a of list) take(a);
-  return out;
-}
-
 /** Stored search result — the index's `storeFields`, narrowed for callers. */
 export type StoredDoc = Pick<SearchDoc, "id" | "logicalId" | "tags" | "body">;
 
@@ -103,8 +86,8 @@ export type NoteLocus = {
  * Object attribution is free: `annotationsByObject` / `readingAnnotationsByObject` are KEYED by
  * object id, so the finder already knows which object a hit sits on. What it cannot know without
  * `objects` is what that object is CALLED — hence the label lookup. Base pages win over reading
- * overlays, matching `flattenExhibitNotes`'s de-dupe order, so a note carried in both is attributed
- * once and identically.
+ * overlays, matching `note-tree.flattenNotes`'s de-dupe order (the canonical walk — Phase 5), so a
+ * note carried in both is attributed once and identically.
  *
  * Section attribution is deliberately conservative. A note is anchored to an OBJECT; a section
  * merely *activates* one, and a narrative spine may revisit the same object across several sections

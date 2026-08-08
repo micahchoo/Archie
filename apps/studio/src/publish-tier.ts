@@ -55,10 +55,12 @@
 import { fitWithin, type AObject, type Library, type SelectorScale } from "@render/core";
 import { WEB_TIER, WEB_TIER_OPUS_KBPS, type QualityTier } from "./archive-probe.js";
 import { inferredMime } from "./folder-import.js";
-// Type-only for the profile, plus the ONE value this module needs: the video seam's skip counter.
-// `video-transcode.ts` itself is import-cheap (no Tauri, no mediabunny at module scope — both are
-// behind `await import`), so this does not drag either heavy path into the tier engine's graph.
-import { noteVideoSkipped, type VideoTargetParams } from "./video-transcode.js";
+// The profile's TYPE comes from the neutral contract (`video-profiles.ts`, which imports nothing),
+// so the engine never depends on a platform seam's module graph. The ONE value this module needs —
+// the video seam's skip counter — still comes from `video-transcode.ts`, which is import-cheap (no
+// Tauri, no mediabunny at module scope — both are behind `await import`).
+import { noteVideoSkipped } from "./video-transcode.js";
+import type { VideoTargetParams } from "./video-profiles.js";
 
 export type { QualityTier };
 

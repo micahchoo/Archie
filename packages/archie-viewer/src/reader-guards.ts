@@ -30,9 +30,15 @@ export interface OpenObjectOptions {
   offline?: boolean;
   /** Fired on overlay selection (the element can drive a sidebar / deep-link). */
   onSelect?: (id: string | null) => void;
-  /** V56: annotation id → its Reading's colour (undefined = a base note). When present the reader
-   *  paints each drawn mark through render-core's `readingMarkerStyle` (reading-marks.ts). */
+  /** V56: annotation id → its Reading's colour (undefined = a base note, which takes the BASE
+   *  colour). The reader derives the mount's per-annotation style resolver from these colours —
+   *  readingMarkerStyle + emphasis, applied at DRAW TIME via the mount's style channel (Phase 7;
+   *  the reading-marks post-pass it replaces is gone). */
   markColourOf?: (id: string) => string | undefined;
+  /** The row the surface mounts its OWN note card into (the element's `.reader-note`, below the
+   *  canvas). Defaults to the mount container. Phase 7: the surface owns the card — `openNote`
+   *  drives it — so the element's card-ownership bifurcation with the AV player is gone. */
+  noteCardHost?: HTMLElement;
 }
 
 /** Thrown when an offline embed is asked to open a remote-sourced object. The element catches this to

@@ -9,7 +9,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { asExhibitId, asLibraryId, asObjectId, type Library } from "@render/core";
 import { WEB_TIER } from "./archive-probe.js";
-import { WEB_TIER_H264, videoSkipCount, resetVideoSkipCount } from "./video-transcode.js";
+import { WEB_TIER_H264 } from "./video-profiles.js";
+import { videoSkipCount, resetVideoSkipCount } from "./video-transcode.js";
 import {
   DEFAULT_TIER, applyTier, assetMime, capsFor, projectLibraryForTier, renameForTier, resetTierFallbacks,
   tierDecision, tierFallbackCount, tierFallbacksByReason, tierNameMap,

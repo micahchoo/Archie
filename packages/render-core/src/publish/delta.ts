@@ -10,7 +10,7 @@
 // computeDelta answers exactly that question for a pair of published trees: pure, no fs, cheap to
 // unit-test, and reused by the probe script (scripts/probe/object-storage-publish.mts) to report real
 // changed/unchanged counts on a two-publish sequence.
-import type { FileContent } from "./ghpages.js";
+import type { FileContent } from "./snapshot.js";
 
 export interface PublishDelta {
   /** Present in `next`, absent from `prev` — rclone would upload these as new objects. */

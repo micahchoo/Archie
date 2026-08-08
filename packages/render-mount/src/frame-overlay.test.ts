@@ -1,13 +1,15 @@
 // QA(render-frame-overlay-coverage-border): createFrameOverlay draws the whole-object coverage border as an
 // SVG OSD overlay anchored to the image bounds. happy-dom gives us real createElementNS, so we can assert the
 // SVG structure, the click-to-activate seam, the open-event queueing, and replace/clear semantics — WITHOUT a
-// live OSD (the module is decoupled behind FrameViewerLike). Real-render visuals stay with the human.
+// live OSD (the module is decoupled behind the ONE shared duck type, overlay-core.ts). Real-render visuals
+// stay with the human. Phase 6: the fake drives OverlayViewerLike (the frame's old FrameViewerLike is gone).
 import { describe, it, expect, vi } from "vitest";
-import { createFrameOverlay, type FrameViewerLike } from "./frame-overlay.js";
+import { createFrameOverlay } from "./frame-overlay.js";
+import type { OverlayViewerLike } from "./overlay-core.js";
 
 type Overlay = { element: SVGElement | HTMLElement; location: unknown };
 
-function fakeViewer(opts: { hasItem?: boolean } = {}): FrameViewerLike & {
+function fakeViewer(opts: { hasItem?: boolean } = {}): OverlayViewerLike & {
   overlays: Overlay[];
   removed: (SVGElement | HTMLElement)[];
   openHandlers: (() => void)[];
@@ -23,6 +25,9 @@ function fakeViewer(opts: { hasItem?: boolean } = {}): FrameViewerLike & {
     addOverlay: (o) => overlays.push(o as Overlay),
     removeOverlay: (el) => removed.push(el),
     world: { getItemAt: () => (hasItem ? { getBounds: () => ({ x: 0, y: 0, width: 1, height: 1 }) } : undefined) },
+    // The shared duck type requires the viewport surface (the core's default anchor needs it); the
+    // frame supplies a custom locationFor, so this identity is never consulted by the frame path.
+    viewport: { imageToViewportRectangle: (x, y, w, h) => ({ x, y, w, h }) },
     addOnceHandler: (name, handler) => { if (name === "open") openHandlers.push(handler); },
   };
 }

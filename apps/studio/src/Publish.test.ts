@@ -8,6 +8,9 @@ const { createPublishMachine, slugifyTitle, errorCopyFor, validateSiteName, isRe
 type DeploySession = import("./deploy/types.js").DeploySession;
 type DeployProgress = import("./deploy/types.js").DeployProgress;
 type DeployTarget = import("./deploy/types.js").DeployTarget;
+type GitHubTarget = import("@render/core").GitHubTarget;
+type GitHubPublishResult = import("@render/core").GitHubPublishResult;
+type PublishProgress = import("@render/core").PublishProgress;
 type Deps = Parameters<typeof createPublishMachine>[0];
 
 const SESSION: DeploySession = { login: "micah", token: "gho_secret" };
@@ -59,6 +62,31 @@ function deferredDeploy() {
       reject = rej;
     });
   return { deploy, progress: (p: DeployProgress) => onP(p), resolve: (r: Parameters<typeof resolve>[0]) => resolve(r), reject: (e: unknown) => reject(e) };
+}
+
+/** An advanced token publish whose progress + resolution the test controls (the `onpublish` seam). */
+function deferredAdvancedPublish() {
+  let onP!: (p: PublishProgress) => void;
+  let resolve!: (r: GitHubPublishResult) => void;
+  let reject!: (e: unknown) => void;
+  let target!: GitHubTarget;
+  let opts!: { includeOriginals: boolean };
+  const onpublish: NonNullable<Deps["onpublish"]> = (t, o, onProgress) =>
+    new Promise<GitHubPublishResult>((res, rej) => {
+      target = t;
+      opts = o;
+      onP = onProgress;
+      resolve = res;
+      reject = rej;
+    });
+  return {
+    onpublish,
+    progress: (p: PublishProgress) => onP(p),
+    resolve: (r: GitHubPublishResult) => resolve(r),
+    reject: (e: unknown) => reject(e),
+    target: () => target,
+    opts: () => opts,
+  };
 }
 
 describe("publish machine — opening state", () => {
@@ -745,5 +773,181 @@ describe("publish machine — external opens fail visibly, never silently (Archi
     m.open(); // close + reopen — the note is click-scoped feedback, not persistent state
     expect(m.openUrlFailed).toBe(false);
     expect(m.state).toBe("device-code"); // resumability untouched
+  });
+});
+
+// The ADVANCED (token) form — the pre-Task-10 flow, folded into the machine (Slice B). The form's
+// fields, phase, validation, progress copy, and the token-secret lifecycle (dropped on success/error/
+// close) are machine state now; Publish.svelte only renders them. The old `/[/\s]/` validator drifted
+// from name-site's — this suite pins the collapse onto validateSiteName and the drop-on-close/error
+// lifecycle.
+describe("publish machine — advanced token form", () => {
+  it("openAdvanced reaches the token form; owner/repo/branch/token are editable machine state", () => {
+    const m = createPublishMachine(makeDeps());
+    m.open();
+    m.openAdvanced();
+    expect(m.state).toBe("advanced");
+    expect(m.advPhase).toBe("idle");
+    m.advOwner = "micah";
+    m.advRepo = "voynich-folios";
+    m.advBranch = "main";
+    m.advToken = "github_pat_secret";
+    expect(m.advOwner).toBe("micah");
+    expect(m.advRepo).toBe("voynich-folios");
+    expect(m.advBranch).toBe("main");
+    expect(m.advToken).toBe("github_pat_secret");
+  });
+
+  it("advNameError collapses the drifted /[/\\s]/ check onto validateSiteName (bare GitHub names only)", () => {
+    const m = createPublishMachine(makeDeps());
+    m.advOwner = "micah";
+    m.advRepo = "voynich-folios";
+    expect(m.advNameError).toBe("");
+    // A pasted URL / owner-repo pair — exactly what the old regex was meant to catch.
+    m.advOwner = "micah/voynich";
+    expect(m.advNameError).not.toBe("");
+    m.advOwner = "micah";
+    m.advRepo = "has space";
+    expect(m.advNameError).not.toBe("");
+    expect(m.advNameError).toBe(validateSiteName("has space")); // the message IS the name-site validator's
+    m.advRepo = "https://github.com/micah/x";
+    expect(m.advNameError).not.toBe("");
+    m.advRepo = "";
+    expect(m.advNameError).toBe(""); // empty isn't an error — the Publish gate is disabled separately
+  });
+
+  it("advCanPublish gates on names + token + validity + not-publishing + the preflight block", () => {
+    const m = createPublishMachine(makeDeps());
+    m.advOwner = "micah";
+    m.advRepo = "voynich-folios";
+    m.advToken = "github_pat_secret";
+    expect(m.advCanPublish).toBe(true);
+    m.advToken = "";
+    expect(m.advCanPublish).toBe(false);
+    m.advToken = "github_pat_secret";
+    m.advRepo = "bad/repo";
+    expect(m.advCanPublish).toBe(false);
+    // A `block` preflight finding refuses the token form too (render-core's blocksPublish, wired in).
+    const blocked = createPublishMachine(makeDeps({ publishBlocked: () => true }));
+    blocked.advOwner = "micah";
+    blocked.advRepo = "voynich-folios";
+    blocked.advToken = "github_pat_secret";
+    expect(blocked.advCanPublish).toBe(false);
+  });
+
+  it("publishAdvanced: success sets the result fields, drops the token, and lands on done", async () => {
+    const d = deferredAdvancedPublish();
+    const m = createPublishMachine(makeDeps({ onpublish: d.onpublish }));
+    m.advOwner = "micah";
+    m.advRepo = "voynich-folios";
+    m.advBranch = "main";
+    m.advToken = "github_pat_secret";
+    void m.publishAdvanced();
+    expect(m.advPhase).toBe("publishing");
+    d.progress({ phase: "uploading", done: 3, total: 10, unchanged: 2 });
+    expect(m.advProgressText).toBe("Uploading media — 3 of 10… (2 already up to date)");
+    d.resolve({
+      commitUrl: "https://github.com/micah/voynich-folios/commit/abc123",
+      pagesUrl: "https://micah.github.io/voynich-folios/",
+      pagesEnabled: true,
+    });
+    await flush();
+    expect(m.advPhase).toBe("done");
+    expect(m.advCommitUrl).toBe("https://github.com/micah/voynich-folios/commit/abc123");
+    expect(m.advPagesUrl).toBe("https://micah.github.io/voynich-folios/");
+    expect(m.advPagesEnabled).toBe(true);
+    expect(m.advToken).toBe(""); // the secret is dropped the instant the publish is done
+    expect(d.target()).toEqual({ owner: "micah", repo: "voynich-folios", branch: "main", token: "github_pat_secret" });
+    expect(d.opts()).toEqual({ includeOriginals: false });
+  });
+
+  it("publishAdvanced defaults an empty branch to gh-pages", async () => {
+    const d = deferredAdvancedPublish();
+    const m = createPublishMachine(makeDeps({ onpublish: d.onpublish }));
+    m.advOwner = "micah";
+    m.advRepo = "voynich-folios";
+    m.advBranch = "  ";
+    m.advToken = "github_pat_secret";
+    void m.publishAdvanced();
+    d.resolve({ commitUrl: "c", pagesUrl: "p", pagesEnabled: true });
+    await flush();
+    expect(d.target().branch).toBe("gh-pages");
+  });
+
+  it("publishAdvanced: an Error rejection surfaces its message and drops the token", async () => {
+    const d = deferredAdvancedPublish();
+    const m = createPublishMachine(makeDeps({ onpublish: d.onpublish }));
+    m.advOwner = "micah";
+    m.advRepo = "voynich-folios";
+    m.advToken = "github_pat_secret";
+    void m.publishAdvanced();
+    d.reject(new Error("Repository not found"));
+    await flush();
+    expect(m.advPhase).toBe("error");
+    expect(m.advErrorMsg).toBe("Repository not found");
+    expect(m.advToken).toBe(""); // never retained across an error either
+  });
+
+  it("publishAdvanced falls back to plain copy for a non-Error rejection", async () => {
+    const d = deferredAdvancedPublish();
+    const m = createPublishMachine(makeDeps({ onpublish: d.onpublish }));
+    m.advOwner = "micah";
+    m.advRepo = "voynich-folios";
+    m.advToken = "github_pat_secret";
+    void m.publishAdvanced();
+    d.reject({ status: 404 });
+    await flush();
+    expect(m.advPhase).toBe("error");
+    expect(m.advErrorMsg).toBe("Couldn't publish. Check the repository name and that your token has Contents and Pages write access.");
+    expect(m.advToken).toBe("");
+  });
+
+  it("publishAdvanced is a no-op when the onpublish seam is unwired", async () => {
+    const m = createPublishMachine(makeDeps()); // no onpublish
+    m.advOwner = "micah";
+    m.advRepo = "voynich-folios";
+    m.advToken = "github_pat_secret";
+    await m.publishAdvanced();
+    expect(m.advPhase).toBe("idle");
+  });
+
+  it("advProgressText maps each progress phase to its human copy (Archie-53e3)", async () => {
+    const d = deferredAdvancedPublish();
+    const m = createPublishMachine(makeDeps({ onpublish: d.onpublish }));
+    m.advOwner = "micah";
+    m.advRepo = "voynich-folios";
+    m.advToken = "github_pat_secret";
+    void m.publishAdvanced();
+    d.progress({ phase: "comparing" });
+    expect(m.advProgressText).toBe("Checking what's already published…");
+    d.progress({ phase: "uploading", done: 3, total: 10, unchanged: 0 });
+    expect(m.advProgressText).toBe("Uploading media — 3 of 10…");
+    d.progress({ phase: "uploading", done: 3, total: 10, unchanged: 2 });
+    expect(m.advProgressText).toBe("Uploading media — 3 of 10… (2 already up to date)");
+    d.progress({ phase: "committing" });
+    expect(m.advProgressText).toBe("Creating the commit…");
+    d.progress({ phase: "enabling-pages" });
+    expect(m.advProgressText).toBe("Turning on GitHub Pages…");
+    d.progress({ phase: "pushing" });
+    expect(m.advProgressText).toBe("Preparing the library…");
+    d.resolve({ commitUrl: "c", pagesUrl: "p", pagesEnabled: true });
+    await flush();
+  });
+
+  it("resetAdvanced (what close() calls) drops the secret + phase and hides the result screen; fields persist", async () => {
+    const d = deferredAdvancedPublish();
+    const m = createPublishMachine(makeDeps({ onpublish: d.onpublish }));
+    m.advOwner = "micah";
+    m.advRepo = "voynich-folios";
+    m.advToken = "github_pat_secret";
+    void m.publishAdvanced();
+    d.resolve({ commitUrl: "c", pagesUrl: "p", pagesEnabled: false });
+    await flush();
+    expect(m.advPhase).toBe("done"); // the result screen is showing
+    m.resetAdvanced(); // the surface's close() path
+    expect(m.advPhase).toBe("idle"); // the result must not re-appear on a later visit
+    expect(m.advToken).toBe("");
+    expect(m.advOwner).toBe("micah"); // form fields persist, matching the pre-fold close()
+    expect(m.advRepo).toBe("voynich-folios");
   });
 });

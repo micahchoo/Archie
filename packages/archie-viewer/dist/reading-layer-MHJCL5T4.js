@@ -1,0 +1,1 @@
+import{a as o,g as a}from"./chunk-NCZDC56R.js";import"./chunk-WJJ36BU4.js";function g(t){let i=null,e=null,r={};return{setObject(n){e=n,r=a(t.exhibit,n)},notes(){return e===null?[]:o(t.exhibit,e,i)},readingId(){return i},colourOf(n){return r[n]},setReading(n){i=n,t.onRepaint(this.notes()),t.onRebuild()}}}export{g as createReadingLayer};

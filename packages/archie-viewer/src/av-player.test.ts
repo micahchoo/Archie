@@ -133,11 +133,12 @@ describe("mountAvPlayer — selecting a cue seeks the media + shows the note bod
   });
 });
 
-describe("mountAvPlayer — surface.select is the reader note list's door (S1)", () => {
+describe("mountAvPlayer — surface.openNote is the reader note list's door (S1, Phase 7 contract)", () => {
   // The reader's note list mounts beside an AV object too, and its rows were a DEAD DOOR: the embed
   // owns no note card on this path (the player owns one), so element.ts's row handler had nothing to
   // drive. Measured on ex-voynich.o12 (Sound, 5 notes) — rows rendered, aria-current moved, nothing
-  // ever opened. `select` is the same behaviour a cue click has, exposed after mount.
+  // ever opened. `openNote` is the same behaviour a cue click has, exposed after mount — and the
+  // SAME contract the reader surface exposes, so element.ts's onselect is media-agnostic.
   const mounted = () => {
     const h = host();
     const surface = mountAvPlayer(h, {
@@ -153,39 +154,39 @@ describe("mountAvPlayer — surface.select is the reader note list's door (S1)",
   const body = (h: HTMLElement) =>
     h.querySelector(".archie-note-card__body")!.textContent ?? "";
 
-  it("select(id) seeks to the cue and opens its body — the cue click's behaviour, by id", () => {
+  it("openNote(id) seeks to the cue and opens its body — the cue click's behaviour, by id", () => {
     const { h, surface, at } = mounted();
-    expect(surface.select("a")).toBe("seeked");
+    expect(surface.openNote("a")).toBe(true);
     expect(at()).toBe(12);
     const card = h.querySelector(".archie-note-card") as HTMLElement;
     expect(card.hidden).toBe(false);
     expect(body(h)).toContain("the chant begins");
   });
 
-  it("an UNCUED whole-recording note shows its body without seeking", () => {
+  it("an UNCUED whole-recording note shows its body without seeking (true — it DID open)", () => {
     // The residual defect the first pass shipped: `select` returned a bare false here, the caller read
     // it as "nothing happened", and the row took the current styling while the card still showed the
     // PREVIOUS note's text — current-looking, someone else's words. An uncued note has no moment to
-    // travel to, but it does have a body, and the visitor asked to read it.
+    // travel to, but it does have a body, and the visitor asked to read it — so "shown" is true.
     const { h, surface, at } = mounted();
-    surface.select("a");            // land on the timed note first
+    surface.openNote("a");            // land on the timed note first
     expect(at()).toBe(12);
-    expect(surface.select("w")).toBe("shown");
+    expect(surface.openNote("w")).toBe(true);
     expect(body(h)).toContain("whole");        // ITS body, not the timed note's
     expect(body(h)).not.toContain("the chant begins");
     expect(at()).toBe(12);                     // and the playhead did NOT move
   });
 
-  it("reports 'unknown' for a note that isn't on this object, so a caller can tell 'no door' apart", () => {
+  it("reports false for a note that isn't on this object, so a caller can tell 'no door' apart", () => {
     const { h, surface } = mounted();
-    surface.select("a");
-    expect(surface.select("nope")).toBe("unknown");
+    surface.openNote("a");
+    expect(surface.openNote("nope")).toBe(false);
     expect(body(h)).toContain("the chant begins"); // unchanged — nothing happened, truthfully
   });
 
   it("syncs the active-cue highlight, which paused media would never fire a timeupdate for", () => {
     const { h, surface } = mounted();
-    surface.select("a");
+    surface.openNote("a");
     expect(h.querySelector('[data-cue="a"]')!.classList.contains("active")).toBe(true);
   });
 
@@ -193,8 +194,8 @@ describe("mountAvPlayer — surface.select is the reader note list's door (S1)",
     // The highlight tracks the PLAYHEAD, and showing a whole-recording note does not move it. Clearing
     // or moving it here would misreport where the recording is.
     const { h, surface } = mounted();
-    surface.select("a");
-    surface.select("w");
+    surface.openNote("a");
+    surface.openNote("w");
     expect(h.querySelector('[data-cue="a"]')!.classList.contains("active")).toBe(true);
   });
 });
@@ -306,6 +307,21 @@ describe("mountAvPlayer — an /a/<noteId> cite to a TIMED note lands on the mom
 
     expect(m.ct()).toBe(0); // no cue to land on — playhead stays at the head, paused
     expect((h.querySelector(".archie-note-card") as HTMLElement).hidden).toBe(true);
+  });
+});
+
+describe("mountAvPlayer — the STYLE block speaks the token layer (V9/V31/V69 rule, Phase 7)", () => {
+  it("the injected stylesheet contains NO hex colour literals — every colour is a var(--…)", () => {
+    const h = host();
+    mountAvPlayer(h, { object: soundObj(), annotations: [] });
+    // The player injects exactly one <style> into its host (the note-card's rides the root).
+    const style = h.querySelector("style");
+    expect(style).not.toBeNull();
+    const css = style!.textContent ?? "";
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/); // the pre-"Verdant Clearing" literals are gone
+    expect(css).toContain("var(--");               // and the token layer is what replaced them
+    // The deliberately dark stage stays a scoped local choice over the moss-shadow token.
+    expect(css).toMatch(/\.av\s*\{[^}]*background:\s*var\(--moss-shadow\)/);
   });
 });
 

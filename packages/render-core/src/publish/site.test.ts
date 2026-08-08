@@ -248,6 +248,93 @@ describe("loadLibrary — inverse of publishLibrary (publish↔load symmetry)", 
     expect(new Uint8Array(copied)).toEqual(new Uint8Array(assetBytes));
   });
 
+  // loadLibrary's LOSSLESS inverse on request (Archie-8d3d): the default strips publish projections
+  // (pinned above); `preservePublishFields` keeps them so a re-publisher can reuse the tree's OWN
+  // pyramid + thumbnail bytes instead of re-deriving them (re-slicing needs browser-only
+  // OffscreenCanvas). The preserved values name the ORIGINAL tree's origin — publish re-bases them.
+  it("preservePublishFields keeps the baked tileSource/thumbnail on the recovered objects", async () => {
+    const assetBytes = new Uint8Array([1, 2, 3, 4]).buffer;
+    const dzi: DziTileSource = { kind: "dzi", width: 8, height: 8, tileSize: 254, overlap: 1, format: "image/jpeg", filesPath: "photo.jpg_files" };
+    const libP: Library = {
+      id: asLibraryId("P"),
+      exhibits: [{ id: asExhibitId("p"), slug: "p", title: "P", objects: [{ id: asObjectId("o1"), source: "/assets/photo.jpg", label: "P", width: 8, height: 8, thumbnail: "/assets-thumb/photo.jpg" }] }],
+    };
+    const { zip } = await libraryToZip(libP, () => [], {
+      baseUrl: base,
+      getAsset: async () => assetBytes,
+      getThumbnail: async () => new Uint8Array([5, 6]).buffer,
+      tileObject: async () => ({ descriptor: dzi, tiles: new Map([["0/0_0.jpg", new Blob([new Uint8Array([9])])]]) }),
+    });
+    const { library } = await loadLibrary(ZipFilesystem.fromZip(zip), { preservePublishFields: true });
+    const o = library.exhibits[0]!.objects[0]!;
+    expect(o.source).toBe("/assets/photo.jpg"); // recovered working form, as always
+    // the publish projections are NOT stripped this time — they name the ORIGINAL tree's origin:
+    expect(o.tileSource).toEqual({ ...dzi, filesPath: `${base}p/photo.jpg_files` });
+    expect(o.thumbnail).toBe(`${base}p/assets-thumb/photo.jpg`);
+  });
+
+  it("a preservePublishFields load re-publishes with the pyramid + thumbnail RE-BASED at the new origin", async () => {
+    // The full republish-tree loop: load a published tree keeping its publish projections, re-publish
+    // at a DIFFERENT base with tileObject re-using the tree's own pyramid (the descriptor rides on
+    // the object — publish hands it over as the 4th argument) and getThumbnail re-baking the baked
+    // thumbnail — the new manifest's tileSource.filesPath / thumbnail must name the NEW origin.
+    const assetBytes = new Uint8Array([1, 2, 3, 4]).buffer;
+    const dzi: DziTileSource = { kind: "dzi", width: 8, height: 8, tileSize: 254, overlap: 1, format: "image/jpeg", filesPath: "photo.jpg_files" };
+    const libR: Library = {
+      id: asLibraryId("R2"),
+      exhibits: [{ id: asExhibitId("r2"), slug: "r2", title: "R2", objects: [{ id: asObjectId("o1"), source: "/assets/photo.jpg", label: "P", width: 8, height: 8, thumbnail: "/assets-thumb/photo.jpg" }] }],
+    };
+    const { zip } = await libraryToZip(libR, () => [], {
+      baseUrl: base,
+      getAsset: async () => assetBytes,
+      getThumbnail: async () => new Uint8Array([5, 6]).buffer,
+      tileObject: async () => ({ descriptor: dzi, tiles: new Map([["0/0_0.jpg", new Blob([new Uint8Array([9])])]]) }),
+    });
+    const srcRoot = await ZipFilesystem.fromZip(zip).root();
+    const { library } = await loadLibrary(ZipFilesystem.fromZip(zip), { preservePublishFields: true });
+
+    // Re-publish at a NEW base, re-using the first tree's bytes (the republish-tree wiring):
+    const newBase = "https://other.example/lib/";
+    const { zip: zip2 } = await libraryToZip(library, () => [], {
+      baseUrl: newBase,
+      getAsset: async (slug, name) => {
+        try { return await (await (await (await srcRoot.getDirectory(slug)).getDirectory("assets")).getFile(name)).readable(); } catch { return null; }
+      },
+      getThumbnail: async (slug, name) => {
+        try { return await (await (await (await srcRoot.getDirectory(slug)).getDirectory("assets-thumb")).getFile(name)).readable(); } catch { return null; }
+      },
+      tileObject: async (slug, name, _bytes, obj) => {
+        const descriptor = obj.tileSource?.kind === "dzi" ? obj.tileSource : undefined;
+        if (!descriptor) return null;
+        let dir: FsDirectory;
+        try { dir = await (await srcRoot.getDirectory(slug)).getDirectory(`${name}_files`); } catch { return null; }
+        const tiles = new Map<string, Blob>();
+        for await (const level of dir.entries()) {
+          if (level.kind !== "directory") continue;
+          const levelDir = await dir.getDirectory(level.name);
+          for await (const tile of levelDir.entries()) {
+            if (tile.kind !== "file") continue;
+            tiles.set(`${level.name}/${tile.name}`, new Blob([await (await levelDir.getFile(tile.name)).readable()]));
+          }
+        }
+        if (tiles.size === 0) return null;
+        return { descriptor, tiles };
+      },
+    });
+    const root2 = await ZipFilesystem.fromZip(zip2).root();
+    const manifest2 = JSON.parse(new TextDecoder().decode(await (await (await root2.getDirectory("r2")).getFile("manifest.json")).readable())) as {
+      items?: { "archie:tileSource"?: DziTileSource; thumbnail?: { id: string }[] }[];
+    };
+    const canvas = manifest2.items![0]!;
+    expect(canvas["archie:tileSource"]!.filesPath).toBe(`${newBase}r2/photo.jpg_files`); // re-stamped at the NEW origin
+    expect(canvas.thumbnail![0]!.id).toBe(`${newBase}r2/assets-thumb/photo.jpg`); // re-baked at the NEW origin
+    // ... and the carried bytes are actually in the second tree
+    const tileFile = await (await (await (await root2.getDirectory("r2")).getDirectory("photo.jpg_files")).getDirectory("0")).getFile("0_0.jpg");
+    expect(new Uint8Array(await tileFile.readable())).toEqual(new Uint8Array([9]));
+    const thumbFile = await (await (await root2.getDirectory("r2")).getDirectory("assets-thumb")).getFile("photo.jpg");
+    expect(new Uint8Array(await thumbFile.readable())).toEqual(new Uint8Array([5, 6]));
+  });
+
   it("leaves an absolute self-asset source untouched when the tree lacks the bytes (defective export)", async () => {
     // Today's failure shape: a zip whose manifest references {base}{slug}/assets/… with NO assets
     // dir (an assetless export). Rewriting to /assets/ would turn a working remote URL into a dead

@@ -8,16 +8,14 @@ import { newRecord, editRecord, deleteRecord } from "../spine/log.js";
 import { atom, computed, type Atom, type Computed } from "../state/index.js";
 import { isDegenerateTarget } from "../geometry/selector.js";
 import { HeadIndex } from "../spine/head-index.js";
-import { recordToAnnotation } from "../spine/serialize.js";
+import { recordsToWorking } from "../spine/serialize.js";
 import { writeAnnotations, readAnnotationsReport, type CorruptAnnotationPage } from "../spine/persist.js";
 import type { SerializeOptions } from "../spine/serialize.js";
 import type { FsDirectory } from "../fs/seam.js";
-import { ARCHIE_READING, ARCHIE_SECTION, ARCHIE_EMPHASIS, ARCHIE_WHOLE_OBJECT, ARCHIE_GEO } from "../wadm/types.js";
 import type { Emphasis, GeoAnchor } from "../wadm/types.js";
 import { mergeLogs, resolveConflict } from "../spine/merge.js";
 import type { AnnotationLog, AnnotationRecord, W3CAnnotation, W3CBody, W3CTarget } from "../wadm/types.js";
 import type { ClientId, LogicalId } from "../wadm/brand.js";
-import type { CarryDisposition } from "../model/carry.js";
 
 export interface NewNote {
   target: W3CTarget;
@@ -50,32 +48,6 @@ export interface NoteEdit {
   geo?: GeoAnchor | null;
   motivation?: string | string[];
 }
-
-// EXHAUSTIVENESS GUARD (rule render-core-data-integrity #3) for `workingAnnotations()` below — the
-// working-surface re-emit is a hand-map over AnnotationRecord (recordToAnnotation for the base WADM
-// fields + per-extension re-attachment), previously un-sentineled. Every record field is classified:
-// a field added to AnnotationRecord fails the build HERE until the working projection decides whether
-// the editing surface carries it (reading/section/emphasis/wholeObject/geo all had to be added by
-// hand before this guard existed — section was the one that nearly slipped, Archie-42f3).
-const _workingAnnotationCarry = {
-  target: "carry", // recordToAnnotation
-  modifiedAt: "carry", // recordToAnnotation → `modified`
-  body: "carry", // recordToAnnotation
-  motivation: "carry", // recordToAnnotation
-  logicalId: "carry", // becomes the working annotation's stable `id` (recordToAnnotation id param)
-  reading: "carry", // re-attached as archie:reading below
-  section: "carry", // re-attached as archie:section below (Archie-6b8e attribution, Archie-42f3)
-  emphasis: "carry", // re-attached as archie:emphasis below
-  wholeObject: "carry", // re-attached as archie:wholeObject below (only when true — byte-stable)
-  geo: "carry", // re-attached as archie:geo below
-  rev: { drop: "DAG node id — the working surface keys by logicalId; versioned ids are the publish projection (toHeadsPage)" },
-  version: { drop: "citation ordinal — publish-projection concern, not part of the editing surface" },
-  parent: { drop: "DAG topology — the working surface reads heads only" },
-  mergeParents: { drop: "DAG topology — the working surface reads heads only" },
-  lastEditor: { drop: "stamp — not rendered on the editing surface (MergeReview reads it off the record, not this shape). The WADM `creator` projection of this field is publish-only (headsPageFromRecords, Archie-3452): the working surface deliberately emits neither `creator` nor `created`, so synthetic ids ('anonymous') never masquerade as authorship on the canvas" },
-  deleted: { drop: "heads() excludes tombstones (projectHeads) — a working annotation is live by construction" },
-} satisfies Record<keyof AnnotationRecord, CarryDisposition>;
-void _workingAnnotationCarry; // zero-runtime: exists only to break the build on an unclassified field
 
 export class AnnotationSession {
   /**
@@ -128,7 +100,25 @@ export class AnnotationSession {
    */
   readonly revision: Atom<number>;
 
-  /** `workingAnnotations()` as a lazy memo. See the method for what this buys and what it does not. */
+  /**
+   * `workingAnnotations()` as a lazy memo — WHAT THE `computed` BUYS, stated narrowly so nobody
+   * reads more into it.
+   *
+   * It removes REPEATED work, not first work. The projection (recordsToWorking over the heads)
+   * is O(heads) and allocates a fresh W3CAnnotation per head; before this it ran on EVERY call,
+   * and App.svelte's derivation chain (`objAnnotations` -> `annotations` -> `canvasAnnotations`,
+   * plus `annById`) calls it whenever anything upstream re-evaluates, including edits to state
+   * that has nothing to do with annotations. Now N calls between two mutations cost one projection.
+   *
+   * The second, quieter win is REFERENCE STABILITY: an unchanged read returns the same array,
+   * so a `$derived` chained off it stops cascading. That is what makes `state/`'s coarse
+   * epoch tick affordable at the UI (see `state/index.ts`).
+   *
+   * What it does NOT buy: anything per-EDIT. A mutation still costs exactly one atom bump, and
+   * the projection is deferred to the next read — the same total work as before for a
+   * mutate-then-read cycle. That is deliberate; `head-index.perf.test.ts` is the gate that says
+   * so, and its bound is a single pass over the log.
+   */
   private readonly working: Computed<W3CAnnotation[]>;
 
   constructor(
@@ -141,7 +131,7 @@ export class AnnotationSession {
     this.revision = atom("session.revision", 0);
     this.working = computed("session.workingAnnotations", () => {
       this.revision.get(); // the dependency — everything below is read untracked, by design
-      return this.projectWorkingAnnotations();
+      return recordsToWorking(this.heads());
     });
   }
 
@@ -320,36 +310,6 @@ export class AnnotationSession {
    */
   workingAnnotations(): W3CAnnotation[] {
     return this.working.get();
-  }
-
-  /**
-   * WHAT THE `computed` BUYS, stated narrowly so nobody reads more into it.
-   *
-   * It removes REPEATED work, not first work. The projection below is O(heads) and allocates a
-   * fresh W3CAnnotation per head; before this it ran on EVERY call, and App.svelte's derivation
-   * chain (`objAnnotations` -> `annotations` -> `canvasAnnotations`, plus `annById`) calls it
-   * whenever anything upstream re-evaluates, including edits to state that has nothing to do
-   * with annotations. Now N calls between two mutations cost one projection.
-   *
-   * The second, quieter win is REFERENCE STABILITY: an unchanged read returns the same array,
-   * so a `$derived` chained off it stops cascading. That is what makes `state/`'s coarse
-   * epoch tick affordable at the UI (see `state/index.ts`).
-   *
-   * What it does NOT buy: anything per-EDIT. A mutation still costs exactly one atom bump, and
-   * the projection is deferred to the next read — the same total work as before for a
-   * mutate-then-read cycle. That is deliberate; `head-index.perf.test.ts` is the gate that says
-   * so, and its bound is a single pass over the log.
-   */
-  private projectWorkingAnnotations(): W3CAnnotation[] {
-    return this.heads().map((record) => {
-      const ann = recordToAnnotation(record, record.logicalId);
-      if (record.reading !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_READING] = record.reading;
-      if (record.section !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_SECTION] = record.section;
-      if (record.emphasis !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_EMPHASIS] = record.emphasis;
-      if (record.wholeObject === true) (ann as unknown as Record<string, unknown>)[ARCHIE_WHOLE_OBJECT] = true;
-      if (record.geo !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_GEO] = record.geo;
-      return ann;
-    });
   }
 
   /** Persist the log (heads + history) into an annotations directory. Incremental once the full log is on

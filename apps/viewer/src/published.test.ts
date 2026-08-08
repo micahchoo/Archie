@@ -284,8 +284,10 @@ describe("?src= opens a published TREE, not only a zip (Archie-6d85)", () => {
       const body = path === "archie.json" ? (opts.marker ?? { format: "archie-library", version: 1 })
         : path === "exhibits.json" ? (opts.exhibits ?? { library: { title: "Foreign" }, exhibits: [] })
         : null;
-      if (body === null) return { ok: false, status: 404, headers: { get: () => null } } as unknown as Response;
-      return { ok: true, status: 200, headers: { get: () => null }, json: async () => body } as unknown as Response;
+      if (body === null) return { ok: false, status: 404, headers: { get: () => null }, arrayBuffer: async () => new ArrayBuffer(0) } as unknown as Response;
+      // Hosted tree reads go through core's httpJsonSource → HttpFilesystem, which consumes the body
+      // via arrayBuffer (not json) — the mock must serve both so the migration stays green.
+      return { ok: true, status: 200, headers: { get: () => null }, json: async () => body, arrayBuffer: async () => new TextEncoder().encode(JSON.stringify(body)).buffer } as unknown as Response;
     });
   }
 

@@ -1,43 +1,16 @@
 // GH-Pages publish adapter (CONTEXT: "Publish = zip-primitive + per-host adapters"; the GH
 // adapter uses the GitHub git-trees API — "replace this tree" matches our regenerated site).
-// The file-tree builder is PURE + testable here; the createBlob/tree/commit/ref fetch sequence
-// is a thin browser/network layer (sketched in publishToGitHub, browser-verified — not headless).
-//
-// Binary-aware (P2-X): JSON pages are text (inline tree `content`); imported image assets are
-// binary → base64 (uploaded as git blobs, referenced by sha). collectFiles classifies by extension.
+// The published-tree snapshot (FileContent / collectFiles) lives in ./snapshot.ts — the PURE
+// home the planners import, re-exported here so the barrel and existing importers keep working.
+// What remains below is the createBlob/tree/commit/ref fetch sequence: a thin browser/network
+// layer (sketched in publishToGitHub, browser-verified — not headless).
 
-import type { FsDirectory } from "../fs/seam.js";
 import { planPush, localBlobShas, EMPTY_REMOTE_TREE, UNKNOWN_REMOTE_TREE, type RemoteTreeIndex } from "./push-delta.js";
+import type { FileContent } from "./snapshot.js";
 
-/** One published file: UTF-8 text (JSON pages) or base64-encoded bytes (image assets). */
-export type FileContent = { text: string } | { base64: string };
-
-const BINARY_EXT_RE = /\.(jpe?g|png|webp|avif|gif|tiff?|bmp|ico|mp4|webm|m4a|mp3|wav|ogg|pdf)$/i;
-
-/** Base64-encode an ArrayBuffer in chunks (avoids call-stack blowups on large images). */
-function toBase64(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
-  let bin = "";
-  const CHUNK = 0x8000;
-  for (let i = 0; i < bytes.length; i += CHUNK) bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-  return btoa(bin);
-}
-
-/** Recursively flatten a published directory into a `path -> FileContent` map (text or base64). */
-export async function collectFiles(dir: FsDirectory, prefix = ""): Promise<Record<string, FileContent>> {
-  const out: Record<string, FileContent> = {};
-  for await (const entry of dir.entries()) {
-    const path = prefix === "" ? entry.name : `${prefix}/${entry.name}`;
-    if (entry.kind === "file") {
-      const file = await dir.getFile(entry.name);
-      const buf = await file.readable();
-      out[path] = BINARY_EXT_RE.test(entry.name) ? { base64: toBase64(buf) } : { text: new TextDecoder().decode(buf) };
-    } else {
-      Object.assign(out, await collectFiles(await dir.getDirectory(entry.name), path));
-    }
-  }
-  return out;
-}
+// Compatibility re-export of the pure snapshot — the barrel star-exports this module, so the
+// names stay public exactly where they were (deep importers of ghpages.ts too).
+export { collectFiles, type FileContent } from "./snapshot.js";
 
 /** A git-trees entry: inline `content` for text, or `base64` for binary (uploaded as a blob first). */
 export type GitTreeEntry =

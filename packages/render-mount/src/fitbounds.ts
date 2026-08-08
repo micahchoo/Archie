@@ -27,6 +27,11 @@ export interface FitOptions {
   /** Breathing-room margin as a fraction of the region's own size (Archie-52a0 / V44). Omit for
    *  `FIT_MARGIN`; pass 0 for the historical edge-to-edge fit. */
   margin?: number;
+  /** Bounded-map region (OSD VIEWPORT coords): clamp the fitted rect inside it (ADR-0015) so the
+   *  note lands in-region in ONE motion and the animation-finish clamp (clampViewportToRegion)
+   *  finds nothing to correct. The image path omits it; the editor's bounded-map path passes it
+   *  with `margin: 0` — the map fit is edge-to-edge, matching the pre-consolidation fitBoxOnMap. */
+  region?: Box;
 }
 
 /**
@@ -79,7 +84,8 @@ export function fitBoundsRect(selector: W3CSelector, opts: FitOptions): Box | nu
  * All boxes are in OSD VIEWPORT coordinates (isotropic: 1 unit x == 1 unit y on screen). `note` is the
  * note's bbox; `viewportAspect` = container width/height (px); `region` is the bounded extent. We first
  * grow `note` to the viewport aspect — the bounds OSD's fitBounds actually settles to — then clamp THAT
- * box's centre inside `region` (the same centre math as the live clamp in mount.ts, so they agree).
+ * box's centre inside `region` (the same centre math as the live clamp — clampViewportToRegion — so the
+ * fit and the settle clamp agree by construction).
  */
 export function clampedFitRect(note: Box, viewportAspect: number, region: Box): Box {
   // The viewport bounds OSD settles to when fitting `note`: grow to the container's aspect, centred.
@@ -95,11 +101,52 @@ export function clampedFitRect(note: Box, viewportAspect: number, region: Box): 
   }
   let cx = note.x + note.w / 2;
   let cy = note.y + note.h / 2;
-  // Keep the settled box inside the region when it fits (mirrors clampToRegion in mount.ts). A box
-  // wider/taller than the region can't be clamped on that axis — leave the note centred there.
+  // Keep the settled box inside the region when it fits (mirrors clampViewportToRegion, the live
+  // clamp). A box wider/taller than the region can't be clamped on that axis — leave it centred there.
   if (w <= region.w) cx = Math.min(region.x + region.w - w / 2, Math.max(region.x + w / 2, cx));
   if (h <= region.h) cy = Math.min(region.y + region.h - h / 2, Math.max(region.y + h / 2, cy));
   return { x: cx - w / 2, y: cy - h / 2, w, h };
+}
+
+/** The live-clamp viewport surface (OSD's real viewport satisfies it). Minimal so the clamp stays
+ *  pure + mockable — this is the ONE home of the bounded-map yank-bug class. */
+export interface ClampViewportLike {
+  getZoom(immediately?: boolean): number;
+  getBounds(): { x: number; y: number; width: number; height: number };
+  getCenter(): { x: number; y: number };
+  zoomTo(zoom: number, refPoint?: unknown, immediately?: boolean): void;
+  panTo(point: { x: number; y: number }, immediately?: boolean): void;
+}
+
+/**
+ * The bounded-map LIVE clamp (ADR-0015) — the animation-finish settle, and the yank-bug class's one
+ * home (was mount.ts's inline clampToRegion; the fit path's clampedFitRect deliberately mirrors this
+ * centre math). Run on `animation-finish` so the view stays within the authored region:
+ *
+ *  - below the region-fit zoom floor (a note LARGER than the whole extent fits below the floor —
+ *    the branch the old inline clamp carried) → zoom back up to the floor;
+ *  - otherwise, if the viewport box fits the region on an axis, nudge the centre back inside it.
+ *
+ * Each branch acts only when out of bounds, so repeated settles converge (no event loop). Returns
+ * true when it corrected anything. The pan target is a plain `{x,y}` — OSD's Point is structurally
+ * that, and the pure module must not import OSD.
+ */
+export function clampViewportToRegion(viewport: ClampViewportLike, region: Box, minZoom: number): boolean {
+  if (viewport.getZoom() < minZoom - 1e-9) {
+    viewport.zoomTo(minZoom, undefined, true); // can't zoom out past the framed region
+    return true; // the next settle pass handles panning
+  }
+  const b = viewport.getBounds();
+  const c = viewport.getCenter();
+  let cx = c.x;
+  let cy = c.y;
+  if (b.width <= region.w) cx = Math.min(region.x + region.w - b.width / 2, Math.max(region.x + b.width / 2, c.x));
+  if (b.height <= region.h) cy = Math.min(region.y + region.h - b.height / 2, Math.max(region.y + b.height / 2, c.y));
+  if (Math.abs(c.x - cx) > 1e-9 || Math.abs(c.y - cy) > 1e-9) {
+    viewport.panTo({ x: cx, y: cy }, true);
+    return true;
+  }
+  return false;
 }
 
 /** Image content size in source pixels (OSD world item width/height). 0×0 = unknown. */
@@ -128,10 +175,13 @@ export function clampToContentBounds(rect: Box, content: ContentSize): Box {
   return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
 }
 
-/** The minimal OSD viewport surface fitBounds dispatch needs (mockable; real one is osd.viewport). */
+/** The minimal OSD viewport surface fitBounds dispatch needs (mockable; real one is osd.viewport).
+ *  `getAspectRatio` is only read for the bounded-map region clamp (FitOptions.region); the plain
+ *  image path never calls it, so the existing gate mocks (which lack it) stay valid. */
 export interface ViewportLike {
   imageToViewportRectangle(x: number, y: number, w: number, h: number): unknown;
   fitBounds(rect: unknown, immediately?: boolean): void;
+  getAspectRatio?(): number;
 }
 
 /**
@@ -148,7 +198,20 @@ export function applyFitBounds(viewport: ViewportLike, selector: W3CSelector, op
   // degrade an off-image box to the whole-image fit (strategy 4.5). Omitting `content` is a no-op,
   // so the existing oracle (no content) is unchanged.
   const box = content ? clampToContentBounds(raw, content) : raw;
-  viewport.fitBounds(viewport.imageToViewportRectangle(box.x, box.y, box.w, box.h), false);
+  const vrect = viewport.imageToViewportRectangle(box.x, box.y, box.w, box.h);
+  // Bounded map: clamp the fitted VIEWPORT rect inside the region in one motion (ADR-0015), so the
+  // note lands as-centred-as-the-region-allows and the animation-finish clamp finds nothing to
+  // correct. The image path (no region) is byte-identical to the historical dispatch.
+  //
+  // OSD's imageToViewportRectangle returns a Rect (x/y/width/height), NOT a Box (x/y/w/h) — the
+  // conversion is the one fitBoxOnMap used to do at its call site; the merge must not drop it.
+  const rect = opts.region
+    ? (() => {
+        const r = vrect as { x: number; y: number; width: number; height: number };
+        return clampedFitRect({ x: r.x, y: r.y, w: r.width, h: r.height }, viewport.getAspectRatio?.() ?? 1, opts.region);
+      })()
+    : vrect;
+  viewport.fitBounds(rect, false);
   return true;
 }
 

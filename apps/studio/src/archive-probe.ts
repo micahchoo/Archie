@@ -22,6 +22,9 @@
 
 import { MAX_MASTER_DIM, ZIP_FORMAT_LIMITS, dziPyramid, fitWithin, type ZipFormatLimits } from "@render/core";
 import { inferredMime, isHiddenPath, isImportableMedia, folderNameFrom, type PickedFile } from "./folder-import.js";
+// Type-only, from the platform-NEUTRAL contract — the probe models the web tier's video size from
+// the profile this machine resolved, and never imports a platform seam.
+import type { VideoTargetParams } from "./video-profiles.js";
 
 // ---------------------------------------------------------------------------------------------
 // Input
@@ -135,9 +138,10 @@ export const PUBLISH_FILES_PER_OBJECT = 3;
 // is EXACTLY the untiled file count `PROBE-tiling-threshold-2026-07-27.md` measured for its 2-exhibit
 // x 3-object library. Two independent derivations (reading the writer / counting a real tree) agree.
 
-/** Today's `TILE_MIN_EDGE` (`publish-flows.svelte.ts:163`) — an object whose longer edge exceeds this
- *  is sliced into a DZI pyramid. `PROBE-tiling-threshold-2026-07-27.md` recommends raising the local
- *  path to `MAX_MASTER_DIM`, which would make tiling inert for bulk imports; that lands in
+/** THE single definition of the DZI tiling threshold — an object whose longer edge exceeds this is
+ *  sliced into a DZI pyramid. `publish-flows` IMPORTS this rather than restating it, so the publish
+ *  path and the probe cannot drift apart. `PROBE-tiling-threshold-2026-07-27.md` recommends raising
+ *  the local path to `MAX_MASTER_DIM`, which would make tiling inert for bulk imports; that lands in
  *  Archie-53e3, so the probe models TODAY and takes the threshold as a parameter. */
 export const TILE_MIN_EDGE = 4096;
 
@@ -207,6 +211,14 @@ export interface ProbeOptions {
   githubLimits?: GithubPagesLimits;
   /** How many exhibits the import will produce — `folderGroupCount(files)`. Defaults to 1. */
   exhibitCount?: number;
+  /** The web-tier video profile THIS MACHINE resolved (Archie-7e6f) — `pickTarget` over the
+   *  platform's capability probe, or null when no transcode is reachable (Firefox, Safari, a
+   *  desktop build whose ffmpeg lacks codecs). When present, the `web` tier counts video at
+   *  `(target.webBitrateKbps + target.audioKbps) × sampled duration` instead of full size — the
+   *  honest figure, since the transcode is actually reachable. Absent or null keeps the full-size
+   *  count (the deliberate over-estimate): the probe stays pure and synchronous, and a caller that
+   *  has not asked the async capability question must not claim a shrink it has not verified. */
+  videoTarget?: VideoTargetParams | null;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -246,8 +258,9 @@ export interface FolderSample {
   videoSampled: number;
   /** Total audio seconds, sampled where possible and inferred from bitrate elsewhere. */
   audioSeconds: number;
-  /** Total video seconds; null when nothing was sampled (video is never transcoded, so the probe
-   *  never needs this for bytes — it is here so the surface can say "12 hrs of video"). */
+  /** Total video seconds; null when nothing was sampled. Sampled durations are what the web tier's
+   *  video estimate uses when a transcode is reachable (`ProbeOptions.videoTarget`); otherwise they
+   *  feed the "12 hrs of video" line and the measure-and-tell's duration-based figure. */
   videoSeconds: number | null;
 }
 
@@ -473,12 +486,25 @@ function imageFacts(f: ProbedFile, sample: FolderSample, maxMasterDim: number): 
   };
 }
 
+/** Web-tier size of ONE video when a transcode is actually reachable: the target's own bitrate
+ *  (video + audio, in kbit/s) × sampled duration. This is the same stated-bitrate model
+ *  `estimateWebTierVideoBytes` uses — for the H.264 default the two figures are THE SAME NUMBER
+ *  (`WEB_TIER_VIDEO_KBPS` = 2000 + 128), and for VP9 the profile's own lower one. A duration that
+ *  was never sampled keeps the full-size count: the estimate stays in the SAFE (over-estimate)
+ *  direction, exactly like the no-target path. */
+function videoWebBytes(f: ProbedFile, target: VideoTargetParams): number {
+  const seconds = typeof f.durationSec === "number" && f.durationSec > 0 ? f.durationSec : null;
+  if (seconds === null) return f.bytes;
+  const kbps = target.webBitrateKbps + target.audioKbps;
+  return Math.round((kbps * 1000 * seconds) / 8);
+}
+
 function estimateTier(
   tier: QualityTier,
   files: ProbedFile[],
   kinds: Map<ProbedFile, MediaKind>,
   sample: FolderSample,
-  o: Required<Pick<ProbeOptions, "webTier" | "opusKbps" | "maxMasterDim" | "tileThresholdPx" | "exhibitCount">>,
+  o: Required<Pick<ProbeOptions, "webTier" | "opusKbps" | "maxMasterDim" | "tileThresholdPx" | "exhibitCount" | "videoTarget">>,
 ): TierEstimate {
   const bytesByMedia: Record<MediaKind, number> = { image: 0, audio: 0, video: 0 };
   let objects = 0;
@@ -525,25 +551,14 @@ function estimateTier(
         bytesByMedia.audio += f.bytes;
       }
     } else {
-      // VIDEO IS COUNTED AT FULL SIZE AT BOTH TIERS — deliberately, and this is now a DELIBERATE
-      // OVER-ESTIMATE rather than a statement of fact. Archie-7e6f shipped the web-tier transcode
-      // (ffmpeg sidecar on desktop, mediabunny/WebCodecs in Chromium), so on a capable platform the
-      // web tier DOES shrink video. This estimate does not model that, for a reason:
-      //
-      //   whether it shrinks depends on a CAPABILITY PROBE (`probeBrowserVideoCaps`) that is async
-      //   and platform-specific, while `probeArchive` is pure and synchronous — and the answer
-      //   differs between the machine estimating and the machine publishing.
-      //
-      // The error is therefore in the SAFE direction: the surface over-states the web tier's size,
-      // so it recommends a destination that will certainly hold the result and never one that
-      // will not. `videoTierTell` (video-transcode.ts) is the honest per-platform figure and is what
-      // the copy should quote when the platform is known.
-      //
-      // FOLLOW-UP, named rather than silent (Archie-7e6f): thread a resolved video target into
-      // `ProbeOptions` so `web` reflects `WEB_TIER_VIDEO_KBPS × duration` where a transcode is
-      // actually reachable. Not done here because it changes the recommendation engine and its
-      // suite, which is its own slice.
-      bytesByMedia.video += f.bytes;
+      // VIDEO: full size at the ARCHIVAL tier and at the web tier when NO transcode is reachable —
+      // the deliberate over-estimate, in the SAFE direction (the surface recommends a destination
+      // that will certainly hold the result, never one that will not). Whether a web-tier transcode
+      // shrinks depends on a CAPABILITY PROBE that is async and platform-specific while
+      // `probeArchive` is pure and synchronous — so the shrink is modelled only when the caller
+      // RESOLVED the target (`ProbeOptions.videoTarget`) and handed it in. The archival tier is
+      // untouched either way: it ships the bytes as ingested, by definition.
+      bytesByMedia.video += tier === "web" && o.videoTarget ? videoWebBytes(f, o.videoTarget) : f.bytes;
     }
   }
 
@@ -704,6 +719,7 @@ export function probeArchive(files: ProbedFile[], opts: ProbeOptions = {}): Arch
     maxMasterDim: opts.maxMasterDim ?? MAX_MASTER_DIM,
     tileThresholdPx: opts.tileThresholdPx ?? TILE_MIN_EDGE,
     exhibitCount: opts.exhibitCount ?? 1,
+    videoTarget: opts.videoTarget ?? null,
   };
   const zipLimits = opts.zipLimits ?? ZIP_FORMAT_LIMITS;
   const pricing = opts.storagePricing ?? OBJECT_STORAGE_PRICING;

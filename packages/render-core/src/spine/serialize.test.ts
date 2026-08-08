@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { appendNew, appendEdit, append } from "./log.js";
-import { toHeadsPage, toHistory, recordToAnnotation } from "./serialize.js";
+import { toHeadsPage, toHistory, recordToAnnotation, recordsToWorking } from "./serialize.js";
 import { fromHistory } from "./deserialize.js";
-import { asClientId, mintRevId } from "../wadm/brand.js";
+import { asClientId, asLogicalId, mintRevId } from "../wadm/brand.js";
 import { emphasisOf } from "../query/published.js";
 import { ARCHIE_HAS_HISTORY, ARCHIE_EMPHASIS, ARCHIE_LOGICAL_ID, PROV_WAS_REVISION_OF, WADM_CONTEXT, type AnnotationRecord, type W3CSpecificResource } from "../wadm/types.js";
 
@@ -224,5 +224,61 @@ describe("emphasis (1489) — authored per-note emphasis round-trips; absence is
     // the reloaded record carries no emphasis field at all
     const reloaded = fromHistory(Object.values(toHistory(log, opts).pages));
     expect("emphasis" in reloaded[0]!).toBe(false);
+  });
+});
+
+// The WORKING projection is ONE definition (`recordsToWorking`) shared by AnnotationSession and
+// AnnotationUndoManager — session.test.ts / undo.test.ts exercise it through those callers, and
+// the carry sentinel beside it (in this module) guards the record→working hand-map for both. This
+// pins the pure unit itself: logicalId-keyed ids, all five archie: extension re-attachments, and
+// byte-stable absence (a note without an extension emits NO key).
+describe("recordsToWorking — the shared working projection (session ↔ undo)", () => {
+  const rich = appendNew([], {
+    logicalId: asLogicalId("01ARZ3NDEKTSV4RRFFQ69G5FAV"),
+    target: rectTarget,
+    lastEditor: alice,
+    modifiedAt: t,
+    now: 1,
+    reading: "r-1",
+    section: "s-1",
+    emphasis: "strong",
+    wholeObject: true,
+    geo: { type: "bbox", west: -1, south: 2, east: 3, north: 4 },
+  }).record;
+  const bare = appendNew([], {
+    logicalId: asLogicalId("01ARZ3NDEKTSV4RRFFQ69G5FAW"),
+    target: polyTarget,
+    lastEditor: alice,
+    modifiedAt: t,
+    now: 1,
+  }).record;
+
+  it("keys by the stable LOGICAL id (not the versioned citation id) and preserves input order", () => {
+    const out = recordsToWorking([bare, rich]);
+    expect(out.map((a) => a.id)).toEqual([bare.logicalId, rich.logicalId]);
+    expect(out[0]!.id).not.toMatch(/\/v\d+$/);
+  });
+
+  it("re-attaches all five archie: extensions — only when set (byte-stable absence)", () => {
+    const [a, b] = recordsToWorking([rich, bare]) as unknown as [Record<string, unknown>, Record<string, unknown>];
+    expect(a["archie:reading"]).toBe("r-1");
+    expect(a["archie:section"]).toBe("s-1");
+    expect(a["archie:emphasis"]).toBe("strong");
+    expect(a["archie:wholeObject"]).toBe(true);
+    expect(a["archie:geo"]).toEqual({ type: "bbox", west: -1, south: 2, east: 3, north: 4 });
+    // a bare note emits NO extension key at all — byte-stable
+    expect("archie:reading" in b).toBe(false);
+    expect("archie:section" in b).toBe(false);
+    expect("archie:emphasis" in b).toBe(false);
+    expect("archie:wholeObject" in b).toBe(false);
+    expect("archie:geo" in b).toBe(false);
+  });
+
+  it("carries the base WADM fields (target, modified) but NO publish-only authorship", () => {
+    const [a] = recordsToWorking([bare]) as unknown as [Record<string, unknown>];
+    expect(a.target).toBe(polyTarget);
+    expect(a.modified).toBe(t);
+    expect("created" in a).toBe(false); // Archie-3452: authorship is a PUBLISH heads-page projection
+    expect("creator" in a).toBe(false);
   });
 });

@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { publishLibrary, libraryToZipFs } from "./site.js";
-import { validateArchieMarker, ARCHIE_LIBRARY_MARKER } from "./marker.js";
+import { validateArchieMarker, classifyArchieMarker, ARCHIE_LIBRARY_MARKER, type ArchieMarker } from "./marker.js";
 import { SCHEMA_VERSION } from "../migrate/migrate.js";
+import { treeMigrationsSince } from "../migrate/tree.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { ZipFilesystem } from "../fs/zip.js";
 import { asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
@@ -147,5 +148,69 @@ describe("ADR-0020 L1 self-ID marker — read side (validateArchieMarker)", () =
     await writeJson(fs, "archie.json", ARCHIE_LIBRARY_MARKER);
     // no exhibits.json at all
     await expect(validateArchieMarker(fs)).rejects.toThrow(/archie library/i);
+  });
+});
+
+// THE ONE version-policy definition (Phase 2): every verdict, pinned against the REAL registry so the
+// older-gap vs older-migratable boundary is measured where the policy lives (treeMigrationsSince +
+// SCHEMA_VERSION), not against a mock. Both gates are now switch statements over this.
+describe("classifyArchieMarker (the ONE version-policy definition)", () => {
+  // Forged markers are exactly the inputs the TYPED `Partial<ArchieMarker>` shape cannot express
+  // (a foreign `format`, a string `version`) — widen them like the unvalidated parsed JSON the gates
+  // feed in, whose runtime content is equally unrepresentable in the type.
+  const forged = (m: Record<string, unknown>): Partial<ArchieMarker> => m as unknown as Partial<ArchieMarker>;
+
+  it("current: version === SCHEMA_VERSION", () => {
+    expect(classifyArchieMarker(ARCHIE_LIBRARY_MARKER)).toEqual({ kind: "current" });
+  });
+
+  it("newer: version > SCHEMA_VERSION carries the marker's version", () => {
+    expect(classifyArchieMarker({ format: "archie-library", version: SCHEMA_VERSION + 1 })).toEqual({
+      kind: "newer",
+      version: SCHEMA_VERSION + 1,
+    });
+  });
+
+  it("foreign: format !== archie-library — checked BEFORE the version, so a forged marker refuses on format", () => {
+    expect(classifyArchieMarker(forged({ format: "something-else", version: SCHEMA_VERSION }))).toEqual({ kind: "foreign" });
+    // Even a marker that would otherwise be "current" by version is foreign when the format is wrong.
+    expect(classifyArchieMarker(forged({ format: undefined, version: SCHEMA_VERSION }))).toEqual({ kind: "foreign" });
+  });
+
+  it("malformed: version present but not a finite number (string, NaN, missing)", () => {
+    expect(classifyArchieMarker(forged({ format: "archie-library", version: "1" }))).toEqual({ kind: "malformed" });
+    expect(classifyArchieMarker({ format: "archie-library", version: Number.NaN })).toEqual({ kind: "malformed" });
+    expect(classifyArchieMarker({ format: "archie-library" })).toEqual({ kind: "malformed" });
+  });
+
+  it("older-gap vs older-migratable — the boundary is the registry's reach (real treeMigrationsSince, SCHEMA_VERSION)", () => {
+    // SCHEMA_VERSION is 1 and TREE_MIGRATIONS is empty today, so no INTEGER older version migrates:
+    // v0 is the first step the registry would need (a migration to v1) and that step does not exist.
+    // The test asserts that assumption first, so it fails loudly instead of silently when a schema
+    // bump moves the boundary. (Same convention as the "an OLDER tree" gate test above.)
+    expect(treeMigrationsSince(SCHEMA_VERSION - 1, SCHEMA_VERSION).ok).toBe(false);
+    const verdict = classifyArchieMarker({ format: "archie-library", version: SCHEMA_VERSION - 1 });
+    expect(verdict).toMatchObject({ kind: "older-gap", version: SCHEMA_VERSION - 1 });
+    if (verdict.kind === "older-gap") {
+      // The gap payload IS the planner's gap — the gates hand it to migrationGapMessage verbatim.
+      const resolved = treeMigrationsSince(SCHEMA_VERSION - 1, SCHEMA_VERSION);
+      expect(resolved.ok).toBe(false); // guards the narrowing below; the assert above already fails the test if the registry grew
+      if (!resolved.ok) expect(verdict.gap).toEqual(resolved.gap);
+    }
+    // The migratable side is reachable today only for a fractional version: treeMigrationsSince's loop
+    // starts at from+1, which for v(SCHEMA_VERSION - 0.5) exceeds the SCHEMA_VERSION target, so the
+    // chain is trivially coverable. This pins that the classifier (like both gates before it) does not
+    // special-case it into a gap — older-migratable is exactly "the registry covers from → SCHEMA_VERSION".
+    expect(classifyArchieMarker({ format: "archie-library", version: SCHEMA_VERSION - 0.5 })).toEqual({
+      kind: "older-migratable",
+      version: SCHEMA_VERSION - 0.5,
+    });
+  });
+
+  it("null/undefined (ABSENT) is not a verdict — defensive fail-closed floor", () => {
+    // The gates branch on presence BEFORE classifying; a caller that forgets that must fail closed
+    // (malformed → refusal), never fabricate a current/migratable verdict for a marker that isn't there.
+    expect(classifyArchieMarker(null)).toEqual({ kind: "malformed" });
+    expect(classifyArchieMarker(undefined)).toEqual({ kind: "malformed" });
   });
 });

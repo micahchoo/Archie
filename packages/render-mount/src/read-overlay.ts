@@ -3,24 +3,36 @@
 // ONLY — NEVER `innerHTML`/`DOMParser` (ADR-0019 §Consequences security bullet; the standing §5.2
 // assertion). Donor: frame-overlay.ts (the `*ViewerLike` minimal surface, the createElementNS rect
 // build, `viewer.addOverlay({element,location})`, closure-held elements, the `addOnceHandler("open")`
-// queue). Phase 0 generalizes frame-overlay's ONE whole-object border to PER-annotation region shapes.
+// queue). Phase 0 generalized frame-overlay's ONE whole-object border to PER-annotation region shapes.
+//
+// Phase 6: the lifecycle is delegated to the ONE overlay core (overlay-core.ts) — open-queue,
+// add/remove, OSD-wrapper neutralisation, the wrapper-capture clear, the focus ring, base styling,
+// a11y attribute application and the V68 pointer-capture workaround (makeClickable). This module is
+// now a CONTENT BUILDER: shape → SVG children + the region-set keyboard wiring (roving tabindex,
+// arrow-key navigation), plus the selection state the controller exposes. Every exported name and
+// observable behavior is unchanged.
+//
+// Phase 7: the per-annotation STYLE CHANNEL (`styleFor` on ReadOnlyOverlayOptions) — the seam
+// reading-marks.ts's own header asked for ("a `styleFor` option on `createReadOnlyOverlay` would let
+// this go away"). Each shape is styled AT DRAW TIME, inside the builder, in the same pass that
+// creates it — so the embed's DOM-order pairing + deferred-draw retry post-pass cannot exist, and a
+// queued replay (the core re-runs the builder with the SAME input) styles identically to a sync
+// draw. The default (no styleFor) is byte-for-byte today's styling: transparent fill,
+// `stroke="currentColor"`, width 1.5, no opacity attributes.
 //
 // Geometry is pure (render-core/geometry/selector.ts): parseFragmentXYWH / parsePolygonPoints /
 // polygonBBox / selectorOf — selector VALUES reach the parsers ONLY (they extract numbers), so the raw
 // SvgSelector string never touches the DOM as markup. The v1-shape vocab gate (rect+polygon only,
 // selector.ts:124) is applied HERE in `overlayShapeFor`: a non-rect/polygon selector → null.
 
-import { neutraliseOverlayWrapper, isOverlayWrapper } from "./overlay-wrapper.js";
+import { createOverlayLayer, makeClickable, overlayBBox, capLabel, NS, type OverlayViewerLike } from "./overlay-core.js";
 import { overlayShapeFor, type OverlayShape } from "./overlay-shape.js";
 import {
-  polygonBBox,
   selectorOf,
   type Box,
   type W3CAnnotation,
   type AnnotationLike,
 } from "@render/core";
-
-const NS = "http://www.w3.org/2000/svg";
 
 /** Arrow/Home/End → a step within the roving region set (V45). Both axes move, because the regions
  *  are scattered over an image rather than laid out in a line — a reader pressing Down on a picture
@@ -30,83 +42,40 @@ const ROVE_KEYS: Record<string, number | undefined> = {
   ArrowLeft: -1, ArrowUp: -1,
 };
 
-/** Cap for a shape's accessible name (Archie-9413 review): a hostile `.archie.zip` can carry a
- * multi-hundred-KB comment line (bounded only by SRC_MAX_BYTES) or an arbitrarily long id, and an
- * AT reads aria-label IN FULL on every focus. ONE chokepoint — whatever labelFor OR the
- * `annotation <id>` fallback produced is truncated where setAttribute happens. Counted in CODE
- * POINTS (Archie-09a0 review), not UTF-16 units — see capLabel. */
-const MAX_LABEL_CHARS = 160;
-
-const capLabel = (s: string): string => {
-  // `Array.from` iterates a string by CODE POINT (surrogate-pair aware); `String#slice` counts
-  // UTF-16 units. A plain `s.slice(0, 160)` can land mid-surrogate-pair — an emoji or other
-  // outside-BMP character straddling the cut — and emit a lone surrogate right before the "…",
-  // which serializes as U+FFFD / reads as mangled to an AT. Slicing the code-point array instead
-  // keeps every character whole; ASCII/BMP-only strings (the common case) are unaffected.
-  const codePoints = Array.from(s);
-  return codePoints.length > MAX_LABEL_CHARS ? `${codePoints.slice(0, MAX_LABEL_CHARS).join("")}…` : s;
-};
-
-/** Explicit `:focus-visible` ring (Archie-09a0): the UA default focus outline is not enough here —
- * the overlay sits on a dark deep-zoom surface, and a host embed page may reset outlines globally
- * (`* { outline: none }` and similar are common resets). An inline style on the element beats any
- * selector-based host rule that lacks `!important`, so painting the ring THIS way survives resets
- * that would defeat a stylesheet rule keyed on `.the-overlay-class:focus-visible`. A bright ring on
- * a dark halo (donor: frame-overlay.ts's halo-plus-colour-line technique, drawShape below) stays
- * legible over any underlying tile, not just dark ones. Keyboard-only: gated on `:focus-visible`,
- * tested via `matches()` with a fail-OPEN catch — an environment that can't evaluate the selector
- * gets the ring on every focus (a stray ring for a mouse user is a smaller harm than a keyboard
- * user silently losing the indicator). */
-const FOCUS_RING_STYLE: Partial<CSSStyleDeclaration> = {
-  outline: "2px solid #fff",
-  outlineOffset: "2px",
-  boxShadow: "0 0 0 4px rgba(0,0,0,0.55)",
-};
-const NO_FOCUS_RING_STYLE: Partial<CSSStyleDeclaration> = {
-  outline: "",
-  outlineOffset: "",
-  boxShadow: "",
-};
-
-const isFocusVisible = (el: Element): boolean => {
-  try {
-    return el.matches(":focus-visible");
-  } catch {
-    return true; // selector unsupported here → fail open, keep the ring for keyboard users
-  }
-};
-
-/** Wire the explicit focus ring onto a focusable overlay element (the pattern both overlay modules
- * share — read-overlay's per-shape `svg` and frame-overlay's whole-object `svg`). */
-const addFocusRing = (el: SVGSVGElement): void => {
-  el.addEventListener("focus", () => {
-    if (isFocusVisible(el)) Object.assign(el.style, FOCUS_RING_STYLE);
-  });
-  el.addEventListener("blur", () => {
-    Object.assign(el.style, NO_FOCUS_RING_STYLE);
-  });
-};
-
 // The pure selector → geometry descriptor now lives in overlay-shape.ts (selection-halo.ts draws
 // the same vocabulary and must not import a renderer to get it). Re-exported here so every existing
 // importer of "./read-overlay.js" — index.ts, read-overlay-geometry.test.ts — keeps resolving.
 export { overlayShapeFor, type OverlayShape } from "./overlay-shape.js";
 
-/**
- * The minimal OSD viewer surface this overlay needs — keeps the module decoupled from the full OSD
- * type (donor: FrameViewerLike) and lets the test drive it with a fake. Adds a `viewport` with
- * `imageToViewportRectangle` so a shape anchors to its IMAGE-space bounding box.
- */
-export interface OverlayViewerLike {
-  addOverlay(options: { element: HTMLElement | SVGElement; location: unknown }): void;
-  removeOverlay(element: HTMLElement | SVGElement): void;
-  world: { getItemAt(i: number): { getBounds(immediately?: boolean): unknown } | undefined };
-  viewport: { imageToViewportRectangle(x: number, y: number, w: number, h: number): unknown };
-  addOnceHandler?(name: string, handler: () => void): void;
-}
+// The ONE shared OSD viewer duck type (overlay-core.ts) — re-exported so every existing importer of
+// "./read-overlay.js" (index.ts, the overlay tests) keeps resolving the same name.
+export type { OverlayViewerLike } from "./overlay-core.js";
 
 /** A label source for a shape's accessible name (P0-6) — id in, human label out. No DOM read. */
 export type LabelFor = (annotationId: string) => string;
+
+/** Concrete per-annotation SVG style numbers, applied at draw time (setAttribute-only, ADR-0019).
+ *  The caller decides the grammar (the embed derives these from render-core's readingMarkerStyle via
+ *  `readingMarkerStyle(colour, emphasisOf(annotation))`); this module only applies what it is given. */
+export interface OverlayShapeStyle {
+  /** The mark's hue — lands on the shape svg's `color` so the geometry's `stroke="currentColor"`
+   *  and any future descendant (the halo) inherit it. */
+  stroke: string;
+  fill: string;
+  fillOpacity: string;
+  strokeOpacity: string;
+  strokeWidth: string;
+}
+
+/** The per-annotation style channel (Phase 7): annotation id + the annotation itself (per-note
+ *  emphasis lives there) → concrete SVG style numbers, or undefined for the overlay's default
+ *  styling. Applied inside the builder at draw time — a drawn shape is styled in the SAME pass it is
+ *  created, so there is no second pass to forget, pair by DOM order, or retry after a deferred draw.
+ *
+ *  THE LOUD CONTRACT survives here: a record the overlay cannot style is a record with no v1 region
+ *  geometry, which setAnnotations skips with a LOUD warn (below) — the old "silence is better than a
+ *  lie" count-mismatch machinery existed to detect a pairing failure that this design cannot have. */
+export type StyleFor = (annotationId: string, annotation: W3CAnnotation) => OverlayShapeStyle | undefined;
 
 export interface ReadOnlyOverlayController {
   /** Replace the rendered region shapes with those of `annotations` (degenerate → skipped LOUDLY). */
@@ -127,13 +96,17 @@ interface DrawnShape {
 export interface ReadOnlyOverlayOptions {
   /** Accessible-name source for a shape (P0-6). Falls back to `"annotation <id>"` when absent. */
   labelFor?: LabelFor;
+  /** Per-annotation style resolver (Phase 7 — the reading-marks post-pass seam). Absent → today's
+   *  identical default styling. See StyleFor for the draw-time contract. */
+  styleFor?: StyleFor;
 }
 
 /**
  * Create a read-only DOM-SVG overlay bound to an OSD-like `viewer`. State (the drawn shapes, the
  * selection, the subscribers) lives in this closure — ONE writer. `setAnnotations` clears prior
  * shapes, then per annotation: `selectorOf` → `overlayShapeFor`; null is skipped with a LOUD warn
- * (mirroring mount.ts:261-265, so a legacy degenerate record diverges visibly, never silently).
+ * (mirroring mount.ts, so a legacy degenerate record diverges visibly, never silently). The draw
+ * lifecycle itself is the core's (overlay-core.ts).
  */
 export function createReadOnlyOverlay(
   viewer: OverlayViewerLike,
@@ -164,22 +137,69 @@ export function createReadOnlyOverlay(
     for (const cb of selectSubs) cb(id);
   };
 
+  // The draw input carries the ANNOTATION (not just its id + shape) so the style resolver can read
+  // per-note emphasis — the id alone cannot express it.
+  const layer = createOverlayLayer<{ id: string; shape: OverlayShape; annotation: W3CAnnotation }>(viewer, {
+    id: "archie-region", // every builder sets a unique `archie-region-<n>` id; this is the fallback
+    focusable: true,
+    shapeOf: (input) => input.shape,
+    a11y: {
+      role: "button",
+      label: (input) => capLabel(labelFor ? labelFor(input.id) : `annotation ${input.id}`),
+    },
+    build: (input) => buildOverlaySvg(input.id, input.shape, input.annotation),
+  });
+
   const clear = (): void => {
-    for (const s of shapes) {
-      // Capture the wrapper BEFORE removeOverlay detaches the svg — afterwards `parentElement` is null.
-      const wrapper = s.svg.parentElement;
-      try { viewer.removeOverlay(s.svg); } catch { /* overlay already gone */ }
-      s.svg.remove();
-      // `s.svg.remove()` only detaches OUR element; if removeOverlay threw, OSD's injected wrapper
-      // would stay behind as an invisible empty div, once per shape, on every setAnnotations.
-      if (isOverlayWrapper(wrapper)) wrapper.remove();
-    }
+    layer.clear();
     shapes = [];
     tabbable.clear(); // else the rove set holds detached elements and the tab stop lands on nothing
   };
 
+  /** Build the geometry child for a shape, in the svg's bbox-local user space, and make it the hit
+   *  target: transparent fill (the interior stays clickable), currentColor stroke, and the V68
+   *  click routing (makeClickable owns the pointer-capture workaround). When a per-annotation style
+   *  is in play its numbers override the defaults AT DRAW TIME — the reading-marks post-pass's whole
+   *  job, now intrinsic to the draw. `stroke` stays "currentColor" either way (the hue rides the
+   *  svg's `color`, set by buildOverlaySvg, so the halo and future descendants inherit it). */
+  const buildGeometry = (shape: OverlayShape, bbox: Box, id: string, style?: OverlayShapeStyle): SVGElement => {
+    let geom: SVGElement;
+    if (shape.kind === "rect") {
+      const r = document.createElementNS(NS, "rect");
+      r.setAttribute("x", "0");
+      r.setAttribute("y", "0");
+      r.setAttribute("width", String(bbox.w));
+      r.setAttribute("height", String(bbox.h));
+      geom = r;
+    } else {
+      const p = document.createElementNS(NS, "polygon");
+      // Points are shifted into the local bbox-origin user space, then joined into the `points`
+      // ATTRIBUTE via setAttribute — NEVER innerHTML.
+      const pts = shape.points.map((pt) => `${pt.x - bbox.x},${pt.y - bbox.y}`).join(" ");
+      p.setAttribute("points", pts);
+      geom = p;
+    }
+    geom.setAttribute("fill", style?.fill ?? "rgba(0,0,0,0)"); // transparent fill keeps the interior a hit target
+    geom.setAttribute("stroke", "currentColor");
+    geom.setAttribute("stroke-width", style?.strokeWidth ?? "1.5");
+    if (style) {
+      geom.setAttribute("fill-opacity", style.fillOpacity);
+      geom.setAttribute("stroke-opacity", style.strokeOpacity);
+    }
+    geom.setAttribute("vector-effect", "non-scaling-stroke");
+    geom.style.pointerEvents = "all"; // region is the hit target
+    geom.style.cursor = "pointer";
+    makeClickable(geom, () => emitSelect(id));
+    return geom;
+  };
+
   /** Build the <svg> wrapper anchored to a shape's image-space bbox, with the geometry child appended. */
-  const buildOverlaySvg = (id: string, geom: SVGElement, bbox: Box): SVGSVGElement => {
+  const buildOverlaySvg = (id: string, shape: OverlayShape, annotation: W3CAnnotation): SVGSVGElement => {
+    const bbox = overlayBBox(shape);
+    // Phase 7 style channel — resolved at draw time, before the geometry is built. The hue lands on
+    // the svg's `color`; the geometry (and any future descendant like the halo) inherits it via
+    // `stroke="currentColor"` — the SAME mechanism the old reading-marks post-pass used, now intrinsic.
+    const style = options.styleFor?.(id, annotation);
     const svg = document.createElementNS(NS, "svg");
     // A DOM-safe unique id, so OSD's wrapper is named `overlay-wrapper-archie-region-N` instead of
     // colliding on the bare literal. Ordinal, not the annotation id — those are full URLs here.
@@ -188,18 +208,12 @@ export function createReadOnlyOverlay(
     // the SVG to the bbox's viewport Rect (preserveAspectRatio="none"), so 1 unit == 1 image pixel here.
     svg.setAttribute("viewBox", `0 0 ${bbox.w} ${bbox.h}`);
     svg.setAttribute("preserveAspectRatio", "none");
-    Object.assign(svg.style, {
-      width: "100%",
-      height: "100%",
-      display: "block",
-      pointerEvents: "none", // only the geometry opts back in (the hit target)
-    } as Partial<CSSStyleDeclaration>);
-    // P0-6 + Archie-9413: accessible name AND keyboard operability. role="button" because the shape
-    // is clickable (select); tabindex=0 puts every region in the tab order; Enter/Space activates
-    // through the SAME emitSelect the click path uses. Label NEVER from the selector value — only
-    // from labelFor or the id fallback, and setAttribute-only (the header's no-markup rule stands).
-    svg.setAttribute("role", "button");
-    svg.setAttribute("aria-label", capLabel(labelFor ? labelFor(id) : `annotation ${id}`));
+    // P0-6 + Archie-9413: accessible name AND keyboard operability. role="button" + the aria-label
+    // come from the core's a11y options; the tabindex is ROVING (V45) and self-managed here. Label
+    // NEVER from the selector value — only from labelFor or the id fallback, capped at the shared
+    // chokepoint (overlay-core capLabel), and setAttribute-only (the header's no-markup rule stands).
+    svg.setAttribute("tabindex", tabbable.size === 0 ? "0" : "-1");
+    tabbable.add(svg);
     // V45 (Archie-3d55) — ROVING tabindex, not one stop per region.
     //
     // The audit found the two consumers disagreeing: the shell exposes no individual region (its
@@ -212,8 +226,6 @@ export function createReadOnlyOverlay(
     // So both consumers now give the same GUARANTEE by different mechanisms: every note is reachable
     // and named. The shell's route is the notes list (DOM, ordered, named — and per Archie-c982 the
     // list is the INDEX, which is exactly this job). The embed has no list, so the regions carry it.
-    svg.setAttribute("tabindex", tabbable.size === 0 ? "0" : "-1");
-    tabbable.add(svg);
     svg.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault(); // Space must select, not scroll the host page
@@ -227,75 +239,20 @@ export function createReadOnlyOverlay(
       e.stopPropagation();
       rove(svg, step);
     });
-    addFocusRing(svg);
-    svg.append(geom);
+    if (style) svg.style.color = style.stroke;
+    svg.append(buildGeometry(shape, bbox, id, style));
     return svg;
   };
 
-  const styleGeometry = (el: SVGElement, id: string): void => {
-    el.setAttribute("fill", "rgba(0,0,0,0)"); // transparent fill keeps the interior a hit target
-    el.setAttribute("stroke", "currentColor");
-    el.setAttribute("stroke-width", "1.5");
-    el.setAttribute("vector-effect", "non-scaling-stroke");
-    (el as SVGElement & { style: CSSStyleDeclaration }).style.pointerEvents = "all"; // region is the hit target
-    (el as SVGElement & { style: CSSStyleDeclaration }).style.cursor = "pointer";
-    el.addEventListener("click", (e) => {
-      e.stopPropagation();
-      emitSelect(id);
+  const drawShape = (id: string, shape: OverlayShape, annotation: W3CAnnotation): void => {
+    // The core queues the draw until the image opens and replays it (with onDrawn) when it does —
+    // so the shapes/roving bookkeeping below records queued draws exactly as sync ones. The style
+    // resolver runs inside the BUILDER, so a queued replay styles identically to a sync draw — the
+    // old post-pass's "the overlay defers to open, retry in a few frames" race cannot exist.
+    layer.draw({ id, shape, annotation }, (svg) => {
+      shapes.push({ id, svg });
+      applySelectedStyle();
     });
-    // V68, HALF TWO — let the `click` above actually happen.
-    //
-    // OSD binds a MouseTracker to the canvas/container and takes POINTER CAPTURE on pointerdown.
-    // Once captured, the rest of the sequence is retargeted to the capturing element, so the browser
-    // never dispatches a `click` on this geometry — the listener above is correct and simply never
-    // runs. That is why the audit found Enter and a synthetic `click` both working while a real mouse
-    // click did nothing at all: neither of those goes through a pointer sequence.
-    //
-    // Stopping the sequence HERE (on the region, a descendant) means OSD's ancestor listener never
-    // sees it, never captures, and `click` dispatches normally. Pan/zoom is unaffected everywhere
-    // else on the canvas — this fires only on a region's own pixels.
-    //
-    // Measured: this alone is NOT sufficient (see the wrapper note in drawShape). Both halves are
-    // required, and each was verified to fail on its own.
-    for (const type of ["pointerdown", "mousedown"]) {
-      el.addEventListener(type, (e) => e.stopPropagation());
-    }
-  };
-
-  const drawShape = (id: string, shape: OverlayShape): void => {
-    const item = viewer.world.getItemAt(0);
-    if (!item) {
-      // Image not painted yet — redraw this shape once it opens (annotations can be set before paint).
-      viewer.addOnceHandler?.("open", () => drawShape(id, shape));
-      return;
-    }
-    let bbox: Box;
-    let geom: SVGElement;
-    if (shape.kind === "rect") {
-      bbox = shape.box;
-      const r = document.createElementNS(NS, "rect");
-      r.setAttribute("x", "0");
-      r.setAttribute("y", "0");
-      r.setAttribute("width", String(bbox.w));
-      r.setAttribute("height", String(bbox.h));
-      geom = r;
-    } else {
-      const bb = polygonBBox(shape.points);
-      if (!bb) return; // unreachable (overlayShapeFor already rejected empty), but keeps bbox non-null
-      bbox = bb;
-      const p = document.createElementNS(NS, "polygon");
-      // Points are shifted into the local bbox-origin user space, then joined into the `points`
-      // ATTRIBUTE via setAttribute — NEVER innerHTML.
-      const pts = shape.points.map((pt) => `${pt.x - bbox.x},${pt.y - bbox.y}`).join(" ");
-      p.setAttribute("points", pts);
-      geom = p;
-    }
-    styleGeometry(geom, id);
-    const svg = buildOverlaySvg(id, geom, bbox);
-    viewer.addOverlay({ element: svg, location: viewer.viewport.imageToViewportRectangle(bbox.x, bbox.y, bbox.w, bbox.h) });
-    neutraliseOverlayWrapper(svg);
-    shapes.push({ id, svg });
-    applySelectedStyle();
   };
 
   const applySelectedStyle = (): void => {
@@ -313,12 +270,14 @@ export function createReadOnlyOverlay(
         const sel = selectorOf(ann as AnnotationLike);
         const shape = sel ? overlayShapeFor(sel) : null;
         if (!shape) {
-          // Degenerate / non-v1 geometry — skip LOUDLY (mirrors mount.ts:261-265). The host's list
-          // still shows the note (it reads the log); a visible divergence beats a silent one.
+          // Degenerate / non-v1 geometry — skip LOUDLY (mirrors the editor mount). This is the ONLY
+          // way a style cannot be applied (no shape exists to hold it), and it is the loud contract
+          // the old post-pass approximated with its count-mismatch refusal: a visible divergence
+          // beats a silent one. The host's list still shows the note (it reads the log).
           console.warn(`[@render/mount] read-only overlay: record ${id} has no v1 region geometry — shape not rendered`, ann);
           continue;
         }
-        drawShape(id, shape);
+        drawShape(id, shape, ann);
       }
     },
     setSelected(id: string | null): void {

@@ -23,7 +23,7 @@
   //     `PrimaryWindow.jsx:46-70`, on the canvas alone.
   // So the note surface, the sheet, the lightbox and the rich prose renderer are shared components
   // here, not re-implementations: ONE note renderer (Archie-c982/dbbc), reached from a temporal spine.
-  import { parseMediaFragment, activeNoteIndex, transcriptTextOf, splitNoteMedia, metadataRows, stripMarkdown, tagsOfAnnotation as tagsOf, readingIdOf, geoOf, geoCenter, formatLngLat, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
+  import { parseMediaFragment, activeNoteIndex, transcriptTextOf, metadataRows, stripMarkdown, tagsOfAnnotation as tagsOf, readingIdOf, type Reading, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
   import ResizeDivider from "@render/svelte/ResizeDivider.svelte";
   import { clampSeekStart } from "../av-landing.js";
   import { loadAsideWidth, saveAside, type AsideState } from "../aside-persistence.js";
@@ -34,6 +34,7 @@
   import ReadingLegend from "./ReadingLegend.svelte";
   import ReadingSheet from "./ReadingSheet.svelte";
   import SidebarObjectNav from "./SidebarObjectNav.svelte";
+  import { createNoteSurface } from "../note-surface.svelte.js";
 
   let {
     object,
@@ -228,27 +229,27 @@
   // a dedicated `▶ Play` button seeks (`:583-596`). Archie's spine rows are BOTH: transcript lines you
   // follow along, and authored notes with cites and media. Doing both from the one row is what keeps
   // the follow-along click the hint already promises while making the note reachable at all.
-  let selected = $state<string | null>(null);
-  let readingSheet = $state(false);
-  let lightbox = $state<{ media: NoteMediaItem[]; text: string; index: number } | null>(null);
-
-  const current = $derived(annotations.find((a) => a.id === selected));
-  // `transcriptTextOf`, NOT `commentOfAnnotation` — and the difference is load-bearing on THIS surface.
-  // A transcript-imported cue's body carries `purpose: "supplementing"` (`av/transcript.ts:70`), which
-  // `commentOfAnnotation` does not match, so it would render every imported cue as "(untitled)".
-  // `transcriptTextOf` joins all non-tagging bodies, so it reads an authored comment and an imported
-  // cue alike — the same read the spine already uses, so the card and the line cannot disagree.
-  const noteParts = $derived(
-    current ? splitNoteMedia(transcriptTextOf(current)) : { media: [] as NoteMediaItem[], text: "" },
-  );
-  const geoCoord = $derived.by(() => {
-    if (!current) return null;
-    const g = geoOf(current);
-    return g ? formatLngLat(geoCenter(g)) : null;
+  // THE OPEN-NOTE SURFACE — ONE state machine (note-surface.svelte.ts, Phase 5). This player used
+  // to hold `selected`/`readingSheet`/`lightbox` + the current/noteParts/geoCoord derivations + the
+  // mount handlers itself (~100 ln duplicated across the three reading hosts). The host keeps only
+  // what is genuinely per-host: the text source (`transcriptTextOf` — load-bearing here: a
+  // transcript-imported cue's body carries `purpose: "supplementing"` (`av/transcript.ts:70`), which
+  // `commentOfAnnotation` does not match, so it would render every imported cue as "(untitled)"; the
+  // same read the spine uses, so the card and the line cannot disagree), the eyebrow (the object
+  // label), the tag-chip finder wiring (absent ⇒ no tags render), the canvas-binding callback
+  // (`onSelect` — ONE CLICK, BOTH MOTIONS: selecting a cue seeks to it, the temporal analogue of
+  // the spatial readers' `zoomOnSelect`), and the Escape ladder's up-a-level rung (`onback ??
+  // onoverview`). No object-change reset is needed here: ExhibitView keys the player per object.
+  const surface = createNoteSurface({
+    annotations: () => annotations,
+    textOf: transcriptTextOf,
+    eyebrow: () => object.label,
+    onopenfinder: (t) => onopenfinder?.(t),
+    onSelect: (id) => {
+      const c = cues.find((x) => x.id === id);
+      if (c) seekTo(c.range.start);
+    },
   });
-  function openNote(id: string) {
-    selected = id;
-  }
 
   // Escape LADDER (V26/V25's shape, ported): this surface had NO key handler at all, so Escape did
   // nothing here even though the image reader walks a reader out level by level. Rungs, innermost first:
@@ -265,9 +266,9 @@
   // is V26's exact finding on the image reader ("measured, still `#/voynich`, still Object 2 of 12").
   const escapeUp = $derived(onback ?? onoverview);
   function onkey(e: KeyboardEvent) {
-    if (lightbox || readingSheet) return; // those surfaces own Esc while open (use:dialog)
+    if (surface.lightbox || surface.readingSheet) return; // those surfaces own Esc while open (use:dialog)
     if (e.key !== "Escape") return;
-    if (selected !== null) { selected = null; e.preventDefault(); return; }
+    if (surface.selected !== null) { surface.close(); e.preventDefault(); return; }
     if (escapeUp) { escapeUp(); e.preventDefault(); }
   }
 
@@ -482,7 +483,7 @@
               style={`left:${(c.range.start / (dur || 1)) * 100}%; width:${Math.max(0.8, (((c.range.end ?? c.range.start) - c.range.start) / (dur || 1)) * 100)}%`}
               title={`${fmt(c.range.start)} · ${c.preview}`}
               aria-label={`Note at ${fmt(c.range.start)}: ${c.preview}`}
-              onclick={(e) => { e.stopPropagation(); seekTo(c.range.start); openNote(c.id); }}></button>
+              onclick={(e) => { e.stopPropagation(); surface.open(c.id); }}></button>
           {/each}
           {#if dur}<div class="tl-cursor" style={`left:${(currentTime / dur) * 100}%`} aria-hidden="true"></div>{/if}
         </div>
@@ -497,18 +498,18 @@
          the temporal map. That anchoring choice was Archie-40fe's model applied structurally, and it is
          the same instinct docking generalises: a surface that must not cover another one should be
          beside it, not offset from it. -->
-    {#if current}
-      <div class="note-slot" class:hidden-behind-sheet={readingSheet}>
+    {#if surface.current}
+      <div class="note-slot" class:hidden-behind-sheet={surface.readingSheet}>
         <NotePopup
-          eyebrow={object.label}
-          text={noteParts.text}
-          media={noteParts.media}
-          tags={onopenfinder ? tagsOf(current) : []}
-          {geoCoord}
-          onclose={() => (selected = null)}
-          onexpand={() => { if (noteParts.text) readingSheet = true; else if (noteParts.media.length) lightbox = { media: noteParts.media, text: noteParts.text, index: 0 }; }}
-          onopenfinder={(t) => onopenfinder?.(t)}
-          onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
+          eyebrow={surface.eyebrow}
+          text={surface.noteParts.text}
+          media={surface.noteParts.media}
+          tags={surface.tags}
+          geoCoord={surface.geoCoord}
+          onclose={surface.close}
+          onexpand={surface.expand}
+          onopenfinder={surface.openFinder}
+          onmedia={surface.media}
         />
       </div>
     {/if}
@@ -536,9 +537,9 @@
       <div class="whole-track">
         <p class="eyebrow">About the whole recording</p>
         {#each wholeTrackNotes as n (n.id)}
-          <button type="button" class="wt-note" class:active={n.id === selected}
-            aria-current={n.id === selected ? "true" : undefined}
-            onclick={() => openNote(n.id)}>{stripMarkdown(n.text)}</button>
+          <button type="button" class="wt-note" class:active={n.id === surface.selected}
+            aria-current={n.id === surface.selected ? "true" : undefined}
+            onclick={() => surface.open(n.id)}>{stripMarkdown(n.text)}</button>
         {/each}
       </div>
     {/if}
@@ -578,10 +579,10 @@
                  keeps that signal intact; a reading cue trades it for identity and keeps the spoken
                  state on the fill (`--accent-muted`), which is immarkus's split the file already
                  cites — category owns hue, state owns the other channel. -->
-            <button class:active={i === activeIdx} class:open={c.id === selected}
-              aria-current={c.id === selected ? "true" : undefined}
+            <button class:active={i === activeIdx} class:open={c.id === surface.selected}
+              aria-current={c.id === surface.selected ? "true" : undefined}
               style={c.colour ? `border-left-color: ${c.colour}` : undefined}
-              onclick={() => { seekTo(c.range.start); openNote(c.id); }}>
+              onclick={() => surface.open(c.id)}>
               <span class="t">{fmt(c.range.start)}</span>
               <span class="line">{c.preview}</span>
             </button>
@@ -594,25 +595,25 @@
     {/if}
   </aside>
 
-  {#if lightbox}
-    <NoteLightbox media={lightbox.media} text={lightbox.text} index={lightbox.index} onclose={() => (lightbox = null)} />
+  {#if surface.lightbox}
+    <NoteLightbox media={surface.lightbox.media} text={surface.lightbox.text} index={surface.lightbox.index} onclose={surface.closeLightbox} />
   {/if}
 
-  {#if readingSheet && current}
+  {#if surface.readingSheet && surface.current}
     <!-- The SAME note at reading size — the card's whole prop set, not a text snapshot (V64/V60). Closing
          is "read less", not "dismiss": it collapses back to the card and leaves `selected` alone; only
          the card's × clears selection. Both routes out of the sheet (finder, lightbox) CLOSE it first —
          one modal at a time, exactly as `Reader.svelte` does, because the sheet, the finder and the
          lightbox all assert `aria-modal="true"` and two of them cannot both be telling the truth. -->
     <ReadingSheet
-      eyebrow={object.label}
-      text={noteParts.text}
-      media={noteParts.media}
-      tags={onopenfinder ? tagsOf(current) : []}
-      {geoCoord}
-      onclose={() => (readingSheet = false)}
-      onopenfinder={(t) => { readingSheet = false; onopenfinder?.(t); }}
-      onmedia={(idx) => { readingSheet = false; lightbox = { media: noteParts.media, text: noteParts.text, index: idx }; }}
+      eyebrow={surface.eyebrow}
+      text={surface.noteParts.text}
+      media={surface.noteParts.media}
+      tags={surface.tags}
+      geoCoord={surface.geoCoord}
+      onclose={surface.sheetClose}
+      onopenfinder={surface.sheetFinder}
+      onmedia={surface.sheetMedia}
     />
   {/if}
 </div>

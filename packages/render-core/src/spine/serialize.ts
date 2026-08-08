@@ -164,6 +164,56 @@ export function recordToAnnotation(record: AnnotationRecord, id: string, withCon
   return ann;
 }
 
+// EXHAUSTIVENESS GUARD (rule render-core-data-integrity #3) for `recordsToWorking` below — the
+// working-surface re-emit is a hand-map over AnnotationRecord (recordToAnnotation for the base WADM
+// fields + per-extension re-attachment), previously un-sentineled. Every record field is classified:
+// a field added to AnnotationRecord fails the build HERE until the working projection decides whether
+// the editing surface carries it (reading/section/emphasis/wholeObject/geo all had to be added by
+// hand before this guard existed — section was the one that nearly slipped, Archie-42f3). ONE
+// definition guards BOTH callers: AnnotationSession.workingAnnotations (over the log heads)
+// and AnnotationUndoManager.workingAnnotations (over the undo-aware overlay) — they used to be a
+// line-for-line mirror held in step by a duplicate of this sentinel.
+const _workingAnnotationCarry = {
+  target: "carry", // recordToAnnotation
+  modifiedAt: "carry", // recordToAnnotation → `modified`
+  body: "carry", // recordToAnnotation
+  motivation: "carry", // recordToAnnotation
+  logicalId: "carry", // becomes the working annotation's stable `id` (recordToAnnotation id param)
+  reading: "carry", // re-attached as archie:reading below
+  section: "carry", // re-attached as archie:section below (Archie-6b8e attribution, Archie-42f3)
+  emphasis: "carry", // re-attached as archie:emphasis below
+  wholeObject: "carry", // re-attached as archie:wholeObject below (only when true — byte-stable)
+  geo: "carry", // re-attached as archie:geo below
+  rev: { drop: "DAG node id — the working surface keys by logicalId; versioned ids are the publish projection (toHeadsPage)" },
+  version: { drop: "citation ordinal — publish-projection concern, not part of the editing surface" },
+  parent: { drop: "DAG topology — the working surface reads heads only" },
+  mergeParents: { drop: "DAG topology — the working surface reads heads only" },
+  lastEditor: { drop: "stamp — not rendered on the editing surface (MergeReview reads it off the record, not this shape). The WADM `creator` projection of this field is publish-only (headsPageFromRecords, Archie-3452): the working surface deliberately emits neither `creator` nor `created`, so synthetic ids ('anonymous') never masquerade as authorship on the canvas" },
+  deleted: { drop: "heads() excludes tombstones (projectHeads) — a working annotation is live by construction" },
+} satisfies Record<keyof AnnotationRecord, CarryDisposition>;
+void _workingAnnotationCarry; // zero-runtime: exists only to break the build on an unclassified field
+
+/**
+ * WORKING projection: records → the W3CAnnotation surface the editing surface draws, keyed by the
+ * stable LOGICAL id (so selection survives version bumps — distinct from the versioned citation ids
+ * of the publish projection, toHeadsPage). Shared by `AnnotationSession` (over its head records) and
+ * `AnnotationUndoManager` (over its undo-aware composition) — the two used to be a line-for-line
+ * mirror; the carry sentinel above guards THIS single definition for both. Each caller picks its own
+ * head source: the session projects `this.heads()`, the undo manager projects `this.notes()` so an
+ * undone delete re-shows the reinstated record.
+ */
+export function recordsToWorking(records: AnnotationRecord[]): W3CAnnotation[] {
+  return records.map((record) => {
+    const ann = recordToAnnotation(record, record.logicalId);
+    if (record.reading !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_READING] = record.reading;
+    if (record.section !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_SECTION] = record.section;
+    if (record.emphasis !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_EMPHASIS] = record.emphasis;
+    if (record.wholeObject === true) (ann as unknown as Record<string, unknown>)[ARCHIE_WHOLE_OBJECT] = true;
+    if (record.geo !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_GEO] = record.geo;
+    return ann;
+  });
+}
+
 function withProvLink(ann: ArchieAnnotation, parent: RevId | null, ids: Map<RevId, string>): ArchieAnnotation {
   if (parent !== null) {
     const parentId = ids.get(parent);

@@ -38,8 +38,8 @@ import {
  * so the index can never disagree with the canvas.
  *
  * It lives in THIS module, not on the element, for eager-closure reasons: it is only ever reachable
- * past the lazy boundary, but as an element method its `overlay` import sat in the entry's static
- * graph. See the note at element.ts `#openObject`.
+ * past the lazy boundary (now via reading-layer.ts), but as an element method its `overlay` import
+ * sat in the entry's static graph. See .claude/rules/archie-viewer-eager-closure.md.
  */
 export function annotationsFor(
   exhibit: PortableExhibit,
@@ -53,10 +53,11 @@ export function annotationsFor(
 
 /**
  * The base layer's mark colour — the notes that belong to no Reading (ADR-0007's always-visible
- * base). ONE constant, shared by the legend's "General notes" swatch and by the canvas pass
- * (reading-marks.ts), so the chip and the mark can never disagree about what "base" looks like.
- * Value is the token palette's `--mist-blue`, resolved: a custom property cannot be handed to
- * `readingMarkerStyle`, which returns concrete style numbers for SVG attributes.
+ * base). ONE constant, shared by the legend's "General notes" swatch and by the canvas paint
+ * (reading-layer.ts's colourOf falls back to it, and reader.ts's style derivation feeds it to
+ * render-core's readingMarkerStyle), so the chip and the mark can never disagree about what "base"
+ * looks like. Value is the token palette's `--mist-blue`, resolved: a custom property cannot be
+ * handed to `readingMarkerStyle`, which returns concrete style numbers for SVG attributes.
  */
 export const BASE_MARK_COLOUR = "#6B7D6A";
 
@@ -249,9 +250,10 @@ const NS = "http://www.w3.org/2000/svg";
 
 /**
  * V47's rule, held here too: the swatch IS the mark. Its fill/stroke come out of `readingMarkerStyle`
- * — the SAME call the canvas paints with (reading-marks.ts) and the SAME one ReadingLegend.svelte's
- * swatch makes — so there is no second copy of 0.18/0.95/2 anywhere in the embed. Built with
- * createElementNS + setAttribute, never innerHTML (ADR-0019's overlay rule, applied by habit).
+ * — the SAME call the canvas paints with (reader.ts's style derivation, fed by reading-layer.ts's
+ * colours) and the SAME one ReadingLegend.svelte's swatch makes — so there is no second copy of
+ * 0.18/0.95/2 anywhere in the embed. Built with createElementNS + setAttribute, never innerHTML
+ * (ADR-0019's overlay rule, applied by habit).
  */
 function swatch(doc: Document, colour: string): SVGSVGElement {
   const ms = readingMarkerStyle(colour, "normal");

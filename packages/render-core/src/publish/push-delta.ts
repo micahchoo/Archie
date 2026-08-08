@@ -38,7 +38,7 @@
 // state, and a blob sha is how you compare against it without downloading it. Different inputs,
 // different question; neither replaces the other.
 
-import type { FileContent } from "./ghpages.js";
+import type { FileContent } from "./snapshot.js";
 
 /**
  * What the target branch's tree holds, as `path -> git blob sha`.

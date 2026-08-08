@@ -183,3 +183,23 @@ export function asObjectId(s: string): ObjectId {
   }
   return s as ObjectId;
 }
+
+// ---- Path-segment containment (the ONE name-safety predicate) ----
+
+/**
+ * Reject a child name that could escape its parent before it is joined onto a real path or URL.
+ * The ONE rule set every string-joining consumer shares — mirrors the FSA (File System Access)
+ * rule: empty, ".", "..", or any name bearing a separator / NUL is invalid. `what` is the
+ * error-message noun phrase naming the rejected thing, so each caller keeps its own user-facing
+ * wording ("unsafe path segment" for the path-joining fs backends, "invalid {role}" for the
+ * composed-key halves) while the containment logic itself lives once.
+ *
+ * Callers upstream must NOT be trusted to have sanitized the segment — exhibit slugs, object ids,
+ * section localIds, and archive entry names are untrusted input (same trust boundary as the
+ * untrusted-archive open seam).
+ */
+export function assertSafeSegment(segment: string, what: string): void {
+  if (segment === "" || segment === "." || segment === ".." || /[/\\]/.test(segment) || segment.includes("\0")) {
+    throw new Error(`${what}: ${JSON.stringify(segment)}`);
+  }
+}

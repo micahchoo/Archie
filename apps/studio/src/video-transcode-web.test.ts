@@ -19,42 +19,49 @@
 // (encode). See the ticket's record for what was and was not driven.
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
-  pickBrowserTarget,
-  browserUnavailableReason,
   heightFor,
   probeBrowserVideoCaps,
   transcodeVideoInBrowser,
   NO_BROWSER_VIDEO_CAPS,
-  type BrowserVideoCaps,
 } from "./video-transcode-web.js";
-import { WEB_TIER_H264, WEB_TIER_VP9, VideoTranscodeError } from "./video-transcode.js";
+// The DECISION is now ONE function in the neutral module — this suite pins it from its home with
+// browser-flavoured capabilities (Archie-7e6f: the browser probe maps onto the one shape).
+import {
+  pickTarget,
+  unavailableReason,
+  WEB_TIER_H264,
+  WEB_TIER_VP9,
+  VideoTranscodeError,
+  type VideoCapabilities,
+} from "./video-profiles.js";
 
-const caps = (over: Partial<BrowserVideoCaps> = {}): BrowserVideoCaps => ({
-  webCodecs: true, avc: true, aac: true, vp9: true, opus: true, ...over,
+/** A BROWSER capability fixture on the ONE shape — `webCodecsPresent` set, `h264Decode` absent. */
+const caps = (over: Partial<VideoCapabilities> = {}): VideoCapabilities => ({
+  ffmpeg: true, h264: true, vp9: true, aac: true, opus: true, webCodecsPresent: true, ...over,
 });
 
 // ---------------------------------------------------------------------------------------------
 // The target choice — the one real decision in the module
 // ---------------------------------------------------------------------------------------------
 
-describe("pickBrowserTarget", () => {
+describe("pickTarget — the ONE decision, with browser capabilities (Archie-7e6f)", () => {
   it("prefers H.264/AAC/MP4, the same first choice the desktop sidecar makes", () => {
     // Identity, not shape: the point is that the browser returns the SAME profile object the sidecar
     // publishes, so the two implementations cannot drift into two artifacts that merely look alike.
-    expect(pickBrowserTarget(caps())).toBe(WEB_TIER_H264);
+    expect(pickTarget(caps())).toBe(WEB_TIER_H264);
   });
 
   it("falls back to VP9/Opus/WebM when H.264 encode is missing", () => {
-    expect(pickBrowserTarget(caps({ avc: false }))).toBe(WEB_TIER_VP9);
+    expect(pickTarget(caps({ h264: false }))).toBe(WEB_TIER_VP9);
   });
 
   it("NEVER assembles H.264 video with Opus audio — the Chromium case, and the whole guard", () => {
     // This is the measured live configuration on Chromium 148: AVC encode yes, AAC encode no.
     // mediabunny would happily write Opus into MP4 (its compatibility table marks it supported), and
     // the result would play with SILENT AUDIO in Safari — the exact browser H.264/MP4 exists to
-    // serve. So `avc && !aac` must fall THROUGH to VP9 rather than substituting an audio codec.
+    // serve. So `h264 && !aac` must fall THROUGH to VP9 rather than substituting an audio codec.
     const chromium = caps({ aac: false });
-    const target = pickBrowserTarget(chromium);
+    const target = pickTarget(chromium);
     expect(target).toBe(WEB_TIER_VP9);
     // Restated as the property rather than the value, so a future profile edit cannot quietly make
     // this pass for the wrong reason: whatever comes back, an mp4 never carries opus.
@@ -62,24 +69,25 @@ describe("pickBrowserTarget", () => {
   });
 
   it("returns null — never a partial profile — when neither pair is complete", () => {
-    expect(pickBrowserTarget(caps({ aac: false, opus: false }))).toBeNull();
-    expect(pickBrowserTarget(caps({ avc: false, vp9: false }))).toBeNull();
+    expect(pickTarget(caps({ aac: false, opus: false }))).toBeNull();
+    expect(pickTarget(caps({ h264: false, vp9: false }))).toBeNull();
   });
 
   it("returns null when the realm has no WebCodecs at all, whatever else it claims", () => {
-    // Guards against a caps object assembled from a stale probe: no WebCodecs means no encode,
-    // regardless of the four codec booleans.
-    expect(pickBrowserTarget(caps({ webCodecs: false }))).toBeNull();
-    expect(pickBrowserTarget(NO_BROWSER_VIDEO_CAPS)).toBeNull();
+    // The browser probe maps a WebCodecs-less realm onto `ffmpeg: false` (the encoder-realm flag),
+    // so the stale-caps guard is STRUCTURAL: a caps object that claims codecs without a realm can
+    // never mint a target. The hand-built `webCodecsPresent: false` case stands in for that mapping.
+    expect(pickTarget(caps({ ffmpeg: false, webCodecsPresent: false }))).toBeNull();
+    expect(pickTarget(NO_BROWSER_VIDEO_CAPS)).toBeNull();
   });
 
   it("only ever returns one of the two DECLARED profiles — no third artifact shape", () => {
-    // Exhaustive over all 16 codec combinations (webCodecs true), because "a third shape cannot be
+    // Exhaustive over all 16 codec combinations (realm present), because "a third shape cannot be
     // constructed" is a claim about the whole input space, not about four examples.
     const flags = [false, true];
     const seen = new Set<unknown>();
-    for (const avc of flags) for (const aac of flags) for (const vp9 of flags) for (const opus of flags) {
-      seen.add(pickBrowserTarget(caps({ avc, aac, vp9, opus })));
+    for (const h264 of flags) for (const aac of flags) for (const vp9 of flags) for (const opus of flags) {
+      seen.add(pickTarget(caps({ h264, aac, vp9, opus })));
     }
     expect([...seen].every((t) => t === null || t === WEB_TIER_H264 || t === WEB_TIER_VP9)).toBe(true);
     expect(seen.has(WEB_TIER_H264)).toBe(true); // the sweep really did reach both branches…
@@ -88,22 +96,22 @@ describe("pickBrowserTarget", () => {
   });
 });
 
-describe("browserUnavailableReason", () => {
+describe("unavailableReason — browser-flavoured capability", () => {
   it("is empty exactly when a target IS reachable", () => {
-    expect(browserUnavailableReason(caps())).toBe("");
-    expect(browserUnavailableReason(caps({ aac: false }))).toBe(""); // VP9 still reachable
-    expect(browserUnavailableReason(caps({ aac: false, opus: false }))).not.toBe("");
+    expect(unavailableReason(caps())).toBe("");
+    expect(unavailableReason(caps({ aac: false }))).toBe(""); // VP9 still reachable
+    expect(unavailableReason(caps({ aac: false, opus: false }))).not.toBe("");
   });
 
   it("names the browsers rather than the API when WebCodecs is absent", () => {
     // The author cannot act on "no WebCodecs"; they can act on "Chrome can, Firefox cannot".
-    const r = browserUnavailableReason(caps({ webCodecs: false }));
+    const r = unavailableReason(caps({ ffmpeg: false, webCodecsPresent: false }));
     expect(r).toMatch(/Chrome/);
     expect(r).not.toMatch(/WebCodecs/);
   });
 
   it("says videos will publish at their original size when codecs do not pair up", () => {
-    expect(browserUnavailableReason(caps({ aac: false, opus: false }))).toMatch(/original size/);
+    expect(unavailableReason(caps({ aac: false, opus: false }))).toMatch(/original size/);
   });
 });
 

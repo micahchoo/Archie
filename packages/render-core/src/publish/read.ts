@@ -11,9 +11,9 @@ import type { Filesystem } from "../fs/seam.js";
 import type { AObject, Reading } from "../model/model.js";
 import type { W3CAnnotation } from "../wadm/types.js";
 import type { PortableExhibit } from "./portable.js";
-import { NotAnArchieLibraryError, type ArchieMarker } from "./marker.js";
+import { NotAnArchieLibraryError, classifyArchieMarker, type ArchieMarker } from "./marker.js";
 import { SCHEMA_VERSION } from "../migrate/migrate.js";
-import { TREE_MIGRATIONS, treeMigrationsSince, migrateTreeDoc, migrationGapMessage } from "../migrate/tree.js";
+import { TREE_MIGRATIONS, treeMigrationsSince, migrateTreeDoc, migrationGapMessage, type TreeMigrationGap } from "../migrate/tree.js";
 
 /** The narrow read-only byte seam both real sources satisfy — fs-walk over an opened Filesystem, or
  *  HTTP `fetch` over `${BASE}/published`. Tree-relative paths (`"voynich/manifest.json"`). NOT a
@@ -40,16 +40,19 @@ export { FailedReadError };
 // Absent-vs-failed classification — ONE definition, in the seam layer (Archie-623e Phase 2 lifted it
 // there so asset-store.ts can share it once it re-points off raw OPFS DOMExceptions onto the seam).
 import { isNotFound } from "../fs/seam.js";
+// The ONE classified absent-vs-failed traversal — readBytes collapses its hand-rolled walk onto it.
+import { tryResolveFile } from "../fs/resolve.js";
+// The READ-ONLY HTTP backend — `httpJsonSource` below is this file's composition of it over
+// `fsJsonSource` (the tree half of the open seam; the zip half lives in open.ts).
+import { HttpFilesystem } from "../fs/http.js";
 
 /** A JsonSource that walks an opened `Filesystem` (Memory/Zip/FSA). Folds the per-reader `readJson`
  *  copies (site/portable). `getOptional` distinguishes absent (missing file → null) from failed (a
  *  present-but-torn file, or a read fault → throws `FailedReadError`) — Issue 23's absent-vs-failed rule. */
 export function fsJsonSource(fs: Filesystem): JsonSource {
   const readBytes = async (path: string): Promise<ArrayBuffer> => {
-    const parts = path.split("/");
-    let dir = await fs.root();
-    for (let i = 0; i < parts.length - 1; i++) dir = await dir.getDirectory(parts[i]!);
-    const file = await dir.getFile(parts[parts.length - 1]!);
+    const file = await tryResolveFile(fs, path.split("/"));
+    if (file === null) throw new Error(`no such file: ${path}`); // absent → the seam's canonical absent error; getOptional maps it to null
     return file.readable();
   };
   const read = async <T>(path: string): Promise<T> =>
@@ -72,6 +75,17 @@ export function fsJsonSource(fs: Filesystem): JsonSource {
       }
     },
   };
+}
+
+/** An HTTP `JsonSource` over a published-tree base — the TREE half of the open seam (open.ts is the
+ *  zip half): the ONE composition of `fsJsonSource` over the read-only `HttpFilesystem`. GETs
+ *  tree-relative paths (`exhibits.json`, `${slug}/manifest.json`) under `base`. The backend supplies
+ *  name containment on every path segment, the canonical `SRC_MAX_BYTES` response cap, and the
+ *  absent-vs-failed classification (getOptional: 404 → null, network / non-OK / torn body / cap
+ *  breach → `FailedReadError`). Any consumer that reads a published tree over HTTP composes THIS,
+ *  not a hand-rolled fetch loop (the embed's and the viewer's once-identical copies now both do). */
+export function httpJsonSource(base: string, opts?: { fetch?: typeof fetch; maxBytes?: number }): JsonSource {
+  return fsJsonSource(new HttpFilesystem(base, opts));
 }
 
 /**
@@ -142,14 +156,15 @@ export async function migratedFsJsonSource(fs: Filesystem, migrations = TREE_MIG
 
 /**
  * ADR-0020 marker gate over an HTTP-shaped published TREE (a `JsonSource`) — the read-side twin of
- * `validateArchieMarker` (which takes an opened `Filesystem` for the zip path). ONE implementation, so the
- * embed's tree open (`load.ts`) and the hosted apps/viewer (`published.ts`) apply the SAME policy instead
- * of two hand-rolled copies of the marker check. (The zip seam in `open.ts` stays separate by design — see
+ * `validateArchieMarker` (which takes an opened `Filesystem` for the zip path). ONE policy definition
+ * (`classifyArchieMarker`) behind BOTH surfaces, so the embed's tree open (`load.ts`) and the hosted
+ * apps/viewer (`published.ts`) apply the SAME branch chain instead of two hand-rolled copies of the
+ * marker check. (The zip seam in `open.ts` stays separate by design — see
  * `.claude/rules/untrusted-archive-open-seam.md`; this is ADR-0020's deliberately-separate tree validator.)
  *
- * **LENIENT-ON-ABSENT, present-must-be-current** (ADR-0020):
- *   • `archie.json` PRESENT → MUST be a current-schema Archie marker (`format === "archie-library"` and
- *     `version === SCHEMA_VERSION`); a forged/foreign/wrong-version marker is rejected cleanly.
+ * **LENIENT-ON-ABSENT by default, present-must-be-current** (ADR-0020):
+ *   • `archie.json` PRESENT → classified by `classifyArchieMarker`; foreign / malformed / newer /
+ *     older-gap are refusals, current / older-migratable are accepted.
  *   • `archie.json` ABSENT (404) → accept and return `null`; the caller reads `exhibits.json` next, whose
  *     parse IS the structural acceptance signal (some static hosts strip dotted files, so a tree need not
  *     ship a marker).
@@ -157,52 +172,84 @@ export async function migratedFsJsonSource(fs: Filesystem, migrations = TREE_MIG
  *     is a sanity gate, not the security boundary") — log and proceed lenient rather than hard-block a
  *     possibly-fine library on a marker fetch failure.
  *
- * Returns the parsed marker (or `null` when absent) so a caller can reuse it — e.g. read its `generation`
- * (STALENESS) — without a second fetch. **A caller that got a marker with `version < SCHEMA_VERSION`
- * MUST read through `migratingJsonSource(src, marker.version)`** (Archie-69f9); this gate accepting an
- * older tree is a promise that the migrations exist, not that the raw documents are readable as-is.
+ * **`opts.requirePresent: true` (STRICT — the verify-publish path)**: absence or a failed marker read is
+ * a REFUSAL, not a tolerance. Rationale: the verifier certifies a tree this repo's own `publishLibrary`
+ * just wrote, and render-core-data-integrity rule 1 makes `archie.json` the commit point written LAST —
+ * a fresh publish must always carry it and it must be READABLE; a transport fault here is a real
+ * verification failure, not a transient blip worth skipping (the lenient rule exists for OPENING a
+ * possibly-fine library, which this path is not doing). Both refusals throw `NotAnArchieLibraryError`
+ * with STABLE messages starting with the documented prefixes
+ * "This published tree has no archie.json marker" (absent) and
+ * "This published tree's archie.json marker could not be read" (failed read) — the verifier classifies
+ * on those prefixes to keep its failure labels honest.
+ *
+ * Returns the parsed marker (or `null` when absent under the lenient default) so a caller can reuse it —
+ * e.g. read its `generation` (STALENESS) — without a second fetch. **A caller that got a marker with
+ * `version < SCHEMA_VERSION` MUST read through `migratingJsonSource(src, marker.version)`** (Archie-69f9);
+ * this gate accepting an older tree is a promise that the migrations exist, not that the raw documents
+ * are readable as-is.
  */
-export async function assertArchieTreeMarker(src: JsonSource): Promise<Partial<ArchieMarker> | null> {
+export async function assertArchieTreeMarker(
+  src: JsonSource,
+  opts?: { requirePresent?: boolean },
+): Promise<Partial<ArchieMarker> | null> {
   let marker: Partial<ArchieMarker> | null;
   try {
     marker = await src.getOptional<Partial<ArchieMarker>>("archie.json");
   } catch (e) {
     if (e instanceof FailedReadError) {
+      if (opts?.requirePresent) {
+        // STRICT: fail loud (see the doc comment above for why). Message prefix is a documented
+        // contract — the verifier matches on it to label the failure class.
+        throw new NotAnArchieLibraryError(
+          "This published tree's archie.json marker could not be read — it cannot be verified as a current Archie publish (archie.json is written LAST as the commit point, so a fresh publish must carry it).",
+        );
+      }
       console.warn("assertArchieTreeMarker: archie.json couldn't be read (transient) — skipping the version gate", e);
       return null;
     }
     throw e;
   }
+  if (marker === null && opts?.requirePresent) {
+    // STRICT: absence violates the commit-point rule — publishLibrary writes archie.json LAST, so a
+    // tree it just wrote always carries it. Refuse; the lenient default keeps opening pre-marker trees
+    // (some static hosts strip dotted files) and every existing caller unchanged.
+    throw new NotAnArchieLibraryError(
+      "This published tree has no archie.json marker — it was not written by a current Archie publish (archie.json is written LAST as the commit point, so a fresh publish must carry it).",
+    );
+  }
   if (marker) {
-    if (marker.format !== "archie-library") {
-      throw new NotAnArchieLibraryError(
-        "This file isn't an Archie library. Choose a published Archie tree or .archie.zip.",
-      );
-    }
-    if (typeof marker.version !== "number" || !Number.isFinite(marker.version)) {
-      throw new NotAnArchieLibraryError(
-        "This library's version marker is malformed. Re-publish it from a current Archie.",
-      );
-    }
-    if (marker.version > SCHEMA_VERSION) {
-      // NEWER tree, older reader — the only direction ADR-0020:53 sanctions as a refusal, and nothing
-      // the author can do to the FILE helps. Advice must be about the READER.
-      throw new NotAnArchieLibraryError(
-        `This library was made with a newer version of Archie (schema v${marker.version}, this viewer reads v${SCHEMA_VERSION}). Update Archie to open it.`,
-      );
-    }
-    if (marker.version < SCHEMA_VERSION) {
-      // OLDER tree — accepted iff the registry can actually carry it forward (Archie-69f9). The caller
-      // wraps its source with `migratingJsonSource(src, marker.version)`. Refusing on a GAP rather than
-      // best-efforting is tldraw's rule (`StoreSchema.mjs:108`, "Incompatible schema?") and the reason
-      // accepting an old version is safe at all: coverage is total or it is a refusal.
-      const resolved = treeMigrationsSince(marker.version, SCHEMA_VERSION);
-      if (!resolved.ok) {
-        throw new NotAnArchieLibraryError(migrationGapMessage(marker.version, resolved.gap));
-      }
+    // Present → the SAME one policy (`classifyArchieMarker`); this switch supplies only the TREE-surface
+    // message copy — every verdict except current/older-migratable is a refusal.
+    const verdict = classifyArchieMarker(marker);
+    switch (verdict.kind) {
+      case "foreign":
+        throw new NotAnArchieLibraryError(
+          "This file isn't an Archie library. Choose a published Archie tree or .archie.zip.",
+        );
+      case "malformed":
+        throw new NotAnArchieLibraryError(
+          "This library's version marker is malformed. Re-publish it from a current Archie.",
+        );
+      case "newer":
+        // NEWER tree, older reader — the only direction ADR-0020:53 sanctions as a refusal, and nothing
+        // the author can do to the FILE helps. Advice must be about the READER.
+        throw new NotAnArchieLibraryError(
+          `This library was made with a newer version of Archie (schema v${verdict.version}, this viewer reads v${SCHEMA_VERSION}). Update Archie to open it.`,
+        );
+      case "older-gap":
+        // OLDER tree — accepted iff the registry can actually carry it forward (Archie-69f9); a GAP is
+        // refused (tldraw's rule, `StoreSchema.mjs:108`, "Incompatible schema?") — coverage is total or
+        // it is a refusal, which is what makes accepting an old version safe at all. The classifier's
+        // `gap` is the planner's TreeMigrationGap; the caller wraps its source with
+        // `migratingJsonSource(src, marker.version)`.
+        throw new NotAnArchieLibraryError(migrationGapMessage(verdict.version, verdict.gap as TreeMigrationGap));
+      case "older-migratable":
+      case "current":
+        break; // accepted — return the marker below
     }
   }
-  return marker; // null = absent (lenient); a present marker is now validated
+  return marker; // null = absent (lenient default); a present marker is now validated
 }
 
 /**

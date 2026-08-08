@@ -9,13 +9,12 @@
 //     <outdir>/tree/   publishLibrary(..., { fixity: true })
 //     <outdir>/bag/    writeBag(...)
 //
-// render-core has no node:fs Filesystem backend (every backend is FSA/OPFS/Zip/Tauri/Memory/Http), so
-// this publishes into a MemoryFilesystem and dumps the finished tree to disk — the same unavoidable
-// hand-roll verify-publish-run.mts documents on the read side.
-import { mkdir, writeFile, rm } from "node:fs/promises";
+// render-core's `NodeFilesystem` is the node:fs directory backend, so publishLibrary and writeBag
+// write straight to disk through the seam — no memory-tree-then-dump step.
+import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
+import { NodeFilesystem } from "@render/core/node";
 import {
-  MemoryFilesystem,
   publishLibrary,
   writeBag,
   asClientId,
@@ -24,10 +23,9 @@ import {
   asObjectId,
   appendNew,
   type AnnotationLog,
-  type Filesystem,
-  type FsDirectory,
   type Library,
 } from "@render/core";
+import { treeStats } from "./lib/tree-stats.js";
 
 const out = process.argv[2];
 if (!out) {
@@ -93,34 +91,20 @@ const publishOpts = {
     ]),
 };
 
-/** Dump a finished Filesystem tree to a real directory. */
-async function dump(fs: Filesystem, dir: string): Promise<number> {
-  let files = 0;
-  const walk = async (d: FsDirectory, at: string): Promise<void> => {
-    await mkdir(at, { recursive: true });
-    const entries: { name: string; kind: "file" | "directory" }[] = [];
-    for await (const e of d.entries()) entries.push(e);
-    for (const e of entries) {
-      if (e.kind === "directory") await walk(await d.getDirectory(e.name), join(at, e.name));
-      else {
-        await writeFile(join(at, e.name), new Uint8Array(await (await d.getFile(e.name)).readable()));
-        files++;
-      }
-    }
-  };
-  await walk(await fs.root(), dir);
-  return files;
-}
-
 await rm(out, { recursive: true, force: true });
 
-const treeFs = new MemoryFilesystem();
-const publishResult = await publishLibrary(treeFs, library, getLog, { ...publishOpts, fixity: true });
-const treeFiles = await dump(treeFs, join(out, "tree"));
+const treeDir = join(out, "tree");
+const bagDir = join(out, "bag");
+await mkdir(treeDir, { recursive: true });
+await mkdir(bagDir, { recursive: true });
 
-const bagFs = new MemoryFilesystem();
+const treeFs = new NodeFilesystem(treeDir);
+const publishResult = await publishLibrary(treeFs, library, getLog, { ...publishOpts, fixity: true });
+const treeFiles = (await treeStats(treeFs)).files;
+
+const bagFs = new NodeFilesystem(bagDir);
 const bagResult = await writeBag(bagFs, library, getLog, publishOpts, { baggingDate: "2026-07-27" });
-const bagFiles = await dump(bagFs, join(out, "bag"));
+const bagFiles = (await treeStats(bagFs)).files;
 
 console.log(
   JSON.stringify(

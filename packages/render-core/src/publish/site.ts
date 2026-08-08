@@ -23,7 +23,7 @@ import { rebaseCanvasId } from "../iiif/canvasid.js";
 import { isIdentityScale, scaleMediaFragmentValue, scaleTarget, type SelectorScale } from "../geometry/rescale.js";
 import { langMap, type IIIFManifest, type LangMap } from "../iiif/presentation.js";
 import type { Exhibit, AObject, Section, Reading, RightsFields } from "../model/model.js";
-import type { DziTileSource } from "../iiif/resolve.js";
+import type { DziTileSource, TileSourceDescriptor } from "../iiif/resolve.js";
 import type { PortableExhibit } from "./portable.js"; // type-only (erased) — the readings superset; type-cycle is harmless
 import { readExhibitTree, fsJsonSource, migratedFsJsonSource } from "./read.js";
 import { libraryPageHtml, exhibitPageHtml, sitemapTxt, sitemapXml, viewerShellHtml, treeViewerBase, TREE_VIEWER_DIR, TREE_VIEWER_ENTRY, TREE_VIEWER_PAGE } from "./static-pages.js";
@@ -74,8 +74,12 @@ export interface PublishOptions {
    * publishLibrary writes the tiles to `{slug}/{name}_files/…` and stamps `tileSource` (its `filesPath`
    * rewritten to the published pyramid) so the viewer deep-zooms from fast local tiles instead of the
    * full master / a slow remote IIIF. The single-image `source` stays as a fallback. Keyed by (slug, name).
+   *
+   * The 4th argument is the object being published. A RE-USE caller (republish-tree.mts, loading with
+   * loadLibrary's `preservePublishFields`) reads the preserved DZI descriptor off `obj.tileSource` and
+   * returns the tree's own tiles — publish re-stamps `filesPath` at the new base, nothing is re-sliced.
    */
-  tileObject?: (slug: string, name: string, bytes: ArrayBuffer | Blob) => Promise<{ descriptor: DziTileSource; tiles: Map<string, Blob> } | null>;
+  tileObject?: (slug: string, name: string, bytes: ArrayBuffer | Blob, obj: AObject) => Promise<{ descriptor: DziTileSource; tiles: Map<string, Blob> } | null>;
   /**
    * Bake a REMOTE IIIF/image object into a LOCAL DZI pyramid at publish time (Q-9) — so the published
    * viewer deep-zooms from local tiles instead of depending on a slow / cross-origin IIIF service (e.g.
@@ -497,6 +501,14 @@ function isRemoteTileable(o: AObject): boolean {
     && (o.mediaType === undefined || o.mediaType === "image");
 }
 
+/** Is this dzi descriptor a pyramid THIS PASS owns — `filesPath` ending in the bare `/{name}_files`
+ *  dir publish writes (the loadLibrary `preservePublishFields` shape)? Publish-derived pyramids are
+ *  the only ones in that exact shape: an authored dzi (a desktop-tiled store's `assets-tiles/…_files/`,
+ *  a remote DZI service) carries a trailing slash or a foreign path, so it is left alone. */
+function isOwnPyramid(ts: TileSourceDescriptor, name: string): boolean {
+  return ts.kind === "dzi" && ts.filesPath.endsWith(`/${name}_files`);
+}
+
 /**
  * Write the full published-site data tree into `fs`. Per-canvas heads pages are written at the
  * exact paths the Manifest's `canvas.annotations[].id` reference (the Phase-2 interop gate);
@@ -677,12 +689,23 @@ export async function publishLibrary(sink: Filesystem, library: Library, getLog:
           // DZI tiling (Q-9): if the app supplies a slicer and it returns a pyramid for this asset, write
           // the tiles to {slug}/{name}_files/… and stamp tileSource (filesPath → the published pyramid) so
           // the viewer deep-zooms from fast local tiles. `source` stays a fallback (mount prefers tileSource).
-          if (opts.tileObject && !o.tileSource) {
-            const sliced = await opts.tileObject(exhibit.slug, name, bytes);
+          // The branch ALSO fires for a PRESERVED pyramid — a dzi whose filesPath is the `{name}_files`
+          // dir this pass writes (loadLibrary's `preservePublishFields` shape, Archie-8d3d): the caller's
+          // tileObject re-uses the tree's own tiles (the 4th arg carries the object's preserved descriptor;
+          // its pixels are origin-independent) and filesPath is re-stamped at the NEW base. Authored dzi
+          // descriptors (a desktop-tiled store's `assets-tiles/…_files/`, a remote DZI service) do not
+          // match the bare `/{name}_files` suffix (isOwnPyramid) and are left untouched.
+          if (opts.tileObject && (!o.tileSource || isOwnPyramid(o.tileSource, name))) {
+            const sliced = await opts.tileObject(exhibit.slug, name, bytes, o);
             if (sliced && sliced.tiles.size > 0) {
               const filesDirName = `${name}_files`;
               await writeTilePyramid(await exDir.getDirectory(filesDirName, { create: true }), sliced.tiles);
               next.tileSource = { ...sliced.descriptor, filesPath: `${baseUrl}${exhibit.slug}/${filesDirName}` };
+            } else if (o.tileSource && isOwnPyramid(o.tileSource, name)) {
+              // A preserved pyramid that cannot be carried would name the OLD origin in the new tree —
+              // drop it rather than ship the dead ref (the same no-pyramid degraded path as a fresh
+              // slice that returned nothing).
+              delete next.tileSource;
             }
           }
           // Publish a baked thumbnail iff its bytes exist — else strip the working `/assets-thumb/` ref so
@@ -1042,6 +1065,21 @@ export interface LoadedLibrary {
   logs: Record<string, AnnotationLog>;
 }
 
+/** Options for {@link loadLibrary}. */
+export interface LoadLibraryOptions {
+  /**
+   * Keep the publish-DERIVED projections on recovered objects instead of dropping them (the
+   * default): the baked DZI `tileSource` and `thumbnail`. Both name THIS tree's origin, so the
+   * default strips them — the next publish re-derives them from the working `/assets/` source.
+   * A re-publisher that wants to REUSE the tree's own bytes (republish-tree.mts: the pyramid is
+   * already sliced, the thumbnail already baked) sets this so the descriptors ride through, and
+   * publishLibrary re-bases them (its asset pass fires `tileObject` with the preserved object and
+   * re-stamps `filesPath`; `getThumbnail` re-bakes the thumbnail at the new base). ABSENT/false =
+   * today's lossy inverse, byte-for-byte.
+   */
+  preservePublishFields?: boolean;
+}
+
 /** Invert the publish-time asset rewrite (the `runAssets` pass above): a source published as
  *  `{base}{slug}/assets/{name}` becomes the working form `/assets/{name}` again, and the
  *  publish-DERIVED projections riding on it (the DZI pyramid at `{base}{slug}/…_files`, the baked
@@ -1051,8 +1089,13 @@ export interface LoadedLibrary {
  *  The exhibit's baked base comes from the manifest's own `id` (`{base}{slug}/manifest.json`), so
  *  recovery works for whatever origin the zip was baked against — but ONLY when the bytes are
  *  actually in the tree: rewriting without them would turn a still-working absolute URL into a
- *  dead relative pointer (the defective-export shape). */
-async function recoverAssetSources(objects: AObject[], manifestId: string, exDir: FsDirectory): Promise<AObject[]> {
+ *  dead relative pointer (the defective-export shape).
+ *
+ *  `preservePublishFields` opts out of the projection strip (loadLibrary's lossless-on-request
+ *  option): the baked DZI `tileSource` and `thumbnail` ride through so a re-publisher can REUSE the
+ *  tree's own bytes (republish-tree.mts) — publish re-bases them at the new origin (see the asset
+ *  pass's isOwnPyramid / `getThumbnail` re-bake). */
+async function recoverAssetSources(objects: AObject[], manifestId: string, exDir: FsDirectory, preservePublishFields: boolean): Promise<AObject[]> {
   const MARK = "manifest.json";
   if (!manifestId.endsWith(`/${MARK}`)) return objects; // not a publishLibrary-shaped id — nothing to invert
   const exhibitBase = manifestId.slice(0, -MARK.length); // `{base}{slug}/`
@@ -1074,8 +1117,10 @@ async function recoverAssetSources(objects: AObject[], manifestId: string, exDir
       return o; // these bytes are missing — keep the absolute source rather than dangle
     }
     const next: AObject = { ...o, source: `/assets/${name}` };
-    if (next.tileSource?.kind === "dzi" && next.tileSource.filesPath.startsWith(exhibitBase)) delete next.tileSource;
-    if (next.thumbnail !== undefined && next.thumbnail.startsWith(`${exhibitBase}assets-thumb/`)) delete next.thumbnail;
+    if (!preservePublishFields) {
+      if (next.tileSource?.kind === "dzi" && next.tileSource.filesPath.startsWith(exhibitBase)) delete next.tileSource;
+      if (next.thumbnail !== undefined && next.thumbnail.startsWith(`${exhibitBase}assets-thumb/`)) delete next.thumbnail;
+    }
     return next;
   }));
 }
@@ -1084,8 +1129,11 @@ async function recoverAssetSources(objects: AObject[], manifestId: string, exDir
  * Inverse of publishLibrary: reconstruct the Library + per-exhibit logs from a published site
  * tree (exhibits.json + per-exhibit manifest + the history sidecar). Exhibit ids are recovered
  * as slugs (the internal id is not published). Completes the publish↔load symmetry.
+ *
+ * {@link LoadLibraryOptions.preservePublishFields} makes the inverse LOSSLESS on request — see
+ * there; the default stays lossy (byte-identical to before).
  */
-export async function loadLibrary(fs: Filesystem): Promise<LoadedLibrary> {
+export async function loadLibrary(fs: Filesystem, opts: LoadLibraryOptions = {}): Promise<LoadedLibrary> {
   const root = await fs.root();
   const src = await migratedFsJsonSource(fs); // Archie-69f9: an older tree migrates on read, not refuses
   const ex = await src.get<ExhibitsJson>("exhibits.json");
@@ -1107,7 +1155,7 @@ export async function loadLibrary(fs: Filesystem): Promise<LoadedLibrary> {
       id: asExhibitId(card.slug),
       slug: card.slug,
       title: card.title,
-      objects: await recoverAssetSources(objectsFromManifest(manifest), manifest.id, exDir),
+      objects: await recoverAssetSources(objectsFromManifest(manifest), manifest.id, exDir, opts.preservePublishFields === true),
       ...(sections.length > 0 ? { sections } : {}),
       ...(readings.length > 0 ? { readings } : {}),
       ...(card.description !== undefined ? { summary: card.description } : {}),

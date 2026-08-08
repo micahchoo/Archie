@@ -7,7 +7,6 @@
 
 import { describe, it, expect } from "vitest";
 import { asClientId, asExhibitId } from "../wadm/brand.js";
-import { assertSafeName } from "../fs/names.js"; // TEST-ONLY import — the parity drift-detector below
 import type { AnnotationLog } from "../wadm/types.js";
 import { linearHead } from "./log.js";
 import { mergeLogs, headsOf, classifyLogical } from "./merge.js";
@@ -80,16 +79,6 @@ describe("sectionKey — composed branded identity with containment (#4)", () =>
   it("accepts ordinary ids (dots inside, dashes, unicode)", () => {
     expect(localSectionId(sectionKey(EX, "s.1-intro"))).toBe("s.1-intro");
     expect(localSectionId(sectionKey(EX, "sección"))).toBe("sección");
-  });
-
-  it("parity: the key-segment guard accepts/rejects EXACTLY like fs/names.ts assertSafeName (drift detector)", () => {
-    // structure.ts restates the predicate with domain wording instead of importing it; this
-    // table is what keeps the two in step. A vector added to one rule set must be added here.
-    const vectors = ["", ".", "..", "/", "\\", "\0", "a/b", "/a", "a/", "a\\b", "a\0b", "..a", "a..", ".hidden", "s.1-ok", "ordinary", "sección"];
-    const throws = (fn: () => void) => { try { fn(); return true; } catch { return false; } };
-    for (const v of vectors) {
-      expect(throws(() => sectionKey(EX, v)), `vector ${JSON.stringify(v)}`).toBe(throws(() => assertSafeName(v)));
-    }
   });
 });
 

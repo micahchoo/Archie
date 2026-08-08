@@ -67,28 +67,25 @@ export interface AvPlayerOptions {
 /** The element's handle to the mounted player: torn down on object change / back / disconnect. */
 export interface AvPlayerSurface {
   /**
-   * Open one note by id: show its body, and — if it is a TIMED note — travel the recording to its cue
-   * first. Exactly what a click on that cue in this player's own list does.
+   * Open one note by id (Phase 7 openNote contract — the same shape the reader surface exposes):
+   * show its body, and — if it is a TIMED note — travel the recording to its cue first. Exactly what
+   * a click on that cue in this player's own list does. Returns true when the note opened (a cue was
+   * sought to OR a whole-recording note's body was shown), false when no such note exists.
    *
    * WHY IT EXISTS (S1): the reader's note list (reader-chrome.ts) mounts beside an AV object too, and
    * without this its rows were a DEAD DOOR. Measured on `ex-voynich.o12` (Sound, 5 notes): the rows
-   * rendered, `aria-current` moved, and nothing ever opened — because the embed's own `#noteCard` is
-   * null on this path (the player owns its card), so element.ts's row handler had nothing to drive.
-   *
-   * THE RESULT IS THREE-WAY, and that is the fix for the residual defect the first pass shipped. It
-   * returned a bare `false` for an uncued note, the caller read that as "nothing happened", and the
-   * WHOLE-RECORDING row then took the current styling while still displaying the previously-selected
-   * row's body — current-looking, showing someone else's text. An uncued note has no cue to seek to
-   * but it still has a body, and the visitor asked to read it.
-   *
-   *   "seeked"  — timed note: travelled to its cue AND showed its body
-   *   "shown"   — whole-recording note: showed its body, no seek (there is no moment to travel to)
-   *   "unknown" — no such note on this object: nothing happened, and the caller can say so
+   * rendered, `aria-current` moved, and nothing ever opened — because this player owns its card and
+   * element.ts's row handler had nothing to drive. The pre-Phase-7 return was a three-way
+   * "seeked"/"shown"/"unknown" (a first pass returned a bare false for uncued notes, the caller read
+   * that as "nothing happened", and the WHOLE-RECORDING row took the current styling while still
+   * displaying the previously-selected row's body); the boolean collapses it to exactly what the
+   * caller needs — an uncued note HAS a body and the visitor asked to read it, so "shown" is true —
+   * and "current styling only when something actually opened" is the caller's one rule.
    *
    * The mount already knew how to do this for an ARRIVING cite (`initialSelect`); this is the same
    * behaviour exposed after mount, so the two entry points cannot drift.
    */
-  select(id: string): "seeked" | "shown" | "unknown";
+  openNote(id: string): boolean;
   destroy(): void;
 }
 
@@ -155,25 +152,32 @@ function clampSeekStart(t: string | null | undefined, dur: number): number {
 
 const fmt = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
+// AV player chrome. Written against the SHARED token layer (tokens.ts) like every other module in
+// this package — the old block held the exact pre-"Verdant Clearing" literals (#f6efe9 ground,
+// #d2641e accent, #fffdfb paper, #1c1714 stage) the tokens.ts header names as the drift V9/V31/V69
+// closed; no hex remains here. The STAGE stays DELIBERATELY DARK — a media stage wants the
+// recording to be the brightest thing in it — as a SCOPED LOCAL choice over the --moss-shadow token
+// (the same deep-green stage the reader surface uses behind the OSD canvas), documented here and
+// not promoted to a global token: no other surface in this package needs a dark ground.
 const STYLE = `
-  .av { display: flex; flex-direction: column; height: 100%; background: #1c1714; color: #f0e9e2; }
-  .av-stage { flex: 1 1 auto; min-height: 0; display: grid; place-items: center; padding: 1.5rem; gap: 1rem; }
+  .av { display: flex; flex-direction: column; height: 100%; background: var(--moss-shadow); color: var(--ink-on-accent); }
+  .av-stage { flex: 1 1 auto; min-height: 0; display: grid; place-items: center; padding: var(--space-6); gap: var(--space-4); }
   .av-stage h1 { font-weight: 300; font-size: 1.6rem; margin: 0; text-align: center; }
-  .av-stage .now { font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; color: #b8a795; }
+  .av-stage .now { font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; color: var(--ink-on-accent); opacity: .62; }
   .av audio { width: min(32rem, 100%); }
-  .av video { display: block; max-width: 100%; max-height: 70%; border-radius: 8px; }
-  .av-failed { max-width: 28rem; text-align: center; color: #e7ded7; line-height: 1.55; }
-  .av-notes { flex: 0 0 auto; max-height: 42%; overflow: auto; background: #fffdfb; color: #2a2320; padding: 1rem 1.25rem; }
-  .av-notes .eyebrow { margin: 0 0 .5rem; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: #6b5d52; }
-  .whole-track { margin: 0 0 1rem; padding: .25rem 0 .25rem .75rem; border-left: 3px solid #d2641e; }
-  .whole-track p { margin: .25rem 0 0; font-size: .9rem; line-height: 1.5; color: #4a4038; }
-  .cues { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; }
-  .cues button { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: .75rem; width: 100%; text-align: left; cursor: pointer; padding: .5rem .75rem; background: #f6efe9; color: #2a2320; border: none; border-left: 3px solid transparent; border-radius: 6px; font: inherit; }
-  .cues button:hover { background: #efe4da; }
-  .cues button.active { border-left-color: #d2641e; background: #f3e3d6; }
-  .cues .t { font-variant-numeric: tabular-nums; font-size: .72rem; letter-spacing: .06em; color: #8a7a6c; }
+  .av video { display: block; max-width: 100%; max-height: 70%; border-radius: var(--radius-sm); }
+  .av-failed { max-width: 28rem; text-align: center; color: var(--ink-on-accent); line-height: 1.55; }
+  .av-notes { flex: 0 0 auto; max-height: 42%; overflow: auto; background: var(--surface-paper-card); color: var(--ink-paper-primary); padding: var(--space-4) var(--space-5); }
+  .av-notes .eyebrow { margin: 0 0 var(--space-2); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-paper-secondary); }
+  .whole-track { margin: 0 0 var(--space-4); padding: var(--space-1) 0 var(--space-1) var(--space-3); border-left: 3px solid var(--accent-2); }
+  .whole-track p { margin: var(--space-1) 0 0; font-size: .9rem; line-height: 1.5; color: var(--ink-paper-primary); }
+  .cues { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+  .cues button { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: var(--space-3); width: 100%; text-align: left; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-paper-card); color: var(--ink-paper-primary); border: none; border-left: 3px solid transparent; border-radius: var(--radius-sm); font: inherit; }
+  .cues button:hover { background: var(--surface-paper-hover); }
+  .cues button.active { border-left-color: var(--accent-2); background: var(--accent-2-muted); }
+  .cues .t { font-variant-numeric: tabular-nums; font-size: .72rem; letter-spacing: .06em; color: var(--ink-paper-muted); }
   .cues .line { font-size: .95rem; line-height: 1.45; }
-  .av-empty { font-size: .9rem; color: #6b5d52; }
+  .av-empty { font-size: .9rem; color: var(--ink-paper-secondary); }
 `;
 
 /**
@@ -343,13 +347,13 @@ export function mountAvPlayer(host: HTMLElement, opts: AvPlayerOptions): AvPlaye
   media.src = object.source;
 
   return {
-    select(id: string): "seeked" | "shown" | "unknown" {
+    openNote(id: string): boolean {
       if (selectCue(id)) {
         onTimeUpdate(); // paused media fires no timeupdate — sync the highlight to the new head
-        return "seeked";
+        return true;
       }
       // No cue, but the note may still be a whole-recording one with a body worth showing.
-      return showWholeNote(id) ? "shown" : "unknown";
+      return showWholeNote(id);
     },
     destroy(): void {
       media.removeEventListener("timeupdate", onTimeUpdate);

@@ -58,8 +58,11 @@ describe("gallery-view — the UNLISTED lever (Archie-77b2): default LISTED, hal
 
 describe("loadImageIndex — one fetch, degrade to null on any failure", () => {
   afterEach(() => vi.unstubAllGlobals());
-  const fakeRes = (over: Partial<Response> & { json?: () => Promise<unknown> }) =>
-    ({ ok: true, status: 200, json: async () => idx, ...over }) as unknown as Response;
+  // Hosted reads go through core's httpJsonSource → HttpFilesystem, which consumes the body via
+  // arrayBuffer (not json) — the mock serves bytes; the corrupt-body case overrides them.
+  const fakeRes = (over: Partial<Response> & { arrayBuffer?: () => Promise<ArrayBuffer> }) =>
+    // headers.get is read by core's HttpFilesystem for the declared content-length pre-check
+    ({ ok: true, status: 200, headers: { get: () => null }, arrayBuffer: async () => new TextEncoder().encode(JSON.stringify(idx)).buffer, ...over }) as unknown as Response;
 
   it("returns the parsed index on a 200", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(fakeRes({})));
@@ -73,7 +76,7 @@ describe("loadImageIndex — one fetch, degrade to null on any failure", () => {
     errSpy.mockRestore();
   });
   it("returns null on a 200 with an unparsable body (corrupt deploy)", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(fakeRes({ json: async () => { throw new SyntaxError("Unexpected token <"); } })));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(fakeRes({ arrayBuffer: async () => new TextEncoder().encode("<html>not json</html>").buffer })));
     expect(await loadImageIndex()).toBeNull();
   });
   it("returns null when fetch itself rejects (offline)", async () => {

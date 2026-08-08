@@ -14,89 +14,25 @@ import OpenSeadragon from "openseadragon";
 import { createOSDAnnotator, W3CImageFormat, UserSelectAction } from "@annotorious/openseadragon";
 import type { ImageAnnotation, W3CImageAnnotation, DrawingStyle, DrawingStyleExpression } from "@annotorious/openseadragon";
 import { mountPlugin } from "@annotorious/plugin-tools";
-import { resolveTileSource, isDegenerateSelectorValue, selectorOf, selectorBBox, regionPixelRect } from "@render/core";
-import { dispatchFitBounds, applyFitBounds, clampedFitRect, type ViewportLike } from "./fitbounds.js";
-import { createFrameOverlay, type FrameViewerLike } from "./frame-overlay.js";
-import { createSelectionHalo, type HaloViewerLike } from "./selection-halo.js";
+import { resolveTileSource, isDegenerateSelectorValue, selectorBBox, regionPixelRect } from "@render/core";
+import { dispatchFitBounds, applyFitBounds, clampViewportToRegion, type ViewportLike, type ClampViewportLike } from "./fitbounds.js";
+import { openOsdViewer, type NativeFetch } from "./osd-open.js";
+import { createFrameOverlay } from "./frame-overlay.js";
+import { createSelectionHalo } from "./selection-halo.js";
+import type { OverlayViewerLike } from "./overlay-core.js";
 import { applyCanvasA11y, type A11yViewerLike } from "./canvas-a11y.js";
 import { GestureGuard } from "./gesture-guard.js";
 import { zoomBand } from "./zoom-band.js";
 import { imageToNavigatorPixel, type NavigatorDot } from "./marker-dots.js";
-import { xyzTileSource } from "./xyz.js";
-import { dziOsdSource } from "./dzi.js";
-import type { W3CSelector, TileSourceDescriptor, TileSource, AnnotationLike } from "@render/core";
+import type { W3CSelector, TileSourceDescriptor, AnnotationLike } from "@render/core";
 import type { MountSurface, SelectionId, FrameOverlay, MarkerStyle } from "./surface.js";
 
+// The native-fetch escape hatch + tile-source resolver moved to osd-open.ts (the ONE OSD
+// construction home); re-exported here so every existing importer — index.ts, mount-fetch.test.ts —
+// keeps resolving them from "./mount.js".
+export { resolveOsdTileSources, type NativeFetch, type ResolvedTileSources } from "./osd-open.js";
+
 /** Plain fit (no sidebar reservation) — used when the adapter supplies no fit options. */
-
-/** The tileSources shape OpenSeadragon accepts (string URL, a `{type}`/custom config, or a parsed
- *  info.json object). Captured from OSD's own option type so the resolver stays byte-compatible. */
-type OsdTileSourceInput = NonNullable<Parameters<typeof OpenSeadragon>[0]["tileSources"]>;
-
-/**
- * The native-fetch escape hatch the packaged desktop app (Tauri) injects. The webview's own fetch fails
- * on CORS-restricted / cross-origin-redirecting hosts; these two calls route through Tauri's native http
- * instead. Absent on the web (and in every unit test) — the mount then uses the plain webview loader,
- * byte-identical to before. The mount NEVER imports `@tauri-apps/*`; the studio supplies the concrete
- * implementation (apps/studio/src/tauri-fs.ts) and passes it down as an option.
- */
-export interface NativeFetch {
-  /** Pull remote image bytes natively → a same-origin `blob:` URL (caller owns revoking it). */
-  toBlobUrl(url: string): Promise<string>;
-  /** Fetch + parse a remote JSON document natively (a IIIF `info.json`). */
-  json(url: string): Promise<unknown>;
-}
-
-/** What resolveOsdTileSources hands back: the OSD input, plus any `blob:` URL it minted (so the caller
- *  revokes it on destroy — null when nothing was minted). */
-export interface ResolvedTileSources {
-  tileSources: OsdTileSourceInput;
-  ownedBlobUrl: string | null;
-}
-
-/**
- * Resolve the OSD `tileSources` input for a classified source, routing remote images + IIIF info.json
- * through the injected native fetcher when present (desktop). Extracted from createMount so it's unit
- * testable without a real OSD/DOM (mount-fetch.test.ts).
- *
- * - `image` (a plain remote http(s) image): fetch the bytes natively → a same-origin `blob:` URL, so OSD
- *   `<img>`-loads same-origin bytes — no webview CORS, no WebGL taint. The minted URL is returned to revoke.
- * - `iiif`: fetch + parse `info.json` natively and hand OSD the parsed object as a DATA tile source
- *   (OSD's determineType → IIIFTileSource). This restores the OPEN of an info.json a webview XHR can't
- *   reach (302 / CORS). IIIF **tiles** deliberately stay on the webview `<img>` loader: a native per-tile
- *   fetch would cost one Tauri IPC round-trip per tile — dozens per deep-zoom viewport — for bytes the
- *   webview already fetches from any CORS-open tile host. A host that also blocks tile `<img>` CORS is a
- *   documented gap, not a regression (the pre-existing crossOriginPolicy behavior is unchanged).
- * - `xyz` / `dzi`: unchanged — a template slippy-map / a local baked pyramid, neither has the webview-CORS
- *   problem the native fetcher solves.
- *
- * A native-fetch throw is swallowed to the webview path, so the desktop result is never WORSE than web.
- */
-export async function resolveOsdTileSources(
-  ts: TileSource,
-  nativeFetch?: NativeFetch,
-): Promise<ResolvedTileSources> {
-  if (nativeFetch) {
-    try {
-      if (ts.kind === "image" && /^https?:\/\//i.test(ts.url)) {
-        const blob = await nativeFetch.toBlobUrl(ts.url);
-        return { tileSources: { type: "image", url: blob }, ownedBlobUrl: blob };
-      }
-      if (ts.kind === "iiif" && /^https?:\/\//i.test(ts.infoUrl)) {
-        const info = (await nativeFetch.json(ts.infoUrl)) as OsdTileSourceInput;
-        return { tileSources: info, ownedBlobUrl: null };
-      }
-    } catch (e) {
-      console.warn("[@render/mount] native fetch failed; falling back to the webview loader", e);
-    }
-  }
-  const tileSources: OsdTileSourceInput =
-    ts.kind === "image" ? { type: "image", url: ts.url }
-    : ts.kind === "xyz" ? xyzTileSource(ts)
-    : ts.kind === "dzi" ? dziOsdSource(ts) // a baked Deep Zoom pyramid (Q-9) — OSD reads it natively
-    : ts.infoUrl;
-  return { tileSources, ownedBlobUrl: null };
-}
 
 export interface MountOptions {
   /** Image URL or IIIF source to LOAD into the viewer (classified by resolveTileSource — ADR-0004). */
@@ -147,9 +83,6 @@ export function selectorValue(a: unknown): string | undefined {
 export async function createMount(container: HTMLElement, opts: MountOptions): Promise<MountSurface> {
   // A structured tileSource descriptor (a map) classifies the surface; else the source string (ADR-0004).
   const ts = resolveTileSource(opts.tileSource ?? opts.source);
-  // On desktop a remote image / IIIF info.json is pulled through the native fetcher (webview-CORS bypass);
-  // `ownedBlobUrl` is any blob: URL minted for a remote image, revoked on destroy. Web/tests: webview path.
-  const { tileSources, ownedBlobUrl } = await resolveOsdTileSources(ts, opts.nativeFetch);
   // Annotation target identity: the canvas IRI if given, else the loaded image url (a map MUST set canvasId
   // — its tile template is not a canvas IRI; DESIGN.md canvas-identity note — so fall back to the source).
   // A dzi pyramid has no single image url either (its bytes are tiles), so it also falls back to the source.
@@ -158,67 +91,14 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     : ts.kind === "xyz" || ts.kind === "dzi" ? opts.source
     : ts.infoUrl);
 
-  const viewer = OpenSeadragon({
-    element: container,
-    tileSources,
-    // Remote IIIF (e.g. iiif.archive.org) is cross-origin: without a crossOrigin request the tile images
-    // taint the canvas and OSD's WebGL drawer refuses to paint them ("WebGL cannot be used to draw this
-    // TiledImage because it has tainted data"). 'Anonymous' makes the requests CORS so WebGL can draw —
-    // same-origin/blob: sources are unaffected; a (rare) non-CORS server then fails to load rather than
-    // load-but-taint, which is no worse than the silent blank it produced before.
-    crossOriginPolicy: "Anonymous",
-    // Slow institutional IIIF backends were hitting the 30s default and dropping tiles — give them longer.
-    timeout: 60000,
-    showNavigationControl: false,
-    gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: false },
-    immediateRender: true,
-    maxZoomPixelRatio: 16, // fine-mark placement (anvil viewer.ts:94)
-    minZoomImageRatio: 0.5,
-    // RESIZE BEHAVIOUR IS OSD'S DEFAULT, AND THAT IS NOW A CHOICE RATHER THAN AN OVERSIGHT
-    // (human ruling, 2026-07-26 — ADR-0019's layout row). We set no `autoResize` and no
-    // `preserveImageSizeOnResize`, and nothing here re-fits on a container change (the one `resize`
-    // handler below only repositions navigator dots). So when the docked note row opens or closes,
-    // the canvas changes height and OSD re-centres: the image TRANSLATES by half the delta and its
-    // on-screen size is unchanged.
-    //
-    // That is deliberate. Dismissing a note gives its height back to the image, because the reader
-    // dismissed it in order to see more image; the alternative — reserving the row permanently — is a
-    // flat ~141px (25% of the canvas at 1280x720) paid in the common case where no note is open.
-    //
-    // `preserveImageSizeOnResize: true` was measured and REJECTED: it preserves size, not anchor, so
-    // holding the scale across the growth forces a zoom change and moves the mark further. Over 20
-    // runs of `selection.spec.ts`'s real-click assertion it took 17/20 passing to 9/20. If you are
-    // here to stop the image moving, an ANCHOR-preserving resize (pin the top-left, extend downward)
-    // is the unexplored option — not this one. `selection.spec.ts` pins the current behaviour.
-
-    // Worklist 1.1: the locator mini-map (verified openseadragon@5.0.1 options — showNavigator/
-    // navigatorPosition/navigatorSizeRatio/navigatorAutoFade).
-    ...(opts.locator ? { showNavigator: true, navigatorPosition: "BOTTOM_RIGHT", navigatorSizeRatio: 0.15, navigatorAutoFade: true } : {}),
+  // The ONE shared OSD construction + open-await (osd-open.ts): tile-source resolution (native-fetch
+  // on desktop), the options policy (WebGL drawer here — the read path forces "canvas"), canvas a11y
+  // naming, and the open/open-failed await with its failure cleanup. `ownedBlobUrl` is any blob: URL
+  // minted for a remote image, revoked on destroy. Web/tests: webview path.
+  const { viewer, ownedBlobUrl } = await openOsdViewer(container, ts, {
+    ...(opts.nativeFetch ? { nativeFetch: opts.nativeFetch } : {}),
+    ...(opts.locator ? { locator: opts.locator } : {}),
   });
-
-  // V90 (Archie-3d55) — name the canvas IMMEDIATELY, before the open await below. OSD builds its
-  // canvas div in the constructor, so there is nothing to wait for; and doing it here means the stop
-  // is named even when the open later FAILS, which is the state a reader is most likely to be stuck
-  // tabbing through. (The Annotorious layer is a separate call after the annotator exists — it isn't
-  // in the DOM yet.)
-  applyCanvasA11y(viewer as unknown as A11yViewerLike);
-
-  try {
-    await new Promise<void>((resolve, reject) => {
-      viewer.addOnceHandler("open", () => resolve());
-      viewer.addOnceHandler("open-failed", (e: { message?: string }) => {
-        console.error("[@render/mount] OpenSeadragon open-failed:", e.message ?? "unknown");
-        reject(new Error("Couldn't load this media item."));
-      });
-    });
-  } catch (e) {
-    // Open failed: createMount rejects and the caller never gets a surface to destroy(), so release the
-    // resources minted BEFORE the open here — the native-fetched image blob (else it orphans the full
-    // remote bytes) and the viewer itself (pre-existing leak on open-fail, closed in the same breath).
-    if (ownedBlobUrl) URL.revokeObjectURL(ownedBlobUrl);
-    viewer.destroy();
-    throw e;
-  }
 
   // Bounded Map extent (ADR-0015, Option A): the tile source is the whole world; constrain the VIEWPORT to
   // the authored region so the reader opens framed and can't pan/zoom out past `bounds`. World pixels are
@@ -232,35 +112,18 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     const r = regionPixelRect(ts); // region rectangle in WORLD image pixels
     const region = viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(r.x, r.y, r.w, r.h));
     mapRegion = { x: region.x, y: region.y, w: region.width, h: region.height };
+    // A const copy of the Box form — the closure below must capture a narrowed value (a captured
+    // `let` loses narrowing), and clampViewportToRegion speaks Box (w/h), not the OSD Rect.
+    const regionBox = mapRegion;
     viewer.viewport.fitBounds(region, true); // open framed on the region
     const minZoom = viewer.viewport.getZoom(true); // the region-fit zoom = the floor for zooming out
     // Soft constraint: once a gesture settles, floor the zoom and nudge the centre back so the view stays
-    // within the region. Each branch acts only when out of bounds, so the clamp converges (no event loop).
-    const clampToRegion = (): void => {
-      if (viewer.viewport.getZoom() < minZoom - 1e-9) {
-        viewer.viewport.zoomTo(minZoom, undefined, true); // can't zoom out past the framed region
-        return; // the next settle pass handles panning
-      }
-      const b = viewer.viewport.getBounds();
-      const c = viewer.viewport.getCenter();
-      let cx = c.x;
-      let cy = c.y;
-      if (b.width <= region.width) cx = Math.min(region.x + region.width - b.width / 2, Math.max(region.x + b.width / 2, c.x));
-      if (b.height <= region.height) cy = Math.min(region.y + region.height - b.height / 2, Math.max(region.y + b.height / 2, c.y));
-      if (Math.abs(c.x - cx) > 1e-9 || Math.abs(c.y - cy) > 1e-9) viewer.viewport.panTo(new OpenSeadragon.Point(cx, cy), true);
-    };
-    viewer.addHandler("animation-finish", clampToRegion);
+    // within the region (the ONE clamp — clampViewportToRegion, fitbounds.ts). Each branch acts only
+    // when out of bounds, so the clamp converges (no event loop).
+    viewer.addHandler("animation-finish", () =>
+      clampViewportToRegion(viewer.viewport as unknown as ClampViewportLike, regionBox, minZoom),
+    );
   }
-
-  // Map-aware fit: zoom to an image-pixel box but land it CLAMPED inside the region in one motion, so
-  // the animation-finish clamp above finds nothing to correct (no second pan that shoves the note off
-  // centre). Only called when mapRegion is set (a bounded map); the image path uses dispatchFitBounds.
-  const fitBoxOnMap = (box: { x: number; y: number; w: number; h: number }): void => {
-    if (!mapRegion) return;
-    const vr = viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(box.x, box.y, box.w, box.h));
-    const fit = clampedFitRect({ x: vr.x, y: vr.y, w: vr.width, h: vr.height }, viewer.viewport.getAspectRatio(), mapRegion);
-    viewer.viewport.fitBounds(new OpenSeadragon.Rect(fit.x, fit.y, fit.w, fit.h), false);
-  };
 
   // Current zoom / home zoom — the ONE place this ratio is computed, shared by the zoom-band stamp
   // below and getZoomRatio (Archie-93fd scale cue) so the two never drift apart.
@@ -361,23 +224,23 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
   // Coverage-border overlay (7e1f) — a standalone rendering concern (createFrameOverlay). It frames the
   // WHOLE OBJECT: the SVG is added as an OSD overlay at the image's bounds, so it tracks the object through
   // pan/zoom (not a fixed viewport border). setFrame re-draws (replacing any current frame); null clears it.
-  // FrameViewerLike is deliberately a minimal duck-typed capability (frame-overlay.ts stays
-  // decoupled from OSD's concrete Point/Rect/OverlayOptions types); OSD's real Viewer satisfies it
-  // at runtime (addOverlay takes {element, location}) but its own types are narrower/wider than
-  // the duck type in ways TS can't verify structurally — asserted once here, at the wiring point.
+  // OverlayViewerLike is the ONE duck-typed capability every overlay layer shares (overlay-core.ts);
+  // OSD's real Viewer satisfies it at runtime (addOverlay takes {element, location}) but its own types
+  // are narrower/wider than the duck type in ways TS can't verify structurally — asserted once here,
+  // at the wiring point.
   // V90 (Archie-3d55) — name the OSD canvas, drop Annotorious's decorative layers out of the tab
   // order. Applied after the annotator exists (its layer is only in the DOM by then), and again on
   // `open`, because Annotorious rebuilds its layer when the image changes.
   applyCanvasA11y(viewer as unknown as A11yViewerLike);
   viewer.addHandler("open", () => applyCanvasA11y(viewer as unknown as A11yViewerLike));
 
-  const frameOverlay = createFrameOverlay(viewer as unknown as FrameViewerLike);
+  const frameOverlay = createFrameOverlay(viewer as unknown as OverlayViewerLike);
 
   // Selection halo (Archie-52a0) — the ring that says WHICH mark is open. A third overlay layer
   // because neither renderer's style channel can express two strokes (selection-halo.ts's header).
   // `styleFor` is retained here solely so the halo can read the selected mark's own colour and pick
   // a contrasting ink; without it the halo still draws, just with the neutral white default.
-  const halo = createSelectionHalo(viewer as unknown as HaloViewerLike);
+  const halo = createSelectionHalo(viewer as unknown as OverlayViewerLike);
   let styleForFn: ((id: SelectionId) => MarkerStyle | undefined) | undefined;
   let selectedHaloId: SelectionId | null = null;
   const paintHalo = (id: SelectionId | null): void => {
@@ -497,26 +360,17 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     },
     fitBounds(id: SelectionId) {
       const anns = annotator.getAnnotations() as W3CImageAnnotation[];
-      if (mapRegion) {
-        // Bounded map: land the note clamped-in-region in one motion (no animation-finish yank).
-        const sel = selectorOf(anns.find((a) => (a as { id?: string }).id === id));
-        const box = sel ? selectorBBox(sel) : null;
-        if (box) fitBoxOnMap(box);
-        return;
-      }
-      // Image path: the same dispatchFitBounds oracle the gate test pins.
-      dispatchFitBounds(viewer.viewport as unknown as ViewportLike, anns, id, {});
+      // ONE dispatch for both paths (the oracle gate.test.ts pins). On a bounded map the `region`
+      // option folds the region clamp INTO the fit — edge-to-edge (margin:0, matching the retired
+      // fitBoxOnMap) so the note lands clamped-in-region in one motion and the animation-finish
+      // clamp finds nothing to correct (no second pan that shoves the note off centre).
+      dispatchFitBounds(viewer.viewport as unknown as ViewportLike, anns, id, mapRegion ? { region: mapRegion, margin: 0 } : {});
     },
     fitRegion(fragment: string) {
       // Fit an arbitrary region fragment (a Section's camera target — NOT an annotation). Same oracle
       // as fitBounds, but the selector is built from the fragment directly. `t=...` → fitBoundsRect null → no-op.
       const selector = { type: "FragmentSelector", value: fragment } as W3CSelector;
-      if (mapRegion) {
-        const box = selectorBBox(selector);
-        if (box) fitBoxOnMap(box);
-        return;
-      }
-      applyFitBounds(viewer.viewport as unknown as ViewportLike, selector, {});
+      applyFitBounds(viewer.viewport as unknown as ViewportLike, selector, mapRegion ? { region: mapRegion, margin: 0 } : {});
     },
     setSelected(id: SelectionId | null) {
       if (id === null) annotator.cancelSelected();

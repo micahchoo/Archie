@@ -15,7 +15,7 @@
 //   (content field, id tiebreak)  #4 composed branded identity `{exhibitId}/{localId}`
 //   #5 referential tolerance  #6 hide-by-ancestry deletes with first-class un-delete.
 
-import { mintRevId, type ExhibitId, type RevId, type ClientId, type Brand } from "../wadm/brand.js";
+import { mintRevId, assertSafeSegment, type ExhibitId, type RevId, type ClientId, type Brand } from "../wadm/brand.js";
 import type { IsoDateTime } from "../wadm/types.js";
 import { append, linearHead, type DagRecord } from "./log.js";
 import { headsOf } from "./merge.js";
@@ -29,27 +29,16 @@ import type { CarryDisposition } from "../model/carry.js";
 export type SectionKey = Brand<string, "SectionKey">;
 
 /**
- * Containment for one key segment — the SAME rule set as `fs/names.ts` `assertSafeName` (empty,
- * ".", "..", separators, NUL), restated here with domain wording rather than imported: a section
- * id is an IDENTITY segment today, but persist (Archie-a911) will join it into paths, and the
- * `/` rejection is also what keeps the composed-key grammar parseable (`localSectionId` splits on
- * the FIRST `/`). Local ids arrive from untrusted input (a `.archie.zip` can carry any string) —
- * same trust posture as the tauri-fs seam. Keep the predicates in step with `assertSafeName`.
- */
-function assertSafeKeySegment(segment: string, role: "exhibitId" | "section localId"): void {
-  if (segment === "" || segment === "." || segment === ".." || /[/\\]/.test(segment) || segment.includes("\0")) {
-    throw new Error(`invalid ${role}: ${JSON.stringify(segment)}`);
-  }
-}
-
-/**
  * Compose the scoped key — the SOLE composer (never template-literal a SectionKey elsewhere).
- * Rejects unsafe segments on BOTH sides: the localId is untrusted input at zip/import boundaries,
- * and an exhibitId bearing a `/` would corrupt the key grammar itself.
+ * Rejects unsafe segments on BOTH sides via the shared `assertSafeSegment` (wadm/brand.ts — the
+ * ONE containment predicate): a section id is an IDENTITY segment today, but persist
+ * (Archie-a911) will join it into paths, and the `/` rejection is also what keeps the composed-key
+ * grammar parseable (`localSectionId` splits on the FIRST `/`). Local ids arrive from untrusted
+ * input (a `.archie.zip` can carry any string) — same trust posture as the tauri-fs seam.
  */
 export function sectionKey(exhibitId: ExhibitId, localId: string): SectionKey {
-  assertSafeKeySegment(exhibitId, "exhibitId");
-  assertSafeKeySegment(localId, "section localId");
+  assertSafeSegment(exhibitId, "invalid exhibitId");
+  assertSafeSegment(localId, "invalid section localId");
   return `${exhibitId}/${localId}` as SectionKey;
 }
 

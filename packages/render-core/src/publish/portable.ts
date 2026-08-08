@@ -13,7 +13,9 @@
 // splitNoteMedia) works because we rewrite the `/assets/` token inside the body text too.
 // Provenance of this code: promoted from spikes/portable-viewer-seam/approach-p (ADR-0010 donor).
 
-import type { Filesystem, FsDirectory } from "../fs/seam.js";
+import type { Filesystem } from "../fs/seam.js";
+// The ONE classified absent-vs-failed traversal — the mint helpers collapse their hand-rolled walks onto it.
+import { tryResolveFile } from "../fs/resolve.js";
 import type { Reading } from "../model/model.js";
 import type { W3CAnnotation } from "../wadm/types.js";
 import type { ExhibitsJson } from "../iiif/exhibits.js";
@@ -44,19 +46,9 @@ const THUMB_SEG = "/assets-thumb/";
  * Mint a `blob:` URL for an embedded asset at `{slug}/assets/{name}`. Returns null if the file isn't
  * in the archive — leave the source as-is, like publishLibrary's "bytes unavailable" branch (site.ts).
  */
-async function mintAssetBlob(root: FsDirectory, slug: string, name: string, mime: string, sink: string[]): Promise<string | null> {
-  let assetsDir: FsDirectory;
-  try {
-    assetsDir = await (await root.getDirectory(slug)).getDirectory("assets");
-  } catch {
-    return null;
-  }
-  let file;
-  try {
-    file = await assetsDir.getFile(name);
-  } catch {
-    return null;
-  }
+async function mintAssetBlob(fs: Filesystem, slug: string, name: string, mime: string, sink: string[]): Promise<string | null> {
+  const file = await tryResolveFile(fs, [slug, "assets", name]);
+  if (file === null) return null; // absent — leave the source as-is, like publishLibrary's "bytes unavailable" branch (site.ts)
   const bytes = await file.readable();
   const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
   sink.push(url);
@@ -78,14 +70,14 @@ function guessMime(name: string): string {
  * a bare `assets/name`. Match on the `/assets/` segment, mint a blob for what follows. Returns the
  * input unchanged if it isn't an embedded asset (external IIIF / http / blob / data — resolve.ts passthrough).
  */
-async function rewriteAssetUrl(root: FsDirectory, slug: string, url: string, sink: string[]): Promise<string> {
+async function rewriteAssetUrl(fs: Filesystem, slug: string, url: string, sink: string[]): Promise<string> {
   // lastIndexOf, NOT indexOf: the published source is `${baseUrl}${slug}/assets/${name}`, and the slug
   // may ITSELF be "assets" (→ `…/assets/assets/plate.png`). The LAST `/assets/` is always the asset-dir
   // boundary right before the filename, so the name extracts cleanly whatever the slug is named.
   const idx = url.lastIndexOf(ASSET_SEG);
   if (idx === -1) return url;
   const name = url.slice(idx + ASSET_SEG.length).split(/[?#]/)[0]!;
-  const blob = await mintAssetBlob(root, slug, name, guessMime(name), sink);
+  const blob = await mintAssetBlob(fs, slug, name, guessMime(name), sink);
   return blob ?? url;
 }
 
@@ -95,19 +87,9 @@ async function rewriteAssetUrl(root: FsDirectory, slug: string, url: string, sin
  * `/assets/` segment `rewriteAssetUrl` keys on, so the thumbnail would otherwise pass through unrewritten
  * (and a portable viewer has no server to resolve the embedded path). Null if absent — leave as-is.
  */
-async function mintThumbBlob(root: FsDirectory, slug: string, name: string, mime: string, sink: string[]): Promise<string | null> {
-  let dir: FsDirectory;
-  try {
-    dir = await (await root.getDirectory(slug)).getDirectory("assets-thumb");
-  } catch {
-    return null;
-  }
-  let file;
-  try {
-    file = await dir.getFile(name);
-  } catch {
-    return null;
-  }
+async function mintThumbBlob(fs: Filesystem, slug: string, name: string, mime: string, sink: string[]): Promise<string | null> {
+  const file = await tryResolveFile(fs, [slug, "assets-thumb", name]);
+  if (file === null) return null; // absent — leave the thumbnail reference as-is
   const bytes = await file.readable();
   const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
   sink.push(url);
@@ -116,17 +98,17 @@ async function mintThumbBlob(root: FsDirectory, slug: string, name: string, mime
 
 /** Rewrite a baked-thumbnail URL (`…/assets-thumb/{name}`) to a `blob:` URL; input unchanged if it isn't
  *  an embedded thumbnail (external/IIIF thumbnails pass through, like rewriteAssetUrl). */
-async function rewriteThumbUrl(root: FsDirectory, slug: string, url: string, sink: string[]): Promise<string> {
+async function rewriteThumbUrl(fs: Filesystem, slug: string, url: string, sink: string[]): Promise<string> {
   const idx = url.lastIndexOf(THUMB_SEG);
   if (idx === -1) return url;
   const name = url.slice(idx + THUMB_SEG.length).split(/[?#]/)[0]!;
-  const blob = await mintThumbBlob(root, slug, name, guessMime(name), sink);
+  const blob = await mintThumbBlob(fs, slug, name, guessMime(name), sink);
   return blob ?? url;
 }
 
 /** Rewrite embedded-asset urls inside a note body (the `m.url` sink: NoteMedia/NoteLightbox read these
  *  via splitNoteMedia). Rewriting the raw body text yields blob urls with no component change. */
-async function rewriteNoteBodyMedia(root: FsDirectory, slug: string, note: W3CAnnotation, sink: string[]): Promise<W3CAnnotation> {
+async function rewriteNoteBodyMedia(fs: Filesystem, slug: string, note: W3CAnnotation, sink: string[]): Promise<W3CAnnotation> {
   const body = (note as { body?: unknown }).body;
   if (body === undefined) return note;
   const arr = Array.isArray(body) ? body : [body];
@@ -138,7 +120,7 @@ async function rewriteNoteBodyMedia(root: FsDirectory, slug: string, note: W3CAn
       const matches = [...v.matchAll(/[^\s"'()]*\/assets\/[^\s"'()]+/g)].map((m) => m[0]);
       let out = v;
       for (const url of matches) {
-        const blob = await rewriteAssetUrl(root, slug, url, sink);
+        const blob = await rewriteAssetUrl(fs, slug, url, sink);
         if (blob !== url) {
           out = out.split(url).join(blob);
           changed = true;
@@ -157,14 +139,13 @@ async function rewriteNoteBodyMedia(root: FsDirectory, slug: string, note: W3CAn
  * portable path is data-complete for the legend. Adds only the blob rewrite over `readPublishedExhibit`.
  */
 export async function loadPortableExhibit(fs: Filesystem, slug: string): Promise<PortableLoad> {
-  const root = await fs.root();
   const blobUrls: string[] = [];
-  // The blob-rewrite transform is fs-coupled (mintAssetBlob reads asset bytes off `root`): rewrite the
+  // The blob-rewrite transform is fs-coupled (tryResolveFile walks off `fs`): rewrite the
   // object source, then each note body's `/assets/` tokens, minting into `blobUrls` for revoke().
   const transform: NoteTransform = {
     object: async (o) => {
-      const src = await rewriteAssetUrl(root, slug, o.source, blobUrls);
-      let thumb = o.thumbnail !== undefined ? await rewriteThumbUrl(root, slug, o.thumbnail, blobUrls) : undefined;
+      const src = await rewriteAssetUrl(fs, slug, o.source, blobUrls);
+      let thumb = o.thumbnail !== undefined ? await rewriteThumbUrl(fs, slug, o.thumbnail, blobUrls) : undefined;
       // Gap-7 fallback (docs/thumbnail-mitigations.md §7-A): an embedded `…/assets-thumb/…` reference
       // whose file is NOT in the archive is a dead absolute URL offline. When that happens AND the
       // object's own master asset DID mint, degrade to the master's blob — the plate shows the full
@@ -177,7 +158,7 @@ export async function loadPortableExhibit(fs: Filesystem, slug: string): Promise
       if (src === o.source && (thumb === undefined || thumb === o.thumbnail)) return o;
       return { ...o, source: src, ...(thumb !== undefined ? { thumbnail: thumb } : {}) };
     },
-    note: (n) => rewriteNoteBodyMedia(root, slug, n, blobUrls),
+    note: (n) => rewriteNoteBodyMedia(fs, slug, n, blobUrls),
   };
   // Archie-69f9: read through the migrating source, so an OLDER published tree opens instead of
   // refusing. Identity today (empty registry / v1) and identity forever for a current tree — the

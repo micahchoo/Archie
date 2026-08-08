@@ -85,7 +85,7 @@ Lane: 2 (untrusted-input seams). Attack: hostile-ingest surface audit — verify
 | fetch bound default — .bind(globalThis) | open.ts:92, http.ts:161 | clean |
 | assertSafeName on Tauri | tauri.ts:255,266,278 | clean |
 | assertSafeName on HTTP | http.ts:121 | clean |
-| sectionKey parity with assertSafeName | structure.ts:39-43, test at structure.test.ts:85-92 | clean |
+| sectionKey containment = ONE predicate (assertSafeSegment) | wadm/brand.ts, used by structure.ts:50-52 and fs/names.ts; message pins at structure.test.ts:62-78, http.test.ts:167-168 | clean |
 | DOMPurify html profile + dead-anchor hook | sanitize.ts:16-23 | clean |
 | WADM import whitelist-based selector rebuild | wadm-import.ts:82-101 | clean |
 | Slug hardening defence-in-depth | link.ts:207-209 | clean |

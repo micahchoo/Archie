@@ -17,9 +17,11 @@
   import { type MarkerStyle, type FrameOverlay, formatZoomRatio, zoomBand } from "@render/svelte";
   import { loadAsideWidth, saveAsideWidth, scopedKey, loadSessionCollapsed, saveSessionCollapsed, type AsideState } from "../aside-persistence.js";
   import { untrack } from "svelte";
-  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, readingIdOf, stripMarkdown, metadataRows, withZoomBand, type MarkerStyleSpec, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
+  import { commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, readingIdOf, stripMarkdown, metadataRows, withZoomBand, type MarkerStyleSpec, type AObject, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
   import { ownerObjectOf, arrivalSectionIndex } from "../narrative-landing.js";
   import { navPosition, navRegionName, navStepName, noteIndexOpenMark } from "../product-copy.js";
+  import { createScrollIntent } from "../scroll-intent.js";
+  import { createNoteSurface } from "../note-surface.svelte.js";
 
   // Resizable / collapsible narrative spine (Phase-2 expandability). `asideWidth` is a px OVERRIDE of the
   // responsive clamp() default (null ⇒ default); persisted per the archie.*.v1 metadata idiom. Drag math
@@ -34,9 +36,6 @@
   const ASIDE_W_KEY = "archie.narrativeAsideWidth.v1";
   const ASIDE_COLLAPSED_KEY = "archie.narrativeAsideCollapsed.v1";
   let asideWidth = $state<number | null>(loadAsideWidth(ASIDE_W_KEY));
-  // Expand the open note into the centred reading sheet (Phase-3 focus surface). A BOOLEAN, not a text
-  // snapshot: the sheet renders the same `current` note the card does (Archie-dbbc).
-  let readingSheet = $state(false);
 
   let {
     slug = "",
@@ -133,9 +132,10 @@
   })();
 
   let activeIndex = $state(arrivalSection);
-  // svelte-ignore state_referenced_locally -- initial-capture is the contract: seeds once; later
-  // changes are adopted by the re-selection seam (A0) $effect below via prevInitialSelected.
-  let selected = $state<string | null>(initialSelected); // a clicked marker (highlight), distinct from the active section
+  // Selection lives on the shared note surface (`surface.selected`, seeded from `initialSelected` by
+  // the factory — same initial-capture contract as the old `$state(initialSelected)`; later changes
+  // are adopted by the re-selection seam (A0) $effect below via prevInitialSelected). A clicked marker
+  // (highlight) is distinct from the active section.
   // Scale cue (Archie-93fd): current zoom / home zoom, streamed live from Canvas's onzoom. Defaults
   // to 1 (home/fit) — the value it settles back to once the canvas mounts and reports its own home.
   // Only meaningful for the spatial (non-AV) branch — see the `{#if !isAV}` guard below.
@@ -185,105 +185,37 @@
   //   - annomea/anvil have no scroll-coupled surface at all.
   // Here the observer's root IS the scroller we scroll, so the re-entry is real. So this is ours:
   //
-  //   An INTENT token. `scrollToBeat` computes the exact scrollTop it is scrolling TO and records it
-  //   with the target index; while an intent is live the observer is inert; the intent ends when the
-  //   column ARRIVES at that scrollTop, or when the reader touches the column, whichever comes first.
+  // the guard's mechanism — the intent token (armed → deadline → arrival → re-entry), its tolerance
+  // constants, and the backstop — moved to `scroll-intent.ts`, headless-tested; `scrollIntent` below
+  // is this component's wiring of it. The rationale that follows there: arrival not timer, the 2px
+  // band, the 1500ms ceiling.
   //
-  //   Arrival, not a timer. An earlier draft ended the intent on the column going quiet — the last
-  //   `scroll` event plus a 150ms settle, re-armed by each scroll. Review measured that fully defeated:
-  //   because every scroll re-armed it, a zero-distance activation followed by continuous scrolling
-  //   froze the highlight for 1546ms while the reader passed 2760px and 15 sections, released only by
-  //   the outer ceiling. A scrollbar drag is the realistic path to that (it emits `scroll` without the
-  //   `wheel`/`touchstart`/`keydown` that cancel an intent). Arrival has no such failure mode: the
-  //   target is known exactly at the moment we ask for it, so "are we there yet" is a comparison rather
-  //   than a guess, and the suppression lasts precisely as long as the scroll it is covering. It also
-  //   removes the load-sensitivity a wall-clock heuristic had, and that is not a hopeful aside — it is
-  //   the same root cause as a flake review caught in one full-suite run under CPU contention, where
-  //   the bounce test saw an intermediate "Section 2 of 21". The mechanism, measured directly on an
-  //   instrumented build: a smooth scroll emits `scroll` continuously, so the 150ms quiet timer should
-  //   never have fired mid-animation — but a single natural FRAME STALL of 160ms did leave the column
-  //   silent long enough, the timer fired, the observer went live mid-sweep, and it reported whatever
-  //   beat was under the line at that instant. Under contention stalls get longer and more frequent,
-  //   which is exactly why the flake only appeared under load. Arrival cannot be released by a stall:
-  //   only reaching or passing the target ends it, and a stalled frame moves nothing.
-  //
-  //   The zero-distance case falls out for free and is worth naming: if the column is already at the
-  //   target, no intent is armed at all. That is the exact shape review used to wedge the old design.
-  //
-  //   `INTENT_MAX_MS` is the backstop for an intent that never arrives — a target made unreachable by a
-  //   reflow mid-flight (prose images landing, the pane toggle) is the realistic path. An earlier
-  //   version of this comment claimed nothing in normal operation reaches it and that therefore no test
-  //   could pin it. Review disproved that in BOTH directions and it is worth recording how, because the
-  //   error was structural rather than a wrong number: the deadline was read only inside
-  //   `intentActive()`, whose only caller is the observer callback. So where observer crossings kept
-  //   coming the ceiling did fire (measured at 1491ms), and where they did not — the column left at rest
-  //   short of its target — NOTHING consulted it at all, and the highlight stayed frozen for 3500ms with
-  //   no recovery. A deadline that only a callback can notice is not a backstop, because the wedge it is
-  //   meant to bound is exactly the state in which that callback stops arriving.
-  //   So it is now enforced by a timer armed with the intent, which ends the intent AND re-observes the
-  //   beats so the observer re-delivers against the column's real position. `endIntent` is the single
-  //   exit, so arrival and reader input cancel that timer rather than leaving it to fire on a later
-  //   intent. It only ever ENDS suppression, never extends it — which is what separates it from the
-  //   quiet-timer design it replaced.
-  //
-  //   When an intent ends we deliberately do NOT resync `activeIndex` from wherever the line ended up —
-  //   the column cannot always put the requested beat on the line, and resyncing would undo the very
-  //   activation that asked for it. The reader's next real scroll takes ownership back.
-  //
-  // What the guard is and is NOT gated by, measured rather than assumed: deleting `intentActive()`
-  // does NOT change where a section cite lands (the arrival scroll is instant, so the observer's first
-  // delivery already sees the settled column). What the guard holds is the JOURNEY: without it a smooth
-  // sweep across several beats fires a full section change for each one it passes, closing the open note
-  // and swapping the canvas's object per beat. `narrative-coupling.spec.ts`'s "does not bounce the
-  // reader through the beats in between" records that, and reddens on removal.
+  // What the guard is and is NOT gated by, measured rather than assumed: deleting the observer's
+  // `if (scrollIntent.active()) return;` does NOT change where a section cite lands (the arrival scroll
+  // is instant, so the observer's first delivery already sees the settled column). What the guard
+  // holds is the JOURNEY: without it a smooth sweep across several beats fires a full section change
+  // for each one it passes, closing the open note and swapping the canvas's object per beat.
+  // `narrative-coupling.spec.ts`'s "does not bounce the reader through the beats in between" records
+  // that, and reddens on removal.
   let asideEl = $state<HTMLElement | undefined>(undefined);
   let beatEls: (HTMLElement | undefined)[] = [];
-  let scrollIntent: number | null = null;
-  /** The exact scrollTop the live intent is travelling to, and which way. Meaningless when null. */
-  let intentTop = 0;
-  let intentDown = true;
-  let intentDeadline = 0;
-  let intentTimer: ReturnType<typeof setTimeout> | undefined;
   /** Set by the observer effect: disconnect and re-observe, forcing a fresh delivery against the
    *  column's current position. The backstop's way of asking "so where are we actually?". */
   let resyncObserver: (() => void) | undefined;
-  /**
-   * Arrival tolerance — and it is LOAD-BEARING, which took two wrong readings to establish.
-   *
-   *  - FROM ABOVE it is pinned. At 100000 every `scrollToBeat` takes the nothing-to-do branch and the
-   *    prose stops following at all; `activate → camera AND prose … stepping the canvas nav` reddens.
-   *  - FROM BELOW it is pinned too, and an earlier version of this note said the opposite. The suite IS
-   *    green at 0 — but that is a coverage gap, not redundancy: every probe in it jumps to `max` or `0`,
-   *    hundreds of pixels past the target, so every intent is released by overshoot and the tolerance
-   *    never has to do anything. Two independent mechanisms make 0 a real defect.
-   *      (a) CHROMIUM ROUNDS `scrollTo` TO WHOLE PIXELS, while this target comes from
-   *          `getBoundingClientRect()` and is fractional — 20 of 21 beats are non-exact, landing up to
-   *          0.48px short, stable across DPR 1 → 2.4. Landing 0.36px short satisfies
-   *          `scrollTop >= intentTop - 2` and fails at 0, so the intent never ends and the column can
-   *          then move somewhere SHORT of the target, where reached-or-passed cannot rescue it either.
-   *      (b) the same constant gates the nothing-to-do branch in `scrollToBeat`, so at 0 a sub-pixel
-   *          target arms an intent whose `scrollTo` may not move the column at all — and therefore may
-   *          emit no scroll event, so nothing is ever there to notice the arrival.
-   *    Pinned by "a sub-pixel arrival still ends the intent" below: at 2 the highlight follows the
-   *    column to the truth, at 0 it stays stuck on the activated beat.
-   */
-  const ARRIVE_PX = 2;
-  const INTENT_MAX_MS = 1500;
 
-  /** The ONE exit from a live intent, so the backstop timer can never outlive the intent that armed it
-   *  and fire against a later one. */
-  function endIntent(): void {
-    scrollIntent = null;
-    clearTimeout(intentTimer);
-    intentTimer = undefined;
-  }
-
-  /** True while a programmatic scroll owns the column — the observer must stay out of the way. */
-  function intentActive(): boolean {
-    if (scrollIntent === null) return false;
-    if (performance.now() > intentDeadline) { endIntent(); return false; }
-    return true;
-  }
+  // ── The scroll-intent guard, now a headless state machine (scroll-intent.ts) ─────────────────────
+  //
+  // The intent token (armed → deadline → arrival → re-entry) and its two tolerance constants
+  // (ARRIVE_PX, INTENT_MAX_MS) moved out of this component so they are unit-tested against an
+  // injected scroll surface; the full design rationale — arrival not timer, the 2px band, the 1500ms
+  // backstop — lives with that code. THIS file keeps what is genuinely DOM: the observer effect
+  // below, the column's listeners, `centreTopFor`'s live-rect math, and the wiring here — the machine
+  // is told how to read the column, scroll it, and re-observe it, and asks no further questions.
+  const scrollIntent = createScrollIntent({
+    readScrollTop: () => asideEl?.scrollTop ?? 0,
+    scrollTo: (top, behavior) => asideEl?.scrollTo({ top, behavior }),
+    observe: () => resyncObserver?.(),
+  });
 
   /** The scrollTop that puts `li` on the column's centre line, clamped to what the column can reach.
    *  Read from live rects rather than `offsetTop`: the `<li>`'s offsetParent is `.narrative` (the aside
@@ -295,26 +227,6 @@
     return Math.max(0, Math.min(el.scrollTop + delta, el.scrollHeight - el.clientHeight));
   }
 
-  /**
-   * Has the column reached — or passed — the live intent's target?
-   *
-   * REACHED OR PASSED, not equals, and that distinction is the whole robustness of this design. An
-   * equality test (even with a tolerance) assumes the column approaches the target smoothly and stops
-   * on it. A scroll driven by something OTHER than our own animation does not: a dragged scrollbar
-   * moves in jumps, and one 58px step can straddle a 2px window and miss it entirely. The intent would
-   * then survive to the backstop — reintroducing, through the back door, exactly the wedge that ending
-   * on arrival was meant to remove. Recording the direction of travel at issue time and asking whether
-   * we are at or beyond the target makes overshoot terminate the intent, which is the honest reading:
-   * once the column is past where we asked it to go, our scroll is over however it got there.
-   *
-   * Clamping the target at issue time is what makes this correct for a beat that CANNOT be centred
-   * (the last one) as well as one that can.
-   */
-  function intentArrived(): boolean {
-    const el = asideEl;
-    if (!el) return true;
-    return intentDown ? el.scrollTop >= intentTop - ARRIVE_PX : el.scrollTop <= intentTop + ARRIVE_PX;
-  }
   /**
    * The beat at a column END, or null in between.
    *
@@ -341,68 +253,31 @@
 
   /** Each scroll of the column asks one question of a live intent — are we there yet? — and hands the
    *  column back the moment the answer is yes, or the moment the intent has outlived its deadline.
-   *  `intentActive()` is what consults that deadline; testing `scrollIntent !== null` here instead was
-   *  the structural half of the backstop hole (this path never noticed the ceiling at all). With no
-   *  intent live, this is also where the two column ends are resolved. */
+   *  `onScroll()` (which consults the deadline) is what notices arrival; testing whether the intent
+   *  was armed here instead was the structural half of the backstop hole (this path never noticed the
+   *  ceiling at all). With no intent live, this is also where the two column ends are resolved. */
   function onColumnScroll() {
-    if (intentActive()) {
-      if (!intentArrived()) return; // still travelling — the observer stays muted
-      endIntent();
-    }
+    if (scrollIntent.onScroll()) return; // a live intent still travelling — the observer stays muted
     const end = beatAtColumnEnd();
     if (end !== null && end !== activeIndex) goToSection(end, { scroll: false });
   }
 
-  /**
-   * A direct scroll INPUT from the reader abandons the intent — a human who reaches for the column
-   * mid-animation wins immediately, whether or not the programmatic scroll ever arrived.
-   *
-   * IT MUST STOP THE MACHINE, NOT JUST DROP THE TOKEN, and that distinction shipped a real bounce
-   * before review caught it. Clearing `scrollIntent` un-mutes the observer; if the programmatic
-   * animation is still running, the observer then reports every beat the animation sweeps past —
-   * measured at TEN spurious section changes in ~300ms on a beat-0-to-18 activation, each one clearing
-   * the open note and swapping the canvas object. Precisely the defect this whole guard exists to
-   * prevent, reintroduced by the thing meant to make it polite.
-   *
-   * Why `wheel`/`touchstart` looked fine and hid it: Chromium cancels a programmatic smooth scroll when
-   * a real scroll GESTURE arrives, so for those the column had genuinely stopped and the un-muted
-   * observer saw a still column. `pointerdown` is not a scroll gesture — nothing stops the animation —
-   * so it exposed a dependence on browser behaviour this code never stated. Scrolling to the current
-   * position cancels the animation ourselves, which makes all four paths honest rather than three of
-   * them lucky.
-   *
-   * `pointerdown` earns its place in the list: a scrollbar drag, a press-and-hold on a beat, starting a
-   * text selection in the prose and a right-click all scroll or intend to scroll without ever emitting
-   * wheel/touch/key.
-   */
+  /** A direct scroll INPUT from the reader abandons the intent — a human who reaches for the column
+   *  mid-animation wins immediately, whether or not the programmatic scroll ever arrived. Why it must
+   *  STOP THE MACHINE (cancel the animation), not just drop the token, and why `pointerdown` earns its
+   *  place in the input list — measured bounces, recorded in scroll-intent.ts's `input()`. */
   function onColumnInput() {
-    const el = asideEl;
-    if (scrollIntent !== null && el) el.scrollTo({ top: el.scrollTop, behavior: "auto" });
-    endIntent();
+    scrollIntent.input();
   }
 
   /** Scroll beat `i` onto the column's centre line, under an intent that mutes the observer until the
-   *  column gets there. A scroll with nowhere to go arms no intent — there is nothing to suppress. */
+   *  column gets there. A scroll with nowhere to go arms no intent — there is nothing to suppress.
+   *  The centre-line math stays here (live rects); the intent itself is the machine's (`arm`). */
   function scrollToBeat(i: number, behavior: ScrollBehavior) {
     const li = beatEls[i];
     const el = asideEl;
     if (!li || !el) return;
-    const top = centreTopFor(el, li);
-    if (Math.abs(el.scrollTop - top) <= ARRIVE_PX) { endIntent(); return; }
-    endIntent(); // a new intent replaces any old one, timer and all
-    scrollIntent = i;
-    intentTop = top;
-    intentDown = top > el.scrollTop;
-    intentDeadline = performance.now() + INTENT_MAX_MS;
-    // The backstop, armed WITH the intent rather than left for a callback to notice. An intent that
-    // never arrives — a reflow moving the target mid-flight is the realistic way — otherwise wedges the
-    // highlight for as long as nothing else touches the column, because the observer that would have
-    // spotted the expiry is exactly the thing the intent has muted. Re-observing forces a fresh delivery
-    // against wherever the column really is.
-    intentTimer = setTimeout(() => { endIntent(); resyncObserver?.(); }, INTENT_MAX_MS);
-    // `scrollTo` on the column rather than `scrollIntoView` on the beat: we need the destination as a
-    // NUMBER to test arrival against, and this scrolls exactly one box — no ancestor walk to reason about.
-    el.scrollTo({ top, behavior });
+    scrollIntent.arm(centreTopFor(el, li), behavior);
   }
 
   const reducedMotion = () =>
@@ -419,7 +294,7 @@
   $effect(() => {
     const next = initialSelected;
     if (next !== null && next !== prevInitialSelected) {
-      selected = next;
+      surface.selected = next;
       // Owner search scans BASE + per-reading pages (4.9) — a reading-only note now lands on its section.
       const ownerId = ownerObjectOf(next, objectIds, { annotationsByObject, readingAnnotationsByObject });
       const idx = sections.findIndex((s) => s.objectId === ownerId);
@@ -438,7 +313,7 @@
   // The section is the narrative's own unit of navigation, so it is the rung here — an object id
   // would be the wrong grain (the spine may revisit one object across several sections).
   $effect(() => {
-    onlocus?.({ sectionId: activeSection?.id ?? null, noteId: selected });
+    onlocus?.({ sectionId: activeSection?.id ?? null, noteId: surface.selected });
   });
   const activeObject = $derived.by(() => {
     // A section whose objectId no longer resolves (its object was deleted in Studio without the section
@@ -478,7 +353,7 @@
   // V46 (Archie-52a0): survives Hide-all — same reasoning as Reader.svelte's canvasFrame. The frame
   // is the canvas's only named tab stop; declutter hides REGION marks, not keyboard infrastructure.
   const canvasFrame = $derived<FrameOverlay | null>(
-    activeFrame ? { colour: activeFrame.colour, onActivate: () => (selected = activeFrame.markId) } : null,
+    activeFrame ? { colour: activeFrame.colour, onActivate: () => (surface.selected = activeFrame.markId) } : null,
   );
   const multiObject = $derived(new Set(sections.map((s) => s.objectId)).size > 1);
   // Per-layer note count on the ACTIVE object for the legend (id=null → base / General notes). Re-mints
@@ -496,10 +371,11 @@
   // and the activate direction each held part of the state and disagreed (V82 — a cite landed the camera
   // and stranded the prose off-screen).
   //
-  // Changing section clears the open note — and the reading sheet with it. The sheet renders under
+  // Changing section resets the note surface — and the reading sheet with it. The sheet renders under
   // `{#if readingSheet && current}`, so clearing `selected` alone would unmount it while leaving the
   // flag true, and the next plain note selection would open a sheet nobody asked for. Same latent bug
   // as Reader.svelte's object-change effect; same fix, at the one place selection is cleared.
+  // (`surface.reset()` clears the lightbox with them.)
   //
   // `scroll: false` is for the one caller that MUST NOT scroll: the observer, which is reporting where
   // the reader has already scrolled to. Scrolling back at them would be the fight this whole seam exists
@@ -507,8 +383,7 @@
   function goToSection(i: number, opts: { scroll?: boolean } = {}) {
     if (i < 0 || i >= sections.length) return;
     activeIndex = i;
-    selected = null;
-    readingSheet = false;
+    surface.reset();
     if (opts.scroll !== false) scrollToBeat(i, reducedMotion() ? "auto" : "smooth");
   }
   const activate = (i: number) => goToSection(i);
@@ -533,7 +408,7 @@
     if (!root || pane !== "sections" || collapsed || n === 0) return;
 
     const io = new IntersectionObserver((entries) => {
-      if (intentActive()) return; // ← the guard; see the block comment above
+      if (scrollIntent.active()) return; // ← the guard; see the block comment above
       // AN END OF THE COLUMN OUTRANKS THE LINE, at both entry points, or the two disagree and the
       // observer wins the argument. Measured (2026-07-26, `voynich-reading`): scrolled hard to the
       // foot, the line sits on beat 4 of 6 while the reader is plainly at beat 5. The scroll handler
@@ -572,7 +447,7 @@
       resyncObserver = undefined;
       root.removeEventListener("scroll", onColumnScroll);
       for (const ev of INPUTS) root.removeEventListener(ev, onColumnInput);
-      endIntent();
+      scrollIntent.dispose();
     };
   });
 
@@ -608,34 +483,46 @@
 
   // Note popup on marker click (CONTEXT §123 "Both: annomea popup/drawer on marker click"). Narrative
   // was missing this entirely — a clicked marker selected but showed nothing, so notes never surfaced.
-  const current = $derived(activeNotes.find((it) => it.id === selected));
   // Hide-all: the canvas shows only the selected note's mark (or nothing) — declutter the basemap while a
   // marker pick still surfaces its single pin. The spine + popup keep the full active-notes set. The framed
   // note's own rect is dropped too (mirrors Reader.svelte's canvasAnnotations) — its coverage border IS its
   // mark, so drawing the underlying shape as well would double it.
   const canvasNotes = $derived.by(() => {
-    if (notesHidden) { const sel = activeNotes.find((a) => a.id === selected); return sel ? [sel] : []; }
+    if (notesHidden) { const sel = activeNotes.find((a) => a.id === surface.selected); return sel ? [sel] : []; }
     return activeFrame ? activeNotes.filter((a) => a.id !== activeFrame.markId) : activeNotes;
   });
-  const noteParts = $derived(current ? splitNoteMedia(commentOf(current)) : { media: [] as NoteMediaItem[], text: "" });
   // The note's orientation label — "Section · object" in the narrative (the grid reader uses the plain
   // object label). Derived ONCE and handed to both the card and the reading sheet, so "expand to read"
-  // cannot arrive somewhere that names the note differently (V64).
+  // cannot arrive somewhere that names the note differently (V64). Feeds the shared surface's eyebrow.
   const noteEyebrow = $derived(
     `${activeSection?.title ?? title}${multiObject && activeObject ? ` · ${activeObject.label}` : ""}`,
   );
-  // Geo readout (Q7): a Map note shows its centre lng/lat in the opened popup.
-  const geoCoord = $derived.by(() => { if (!current) return null; const g = geoOf(current); return g ? formatLngLat(geoCenter(g)) : null; });
-  let lightbox = $state<{ media: NoteMediaItem[]; text: string; index: number } | null>(null);
+  // THE OPEN-NOTE SURFACE — ONE state machine (note-surface.svelte.ts, Phase 5). This reader used
+  // to hold `selected`/`readingSheet`/`lightbox` + the current/noteParts/geoCoord derivations + the
+  // mount handlers itself (~100 ln duplicated across the three reading hosts). The host keeps only
+  // what is genuinely per-host: the Canvas binding (`bind:selected` below — the surface's `onSelect`
+  // stays unset here; the camera follows the section, not the note), the live eyebrow above, the
+  // tag-chip finder wiring, and the Escape ladder's up-a-level rung (`onindex`). `reset()` is called
+  // by `goToSection` so a spine step can never leave a sheet or lightbox behind.
+  // svelte-ignore state_referenced_locally -- initial-capture is the contract: `initialSelected` seeds
+  // the surface's selection once; LATER changes are adopted by the re-selection seam (A0) $effect
+  // below via prevInitialSelected.
+  const surface = createNoteSurface({
+    annotations: () => activeNotes,
+    textOf: commentOf,
+    eyebrow: () => noteEyebrow,
+    onopenfinder: (t) => onopenfinder?.(t),
+    initialSelected,
+  });
 
   // Esc closes the open note-pop (#3), matching the Reader. Guarded so the lightbox / reading sheet own
   // Esc while open; arrows stay with OpenSeadragon (it pans the canvas), so only Esc is bound here.
   // V26/V25 (Archie-3d55) — the same Escape ladder Reader.svelte walks, with the narrative's own top
   // rung: the way UP from a narrative is its object index, not an exhibit overview.
   function onkey(e: KeyboardEvent) {
-    if (lightbox || readingSheet) return;
+    if (surface.lightbox || surface.readingSheet) return;
     if (e.key !== "Escape") return;
-    if (selected !== null) { selected = null; e.preventDefault(); return; }
+    if (surface.selected !== null) { surface.close(); e.preventDefault(); return; }
     const active = document.activeElement as HTMLElement | null;
     if (active?.closest(".openseadragon-container")) {
       mainEl?.focus({ preventScroll: true });
@@ -738,14 +625,14 @@
             styleOf={activeStyleOf}
             frame={canvasFrame}
             focus={activeSection?.start ?? null}
-            bind:selected
+            bind:selected={surface.selected}
             onzoom={(r) => (zoomRatio = r)}
           />
         {/key}
       {/if}
     {/if}
     </main>
-    {#if current}
+    {#if surface.current}
       <!-- THE NOTE (shared NotePopup), in narrative form: the eyebrow is "Section · object" where the
            Reader's is the object label — the mode difference is DATA, which is why one component still
            serves both (Archie-c982). It carries no stepper: section nav is canvas chrome now.
@@ -753,17 +640,17 @@
            records the full reasoning — anvil's mount guard (EmbeddedReader.svelte:670/:689) is the
            stronger form and is unavailable here, because unmounting the card takes the ⤢ that
            `use:dialog` returns focus to out of the document (V62/V63). -->
-      <div class="note-slot note-dock" class:hidden-behind-sheet={readingSheet}>
+      <div class="note-slot note-dock" class:hidden-behind-sheet={surface.readingSheet}>
       <NotePopup
-        eyebrow={noteEyebrow}
-        text={noteParts.text}
-        media={noteParts.media}
-        tags={tagsOf(current)}
-        {geoCoord}
-        onclose={() => (selected = null)}
-        onexpand={() => { if (noteParts.text) readingSheet = true; }}
-        onopenfinder={(t) => onopenfinder?.(t)}
-        onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
+        eyebrow={surface.eyebrow}
+        text={surface.noteParts.text}
+        media={surface.noteParts.media}
+        tags={surface.tags}
+        geoCoord={surface.geoCoord}
+        onclose={surface.close}
+        onexpand={surface.expand}
+        onopenfinder={surface.openFinder}
+        onmedia={surface.media}
       />
       </div>
     {/if}
@@ -852,8 +739,8 @@
           <!-- Archie-dbbc / V60, ported from the Reader's list for the same reason: while its note is
                open this entry MARKS POSITION and stops restating the text. Both note lists in the viewer
                are the same idiom, so both had the same duplication. -->
-          <button class:active={it.id === selected} aria-current={it.id === selected ? "true" : undefined} style="border-left-color: {readingColourOf(it) ?? 'transparent'}" onclick={() => (selected = it.id)}>
-            {#if it.id === selected}
+          <button class:active={it.id === surface.selected} aria-current={it.id === surface.selected ? "true" : undefined} style="border-left-color: {readingColourOf(it) ?? 'transparent'}" onclick={() => (surface.selected = it.id)}>
+            {#if it.id === surface.selected}
               <span class="card-open">{noteIndexOpenMark(i, activeNotes.length)}</span>
             {:else}
               <span class="card-preview">{stripMarkdown(commentOf(it))}</span>
@@ -867,26 +754,26 @@
   </aside>
 
 
-  {#if readingSheet && current}
-    <!-- Same note, same eyebrow, reading size. `noteEyebrow` is ONE derived value feeding both surfaces,
-         so the sheet cannot introduce its own idea of what you are reading (V64).
+  {#if surface.readingSheet && surface.current}
+    <!-- Same note, same eyebrow, reading size. `surface.eyebrow` is ONE derived value feeding both
+         surfaces, so the sheet cannot introduce its own idea of what you are reading (V64).
          ONE MODAL AT A TIME: the finder and the lightbox are both `aria-modal="true"`, as is this sheet,
          so both routes out of it close it first — the new surface replaces the sheet rather than
          stacking on it. Full reasoning in Reader.svelte's twin of this block. -->
     <ReadingSheet
-      eyebrow={noteEyebrow}
-      text={noteParts.text}
-      media={noteParts.media}
-      tags={tagsOf(current)}
-      {geoCoord}
-      onclose={() => (readingSheet = false)}
-      onopenfinder={(t) => { readingSheet = false; onopenfinder?.(t); }}
-      onmedia={(idx) => { readingSheet = false; lightbox = { media: noteParts.media, text: noteParts.text, index: idx }; }}
+      eyebrow={surface.eyebrow}
+      text={surface.noteParts.text}
+      media={surface.noteParts.media}
+      tags={surface.tags}
+      geoCoord={surface.geoCoord}
+      onclose={surface.sheetClose}
+      onopenfinder={surface.sheetFinder}
+      onmedia={surface.sheetMedia}
     />
   {/if}
 
-  {#if lightbox}
-    <NoteLightbox media={lightbox.media} text={lightbox.text} index={lightbox.index} onclose={() => (lightbox = null)} />
+  {#if surface.lightbox}
+    <NoteLightbox media={surface.lightbox.media} text={surface.lightbox.text} index={surface.lightbox.index} onclose={surface.closeLightbox} />
   {/if}
 </div>
 

@@ -23,7 +23,7 @@
 //                            offset past the media duration is a reader-side seek clamp). This resolver
 //                            still RETURNS the fragment; the surface degrades the FIT, not the open.
 
-import { ARCHIE_LOGICAL_ID, type PortableExhibit, type ViewerRoute, type W3CAnnotation, type Section } from "@render/core";
+import { ARCHIE_LOGICAL_ID, parseMediaFragmentHead, type PortableExhibit, type ViewerRoute, type W3CAnnotation, type Section } from "@render/core";
 
 /** A media fragment to apply to the opened object's surface: a spatial region or a temporal offset. */
 export interface TargetFragment {
@@ -95,16 +95,6 @@ function regionOfNote(exhibit: PortableExhibit, objectId: string, noteId: string
   return null;
 }
 
-/** A section's media fragment is its `start` (ADR-0005): `xywh=...` (image) or `t=...` (AV). Split the
- *  `key=value` head off so the surface can route it to a region-fit vs a seek. Bare `start` (no `=`) or
- *  absent → no fragment (whole object). */
-function fragmentOfStart(start: string | undefined): TargetFragment | undefined {
-  if (!start) return undefined;
-  if (start.startsWith("xywh=")) return { kind: "xywh", value: start.slice("xywh=".length) };
-  if (start.startsWith("t=")) return { kind: "t", value: start.slice("t=".length) };
-  return undefined;
-}
-
 /**
  * Resolve an EXHIBIT-scoped route (slug already matched + exhibit loaded) into a landing. The element
  * handles the two rungs ABOVE this — no library / unknown slug → the gallery — then hands the loaded
@@ -135,7 +125,10 @@ export function resolveExhibitTarget(exhibit: PortableExhibit, route: ViewerRout
     if (!section) return { kind: "exhibit", degraded: "section-not-found" };
     // A section may name an object that no longer exists (hand-edited zip) → degrade to the exhibit.
     if (!exhibit.objects.some((o) => o.id === section.objectId)) return { kind: "exhibit", degraded: "section-not-found" };
-    const fragment = fragmentOfStart(section.start);
+    // A section's media fragment is its `start` (ADR-0005): `xywh=...` (image) or `t=...` (AV). The
+    // shared render-core head-parser splits the `key=value` head so the surface can route it to a
+    // region-fit vs a seek; bare `start` (no `=`) or absent → no fragment (whole object).
+    const fragment = parseMediaFragmentHead(section.start);
     return fragment ? { kind: "object", objectId: section.objectId, fragment } : { kind: "object", objectId: section.objectId };
   }
 

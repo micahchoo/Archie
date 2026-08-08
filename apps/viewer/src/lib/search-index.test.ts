@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { ARCHIE_LOGICAL_ID, type W3CAnnotation } from "@render/core";
-import { buildSearchIndex, filterResults, flattenExhibitNotes, locateNotes } from "./search-index.js";
+import { buildSearchIndex, filterResults, locateNotes } from "./search-index.js";
+import { flattenNotes } from "../note-tree.js";
 
 /** Minimal published-shape annotation: a commenting body + optional tag bodies + a logical id. */
 function note(id: string, comment: string, tags: string[] = []): W3CAnnotation {
@@ -51,27 +52,12 @@ describe("buildSearchIndex", () => {
   });
 });
 
-describe("flattenExhibitNotes", () => {
-  it("pulls base + every reading page into one array, de-duped by id", () => {
-    const base = note("b1", "base note");
-    const onlyInReading = note("r1", "reading-only note", ["margin"]);
-    const sharedOverlay = note("b1", "base note (reading overlay copy)");
-    const flat = flattenExhibitNotes({
-      annotationsByObject: { objA: [base] },
-      readingAnnotationsByObject: { objA: { readingX: [sharedOverlay, onlyInReading] } },
-    });
-    const ids = flat.map((a) => a.id);
-    // a note living ONLY in a non-active reading is present in the flat index (Q-4 scope = all readings)
-    expect(ids).toContain("r1");
-    expect(ids).toContain("b1");
-    // de-duped: b1 appears in base AND as a reading overlay, but only once (base wins)
-    expect(ids.filter((id) => id === "b1")).toHaveLength(1);
-  });
-});
+// The flatten walk moved to note-tree.ts (Phase 5) — flattenExhibitNotes is gone; the de-dupe /
+// canonical-order suite lives in note-tree.test.ts.
 
 describe("filterResults", () => {
   // Two objects' worth of notes, including one that would live only in a non-active reading.
-  const flat = flattenExhibitNotes({
+  const flat = flattenNotes({
     annotationsByObject: {
       objA: [
         note("n1", "the cipher manuscript", ["cipher", "script"]),
