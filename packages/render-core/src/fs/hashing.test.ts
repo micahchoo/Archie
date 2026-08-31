@@ -65,6 +65,42 @@ describe("HashingFilesystem — records what is written, passes everything else 
     expect(h.written()[0]!.sha256).toBe(nodeSha256(stored));
   });
 
+  it("accepts an ArrayBufferView write (Archie-7f6d): hashes and stores the view's bytes", async () => {
+    const mem = new MemoryFilesystem();
+    const h = new HashingFilesystem(mem);
+    // A SUBARRAY view — non-zero byteOffset and a short length, so a wrong normalization shows up as
+    // wrong bytes, not just a wrong hash. The helper above copies to an ArrayBuffer before writing;
+    // this passes the VIEW itself, the shape the built viewer bundle actually arrives as.
+    const raw = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7]);
+    const dir = await (await h.root()).getDirectory("v", { create: true });
+    const file = await dir.getFile("view.bin", { create: true });
+    const w = await file.writable();
+    // The seam's declared write union stays string|ArrayBuffer|Blob (the other backends really do
+    // reject views); HashingFilesystem accepts the view at runtime and normalizes it, so the test
+    // hands it over through a runtime-typed hole rather than pretending the seam declares it.
+    await (w.write as (data: unknown) => Promise<void>)(raw.subarray(2, 6));
+    await w.close();
+    const rec = h.written().find((r) => r.path === "v/view.bin")!;
+    expect(rec).toEqual({
+      path: "v/view.bin",
+      sha256: nodeSha256(new Uint8Array([2, 3, 4, 5])),
+      bytes: 4,
+    });
+    // The bytes the WRAPPED filesystem holds are the view's bytes — write-through, not a sink.
+    const storedFile = await (await (await mem.root()).getDirectory("v")).getFile("view.bin");
+    expect([...new Uint8Array(await storedFile.readable())]).toEqual([2, 3, 4, 5]);
+
+    const dv = await dir.getFile("dv.bin", { create: true });
+    const w2 = await dv.writable();
+    await (w2.write as (data: unknown) => Promise<void>)(new DataView(raw.buffer, 1, 4));
+    await w2.close();
+    expect(h.written().find((r) => r.path === "v/dv.bin")).toEqual({
+      path: "v/dv.bin",
+      sha256: nodeSha256(new Uint8Array([1, 2, 3, 4])),
+      bytes: 4,
+    });
+  });
+
   it("a rewritten file replaces its record rather than accumulating one", async () => {
     const h = new HashingFilesystem(new MemoryFilesystem());
     await write(h, "a.txt", "one");

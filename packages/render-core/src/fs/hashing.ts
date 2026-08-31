@@ -170,6 +170,19 @@ class HashingFile implements FsFile {
         // ever stops being true the backends disagree with each other before they disagree with us.
         if (typeof data === "string") chunks.push(new TextEncoder().encode(data));
         else if (data instanceof ArrayBuffer) chunks.push(new Uint8Array(data));
+        else if (ArrayBuffer.isView(data)) {
+          // Archie-7f6d — an ArrayBufferView (Uint8Array, DataView, any subarray view) is not one of
+          // the seam's declared write types (string|ArrayBuffer|Blob), so it used to fall through to
+          // the Blob branch and throw `data.arrayBuffer is not a function` — AFTER the whole tree was
+          // on disk, because the viewer bundle + fixity manifest are the final writes (marker-last
+          // ordering). Normalize at the seam boundary: copy the view's bytes to a standalone
+          // ArrayBuffer — hashing needs them anyway, and every backend accepts an ArrayBuffer — and
+          // forward THAT, so the inner sink sees only a declared type.
+          const normalized = new Uint8Array(data.buffer, data.byteOffset, data.byteLength).slice();
+          chunks.push(normalized);
+          await inner.write(normalized.buffer);
+          return;
+        }
         else chunks.push(new Uint8Array(await data.arrayBuffer()));
         await inner.write(data);
       },
