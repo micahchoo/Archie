@@ -37,8 +37,14 @@ import type { StructureSession } from "./structure-session.svelte.js";
  *  re-evaluate on change — reading `rev()` inside a derivation registers the $state read, exactly like
  *  App's inline `void rev;` did (the same getter-dep pattern as createViewState's `exhibits()`). */
 export interface EditorModelDeps {
-  /** The live per-exhibit AnnotationSession (sess.session — REPLACED on exhibit switch, so a thunk). */
-  session: () => AnnotationSession;
+  /**
+   * The read surface the derivations consume. Structurally satisfied by the raw AnnotationSession,
+   * but App passes the UNDO-AWARE wire view (Archie-9da0): notes()/workingAnnotations() come through
+   * the undo manager's overlay (the surface shows the undone state), while conflicts()/entries stay
+   * log-truth — an overlay never hides a conflict or the structure walk's raw log. Still a THUNK:
+   * the underlying session is REPLACED on exhibit switch, and the wire swaps its manager with it.
+   */
+  session: () => Pick<AnnotationSession, "notes" | "workingAnnotations" | "conflicts" | "conflictHeads" | "entries">;
   /** The editor cursor (view triple + selection); reads are reactive, writes (`selected`) mutate it. */
   vs: ViewState;
   /** The readings visibility/pen state (noteVisible / isVisible / active / comparing). */

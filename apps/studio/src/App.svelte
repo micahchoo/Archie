@@ -84,6 +84,11 @@
   // dots + co-located-note stack — ONE factory over App's reactive primitives (constructed below, after
   // commentOf). The pure helpers it owns and App still calls directly are imported from the same module.
   import { createEditorModel, oneTarget, selHasSelector, BASE_MARKER } from "./editor-model.svelte.js";
+  // Note undo/redo (Archie-9da0): the ONE mutation seam — every sess.session note mutation routes
+  // through the wire so it lands in the projection-overlay history, plus the ⌘Z/⇧⌘Z window binding
+  // (registry rows in shortcuts.ts) and the tool-strip affordance (UndoControls).
+  import { createUndoWire, installUndoKeyboard } from "./undo-wire.js";
+  import UndoControls from "./UndoControls.svelte";
   import { hasRealWorkIn } from "./safety-state.svelte.js";
   // Persisted editor-chrome view preferences (Archie-c7ef): the filmstrip's collapsed state + the
   // inspector panel's width. Same module the overview Canvas/List + library lens live in.
@@ -564,7 +569,7 @@
   }
 
   async function deleteObjectNotesAndMeta(objId: string) {
-    for (const id of liveNoteIdsOn(objId)) sess.session.deleteNote(id);
+    for (const id of liveNoteIdsOn(objId)) undoWire.deleteNote(id);
     // Tag the incremental mirror BEFORE removeObject so the trigger it fires (via onAfterPersist) sees the
     // removal: rewrite the exhibit's manifest AND prune the object's orphaned tree files (spike-0002). The
     // removeObject reducer can't do this — only here do we still know the object's imported-asset name.
@@ -944,7 +949,7 @@
     const blocking = conflictsBlockingRemoval(list);
     if (blocking.length > 0) { refuseForConflicts(blocking, list.length === 1 ? "That item" : "One of the selected items"); return; }
     for (const objId of list) {
-      for (const id of liveNoteIdsOn(objId)) sess.session.deleteNote(id);
+      for (const id of liveNoteIdsOn(objId)) undoWire.deleteNote(id);
       const gone = vs.OBJECTS.find((o) => o.id === objId);
       const assetName = gone && isAsset(gone.source) ? gone.source.slice(ASSET_PREFIX.length) : undefined;
       bnd.markObjectRemoved(vs.currentSlug, objId, assetName); // per-id orphan cleanup (asset name known only here)
@@ -1001,7 +1006,7 @@
     });
     await lib.persist();
     await openExhibit(slug); // not a template → persists; seeds empty
-    for (const c of carried) sess.session.createNote({ target: c.target, ...(c.body !== undefined ? { body: c.body } : {}), ...(c.motivation !== undefined ? { motivation: c.motivation } : {}), ...(c.reading !== undefined ? { reading: c.reading } : {}), ...(c.emphasis !== undefined ? { emphasis: c.emphasis } : {}), ...(c.wholeObject !== undefined ? { wholeObject: c.wholeObject } : {}), ...(c.geo !== undefined ? { geo: c.geo } : {}) });
+    for (const c of carried) undoWire.createNote({ target: c.target, ...(c.body !== undefined ? { body: c.body } : {}), ...(c.motivation !== undefined ? { motivation: c.motivation } : {}), ...(c.reading !== undefined ? { reading: c.reading } : {}), ...(c.emphasis !== undefined ? { emphasis: c.emphasis } : {}), ...(c.wholeObject !== undefined ? { wholeObject: c.wholeObject } : {}), ...(c.geo !== undefined ? { geo: c.geo } : {}) });
     await save();
     keeping = false;
   }
@@ -1119,6 +1124,24 @@
   // Used by the refused-drag/delete gates below (the marker must snap back to the log's truth)
   // and by consumers whose onchange contract predates the epoch edge (MergeReview, ingest-flows).
   const resync = () => { epochTick += 1; };
+
+  // ── The undo wire (Archie-9da0) — the ONE note-mutation seam. ──
+  // Every sess.session create/edit/delete/resolve of NOTES routes through `undoWire` (the manager
+  // records the projection diff; the append-only log is never rewritten), and the surface derives
+  // from the wire's undo-aware projection. notify = resync: routed mutations already move
+  // session.revision (the epoch edge above fires on its own), but undo/redo move ONLY the overlay,
+  // so this explicit tick is what makes them visible. Session-scoped by decision (Archie-69a6) and
+  // by construction: the wire mints a FRESH manager per session instance, so history never crosses
+  // an exhibit switch (and never survives a reload — the log is the only durable thing).
+  const undoWire = createUndoWire(() => sess.session, resync);
+  // ⌘Z / ⇧⌘Z (registry rows in shortcuts.ts). Editor view only — the library/overview screens have
+  // no notes on screen, and inside a text field the browser's own text undo must win (the installer
+  // skips typing targets). The effect returns the installer's detach as its cleanup.
+  $effect(() => installUndoKeyboard({ undo: () => undoWire.undo(), redo: () => undoWire.redo(), enabled: () => vs.view === "editor" }));
+  // Reactive gates for the affordance: the epoch tick makes the manager's plain-array state visible
+  // to the template; reading sess.session tracks the exhibit switch (fresh manager ⇒ both false).
+  const notesUndoable = $derived.by(() => { void epochTick; return undoWire.canUndo; });
+  const notesRedoable = $derived.by(() => { void epochTick; return undoWire.canRedo; });
   // `editing` drives the WADM form. It FOLLOWS `selected` on real selections but NOT on the null
   // deselect Annotorious fires when setAnnotations replaces the set (which happens on every edit) —
   // otherwise the form would close after every change (P2-5). Cleared explicitly on delete/switch.
@@ -1312,7 +1335,7 @@
   // (ADR-0005 mitigation): objectId from the target canvas, start = the selector fragment, lead = the prose.
   const narrativeNotes = $derived.by(() => {
     void epochTick; // re-derive when the log changes (the epoch tick bridges the signals atom)
-    return sess.session.notes().filter((r) => !r.deleted).map((r) => {
+    return undoWire.notes().filter((r) => !r.deleted).map((r) => {
       const objectId = (srcOf(r.target) ?? "").split("/canvas/")[1] ?? "";
       const start = selectorValue(r);
       return { id: r.logicalId, objectId, ...(start ? { start } : {}), lead: stripMarkdown(commentOf(r)).slice(0, 80) || "(untitled)" };
@@ -1332,12 +1355,12 @@
   const READING_PALETTE = CORE_READING_PALETTE;
   function setNoteReading(reading: string | null) {
     if (!vs.editing) return;
-    sess.session.editNote(vs.editing as LogicalId, { reading });
+    undoWire.editNote(vs.editing as LogicalId, { reading });
   }
   // Per-note emphasis (Archie-1489): EMPHASIS ONLY — opacity/weight, never hue (hue = the reading, ADR-0007).
   function setNoteEmphasis(emphasis: Emphasis) {
     if (!vs.editing) return;
-    sess.session.editNote(vs.editing as LogicalId, { emphasis });
+    undoWire.editNote(vs.editing as LogicalId, { emphasis });
   }
 
   // --- Rights & credit (rights grill Phase 2): the shared RightsEditor sets these at all three levels.
@@ -1429,7 +1452,7 @@
       const p = pendingNotes.find((n) => n.id === placingPendingId);
       if (p) {
         const geo = isMapCurrent ? geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) : undefined;
-        const id = sess.session.createNote({
+        const id = undoWire.createNote({
           target: oneTarget(a.target),
           body: [
             { type: "TextualBody", value: p.comment, purpose: "commenting" },
@@ -1449,14 +1472,14 @@
     // new note. Only fires when explicitly armed (retargetingNoteId), so an ordinary draw still creates.
     if (retargetingNoteId) {
       const cgeo = isMapCurrent ? geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) ?? null : undefined;
-      sess.session.editNote(retargetingNoteId as LogicalId, { target: oneTarget(a.target), ...(cgeo !== undefined ? { geo: cgeo } : {}) });
+      undoWire.editNote(retargetingNoteId as LogicalId, { target: oneTarget(a.target), ...(cgeo !== undefined ? { geo: cgeo } : {}) });
       retargetingNoteId = null;
       vs.creating = null;
       return;
     }
     // On a Map, capture the region's geo-truth (lng/lat) alongside the pixel selector (Q4/ADR-0015).
     const geo = isMapCurrent ? geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) : undefined;
-    const id = sess.session.createNote({ target: oneTarget(a.target), ...(geo ? { geo } : {}), ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) }); // the PEN, never visibility (Q1)
+    const id = undoWire.createNote({ target: oneTarget(a.target), ...(geo ? { geo } : {}), ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) }); // the PEN, never visibility (Q1)
     vs.selected = id;
     vs.creating = null; // the gesture produced its note; disarm back to ambient selection (ADR-0011)
   }
@@ -1464,7 +1487,7 @@
   // CREATES one (there's no region to draw). CONVERTING an existing note is a separate, EXPLICIT affordance
   // in the note's own form (`setNoteScope`) — not an overload of this create button.
   function createWholeObjectNote() {
-    const id = sess.session.createNote({ target: vs.canvasId, ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) });
+    const id = undoWire.createNote({ target: vs.canvasId, ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) });
     vs.selected = id;
     vs.creating = null;
   }
@@ -1476,7 +1499,7 @@
     if (!vs.editing) return;
     if (scope === "whole") {
       if (!selHasSelector(model.sel)) return; // already whole-object — no-op
-      sess.session.editNote(vs.editing as LogicalId, { target: srcOf(model.sel!.target) ?? vs.canvasId, ...(isMapCurrent ? { geo: null } : {}) });
+      undoWire.editNote(vs.editing as LogicalId, { target: srcOf(model.sel!.target) ?? vs.canvasId, ...(isMapCurrent ? { geo: null } : {}) });
     } else {
       // "Draw a region" (whole→region) OR "Redraw bounds" (replace a region): arm a draw that re-targets
       // THIS note. Default to a box; the toolbar can switch to Outline before drawing (retarget persists).
@@ -1497,7 +1520,7 @@
       resync(); // no log write happened — force the re-read so the dragged marker snaps back to the log's truth
       return;
     }
-    sess.session.editNote(a.id as LogicalId, { target: oneTarget(a.target), ...(isMapCurrent ? { geo: geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) ?? null } : {}) });
+    undoWire.editNote(a.id as LogicalId, { target: oneTarget(a.target), ...(isMapCurrent ? { geo: geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) ?? null } : {}) });
   };
   const ondelete = (id: string) => {
     // Same gate as onUpdate: deleteNote resolves the linear head and throws on plural heads.
@@ -1506,7 +1529,7 @@
       resync(); // no log write happened — force the re-read so the refused delete leaves the canvas as it is
       return;
     }
-    sess.session.deleteNote(id as LogicalId); if (vs.selected === id) vs.selected = null; if (vs.editing === id) vs.editing = null;
+    undoWire.deleteNote(id as LogicalId); if (vs.selected === id) vs.selected = null; if (vs.editing === id) vs.editing = null;
   };
   // Hand-annotate AV: AvEditor marked a [start,end] region → create a supplementing time note, then
   // select it so the WADM form opens to type the note (the temporal analogue of onCreate for OSD draws).
@@ -1520,7 +1543,7 @@
       return;
     }
     const target = { type: "SpecificResource" as const, source: vs.canvasId, selector: { type: "FragmentSelector" as const, conformsTo: "http://www.w3.org/TR/media-frags/", value } };
-    const id = sess.session.createNote({ target, body: [{ type: "TextualBody", value: "", purpose: "supplementing" }], motivation: "supplementing" });
+    const id = undoWire.createNote({ target, body: [{ type: "TextualBody", value: "", purpose: "supplementing" }], motivation: "supplementing" });
     vs.selected = id;
   }
   // Import a WebVTT/SRT transcript for the current AV object → supplementing time notes. APPEND-ONLY
@@ -1529,7 +1552,7 @@
   function onImportTranscript(text: string) {
     const cued = importTranscript([], text, { source: vs.canvasId, lastEditor: author });
     let n = 0;
-    for (const r of cued) { sess.session.createNote({ target: r.target, ...(r.body !== undefined ? { body: r.body } : {}), ...(r.motivation !== undefined ? { motivation: r.motivation } : {}) }); n++; }
+    for (const r of cued) { undoWire.createNote({ target: r.target, ...(r.body !== undefined ? { body: r.body } : {}), ...(r.motivation !== undefined ? { motivation: r.motivation } : {}) }); n++; }
     if (n > 0) {
       importNote = { message: `Added ${n} note${n === 1 ? "" : "s"} from your captions.`, ok: true };
     } else {
@@ -1550,7 +1573,7 @@
   // holds the same $state/$derived machinery the inline cluster did. Only the DOM-bound bits remain
   // App-owned (notesListEl + its marker-follow $effect above, mergeReviewOpen). ---
   const model = createEditorModel({
-    session: () => sess.session,
+    session: () => undoWire, // the undo-aware read surface (Archie-9da0): notes/workingAnnotations carry the overlay
     vs,
     rdg,
     structure,
@@ -1568,7 +1591,7 @@
     if (!vs.editing) return;
     const body: W3CBody[] = [{ type: "TextualBody", value: comment, purpose: "commenting" }];
     for (const t of tagsCsv.split(",").map((s) => s.trim()).filter(Boolean)) body.push({ type: "TextualBody", value: t, purpose: "tagging" });
-    sess.session.editNote(vs.editing as LogicalId, { body }); // reading carries forward; change it via setNoteReading
+    undoWire.editNote(vs.editing as LogicalId, { body }); // reading carries forward; change it via setNoteReading
   }
   // AV note time range (for the WADM form's conditional time fieldset). Null for image (xywh) notes.
   // selectorValue + the geo selector math (geoLabelOf / geoForTarget) live in geo-notes.ts now — pure
@@ -1576,7 +1599,7 @@
   const timeOf = (r: AnnotationRecord) => parseTimeFragment(selectorValue(r));
   function applyTime(start: number, end: number) {
     if (!vs.editing) return;
-    sess.session.editNote(vs.editing as LogicalId, { target: timeSel(vs.canvasId, Math.max(0, start), Math.max(start, end)) });
+    undoWire.editNote(vs.editing as LogicalId, { target: timeSel(vs.canvasId, Math.max(0, start), Math.max(start, end)) });
   }
   // mm:ss ⇄ seconds for the AV time fieldset moved into NoteEditor.svelte (the WADM form owns them now).
 
@@ -1780,7 +1803,7 @@
     objects: () => vs.OBJECTS,
     currentObjectId: () => vs.currentObjectId,
     currentReadings: () => currentReadings,
-    session: () => sess.session,
+    session: () => undoWire, // bulk note imports land in undo history like every routed mutation
     seedMaster: (slug, id, url) => assets.seedMaster(slug, id, url),
     setPlate: (id, url) => assets.setPlate(id, url),
     setCurrentObjectId: (id) => { vs.currentObjectId = id; },
@@ -2420,7 +2443,11 @@
                  the tool strip's own row — never floating over the artefact (Archie-a9fc, same rule this
                  strip itself follows). aria-live so a screen-reader user can hear the zoom level change
                  without it stealing focus; formatZoomRatio (the SAME formatter the viewer reader uses)
-                 is the one place "3.2×" gets built, so the two surfaces read the number identically. -->
+                 is the one place "3.2×" gets built, so the two surfaces read the number identically.
+                 Note undo/redo (Archie-9da0) shares the row's right edge — the strip is the notes-action
+                 surface — and the disclosure states the session-scope limit (the Archie-69a6 decision)
+                 in the surface itself. -->
+            <UndoControls canUndo={notesUndoable} canRedo={notesRedoable} onundo={() => undoWire.undo()} onredo={() => undoWire.redo()} />
             <span class="ts-zoom" aria-live="polite"><span class="ts-zoom-label">Zoom</span> {formatZoomRatio(zoomRatio)}</span>
           </span>
         </div>
@@ -2682,7 +2709,7 @@
 <IdentityPrompt open={identityPromptOpen} onsave={onIdentitySave} onskip={onIdentitySkip} />
 <!-- GLOBAL: MergeReview (Archie-90f1) — opened by the status strip's "Review", source-agnostic over
      however sess.session got its plural heads (a merged zip today; live sync later). -->
-<MergeReview open={mergeReviewOpen} onclose={() => (mergeReviewOpen = false)} session={sess.session} conflicts={model.noteConflicts} onchange={resync} />
+<MergeReview open={mergeReviewOpen} onclose={() => (mergeReviewOpen = false)} session={undoWire} conflicts={model.noteConflicts} onchange={resync} />
 <!-- GLOBAL: the onboarding tutorial (embeds docs/learn decks from public/learn). -->
 <TutorialModal open={tutorialOpen} onclose={() => (tutorialOpen = false)} />
 <!-- GLOBAL: the storage chip — fixed bottom-right corner, under every view (library / overview /

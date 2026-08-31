@@ -1,9 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { AnnotationSession } from "./session.js";
 import { AnnotationUndoManager } from "./undo.js";
 import { MemoryFilesystem } from "../fs/memory.js";
-import { asClientId } from "../wadm/brand.js";
-import type { W3CSpecificResource } from "../wadm/types.js";
+import { asClientId, type LogicalId } from "../wadm/brand.js";
+import type { AnnotationLog, W3CSpecificResource } from "../wadm/types.js";
 
 // Archie-69a6 prototype gate. The claim under test is narrow and it is the whole ticket:
 // undo/redo can move the EDITING PROJECTION while the append-only log (ADR-0003) only ever grows.
@@ -22,9 +22,9 @@ const bodyText = (record: { body?: unknown }): string | undefined => {
   return body?.value;
 };
 
-function fresh(): { session: AnnotationSession; undo: AnnotationUndoManager } {
+function fresh(opts?: ConstructorParameters<typeof AnnotationUndoManager>[1]): { session: AnnotationSession; undo: AnnotationUndoManager } {
   const session = new AnnotationSession(alice);
-  return { session, undo: new AnnotationUndoManager(session) };
+  return { session, undo: new AnnotationUndoManager(session, opts) };
 }
 
 describe("AnnotationUndoManager — create / undo / redo", () => {
@@ -174,6 +174,7 @@ describe("AnnotationUndoManager — the log is append-only, whatever the project
     const colleague = new AnnotationSession(asClientId("bob"));
     colleague.createNote({ target: rect(50, 50, 10, 10), body: text("theirs") });
     session.importChanges(colleague.entries);
+    undo.resyncLog(); // the merge is the ONE legit bypass — the wrapper's contract, exercised here
 
     expect(session.notes()).toHaveLength(2); // the log projects both
     expect(undo.notes().map((n) => bodyText(n))).toEqual(["theirs"]); // the surface still hides the undone one
@@ -207,5 +208,166 @@ describe("AnnotationUndoManager — the log is append-only, whatever the project
     expect(undo.workingAnnotations()).toHaveLength(0);
     expect(session.entries).toHaveLength(1);
     expect(session.entries[0]!.logicalId).toBe(id);
+  });
+});
+
+/** A real conflict: bob forks alice's log at `base` (BEFORE alice's own edit) and edits the same
+ *  note; importing the fork unions SIBLING revs — plural heads, the state the conflict card
+ *  resolves. Alice must have edited after `base` was taken, or the union is a fast-forward. */
+function importBobEdit(session: AnnotationSession, undo: AnnotationUndoManager, base: AnnotationLog, id: LogicalId): void {
+  const bob = new AnnotationSession(asClientId("bob"), base);
+  bob.editNote(id, { body: text("bob") });
+  session.importChanges(bob.entries);
+  undo.resyncLog(); // the merge bypasses the manager by design — re-baseline the tripwire
+}
+
+describe("AnnotationUndoManager — composite gestures (feasibility rec 2)", () => {
+  it("a drag of many edits between one mark pair is ONE undo step", () => {
+    const { session, undo } = fresh();
+    const id = undo.createNote({ target: rect(0, 0, 10, 10) });
+    undo.mark("drag");
+    for (let i = 0; i < 10; i++) undo.editNote(id, { body: text(`v${i}`) });
+    undo.mark("drag-end");
+
+    undo.undo(); // the whole block — not ten fragments
+    expect(undo.notes()[0]!.body).toBeUndefined(); // back to the created state
+    expect(session.entries).toHaveLength(11); // and every version still in the log
+    undo.redo();
+    expect(bodyText(undo.notes()[0]!)).toBe("v9");
+  });
+
+  it("mark() with nothing pending is a no-op — an empty gesture cannot fragment history", () => {
+    const { undo } = fresh();
+    const a = undo.createNote({ target: rect(0, 0, 10, 10), body: text("A") });
+    undo.mark("g1");
+    undo.mark("g1"); // empty gesture re-arms
+    undo.mark("g1"); // and again — still one boundary, not three
+    undo.createNote({ target: rect(20, 20, 10, 10), body: text("B") });
+
+    undo.undo(); // B's block alone
+    expect(undo.notes().map((n) => n.logicalId)).toEqual([a]);
+  });
+});
+
+describe("AnnotationUndoManager — the ring cap (feasibility rec 1)", () => {
+  it("undo depth is capped at `limit` blocks; oldest drop first; the log never shrinks", () => {
+    const { session, undo } = fresh({ limit: 2 });
+    for (let i = 0; i < 3; i++) {
+      undo.createNote({ target: rect(i * 20, 0, 10, 10), body: text(`n${i}`) });
+      undo.mark(`m${i}`);
+    }
+    expect(undo.notes()).toHaveLength(3);
+
+    undo.undo();
+    expect(undo.notes()).toHaveLength(2);
+    undo.undo();
+    expect(undo.notes()).toHaveLength(1); // depth 2 held — two full blocks
+    undo.undo();
+    expect(undo.notes()).toHaveLength(1); // n0's block was trimmed — depth lost, not corrupted
+    expect(undo.canUndo).toBe(false);
+    expect(session.entries).toHaveLength(3); // the log is untouched by any of it
+  });
+});
+
+describe("AnnotationUndoManager — undo × conflict resolution (the gap the prototype left)", () => {
+  it("plural heads under an outstanding overlay show ONE row — the per-id verdict, not a duplicate", () => {
+    const { session, undo } = fresh();
+    const id = undo.createNote({ target: rect(0, 0, 10, 10), body: text("v1") });
+    const base = session.entries; // bob forks HERE — sibling revs, not a child of v2
+    undo.mark("e");
+    undo.editNote(id, { body: text("v2") });
+    undo.undo(); // the surface now shows v1 via the overlay…
+    importBobEdit(session, undo, base, id); // …while the log grows plural heads for the same id
+
+    expect(session.notes().filter((n) => n.logicalId === id)).toHaveLength(2); // honest degradation
+    const rows = undo.notes().filter((n) => n.logicalId === id);
+    expect(rows).toHaveLength(1); // the overlay is a verdict on the ID, not on each head row
+    expect(bodyText(rows[0]!)).toBe("v1");
+  });
+
+  it("WHY resolveNote EXISTS: a raw session.resolve lands UNDER a stale overlay, silently", () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { session, undo } = fresh();
+    const id = undo.createNote({ target: rect(0, 0, 10, 10), body: text("v1") });
+    const base = session.entries;
+    undo.mark("e");
+    undo.editNote(id, { body: text("v2") });
+    undo.undo();
+    importBobEdit(session, undo, base, id);
+
+    session.resolve(id, { body: text("merged") }); // the RAW path the conflict card could take
+    expect(bodyText(session.notes().find((n) => n.logicalId === id)!)).toBe("merged"); // log resolved…
+    expect(bodyText(undo.notes()[0]!)).toBe("v1"); // …but the surface never heard. The divergence.
+    expect(err).toHaveBeenCalledTimes(1); // and the tripwire fired — resolve is a mutation
+    err.mockRestore();
+  });
+
+  it("resolveNote routes the resolution onto the surface and the undo stack; the log only grows", () => {
+    const { session, undo } = fresh();
+    const id = undo.createNote({ target: rect(0, 0, 10, 10), body: text("v1") });
+    const base = session.entries;
+    undo.mark("e");
+    undo.editNote(id, { body: text("v2") });
+    importBobEdit(session, undo, base, id);
+    const before = [...session.entries];
+
+    undo.resolveNote(id, { body: text("merged") });
+    expect(bodyText(session.notes().find((n) => n.logicalId === id)!)).toBe("merged");
+    expect(bodyText(undo.notes()[0]!)).toBe("merged"); // the surface shows the merge node
+    expect(session.entries).toHaveLength(before.length + 1); // exactly the merge node appended
+    expect(session.entries.slice(0, before.length)).toEqual(before); // prefix byte-identical
+
+    undo.undo(); // the resolution is undoable — the surface falls back to what it showed before
+    const shown = undo.notes().filter((n) => n.logicalId === id);
+    expect(shown).toHaveLength(1); // ONE record — the per-id diff cannot express the second head
+    expect(bodyText(shown[0]!)).toBeDefined(); // (one of the two competing heads — the pinned
+    // approximation in resolveNote's doc) — but never the merge node, never a duplicate row
+    undo.redo();
+    expect(bodyText(undo.notes()[0]!)).toBe("merged");
+  });
+
+  it("a resolution voids an outstanding undo decision for the same note", () => {
+    const { session, undo } = fresh();
+    const id = undo.createNote({ target: rect(0, 0, 10, 10), body: text("v1") });
+    const base = session.entries;
+    undo.mark("e");
+    undo.editNote(id, { body: text("v2") });
+    undo.undo(); // stale "show v1" decision now outstanding
+    importBobEdit(session, undo, base, id);
+
+    undo.resolveNote(id, { body: text("merged") });
+    expect(bodyText(undo.notes()[0]!)).toBe("merged"); // not the stale v1 — the newest word wins
+  });
+
+  it("resolveNote refuses a note that is not conflicted (session.resolve's own contract)", () => {
+    const { undo } = fresh();
+    const id = undo.createNote({ target: rect(0, 0, 10, 10), body: text("v1") });
+    expect(() => undo.resolveNote(id, {})).toThrow(/no conflict/);
+  });
+});
+
+describe("AnnotationUndoManager — the bypass tripwire (a missed call site must not fail silently)", () => {
+  it("a mutation that skips the manager is reported loudly on the next projection read", () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { session, undo } = fresh();
+    undo.notes(); // baseline
+    session.createNote({ target: rect(50, 50, 10, 10), body: text("bypass") }); // NOT through the manager
+    undo.notes(); // the observation
+    expect(err).toHaveBeenCalledTimes(1);
+    expect(err.mock.calls[0]?.[0]).toMatch(/did not go through this manager/);
+    err.mockRestore();
+  });
+
+  it("resyncLog clears the report after a legitimate importChanges", () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { session, undo } = fresh();
+    undo.notes();
+    const colleague = new AnnotationSession(asClientId("bob"));
+    colleague.createNote({ target: rect(50, 50, 10, 10), body: text("theirs") });
+    session.importChanges(colleague.entries);
+    undo.resyncLog();
+    undo.notes();
+    expect(err).not.toHaveBeenCalled();
+    err.mockRestore();
   });
 });

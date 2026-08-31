@@ -14,6 +14,8 @@ export interface Shortcut {
 export const SHORTCUTS: Shortcut[] = [
   { keys: "?", label: "Show or hide this shortcuts help", group: "Anywhere" },
   { keys: "⌘S", label: "Save the library", group: "Anywhere" },
+  { keys: "⌘Z", label: "Undo the last note change", group: "Anywhere" },
+  { keys: "⇧⌘Z", label: "Redo a note change you undid", group: "Anywhere" },
   { keys: "Esc", label: "Close what's open — palette, then the note, then framing, then step back out", group: "Anywhere" },
   { keys: "⌘A", label: "Select all media items (on the exhibit overview)", group: "Organizing" },
   { keys: "⌫", label: "Remove the selected media items", group: "Organizing" },
@@ -39,6 +41,8 @@ export function matches(e: KeyboardEvent, keys: string): boolean {
   switch (keys) {
     case "⌘S": return (e.metaKey || e.ctrlKey) && k.toLowerCase() === "s";
     case "⌘K": return (e.metaKey || e.ctrlKey) && k.toLowerCase() === "k";
+    case "⌘Z": return (e.metaKey || e.ctrlKey) && k.toLowerCase() === "z" && !e.shiftKey;
+    case "⇧⌘Z": return (e.metaKey || e.ctrlKey) && k.toLowerCase() === "z" && e.shiftKey;
     case "⌘A": return (e.metaKey || e.ctrlKey) && k.toLowerCase() === "a";
     case "?": return k === "?";
     case "Esc": return k === "Escape";

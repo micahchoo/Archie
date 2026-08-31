@@ -38,6 +38,7 @@ import { rectSel } from "./seed-data.js";
 import { enqueueSave } from "./save-queue.svelte.js";
 import { reportStorageFailure, reportStorageOk, requestPersistence } from "./storage-quota.svelte.js";
 import type { LibraryStore } from "./library-meta.svelte.js";
+import type { UndoWire } from "./undo-wire.js";
 
 const LARGE_MEDIA_BYTES = 100 * 1024 * 1024; // ~100 MB — above this, suggest linking by URL (never blocks)
 const THUMB_DIM = 640; // grid/overview thumbnail longest-edge px — covers retina plates, tiny vs the master
@@ -209,7 +210,10 @@ export interface IngestContext {
   objects: () => ReadonlyArray<ObjectMeta>;
   currentObjectId: () => string;
   currentReadings: () => ReadonlyArray<{ id: string; name: string }>;
-  session: () => AnnotationSession;
+  /** The undo-aware mutation surface (Archie-9da0 wire) — bulk note imports route through it like
+   *  every other note mutation, so an imported batch lands in undo history as ONE squashed block
+   *  (and the manager's bypass tripwire stays quiet). App passes `() => undoWire`. */
+  session: () => UndoWire;
   // State writers (the $state setters live in App).
   /** Seed a just-imported object's MASTER blob into the on-demand slot before it becomes current, so the
    *  canvas mounts against the blob (not the `/assets/` path) — closes the first-import OSD race. The

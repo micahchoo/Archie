@@ -17,10 +17,14 @@
   import type { AnnotationSession, LogicalId, AnnotationRecord, W3CBody } from "@render/core";
   import { scrimmed, trapFocus, modality } from "./modality.svelte.js";
 
+  /** The resolution surface this dialog drives — the raw AnnotationSession, or the undo-aware wire
+   *  (Archie-9da0): App passes the wire, so a "Keep this version" resolution lands in undo history
+   *  like every other routed mutation instead of bypassing it. */
+  type ResolveSession = Pick<AnnotationSession, "conflictHeads" | "resolve">;
   let { open, onclose, session, conflicts, onchange }: {
     open: boolean;
     onclose: () => void;
-    session: AnnotationSession;
+    session: ResolveSession;
     conflicts: string[];
     onchange: () => void;
   } = $props();

@@ -37,11 +37,23 @@ import { recordsToWorking } from "../spine/serialize.js";
 /** A diff over the note projection, keyed by the stable logicalId the surface selects on. */
 export type NoteDiff = RecordsDiff<LogicalId, AnnotationRecord>;
 
+/** The resolution payload `session.resolve` takes — re-derived from the session's own signature,
+ *  never re-declared beside it. */
+type ResolveChoice = Parameters<AnnotationSession["resolve"]>[1];
+
 /** Undo-stack contents. A `stop` is tldraw's named mark — a boundary `undo`/`bailToMark` halt at. */
 type Entry = { type: "stop"; id: string } | { type: "diff"; diff: NoteDiff };
 
 /** What the overlay says about one logicalId: show this record, or show nothing. */
 type Presence = { present: true; record: AnnotationRecord } | { present: false };
+
+/** Undo depth, in marked BLOCKS (the freecut ring cap, feasibility rec 1 — `undo-feasibility.md`
+ *  "What freecut still supplies"). The prototype's stack was unbounded: a long session accumulates
+ *  one entry per mark forever. Each block is a squashed per-id diff, so 500 marked blocks is
+ *  orders of magnitude beyond a real session's gesture count while staying a rounding error in
+ *  memory (records are structurally shared with the log). Oldest blocks drop first; the trim may
+ *  cut a block's stop off with it — that loses undo DEPTH only, never correctness. */
+const DEFAULT_UNDO_LIMIT = 500;
 
 function cmp(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
@@ -52,14 +64,29 @@ function cmp(a: string, b: string): number {
 function cmpRecord(x: AnnotationRecord, y: AnnotationRecord): number {
   return cmp(x.logicalId, y.logicalId) || cmp(x.rev, y.rev);
 }
-
 export class AnnotationUndoManager {
   private readonly session: AnnotationSession;
+
+  /** Undo depth cap in blocks — see {@link DEFAULT_UNDO_LIMIT}. */
+  private readonly limit: number;
 
   /** Mutations since the last mark, squashed as they arrive (tldraw's `pendingDiff`). */
   private pending: NoteDiff = emptyDiff();
   private readonly undos: Entry[] = [];
+  /** How many of `undos` are diffs (blocks) — the ring cap counts these, not raw entries. */
+  private depth = 0;
   private readonly redos: NoteDiff[] = [];
+
+  /**
+   * The bypass tripwire's baseline. Every session mutation bumps `session.revision` exactly once
+   * (`advance` per append, `setLog` for merge/resolve), so the revision delta between two
+   * observations of `notes()` is fully accounted for when every mutation was routed through this
+   * manager. A LARGER delta is a mutation that bypassed it — the edit lands in the log but is
+   * absent from history, which is exactly the silent failure a missed call site produces. The
+   * tripwire makes that loud instead.
+   */
+  private observedRevision = 0;
+  private selfRevisions = 0;
 
   /**
    * Per-logicalId projection override. EMPTY is the normal state and the fast path: with nothing
@@ -81,8 +108,9 @@ export class AnnotationUndoManager {
    *  rather than ignored — this manager is the only writer, so a re-entrant call is a bug. */
   private applying = false;
 
-  constructor(session: AnnotationSession) {
+  constructor(session: AnnotationSession, options: { limit?: number } = {}) {
     this.session = session;
+    this.limit = options.limit ?? DEFAULT_UNDO_LIMIT;
   }
 
   // ── Authoring — every mutation goes through here, not through the session directly ──
@@ -90,6 +118,7 @@ export class AnnotationUndoManager {
   createNote(input: NewNote): LogicalId {
     this.assertNotApplying("createNote");
     const id = this.session.createNote(input);
+    this.selfRevisions += 1; // create appends exactly one record (MERGE-CONTRACT C1) — one revision
     const record = this.headOf(id);
     if (record !== undefined) this.accumulate({ ...emptyDiff<LogicalId, AnnotationRecord>(), added: { [id]: record } as Record<LogicalId, AnnotationRecord> });
     return id;
@@ -99,6 +128,7 @@ export class AnnotationUndoManager {
     this.assertNotApplying("editNote");
     const from = this.headOf(logicalId);
     this.session.editNote(logicalId, changes);
+    this.selfRevisions += 1; // an edit appends exactly one version (C2)
     const to = this.headOf(logicalId);
     if (from !== undefined && to !== undefined) {
       this.accumulate({ ...emptyDiff<LogicalId, AnnotationRecord>(), updated: { [logicalId]: [from, to] } as Record<LogicalId, [AnnotationRecord, AnnotationRecord]> });
@@ -109,6 +139,7 @@ export class AnnotationUndoManager {
     this.assertNotApplying("deleteNote");
     const from = this.headOf(logicalId);
     this.session.deleteNote(logicalId);
+    this.selfRevisions += 1; // a delete appends exactly one tombstone (C3)
     // The tombstone is the new head but the projection drops it, so the projection-level change is
     // a REMOVAL of the record that was live. Undoing it re-shows that record; the tombstone stays
     // in the log regardless, which is exactly the immutability property this class exists to keep.
@@ -117,12 +148,55 @@ export class AnnotationUndoManager {
     }
   }
 
+  /**
+   * Resolve a conflict the way every other mutation is routed — the wrapper for
+   * `session.resolve`. Two reasons this must exist rather than letting Studio call the session:
+   *
+   * 1. A resolution IS a projection change — the plural heads the surface shows collapse into the
+   *    merge node — so it belongs on the undo stack like any other act.
+   * 2. It is the NEWEST word for its logicalId: any outstanding overlay decision for that id is
+   *    void. Without this drop, a stale "show this instead" (an undo still outstanding when the
+   *    colleague's edit arrived) keeps masking the resolved note — the surface silently disagrees
+   *    with the log's single head. Pinned red/green by the undo × resolve tests below.
+   *
+   * The diff records the merge node as the id's new state. What the per-id diff model CANNOT
+   * express is the OTHER competing head: undoing a resolution restores whichever record the
+   * surface showed last, not both plural heads. That approximation is asserted by test, not
+   * silent. Throws (via `session.resolve`) when the id is not actually conflicted.
+   */
+  resolveNote(logicalId: LogicalId, choice: ResolveChoice = {}): void {
+    this.assertNotApplying("resolveNote");
+    const shown = this.notes().find((n) => n.logicalId === logicalId);
+    this.session.resolve(logicalId, choice);
+    this.selfRevisions += 1; // a resolution appends exactly one merge node (D)
+    const merged = this.headOf(logicalId);
+    // Direct delete, NOT setOverlay: the merged head may legitimately differ from everything the
+    // overlay was deciding between, and the drop-agreement check must not resurrect a stale row.
+    this.overlay.delete(logicalId);
+    this.composed = null;
+    if (merged !== undefined) {
+      this.accumulate({
+        ...emptyDiff<LogicalId, AnnotationRecord>(),
+        ...(shown !== undefined
+          ? { updated: { [logicalId]: [shown, merged] } as Record<LogicalId, [AnnotationRecord, AnnotationRecord]> }
+          : { added: { [logicalId]: merged } as Record<LogicalId, AnnotationRecord> }),
+      });
+    }
+  }
+
   // ── History ──
 
-  /** Name a stopping point. Flushes what has accumulated since the last mark as ONE undo entry. */
+  /** Name a stopping point. Flushes what has accumulated since the last mark as ONE undo entry.
+   *  Composite-gesture habit (feasibility rec 2): a drag handler marks at gesture START and
+   *  commits once at gesture END, so a 300-move drag is one undo step — the pending diff already
+   *  squashes the moves. This method is also SAFE to call unconditionally: when nothing has
+   *  accumulated since the last stop, the call is a no-op instead of stacking a redundant
+   *  boundary, so an empty gesture (or a double-armed handler) cannot fragment history. */
   mark(id: string): void {
     this.flushPending();
-    this.undos.push({ type: "stop", id });
+    const top = this.undos[this.undos.length - 1];
+    if (top?.type === "stop") return;
+    this.pushUndo({ type: "stop", id });
   }
 
   /** Reverse the most recent block of changes, back to (and consuming) the nearest mark.
@@ -138,7 +212,7 @@ export class AnnotationUndoManager {
     const diff = this.redos.pop();
     if (diff === undefined) return;
     this.applyDiff(diff);
-    this.undos.push({ type: "diff", diff });
+    this.pushUndo({ type: "diff", diff });
   }
 
   /** Abandon everything back to a named mark — no redo entry (tldraw's `bailToMark`: cancel an
@@ -147,6 +221,16 @@ export class AnnotationUndoManager {
     this.flushPending();
     if (!this.undos.some((e) => e.type === "stop" && e.id === id)) return;
     this.popAndReverse(id);
+  }
+
+  /** Re-baseline the bypass tripwire after a legitimate LOG-LEVEL mutation that by design does
+   *  not go through this manager: `importChanges` (merge). The studio wrapper calls it right
+   *  after the merge; without it the next `notes()` read would report the merge's revisions as
+   *  bypassed mutations. Undo of a merge is not offered — the overlay's per-id decisions already
+   *  survive one (pinned by test). */
+  resyncLog(): void {
+    this.observedRevision = this.session.revision.get();
+    this.selfRevisions = 0;
   }
 
   get canUndo(): boolean {
@@ -162,6 +246,7 @@ export class AnnotationUndoManager {
   /** The live notes the editing surface should draw — the session's heads with the overlay applied.
    *  Identical (by identity) to `session.notes()` whenever nothing is undone. */
   notes(): AnnotationRecord[] {
+    this.observeLog();
     const base = this.session.notes();
     if (this.overlay.size === 0) return base;
     if (this.composed !== null && this.composedBase === base) return this.composed;
@@ -170,6 +255,10 @@ export class AnnotationUndoManager {
     const seen = new Set<LogicalId>();
     for (const head of base) {
       const o = this.overlay.get(head.logicalId);
+      // One decision per logicalId, even against PLURAL heads: a live conflict projects BOTH
+      // competing heads (C6, honest degradation), but an overlay entry is a per-id verdict —
+      // emitting it once per head row would duplicate it. No entry → both heads show, unchanged.
+      if (o !== undefined && seen.has(head.logicalId)) continue;
       seen.add(head.logicalId);
       if (o === undefined) out.push(head);
       else if (o.present) out.push(o.record);
@@ -195,6 +284,37 @@ export class AnnotationUndoManager {
 
   // ── Internals ──
 
+  /** The ring cap lives here, at the only door onto the undo stack. Trim is in BLOCKS (diff
+   *  entries), not raw entries: a stop dropped with its block is depth lost, but a stop kept
+   *  while its block drops would leave leading stops that mean nothing. */
+  private pushUndo(entry: Entry): void {
+    this.undos.push(entry);
+    if (entry.type === "diff") this.depth += 1;
+    while (this.depth > this.limit) {
+      const dropped = this.undos.shift();
+      if (dropped?.type === "diff") this.depth -= 1;
+    }
+  }
+
+  /** The tripwire read. Runs on every `notes()` — O(1): one atom get and an integer compare,
+   *  nothing that touches the log (reading `entries` here would materialize the session's frozen
+   *  snapshot on the per-edit path, which the head-index work exists to keep off it). */
+  private observeLog(): void {
+    const rev = this.session.revision.get();
+    const delta = rev - this.observedRevision;
+    if (delta > this.selfRevisions) {
+      // eslint-disable-next-line no-console -- the tripwire IS the feature: a bypassed mutation
+      // fails silently on the surface, so it must be loud somewhere.
+      console.error(
+        `AnnotationUndoManager: ${delta - this.selfRevisions} session mutation(s) did not go through ` +
+        `this manager — the edit(s) are in the log but missing from undo history. Route note ` +
+        `mutations through createNote/editNote/deleteNote/resolveNote, or call resyncLog() after importChanges.`,
+      );
+    }
+    this.observedRevision = rev;
+    this.selfRevisions = 0;
+  }
+
   /** The single head of a logicalId, or undefined when it is absent or conflicted.
    *  `conflictHeads` is `HeadIndex.headsOf` — an O(1) map read, NOT a log scan. */
   private headOf(logicalId: LogicalId): AnnotationRecord | undefined {
@@ -214,7 +334,7 @@ export class AnnotationUndoManager {
 
   private flushPending(): void {
     if (isEmptyDiff(this.pending)) return;
-    this.undos.push({ type: "diff", diff: this.pending });
+    this.pushUndo({ type: "diff", diff: this.pending });
     this.pending = emptyDiff();
   }
 
