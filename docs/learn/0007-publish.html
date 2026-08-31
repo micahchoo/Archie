@@ -21,7 +21,7 @@
     <section class="slide active">
       <div class="slide-inner">
         <h1>Share it — the easy way first</h1>
-        <p class="standfirst">Publish opens one surface that first asks <em>where</em> to send it — the web, a local folder, or a portable file. Start with the portable file: no account, no server, nothing to configure. Whoever you send it to opens it and reads.</p>
+        <p class="standfirst">Publish opens one surface that first asks <em>where</em> to send it — the web, a rented storage bucket, a local folder, or a portable file. Start with the portable file: no account, no server, nothing to configure. Whoever you send it to opens it and reads.</p>
         <div class="flow">
           <div class="node">Your <span class="term" data-term="library">library</span></div>
           <div class="arrow">→</div>
@@ -52,6 +52,10 @@
         <div class="aside-adv">
           <span class="label">For citation &amp; reuse</span>
           You can include your full-resolution originals so others can cite them. Links between exhibits in your library are checked as you publish, so nothing points into the void. (Prefer a token? A personal-access-token form is still there as an advanced option.)
+        </div>
+        <div class="aside-adv">
+          <span class="label">For a very large library</span>
+          Free hosting has size limits. Pick <b>Object storage</b> and Archie writes the same finished site to a folder, then hands you two short commands for <code>rclone</code> — a free command-line tool that uploads the folder to a rented bucket (Cloudflare R2 charges pennies a month, and serving is free). Archie never sees your keys: you connect your own bucket once in rclone, and from then on the two commands are all you ever run. One setting on the bucket: allow GET and HEAD from any origin, or a reader's browser refuses to load the library's files. The <b>A folder on this computer</b> option is the same site without the upload — put it on any web host yourself.
         </div>
         <div class="callout">
           <span class="label">You've got the whole loop</span>
