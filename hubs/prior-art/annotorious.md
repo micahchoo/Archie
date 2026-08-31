@@ -46,17 +46,18 @@ promoted here with the actual mechanism traced, not just cited.
 (`@annotorious/openseadragon@3.8.2`, `dist/annotorious-openseadragon.es.js`) but no Archie code
 path reaches it as a serialize→reparse→resave round trip.
 
-### Installed-package verification (2026-08-30 advisory check)
+### Installed-package verification (2026-08-30 cross-check)
 
 - Version pin: `node_modules/.pnpm/@annotorious+openseadragon@3.8.2_openseadragon@5.0.1/…`
   (`package.json:3` `"version": "3.8.2"`; deps `@annotorious/annotorious` + `@annotorious/core`
-  both 3.8.2, `:62-63`). All dist line refs above are from THIS install.
+  both 3.8.2, `:62-63`). All dist line refs in this section are from THIS install.
 - `ShapeType` enum DOES carry ELLIPSE/LINE (bundle `:692`) — the types and the broken parse/serialize
   machinery ship in the OSD build. But the DRAWING-tool registry has exactly two entries
   (bundle `:5351-5354`): `new Map([["rectangle", …], ["polygon", …]])` — `listDrawingTools` returns
   only those keys. `setDrawingTool("ellipse")` throws `No drawing tool named ellipse`
   (`:7343-7344`, `:37080-37081`). So Ellipse/Line cannot be DRAWN in the OSD build at all — the emit
   path is dead on arrival inside Annotorious too, independent of Archie's own `DrawTool` lock.
+
 ### The bug in Archie's own bundle (confirmed, minified line refs)
 - `Sy` (serializeSVGSelector, `:1164-1203`): ELLIPSE → `<svg><ellipse …/></svg>` (`:1182-1186`),
   LINE → `<svg><line …/></svg>` (`:1192-1196`); POLYGON → `<svg><polygon …/></svg>` (`:1177-1181`).
@@ -68,6 +69,8 @@ path reaches it as a serialize→reparse→resave round trip.
 - RECT survives (`wy :1102-1134` re-queries `querySelectorAll("rect")`); POLYGON survives via the
   `_y` regex (`:1051-1060`), tried first in `Ty` (`:1149-1163`).
 
+Cross-check against the INSTALLED package (not upstream source): this closes the emit path at a
+second layer, inside the dependency itself.
 ### Emit side (tool modes → save): UNREACHABLE
 - `DrawTool = "rectangle" | "polygon"` only — `packages/render-mount/src/surface.ts:13`.
   No `ellipse`/`line` tool string exists in studio/render-mount/render-svelte.
