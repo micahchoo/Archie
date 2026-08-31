@@ -26,6 +26,15 @@ export * from "./spine/index.js";
 // The Studio editor session (authoring loop over the log + persistence).
 export * from "./session/session.js";
 
+// Undo/redo over the PROJECTION (Archie-9da0 wiring): the tldraw-shaped diff stack as an overlay
+// on the session — the log itself is never rewritten. Session-scoped by decision (Archie-69a6):
+// undo does not survive save+reload; pure module, so the embed's eager chunk tree-shakes it away.
+export * from "./session/undo.js";
+
+// The pull-based signals layer (tldraw port) — `atom`/`computed` + `transact`; `onEpochChange` is
+// the single push edge a UI framework binds to (state/index.ts documents the three-line Svelte bridge).
+export * from "./state/index.js";
+
 // Publish primitive: assemble the full site data tree + the architectural zip (CONTEXT publish).
 export * from "./publish/site.js";
 export * from "./publish/ghpages.js";

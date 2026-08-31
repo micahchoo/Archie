@@ -53,7 +53,7 @@
   import { liveNoteIdsOnCanvas, conflictsBlockingRemoval as blockingRemovalConflicts } from "./conflict-gate.js";
   import { warnAnnotationPublishCorruption, type CorruptLogFinding } from "./publish-warnings.js";
   import {
-    AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
+    AnnotationSession, asClientId, encodeLinkRef, stripMarkdown, onEpochChange,
     timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
     tagsOf, workingToLibrary, resolveLayoutType,
     READING_PALETTE as CORE_READING_PALETTE,
@@ -292,7 +292,8 @@
 
   // --- per-exhibit annotation SESSION state machine (the DOMINO cut — exhibit-session.svelte.ts).
   // Owns session / annDir / storeReady / dirty + the autosave lifecycle + the ATOMIC open transition
-  // (fix #3). The editor CURSOR (selected/editing/creating/currentObjectId/rev) stays in App (bind:-bound).
+  // (fix #3). The editor CURSOR (selected/editing/creating/currentObjectId) + the epoch tick bridge
+  // (Archie-acdd) stay in App (bind:-bound).
   // `bnd` deps are deferred getters (bnd is created below) — called only at action time, never at init. ---
   const sess = createExhibitSession({
     baseUrl: BASE,
@@ -477,7 +478,6 @@
       slug,
       resolveAssets: () => assets.resolveThumbs(slug, ex?.objects ?? []), // OPFS /assets → thumb blob: URLs
     });
-    rev += 1;
     // ADR-0024 #2: Overview is MANDATORY. Every exhibit — one object, many, or empty — lands on its
     // Overview; the old single-object skip (→ editor) is removed, so the same click always reaches the
     // same screen and the editor is always one explicit step deeper. Single-object exhibits still need
@@ -565,7 +565,6 @@
 
   async function deleteObjectNotesAndMeta(objId: string) {
     for (const id of liveNoteIdsOn(objId)) sess.session.deleteNote(id);
-    bump();
     // Tag the incremental mirror BEFORE removeObject so the trigger it fires (via onAfterPersist) sees the
     // removal: rewrite the exhibit's manifest AND prune the object's orphaned tree files (spike-0002). The
     // removeObject reducer can't do this — only here do we still know the object's imported-asset name.
@@ -950,7 +949,6 @@
       const assetName = gone && isAsset(gone.source) ? gone.source.slice(ASSET_PREFIX.length) : undefined;
       bnd.markObjectRemoved(vs.currentSlug, objId, assetName); // per-id orphan cleanup (asset name known only here)
     }
-    bump();
     await lib.removeObjects(vs.currentSlug, list); // single persist → single onAfterPersist mirror
     clearSel(); selectMode = false;
     // ADR-0024 #2 (mirror removeObjectById): bulk delete from the overview STAYS on the overview at any
@@ -1004,7 +1002,6 @@
     await lib.persist();
     await openExhibit(slug); // not a template → persists; seeds empty
     for (const c of carried) sess.session.createNote({ target: c.target, ...(c.body !== undefined ? { body: c.body } : {}), ...(c.motivation !== undefined ? { motivation: c.motivation } : {}), ...(c.reading !== undefined ? { reading: c.reading } : {}), ...(c.emphasis !== undefined ? { emphasis: c.emphasis } : {}), ...(c.wholeObject !== undefined ? { wholeObject: c.wholeObject } : {}), ...(c.geo !== undefined ? { geo: c.geo } : {}) });
-    rev += 1;
     await save();
     keeping = false;
   }
@@ -1109,8 +1106,19 @@
     flows.addFiles(e.dataTransfer?.files ?? null).catch((err) => { console.error("File add failed", err); window.alert("Couldn't add that file."); });
   }
 
-  let rev = $state(0);
-  const bump = () => { rev += 1; sess.markDirty(); scheduleSave(); };
+  // Signals adoption (Archie-acdd): every session mutation (create/edit/delete note, merge,
+  // conflict resolve) moves AnnotationSession.revision — a signals-layer atom — and onEpochChange
+  // is the ONE push edge. A single $state tick bridges that external signal into Svelte's graph;
+  // the $deriveds that read session state still gate on `void epochTick` (Svelte cannot observe an
+  // external signal without a $state bridge — the read gates stay, only the counter changed).
+  // markDirty + scheduleSave ride the SAME edge, so a future session mutation can no longer
+  // forget persistence the way a forgotten bump() call silently did.
+  let epochTick = $state(0);
+  $effect(() => onEpochChange(() => { epochTick += 1; sess.markDirty(); scheduleSave(); }));
+  // Force a re-read WITHOUT a log write — no atom moves, so the tick bridge alone won't fire.
+  // Used by the refused-drag/delete gates below (the marker must snap back to the log's truth)
+  // and by consumers whose onchange contract predates the epoch edge (MergeReview, ingest-flows).
+  const resync = () => { epochTick += 1; };
   // `editing` drives the WADM form. It FOLLOWS `selected` on real selections but NOT on the null
   // deselect Annotorious fires when setAnnotations replaces the set (which happens on every edit) —
   // otherwise the form would close after every change (P2-5). Cleared explicitly on delete/switch.
@@ -1303,7 +1311,7 @@
   // The current exhibit's notes, shaped for the NarrativeEditor's "add section from a Note" shortcut
   // (ADR-0005 mitigation): objectId from the target canvas, start = the selector fragment, lead = the prose.
   const narrativeNotes = $derived.by(() => {
-    void rev; // re-derive when the log changes
+    void epochTick; // re-derive when the log changes (the epoch tick bridges the signals atom)
     return sess.session.notes().filter((r) => !r.deleted).map((r) => {
       const objectId = (srcOf(r.target) ?? "").split("/canvas/")[1] ?? "";
       const start = selectorValue(r);
@@ -1325,13 +1333,11 @@
   function setNoteReading(reading: string | null) {
     if (!vs.editing) return;
     sess.session.editNote(vs.editing as LogicalId, { reading });
-    bump();
   }
   // Per-note emphasis (Archie-1489): EMPHASIS ONLY — opacity/weight, never hue (hue = the reading, ADR-0007).
   function setNoteEmphasis(emphasis: Emphasis) {
     if (!vs.editing) return;
     sess.session.editNote(vs.editing as LogicalId, { emphasis });
-    bump();
   }
 
   // --- Rights & credit (rights grill Phase 2): the shared RightsEditor sets these at all three levels.
@@ -1433,7 +1439,6 @@
           ...(p.reading ? { reading: p.reading } : {}),
         });
         removePending(p.id); // drop from the worklist + persist (reveals Notes once the list empties)
-        bump();
         vs.selected = id;
       }
       placingPendingId = null;
@@ -1445,7 +1450,6 @@
     if (retargetingNoteId) {
       const cgeo = isMapCurrent ? geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) ?? null : undefined;
       sess.session.editNote(retargetingNoteId as LogicalId, { target: oneTarget(a.target), ...(cgeo !== undefined ? { geo: cgeo } : {}) });
-      bump();
       retargetingNoteId = null;
       vs.creating = null;
       return;
@@ -1453,7 +1457,6 @@
     // On a Map, capture the region's geo-truth (lng/lat) alongside the pixel selector (Q4/ADR-0015).
     const geo = isMapCurrent ? geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) : undefined;
     const id = sess.session.createNote({ target: oneTarget(a.target), ...(geo ? { geo } : {}), ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) }); // the PEN, never visibility (Q1)
-    bump();
     vs.selected = id;
     vs.creating = null; // the gesture produced its note; disarm back to ambient selection (ADR-0011)
   }
@@ -1462,7 +1465,6 @@
   // in the note's own form (`setNoteScope`) — not an overload of this create button.
   function createWholeObjectNote() {
     const id = sess.session.createNote({ target: vs.canvasId, ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) });
-    bump();
     vs.selected = id;
     vs.creating = null;
   }
@@ -1475,7 +1477,6 @@
     if (scope === "whole") {
       if (!selHasSelector(model.sel)) return; // already whole-object — no-op
       sess.session.editNote(vs.editing as LogicalId, { target: srcOf(model.sel!.target) ?? vs.canvasId, ...(isMapCurrent ? { geo: null } : {}) });
-      bump();
     } else {
       // "Draw a region" (whole→region) OR "Redraw bounds" (replace a region): arm a draw that re-targets
       // THIS note. Default to a box; the toolbar can switch to Outline before drawing (retarget persists).
@@ -1493,20 +1494,19 @@
   const onUpdate = (a: W3CAnnotation) => {
     if (model.conflictedNoteIds.has(a.id)) {
       importNote = { message: "Two people edited this note at the same time. Open Review to settle it before moving its marker — nothing has changed.", ok: false };
-      bump(); // re-render from the log: the dragged marker returns to where it actually is
+      resync(); // no log write happened — force the re-read so the dragged marker snaps back to the log's truth
       return;
     }
     sess.session.editNote(a.id as LogicalId, { target: oneTarget(a.target), ...(isMapCurrent ? { geo: geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) ?? null } : {}) });
-    bump();
   };
   const ondelete = (id: string) => {
     // Same gate as onUpdate: deleteNote resolves the linear head and throws on plural heads.
     if (model.conflictedNoteIds.has(id)) {
       importNote = { message: "Two people edited this note at the same time. Open Review to settle it before deleting it — nothing has changed.", ok: false };
-      bump();
+      resync(); // no log write happened — force the re-read so the refused delete leaves the canvas as it is
       return;
     }
-    sess.session.deleteNote(id as LogicalId); bump(); if (vs.selected === id) vs.selected = null; if (vs.editing === id) vs.editing = null;
+    sess.session.deleteNote(id as LogicalId); if (vs.selected === id) vs.selected = null; if (vs.editing === id) vs.editing = null;
   };
   // Hand-annotate AV: AvEditor marked a [start,end] region → create a supplementing time note, then
   // select it so the WADM form opens to type the note (the temporal analogue of onCreate for OSD draws).
@@ -1521,7 +1521,6 @@
     }
     const target = { type: "SpecificResource" as const, source: vs.canvasId, selector: { type: "FragmentSelector" as const, conformsTo: "http://www.w3.org/TR/media-frags/", value } };
     const id = sess.session.createNote({ target, body: [{ type: "TextualBody", value: "", purpose: "supplementing" }], motivation: "supplementing" });
-    bump();
     vs.selected = id;
   }
   // Import a WebVTT/SRT transcript for the current AV object → supplementing time notes. APPEND-ONLY
@@ -1532,7 +1531,6 @@
     let n = 0;
     for (const r of cued) { sess.session.createNote({ target: r.target, ...(r.body !== undefined ? { body: r.body } : {}), ...(r.motivation !== undefined ? { motivation: r.motivation } : {}) }); n++; }
     if (n > 0) {
-      bump();
       importNote = { message: `Added ${n} note${n === 1 ? "" : "s"} from your captions.`, ok: true };
     } else {
       // parseCues found no `-->` cue lines — a malformed file or the wrong format entirely. Without
@@ -1556,7 +1554,7 @@
     vs,
     rdg,
     structure,
-    rev: () => rev,
+    rev: () => epochTick,
     currentReadings: () => currentReadings,
     isAvCurrent: () => isAvCurrent,
     zoomRatio: () => zoomRatio,
@@ -1571,7 +1569,6 @@
     const body: W3CBody[] = [{ type: "TextualBody", value: comment, purpose: "commenting" }];
     for (const t of tagsCsv.split(",").map((s) => s.trim()).filter(Boolean)) body.push({ type: "TextualBody", value: t, purpose: "tagging" });
     sess.session.editNote(vs.editing as LogicalId, { body }); // reading carries forward; change it via setNoteReading
-    bump();
   }
   // AV note time range (for the WADM form's conditional time fieldset). Null for image (xywh) notes.
   // selectorValue + the geo selector math (geoLabelOf / geoForTarget) live in geo-notes.ts now — pure
@@ -1580,7 +1577,6 @@
   function applyTime(start: number, end: number) {
     if (!vs.editing) return;
     sess.session.editNote(vs.editing as LogicalId, { target: timeSel(vs.canvasId, Math.max(0, start), Math.max(start, end)) });
-    bump();
   }
   // mm:ss ⇄ seconds for the AV time fieldset moved into NoteEditor.svelte (the WADM form owns them now).
 
@@ -1802,7 +1798,9 @@
     newExhibit,
     newExhibitInLibrary: createExhibitInLibrary, // Archie-cbf6: non-navigating create for the collection batch
     openExhibit,
-    bump,
+    // ingest-flows' bulk imports already move the epoch (they go through the session) — resync keeps
+    // its "refresh after a bulk note import" contract without a second invalidation idiom.
+    bump: resync,
     cancelPendingSave: () => sess.cancelPendingSave(),
     finishReplace: () => { structure.reset(); vs.currentSlug = lib.meta.exhibits[0]!.slug; vs.view = "library"; pendingNotes = []; void enqueueSave("pending-notes", "Pending notes", () => savePendingNotes({})); }, // destructive replace wipes the old project's pending sidecar + the structure session's cached logs (the merged/imported logs are on disk — Archie-2a9a)
     confirmReplace: (msg) => window.confirm(msg),
@@ -2684,7 +2682,7 @@
 <IdentityPrompt open={identityPromptOpen} onsave={onIdentitySave} onskip={onIdentitySkip} />
 <!-- GLOBAL: MergeReview (Archie-90f1) — opened by the status strip's "Review", source-agnostic over
      however sess.session got its plural heads (a merged zip today; live sync later). -->
-<MergeReview open={mergeReviewOpen} onclose={() => (mergeReviewOpen = false)} session={sess.session} conflicts={model.noteConflicts} onchange={bump} />
+<MergeReview open={mergeReviewOpen} onclose={() => (mergeReviewOpen = false)} session={sess.session} conflicts={model.noteConflicts} onchange={resync} />
 <!-- GLOBAL: the onboarding tutorial (embeds docs/learn decks from public/learn). -->
 <TutorialModal open={tutorialOpen} onclose={() => (tutorialOpen = false)} />
 <!-- GLOBAL: the storage chip — fixed bottom-right corner, under every view (library / overview /
