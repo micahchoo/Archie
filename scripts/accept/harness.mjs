@@ -73,8 +73,15 @@ export async function runPage({ pageUrlPath, port, allow = [], timeoutMs = 6 * 3
     root: HERE,
     configFile: false,
     logLevel: "warn",
-    // The bare `@render/core` specifier is narrowed — see scripts/accept/render-core-shim.ts.
-    resolve: { alias: { "@render/core": path.join(HERE, "render-core-shim.ts") } },
+    // Two specifiers, narrowed — the bare `@render/core` (see scripts/accept/render-core-shim.ts)
+    // and the DOM-FREE `@render/core/worker` subpath (Archie-ea14 moved the bake worker onto it;
+    // worker.ts is the shipped module and needs no narrowing — it must never see the barrel).
+    resolve: {
+      alias: {
+        "@render/core/worker": path.join(REPO, "packages/render-core/src/worker.ts"),
+        "@render/core": path.join(HERE, "render-core-shim.ts"),
+      },
+    },
     server: { port, strictPort: true, fs: { allow: [REPO, ...allow] } },
     plugins: [{
       // Static mounts: `{ "/viewer-dist": "<abs dir>" }`. Vite's own `/@fs/` escape hatch would serve

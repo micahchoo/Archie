@@ -19,3 +19,11 @@ export type { ZipFormatLimits } from "../../packages/render-core/src/fs/zip.ts";
 export type { DziTileSource } from "../../packages/render-core/src/iiif/resolve.ts";
 export type { AObject, AExhibit, Library, AnnotationLog } from "../../packages/render-core/src/wadm/types.ts";
 export type { SelectorScale } from "../../packages/render-core/src/geometry/rescale.ts";
+// `TauriFilesystem` (fs/tauri.ts) and `ZipStreamFilesystem` (fs/zip-stream.ts) joined later
+// (Archie-e266 rerun): the publish page graph grew a video-transcode leg (video-transcode.ts →
+// tauri-fs.ts), and tauri-fs.ts value-imports those two from the barrel. Both source modules are
+// pure/headless (fs/tauri.ts talks to an injected bridge, never to @tauri-apps/*), so re-exporting
+// them keeps the shim's one rule — real shipped modules, only module-evaluation scope changed.
+export { TauriFilesystem } from "../../packages/render-core/src/fs/tauri.ts";
+export type { TauriFsBridge, TauriDirEntry, TauriWriteHandle } from "../../packages/render-core/src/fs/tauri.ts";
+export { ZipStreamFilesystem } from "../../packages/render-core/src/fs/zip-stream.ts";

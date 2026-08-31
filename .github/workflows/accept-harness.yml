@@ -1,0 +1,139 @@
+name: Acceptance harness (capped)
+
+# The thousand-images acceptance harness (scripts/accept/, Archie-c74e) with NO machine path until
+# Archie-e266 wired it. This workflow runs the whole pipeline END TO END at a CAPPED corpus size —
+# small enough for a CI time budget, large enough to keep every stage's assertions meaningful:
+#
+#   gen-corpus → ingest → publish (both tiers) → drive (both tiers) → check-selectors
+#   → reconcile → github-fit
+#
+# The cap is not free: `ingest.ts` annotates NOTE_OBJECTS = 20 objects unconditionally, so a corpus
+# below 20 objects leaves the note picker indexing undefined (hit on the first capped rerun,
+# Archie-e266 ledger). The guard step below asserts the floor; the input max keeps a dispatch from
+# quietly paying a full 1,000-image run. At this scale the whole job is minutes, not the hours the
+# full run on bare metal takes.
+#
+# workflow_dispatch ONLY, like scale-check.yml — a browser-driven multi-minute pipeline is run
+# deliberately, never on every PR.
+#
+# NOT wired here, with reasons (full table: ledgers/ACCEPTWIRE.md):
+#   probe-dom.mjs — a debug probe for the drive's region search, not an assertion; its overlay
+#     evidence (regions by t+300 ms) is subsumed by the drive's region + real-click rows.
+#   sink.mjs / harness.mjs — libraries with no CLI; they execute inside every page-driven step.
+on:
+  workflow_dispatch:
+    inputs:
+      objects:
+        description: "Corpus size (masters). Floor 20: ingest.ts annotates NOTE_OBJECTS=20 objects. Cap 48: CI time budget."
+        required: true
+        default: "24"
+      exhibits:
+        description: "Exhibits to split the corpus into (drives the published tree's shape)."
+        required: true
+        default: "2"
+
+concurrency:
+  group: accept-harness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  accept-harness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ROOT: /tmp/archie-accept-e266
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium (+ OS deps)
+        run: pnpm exec playwright install --with-deps chromium
+
+      # publish.mjs refuses to run without the bundled viewer (packages/archie-viewer/dist).
+      - name: Build archie-viewer bundle
+        run: pnpm --filter @render/archie-viewer build
+
+      - name: Assert the capped-scale floor and ceiling
+        run: |
+          n="${{ inputs.objects }}"
+          if ! [[ "$n" =~ ^[0-9]+$ ]]; then echo "::error::objects must be an integer"; exit 1; fi
+          if (( n < 20 )); then
+            echo "::error::objects=${n} is below the floor of 20 — ingest.ts annotates NOTE_OBJECTS=20 objects and the note picker indexes undefined below that"
+            exit 1
+          fi
+          if (( n > 48 )); then
+            echo "::error::objects=${n} exceeds the CI cap of 48 — a full-scale run belongs on bare metal (ledgers/ACCEPT-thousand-images-2026-07-27.md)"
+            exit 1
+          fi
+
+      # The six real masters gen-corpus derives the corpus from (Yale IIIF / LOC / Wikimedia).
+      # Cached so only the FIRST dispatch pays the download; a master URL that rots is replaced in
+      # BOTH scripts/perf/webptierrun.mjs and gen-corpus.mjs — bump the key when that happens.
+      - name: Cache the six source masters
+        uses: actions/cache@v4
+        with:
+          path: /tmp/archie-masters
+          key: archie-accept-masters-v1
+
+      - name: Generate corpus (capped)
+        run: node scripts/accept/gen-corpus.mjs --n "${{ inputs.objects }}" --out "$ROOT/corpus"
+
+      - name: Ingest into a real folder working store
+        run: node scripts/accept/ingest.mjs --n "${{ inputs.objects }}" --exhibits "${{ inputs.exhibits }}" --root "$ROOT"
+
+      - name: Publish both tiers (fixity on, folder sink, memory control)
+        run: node scripts/accept/publish.mjs --root "$ROOT" --tiers archival,web --control 4
+
+      # --rewrite-origin: the trees are authored at the deploy base (https://accept.example/thousand/),
+      # so the viewer's runtime fetches for manifests/heads must be intercepted back to the local
+      # server. Without it the region-overlay and note-click rows fail against a dead origin —
+      # measured 2026-08-30 (Archie-e266 ledger).
+      #
+      # Rounds: the retention row's slope bar needs the walk's REVISIT-dominated second half, which
+      # at this corpus size means rounds × walk well past the exhibit's object count — walk 4 ×
+      # rounds 10 (web) and × 15 (archival) both verified 6/6 locally at n=24.
+      - name: Drive the published web tier
+        run: >
+          node scripts/accept/drive.mjs --dir "$ROOT/pub-web" --slug series-01 --port 4601
+          --walk 4 --rounds 10 --expect-tiles false --work "$ROOT/work"
+          --rewrite-origin https://accept.example/thousand/
+
+      - name: Drive the published archival tier
+        run: >
+          node scripts/accept/drive.mjs --dir "$ROOT/pub-archival" --slug series-01 --port 4602
+          --walk 4 --rounds 15 --work "$ROOT/work"
+          --rewrite-origin https://accept.example/thousand/
+
+      - name: Selector rescale holds across the library (three-way reconciliation)
+        run: node scripts/accept/check-selectors.mjs --web "$ROOT/pub-web" --work "$ROOT/work" --n 12
+
+      - name: Reconcile estimate vs measured (render-core's own dziPyramid)
+        run: node scripts/accept/reconcile.mjs --root "$ROOT"
+
+      - name: GitHub Pages fit (render-core's real planPush + gitBlobSha)
+        run: node scripts/accept/github-fit.mjs "$ROOT/pub-web" "$ROOT/pub-web"
+
+      - name: Upload run summaries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accept-harness-summaries
+          path: |
+            /tmp/archie-accept-e266/corpus-summary.json
+            /tmp/archie-accept-e266/ingest-summary.json
+            /tmp/archie-accept-e266/publish-summary.json
+            /tmp/archie-accept-e266/reconcile.json
+          if-no-files-found: warn
+          retention-days: 7
