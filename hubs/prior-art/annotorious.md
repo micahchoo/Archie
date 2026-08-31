@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-28
+updated: 2026-08-30
 ---
 # annotorious (`field-studio/node_modules/@annotorious/annotorious`)
 > *Does the W3C SVG selector adapter round-trip Ellipse/Line/curved-Path shapes losslessly?*
@@ -39,3 +39,54 @@ promoted here with the actual mechanism traced, not just cited.
   if precision matters.
 - This is a vendored `node_modules` snapshot inside `field-studio`, not a fresh clone of
   `annotorious/annotorious` — version-pin it before treating this as upstream's current behavior.
+
+## Archie-d73f (2026-08-30): does ANY Archie path emit/consume Ellipse/Line through that serialize/parse?
+
+**Verdict: ABSENT — no corruption.** The upstream bug is live in Archie's own dependency
+(`@annotorious/openseadragon@3.8.2`, `dist/annotorious-openseadragon.es.js`) but no Archie code
+path reaches it as a serialize→reparse→resave round trip.
+
+### The bug in Archie's own bundle (confirmed, minified line refs)
+- `Sy` (serializeSVGSelector, `:1164-1203`): ELLIPSE → `<svg><ellipse …/></svg>` (`:1182-1186`),
+  LINE → `<svg><line …/></svg>` (`:1192-1196`); POLYGON → `<svg><polygon …/></svg>` (`:1177-1181`).
+  Call site `:2020`: unrotated RECTANGLE takes the FragmentSelector branch (`fy`) instead —
+  `i.type === vt.RECTANGLE && !i.geometry.rot ? fy(i.geometry) : Sy(i)`.
+- `ds` (parseSVGXML, `:957-959`) returns `…firstChild` — the OUTER `<svg>` root.
+- `vy` (parseSVGEllipse, `:1060-1076`) and `by` (parseSVGLine, `:1077-1091`) call
+  `getAttribute(…)` on that root → `null` → `NaN`. Matches the field-studio finding exactly.
+- RECT survives (`wy :1102-1134` re-queries `querySelectorAll("rect")`); POLYGON survives via the
+  `_y` regex (`:1051-1060`), tried first in `Ty` (`:1149-1163`).
+
+### Emit side (tool modes → save): UNREACHABLE
+- `DrawTool = "rectangle" | "polygon"` only — `packages/render-mount/src/surface.ts:13`.
+  No `ellipse`/`line` tool string exists in studio/render-mount/render-svelte.
+- Sole arm sites: `apps/studio/src/App.svelte:2408-2409` (Box/Outline → `vs.creating` is
+  rectangle|polygon only), `:1139` `drawShape = vs.creating ?? "rectangle"`, `:1483`.
+  Wiring `App.svelte:2455` → `packages/render-svelte/src/Canvas.svelte:158,191`
+  `surface.setDrawingTool(t)` → `packages/render-mount/src/mount.ts:395-397`.
+- Save appends the W3C annotation's selector verbatim into the append-only log; spine round-trip
+  pinned by `packages/render-core/src/spine/serialize.test.ts:23-34`. Archie therefore only ever
+  serializes unrotated-rect (FragmentSelector) + polygon (regex path) through `Sy` — both survive.
+
+### Consume side (import → parse): display-only degradation, NOT data corruption
+- `sanitizeSelector` (`apps/studio/src/wadm-import.ts:92-98`) whitelists by UNSAFETY, not shape:
+  a foreign `<svg><ellipse …/></svg>` passes and lands verbatim in the log
+  (`apps/studio/src/ingest-flows.ts:1174`). This is the one path that ever puts Ellipse/Line
+  SVG values into an Archie session.
+- Editor canvas: `packages/render-mount/src/mount.ts:327-340` → adapter parse (`Ty` → `vy`/`by`)
+  → NaN geometry → broken/invisible marker. The LOG IS UNTOUCHED — `setAnnotations` writes
+  Origin.REMOTE and never echoes (`packages/render-mount/src/gesture-guard.ts:8-9`), and even a
+  hypothetical NaN re-serialization is blocked by the `\bNaN\b` guard
+  (`packages/render-core/src/geometry/selector.ts:94`, applied at `mount.ts:188,198,333`).
+- Published viewer never runs Annotorious: `overlayShapeFor` gates on `isV1Shape`
+  (`packages/render-mount/src/overlay-shape.ts:29-30`; `selector.ts:124-128`) → ellipse/line are
+  skipped LOUDLY (`packages/render-mount/src/read-overlay.ts:107-108`).
+  Publish rescale scales ellipse/line attributes correctly anyway
+  (`packages/render-core/src/geometry/rescale.ts:118-123`, tested `rescale.test.ts:133-144`);
+  `apps/studio/src/publish-tier.ts:46-49` already documents non-v1 imported shapes as
+  counted-not-silent.
+
+So the ticket's failure shape — serialize on save, reparse on load, NaN geometry written back —
+requires an Ellipse/Line creator, and Archie has none; its editor vocabulary is rect+polygon
+(Q-1). An imported foreign ellipse degrades the studio canvas DISPLAY ONLY; the stored selector,
+the published tree, and the viewer are all either verbatim or loud.
