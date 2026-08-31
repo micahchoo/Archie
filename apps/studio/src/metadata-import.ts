@@ -2,14 +2,17 @@
 // half its archive in folders and half in a collections-system export; folder ingest handles the first
 // half, and this is the door for the second. At 1,000 objects, typing is not a plan.
 //
-// A DELIBERATE DIVERGENCE FROM csv-import.ts, recorded so it is not re-litigated. That module's header
-// (csv-import.ts:1-6) states the annotation dialect is "One fixed, documented dialect (no column-mapping
-// UI)", and that was the right call there: an annotation sheet is authored TO Archie's spec by someone
-// who chose to annotate in Excel. A catalogue export is not — it is produced by someone else's
-// collections system and cannot be reshaped on demand, so a fixed dialect pushes the reshaping onto the
-// institution, which is the audience least equipped to do it. Hence a COLUMN-MAPPING step
-// (Archie-3754 "UI/UX decided", Archie-34a2 decision 12). What IS reused verbatim: csv-import's
-// `parseCsv` (RFC 4180, no new dependency) and its skip-and-report row tolerance.
+// A DELIBERATE DIVERGENCE FROM csv-import.ts, recorded so it is not re-litigated. That module's dialect
+// is ZERO-CONFIG for a conforming header — an annotation sheet is authored TO Archie's spec by someone
+// who chose to annotate in Excel, so it never needs a mapping step (csv-import.ts csvHeaderConforms
+// gates that; since Archie-96e6 a NONconforming sheet there may point columns at dialect roles through
+// the shared mapper, but mapping stays opt-in). A catalogue export is different: it is produced by
+// someone else's collections system and cannot be reshaped on demand, so a fixed dialect pushes the
+// reshaping onto the institution, which is the audience least equipped to do it. Hence a
+// COLUMN-MAPPING step as the DEFAULT path here (Archie-3754 "UI/UX decided", Archie-34a2 decision 12).
+// What IS shared since Archie-96e6: csv-import's `parseCsv` (RFC 4180, no new dependency), its
+// skip-and-report row tolerance, and the mapping STEP itself (ColumnMapper.svelte / column-mapper.ts)
+// — only the dropdown vocabulary differs (FieldTargets here, dialect roles there).
 //
 // THE FOUR CONTRACTS THIS MODULE HOLDS
 //
@@ -32,6 +35,7 @@
 
 import {
   DEFAULT_ATTRIBUTION_LABEL,
+  DCTERMS_PROPERTIES,
   LICENSES,
   METADATA_EXCLUDED_PROPERTIES,
   dctermsLabel,
@@ -263,6 +267,33 @@ export function targetLabel(target: FieldTarget): string {
       : "Attribution / credit";
   }
   return dctermsLabel(target.property) ?? target.property.slice("dcterms:".length);
+}
+
+// ---------------------------------------------------------------------------------------------
+// The mapping STEP's dropdown encoding (moved verbatim from MetadataImport.svelte, Archie-96e6, so
+// it is unit-tested beside the model it encodes; the component consumes it through the generic
+// string grid in column-mapper.ts)
+// ---------------------------------------------------------------------------------------------
+
+/** A dropdown's value is a string, so a FieldTarget round-trips through one: "" = ignore,
+ *  "native:label", "dcterms:creator". */
+export function fieldTargetValue(t: FieldTarget | undefined): string {
+  if (!t || t.kind === "ignore") return "";
+  return t.kind === "native" ? `native:${t.field}` : t.property;
+}
+
+/** The inverse of {@link fieldTargetValue}. */
+export function parseFieldTargetValue(v: string): FieldTarget {
+  if (v === "") return { kind: "ignore" };
+  if (v.startsWith("native:")) return { kind: "native", field: v.slice("native:".length) as NativeField };
+  return { kind: "dcterms", property: v };
+}
+
+/** The Dublin Core run of the field dropdown: every DCTERMS property that does NOT collide with a
+ *  native field (model/dcterms.ts METADATA_EXCLUDED_PROPERTIES — offering "dcterms:title" beside
+ *  "Title" would publish two disagreeing titles). Was MetadataImport.svelte's DC_OPTIONS. */
+export function dctermsFieldOptions(): { property: string; label: string }[] {
+  return DCTERMS_PROPERTIES.filter((p) => !METADATA_EXCLUDED_PROPERTIES.has(p.property));
 }
 
 /**

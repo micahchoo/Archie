@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { parseCsv, planCsvImport, buildCsvTemplate, parseRegion } from "./csv-import.js";
+import {
+  parseCsv,
+  planCsvImport,
+  buildCsvTemplate,
+  parseRegion,
+  csvHeaderConforms,
+  csvRoleMapping,
+} from "./csv-import.js";
 
 describe("parseRegion — the x,y,w,h state machine", () => {
   it("all four blank → pending", () => {
@@ -173,5 +180,62 @@ describe("buildCsvTemplate — the fillable starter", () => {
     const plan = planCsvImport(buildCsvTemplate([{ id: "o12", label: "Kryptogramm", mediaType: "sound" }]), { ...CTX, currentObjectId: "o1" });
     expect(plan.skipped).toEqual([]);
     expect(plan.pending).toEqual([{ objectId: "o1", comment: "Leave the object blank to use the item you're viewing", tags: [] }]);
+  });
+});
+
+// --- opt-in mapping (Archie-96e6): the dialect stays zero-config, the shared mapper is the override ---
+
+describe("routing — a conforming header skips the mapper, a nonconforming one routes through it", () => {
+  it("a conforming header plans DIRECTLY — no mapping, the zero-config path untouched", () => {
+    const csv = "object,comment\no1,zero config";
+    expect(csvHeaderConforms(parseCsv(csv)[0]!)).toBe(true);
+    const plan = planCsvImport(csv, CTX);
+    expect(plan.pending).toEqual([{ objectId: "o1", comment: "zero config", tags: [] }]);
+    expect(plan.skipped).toEqual([]);
+  });
+  it("a nonconforming header is routed by csvHeaderConforms and planned only via the mapper's mapping", () => {
+    const csv = "media,note text\no1,mapped note";
+    expect(csvHeaderConforms(parseCsv(csv)[0]!)).toBe(false);
+    expect(planCsvImport(csv, CTX).skipped[0]!.reason).toMatch(/Missing columns/); // direct planning refuses
+    const plan = planCsvImport(csv, CTX, csvRoleMapping(["object", "comment"]));
+    expect(plan.pending).toEqual([{ objectId: "o1", comment: "mapped note", tags: [] }]);
+    expect(plan.skipped).toEqual([]);
+  });
+  it("a full mapping places regions — role indexes win over any names the header happens to carry", () => {
+    // The header uses NONE of the dialect names; only the mapper's mapping can read this sheet.
+    const csv = "item,left,top,width,height,text\no1,1,2,3,4,boxed via mapper";
+    const plan = planCsvImport(csv, CTX, csvRoleMapping(["object", "x", "y", "w", "h", "comment"]));
+    expect(plan.notes).toEqual([{ objectId: "o1", region: [1, 2, 3, 4], comment: "boxed via mapper", tags: [] }]);
+    expect(plan.skipped).toEqual([]);
+  });
+  it("a PARTIAL mapping only overrides what it points at — dialect names still resolve by name", () => {
+    const csv = "id,comment,x,y,w,h\no1,named comment,5,6,7,8";
+    const plan = planCsvImport(csv, CTX, csvRoleMapping(["object"]));
+    expect(plan.notes).toEqual([{ objectId: "o1", region: [5, 6, 7, 8], comment: "named comment", tags: [] }]);
+  });
+  it("a mapping that leaves object/comment unpointed refuses with mapper guidance, not header guidance", () => {
+    const plan = planCsvImport("a,b\n1,2", CTX, { x: 0, y: 1 });
+    expect(plan.skipped[0]!.reason).toMatch(/Missing columns: object, comment/);
+    expect(plan.skipped[0]!.reason).toMatch(/column mapper/);
+  });
+  it("without a mapping the refusal keeps its original header-first wording (characterization)", () => {
+    const plan = planCsvImport("a,b\n1,2", CTX);
+    expect(plan.skipped[0]!.reason).toBe(
+      "Missing columns: object, comment. The first row must be a header like: object,comment (x,y,w,h optional)",
+    );
+  });
+});
+
+describe("csvHeaderConforms / csvRoleMapping — the routing gate and the mapper's output", () => {
+  it("conformance matches the planner's own normalization (case + surrounding whitespace)", () => {
+    expect(csvHeaderConforms([" Object ", "COMMENT"])).toBe(true);
+    expect(csvHeaderConforms(["Object"])).toBe(false);
+    expect(csvHeaderConforms([])).toBe(false);
+  });
+  it("csvRoleMapping: first column mapped to a role wins; unknown or blank grid values are ignored", () => {
+    expect(csvRoleMapping(["comment", "", "object", "comment"])).toEqual({ comment: 0, object: 2 });
+    expect(csvRoleMapping(["banana", "object"])).toEqual({ object: 1 });
+    expect(csvRoleMapping([" Object "])).toEqual({ object: 0 });
+    expect(csvRoleMapping([])).toEqual({});
   });
 });

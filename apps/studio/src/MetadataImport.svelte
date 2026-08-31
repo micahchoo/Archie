@@ -1,17 +1,20 @@
 <script lang="ts">
 /**
  * @surface dialog
- * @composes metadata-import
+ * @composes metadata-import, ColumnMapper
  * @variants closed, empty, mapping, preview
  * @constraint single-scrim invariant: opening REPLACES any prior scrimmed surface; no close-confirmation (nothing is written until Import)
  */
   // Bulk metadata import (Archie-3754) — the door for an institution that arrives with its catalogue in a
   // spreadsheet. All the logic is in metadata-import.ts (pure, unit-tested); this file is chrome and a
   // preview, and it writes nothing: `onapply` hands the host a list of already-computed keyed patches.
+  // The mapping STEP itself (header × first-row-sample × target dropdown) is the shared
+  // ColumnMapper.svelte (Archie-96e6) — the same step the annotation CSV mapper presents when a sheet
+  // doesn't speak csv-import's dialect; only the dropdown vocabulary differs.
   //
-  // WHY A COLUMN-MAPPING STEP, when csv-import.ts:1-6 states the annotation dialect is deliberately fixed:
-  // an annotation sheet is authored TO Archie's spec, a catalogue export is not. The reasoning is recorded
-  // in the ticket and in metadata-import.ts's header so it is not re-litigated here.
+  // WHY A COLUMN-MAPPING STEP, when csv-import.ts's annotation dialect is deliberately zero-config for
+  // conforming sheets: an annotation sheet is authored TO Archie's spec, a catalogue export is not. The
+  // reasoning is recorded in the ticket and in metadata-import.ts's header so it is not re-litigated here.
   //
   // Both doors from the ticket's "BOTH DOORS SHIP IN V1" live in this one surface: the file picker (map
   // your own export) and the starter spreadsheet (fill in Archie's own shape, which carries the item ids
@@ -20,22 +23,25 @@
   // The dialog is a scrimmed surface via the shared modality helper (Archie-5968) — the same
   // scrim-click/Esc dismissal, focus trap and focus return as BulkRightsDialog, whose field/actions dress
   // this reuses rather than inventing a second dialog idiom.
-  import { DCTERMS_PROPERTIES, METADATA_EXCLUDED_PROPERTIES } from "@render/core";
   import { scrimmed, trapFocus, modality } from "./modality.svelte";
   import {
     METADATA_TEMPLATE_COLUMNS,
     buildMetadataCsvTemplate,
+    dctermsFieldOptions,
+    fieldTargetValue,
+    parseFieldTargetValue,
     planMetadataImport,
     suggestMapping,
     suggestMatchColumn,
     targetLabel,
-    type FieldTarget,
     type ImportObject,
     type MatchKey,
     type MetadataImportPlan,
     type PlannedUpdate,
   } from "./metadata-import.js";
   import { parseCsv } from "./csv-import.js";
+  import { setTargetAt, type MapperOption } from "./column-mapper.js";
+  import ColumnMapper from "./ColumnMapper.svelte";
 
   let {
     open,
@@ -59,7 +65,7 @@
   let fileName = $state("");
   let text = $state("");
   let readError = $state("");
-  let targets = $state<FieldTarget[]>([]);
+  let targets = $state<string[]>([]);
   let matchKey = $state<MatchKey>("filename");
   let matchColumn = $state(-1);
 
@@ -83,27 +89,22 @@
   ];
   const matchHint = $derived(MATCH_KEYS.find((k) => k.key === matchKey)?.hint ?? "");
 
-  /** The properties offered in the field dropdown: the four Archie owns natively, then every Dublin Core
-   *  property that does NOT collide with one of them (model/dcterms.ts METADATA_EXCLUDED_PROPERTIES —
-   *  offering "dcterms:title" beside "Title" would publish two disagreeing titles). */
-  const DC_OPTIONS = DCTERMS_PROPERTIES.filter((p) => !METADATA_EXCLUDED_PROPERTIES.has(p.property));
+  /** What the field dropdown offers, in render order: "Don't import" flat, then the four native
+   *  fields, then the Dublin Core run that doesn't collide with them (dctermsFieldOptions). */
+  const MAPPING_OPTIONS: MapperOption[] = [
+    { value: "", label: "Don't import" },
+    { value: "native:label", label: targetLabel({ kind: "native", field: "label" }), group: "Archie's own fields" },
+    { value: "native:summary", label: targetLabel({ kind: "native", field: "summary" }), group: "Archie's own fields" },
+    { value: "native:rights", label: targetLabel({ kind: "native", field: "rights" }), group: "Archie's own fields" },
+    { value: "native:credit", label: targetLabel({ kind: "native", field: "credit" }), group: "Archie's own fields" },
+    ...dctermsFieldOptions().map((p) => ({ value: p.property, label: p.label, group: "Dublin Core" })),
+  ];
 
-  /** A dropdown's value is a string, so a target round-trips through one: "" = ignore, "native:label",
-   *  "dcterms:creator". */
-  function targetValue(t: FieldTarget | undefined): string {
-    if (!t || t.kind === "ignore") return "";
-    return t.kind === "native" ? `native:${t.field}` : t.property;
-  }
-  function parseTargetValue(v: string): FieldTarget {
-    if (v === "") return { kind: "ignore" };
-    if (v.startsWith("native:")) return { kind: "native", field: v.slice("native:".length) as "label" | "summary" | "rights" | "credit" };
-    return { kind: "dcterms", property: v };
-  }
+  // The grid the shared ColumnMapper edits is the dropdown's native string language; the FieldTargets
+  // the planner consumes are derived (metadata-import.ts parseFieldTargetValue). Same encode/decode
+  // that lived inline here before the mapping step was extracted (Archie-96e6).
   function setTarget(column: number, v: string) {
-    const next = [...targets];
-    while (next.length < header.length) next.push({ kind: "ignore" });
-    next[column] = parseTargetValue(v);
-    targets = next;
+    targets = setTargetAt(targets, column, v, header.length);
   }
 
   async function pickFile(e: Event) {
@@ -127,14 +128,16 @@
       return;
     }
     // Open the step filled in — a guessed mapping the curator corrects beats twenty empty dropdowns.
-    targets = suggestMapping(head);
+    targets = suggestMapping(head).map(fieldTargetValue);
     const guessed = MATCH_KEYS.map((k) => ({ key: k.key, column: suggestMatchColumn(head, k.key) })).find((g) => g.column >= 0);
     matchKey = guessed?.key ?? "filename";
     matchColumn = guessed?.column ?? -1;
   }
 
   const plan = $derived<MetadataImportPlan | null>(
-    text === "" ? null : planMetadataImport(text, { targets, matchColumn, matchKey }, { objects }),
+    text === ""
+      ? null
+      : planMetadataImport(text, { targets: targets.map(parseFieldTargetValue), matchColumn, matchKey }, { objects }),
   );
   const preview = $derived(plan?.updates.slice(0, 5) ?? []);
   const canImport = $derived(!!plan && !plan.refusal && plan.updates.length > 0);
@@ -219,41 +222,15 @@
         <span class="note">{matchHint}</span>
       </div>
 
-      <div class="field">
-        <span class="field-head">Your columns</span>
-        <table class="mapping">
-          <thead>
-            <tr><th scope="col">Column</th><th scope="col">First row</th><th scope="col">Archie field</th></tr>
-          </thead>
-          <tbody>
-            {#each header as h, i (i)}
-              <tr>
-                <th scope="row">{h || `Column ${i + 1}`}</th>
-                <td class="sample">{sample[i] ?? ""}</td>
-                <td>
-                  <label class="control">
-                    <span class="sr-only">Archie field for {h || `column ${i + 1}`}</span>
-                    <select value={targetValue(targets[i])} onchange={(e) => setTarget(i, e.currentTarget.value)}>
-                      <option value="">Don't import</option>
-                      <optgroup label="Archie's own fields">
-                        <option value="native:label">{targetLabel({ kind: "native", field: "label" })}</option>
-                        <option value="native:summary">{targetLabel({ kind: "native", field: "summary" })}</option>
-                        <option value="native:rights">{targetLabel({ kind: "native", field: "rights" })}</option>
-                        <option value="native:credit">{targetLabel({ kind: "native", field: "credit" })}</option>
-                      </optgroup>
-                      <optgroup label="Dublin Core">
-                        {#each DC_OPTIONS as p (p.property)}
-                          <option value={p.property}>{p.label}</option>
-                        {/each}
-                      </optgroup>
-                    </select>
-                  </label>
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
+      <ColumnMapper
+        {header}
+        {sample}
+        {targets}
+        options={MAPPING_OPTIONS}
+        ontarget={setTarget}
+        targetHead="Archie field"
+        targetAria={(h) => `Archie field for ${h}`}
+      />
     {/if}
 
     {#if plan}
@@ -476,16 +453,12 @@
     font-weight: 600;
     color: var(--ink-canvas-primary);
   }
-  .sample,
   .from {
     color: var(--ink-canvas-secondary);
     max-width: 16ch;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-  .mapping td:last-child {
-    width: 40%;
   }
   .skipped {
     margin: 0;

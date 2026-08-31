@@ -1,7 +1,7 @@
-// CSV → annotation bulk import (contributor-broadening ⑥, seed Archie-79c0).
+// CSV → annotation bulk import (contributor-broadening ⑥, seed Archie-79c0; opt-in mapping Archie-96e6).
 // Authors who live in Excel/Sheets annotate THERE and bulk-load the result — zero annotation-UI
-// learning curve (the FromThePage/Transkribus final mile). One fixed, documented dialect (no
-// column-mapping UI):
+// learning curve (the FromThePage/Transkribus final mile). One fixed, documented dialect, which for a
+// CONFORMING header needs no mapping UI at all:
 //
 //   object,comment[,x,y,w,h][,tags][,reading]
 //
@@ -125,16 +125,74 @@ export function parseRegion(rawNums: readonly [string, string, string, string]):
   return { kind: "region", region: nums as [number, number, number, number] };
 }
 
-/** Plan an import from CSV text. Header row is required (column order is therefore free). */
-export function planCsvImport(text: string, ctx: CsvImportContext): CsvImportPlan {
+// ---------------------------------------------------------------------------------------------
+// Opt-in mapping (Archie-96e6): the dialect stays zero-config, the shared mapper is the override
+// ---------------------------------------------------------------------------------------------
+//
+// Sheets authored to NO dialect exist (a reading log with a "Note" column, another tool's export).
+// For those, the shared column-mapping step (ColumnMapper.svelte / column-mapper.ts — the same step
+// MetadataImport presents) lets the author POINT each column at a dialect role, and planCsvImport
+// reads the pointed columns by INDEX. Mapping is strictly opt-in: a role not named in the mapping
+// still resolves by its dialect name, so a PARTIAL mapping only overrides what it points at, and a
+// conforming header (csvHeaderConforms) never needs the mapper at all.
+
+/** The fixed roles a column can be pointed at in the shared mapper. */
+export type CsvRole = "object" | "comment" | "x" | "y" | "w" | "h" | "tags" | "reading";
+export const CSV_ROLES: readonly CsvRole[] = ["object", "comment", "x", "y", "w", "h", "tags", "reading"];
+
+/** Role → column index, as the shared mapper's grid resolves to (csvRoleMapping). */
+export type CsvColumnMapping = Partial<Record<CsvRole, number>>;
+
+/** The zero-config gate: does the header row already speak the dialect? Same normalization and the
+ *  same required-column rule planCsvImport applies. True → the caller plans DIRECTLY and the shared
+ *  mapper never opens; false → route the sheet through the mapper. */
+export function csvHeaderConforms(header: readonly string[]): boolean {
+  const names = header.map((h) => h.trim().toLowerCase());
+  return REQUIRED.every((c) => names.includes(c));
+}
+
+/** A shared-mapper grid (per-column role value, "" = unmapped) → the role→index map
+ *  planCsvImport accepts. The FIRST column mapped to a role wins; unrecognized values are ignored. */
+export function csvRoleMapping(targets: readonly string[]): CsvColumnMapping {
+  const mapping: CsvColumnMapping = {};
+  targets.forEach((t, i) => {
+    const role = t.trim().toLowerCase();
+    if ((CSV_ROLES as readonly string[]).includes(role) && mapping[role as CsvRole] === undefined) {
+      mapping[role as CsvRole] = i;
+    }
+  });
+  return mapping;
+}
+
+/** Plan an import from CSV text. Header row is required (column order is therefore free).
+ *
+ *  `mapping` (optional, Archie-96e6) points roles at column indexes — the shared mapper's output.
+ *  It OVERRIDES name lookup for the roles it names; unnamed roles still resolve by dialect name, so
+ *  a partial mapping only adds what the header can't say. With or without a mapping, object+comment
+ *  must resolve somewhere, or the whole file refuses (no row could ever be read). */
+export function planCsvImport(text: string, ctx: CsvImportContext, mapping?: CsvColumnMapping): CsvImportPlan {
   const rows = parseCsv(text);
   if (rows.length === 0) return { notes: [], pending: [], skipped: [{ row: 0, reason: "the file is empty" }] };
 
   const header = rows[0]!.map((h) => h.trim().toLowerCase());
-  const col = (name: string) => header.indexOf(name);
+  const col = (name: string) => {
+    const pointed = mapping?.[name as CsvRole];
+    return pointed !== undefined ? pointed : header.indexOf(name);
+  };
   const missing = REQUIRED.filter((c) => col(c) === -1);
   if (missing.length > 0) {
-    return { notes: [], pending: [], skipped: [{ row: 0, reason: `Missing columns: ${missing.join(", ")}. The first row must be a header like: object,comment (x,y,w,h optional)` }] };
+    return {
+      notes: [],
+      pending: [],
+      skipped: [
+        {
+          row: 0,
+          reason: mapping
+            ? `Missing columns: ${missing.join(", ")}. Point the columns that hold them in the column mapper.`
+            : `Missing columns: ${missing.join(", ")}. The first row must be a header like: object,comment (x,y,w,h optional)`,
+        },
+      ],
+    };
   }
 
   const byId = new Map(ctx.objects.map((o) => [o.id.toLowerCase(), o.id]));
