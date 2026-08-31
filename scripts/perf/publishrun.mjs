@@ -4,6 +4,15 @@
 // matters. Different page (publish.html) and no @render/core alias: fsbench.ts imports the fs backends by
 // direct path, so the DOMPurify-at-import-time barrel is never pulled in.
 //
+// BLINDNESS, stated where the numbers get quoted (Archie-e870): this bench never exercises the
+// TIER ENGINE — no `projectLibraryForTier`/`applyTier`/`capsFor`, no WebP bake, no video transcode.
+// `publishbench.ts` hands `publishLibrary` a library no tier projection ever touched, i.e. the
+// ARCHIVAL-tier semantics the writer hardcodes. Its numbers describe the archival publish path
+// only and MUST NOT be cited as web-tier numbers. Web-tier per-asset costs live elsewhere:
+// `webptierrun.mjs` (images, measured bpp) and `scripts/probe/synthetic-video.mjs` (video, one
+// real Chromium encode against the stated-bitrate model). A tier-aware end-to-end bench does not
+// exist yet.
+//
 // Run:  node scripts/perf/publishrun.mjs        (add HEADED=1 to watch it)
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createRequire } from "node:module";

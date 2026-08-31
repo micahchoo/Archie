@@ -19,7 +19,9 @@ is the disk-writing wrapper the Viewer's dev/deploy path calls; `.github/workflo
 GH Pages sink. DZI tiling (`apps/studio/src/dzi-slicer.ts` + `dzi-slice-pool.ts`/`dzi-tile-worker.ts`)
 and bake (`bake-async.ts`/`bake-worker.ts`) are the two worker-backed perf paths inside publish/ingest —
 both fall back to a slow inline path **silently** on worker failure. The one metric that matters:
-end-to-end wall-clock over a real library (`scripts/perf/publishrun.mjs`), not a single-image bench.
+end-to-end wall-clock over a real library (`scripts/perf/publishrun.mjs`), not a single-image bench
+  (that bench is ARCHIVAL-TIER ONLY — it never exercises the tier engine; don't cite it for web-tier
+  numbers — Archie-e870).
 
 ## Binding rules
 - [[perf-measure-the-flow]] — a primitive win (DZI tiling 19x/image) was 1.9-4.7x end-to-end because

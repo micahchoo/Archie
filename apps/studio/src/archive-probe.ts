@@ -558,6 +558,12 @@ function estimateTier(
       // `probeArchive` is pure and synchronous — so the shrink is modelled only when the caller
       // RESOLVED the target (`ProbeOptions.videoTarget`) and handed it in. The archival tier is
       // untouched either way: it ships the bytes as ingested, by definition.
+      // Measured + deliberately KEPT (Archie-e870): scripts/probe/synthetic-video.mjs ran one real
+      // Chromium web-tier transcode (VP9, 640x360, high-entropy source, 3s) and measured 0.87x the
+      // stated-bitrate prediction — so the bitrate model `videoWebBytes` uses when a target IS
+      // resolved slightly over-estimates, which is the safe direction. The full-size fallback stays
+      // regardless: this probe is pure and synchronous, so a caller that never resolved
+      // `videoTarget` (or sampled no `durationSec`) leaves nothing to model but the source bytes.
       bytesByMedia.video += tier === "web" && o.videoTarget ? videoWebBytes(f, o.videoTarget) : f.bytes;
     }
   }

@@ -9,6 +9,11 @@
 // If tiling is 80% of publish, 37x on it was the right target. If it is 15%, the next sweep should
 // go somewhere else, and the honest headline is much smaller than "37x".
 //
+// BLINDNESS (Archie-e870): this bench never exercises the TIER ENGINE (`publish-tier.ts` —
+// `projectLibraryForTier`/`applyTier`/`capsFor`; grep -c tier = 0). The library it builds goes to
+// `publishLibrary` unprojected: archival-tier semantics, archival-tier numbers. Do not cite these
+// figures for the web tier — see publishrun.mjs's header for where the web-tier numbers live.
+//
 // Run:  node scripts/perf/publishrun.mjs
 import { publishLibrary } from "../../packages/render-core/src/publish/site.ts";
 import { MemoryFilesystem } from "../../packages/render-core/src/fs/memory.ts";
