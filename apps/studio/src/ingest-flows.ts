@@ -29,7 +29,7 @@ import { mergeImportedStructure, migrateSectionLogIds } from "./structure-import
 import { inferredMime, planFolderImportGroups } from "./folder-import.js";
 import { manifestToExhibit, ManifestImportError, classifyIiifDocument, labelToString, type ManifestPlan } from "./iiif-import.js";
 import { traverseCollection, urlSegment, type DiscoveredManifest, type TraverseResult } from "./collection-import.js";
-import { planCsvImport, type CsvPendingNote } from "./csv-import.js";
+import { planCsvImport, type CsvColumnMapping, type CsvPendingNote } from "./csv-import.js";
 import { planWadmImport } from "./wadm-import.js";
 import { createImportRunTracker, type ImportTone } from "./ingest-activity.js";
 import { collabBreakdown, collabSummaryText } from "./collab.js";
@@ -1093,17 +1093,24 @@ export function createIngestFlows(ctx: IngestContext) {
   // CSV → notes bulk import (contributor-broadening ⑥ sub-cycle A, Archie-79c0): authors who live in
   // Excel/Sheets annotate THERE (object,x,y,w,h,comment[,tags][,reading]) and bulk-load through the
   // SAME createNote path the seeds use. Skip-and-tally per row; fix-and-retry deduped on target+comment.
-  async function importNotesCsv(file: File) {
+  // `mapping` (optional, Archie-96e6): the shared ColumnMapper's role→column map for a NONconforming
+  // header — App.svelte only passes it when csvHeaderConforms said no, so the zero-config path is
+  // untouched. A role the mapping names is read by index; every other role still resolves by name.
+  async function importNotesCsv(file: File, mapping?: CsvColumnMapping) {
     if (file.size > LOCAL_TEXT_IMPORT_MAX_BYTES) {
       ctx.setImportNote(`“${file.name}” is too large (${Math.round(file.size / (1024 * 1024))} MB) to import as notes — check it's really a CSV of your annotations.`, "problem");
       return;
     }
     const session = ctx.session();
-    const plan = planCsvImport(await file.text(), {
-      objects: ctx.objects().map((o) => ({ id: o.id, label: o.label, ...(o.mediaType ? { mediaType: o.mediaType } : {}) })),
-      readings: ctx.currentReadings().map((r) => ({ id: r.id, name: r.name })),
-      currentObjectId: ctx.currentObjectId(),
-    });
+    const plan = planCsvImport(
+      await file.text(),
+      {
+        objects: ctx.objects().map((o) => ({ id: o.id, label: o.label, ...(o.mediaType ? { mediaType: o.mediaType } : {}) })),
+        readings: ctx.currentReadings().map((r) => ({ id: r.id, name: r.name })),
+        currentObjectId: ctx.currentObjectId(),
+      },
+      mapping,
+    );
     const keyFor = (target: unknown, comment: string) => `${JSON.stringify(target)}|${comment}`;
     // The note's COMMENT body: the first TextualBody that isn't a tag (purpose !== "tagging"). The typed
     // predicate narrows W3CBody → W3CTextualBody so `.value` is in scope (App's inline version relied on

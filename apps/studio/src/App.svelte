@@ -103,11 +103,18 @@
   // Geo-note selector math (pure, taking the tileSource explicitly) — the geo half of the DOMINO cut.
   import { geoLabelOf, geoForTarget, selectorValue } from "./geo-notes.js";
   // The ingest flows (object-add, exhibit-create, bulk-note import, library-replace) — the DOMINO cut.
-  import { createIngestFlows } from "./ingest-flows.js";
+  import { createIngestFlows, LOCAL_TEXT_IMPORT_MAX_BYTES } from "./ingest-flows.js";
   import { ingestActivityOf } from "./ingest-activity.js";
   import Spinner from "./Spinner.svelte";
-  import { buildCsvTemplate, type CsvPendingNote } from "./csv-import.js";
+  import {
+    buildCsvTemplate,
+    csvHeaderConforms,
+    parseCsv,
+    type CsvColumnMapping,
+    type CsvPendingNote,
+  } from "./csv-import.js";
   import MetadataImport from "./MetadataImport.svelte";
+  import AnnotationCsvImport from "./AnnotationCsvImport.svelte";
   // The per-exhibit session state machine (session lifecycle + atomic open) — the DOMINO cut.
   import { createExhibitSession } from "./exhibit-session.svelte.js";
   // Structure rev-log (Archie-42f3; DEFAULT ON since Archie-b0b1). archie.structureRevlog survives as
@@ -1287,6 +1294,30 @@
     a.href = url; a.download = `${vs.currentSlug || "exhibit"}-notes-template.csv`; a.click();
     URL.revokeObjectURL(url);
   }
+  // --- The annotation CSV door's opt-in mapping step (Archie-96e6). The ZERO-CONFIG invariant lives
+  // here: a header that already speaks the dialect (csvHeaderConforms) imports directly, exactly as
+  // before. A nonconforming one opens the shared ColumnMapper prefilled from whatever the header DOES
+  // say, and Import runs the SAME flows.importNotesCsv with the role→column mapping — one planner,
+  // one reporting path, no second import implementation.
+  let csvMappingSheet = $state<{ file: File; header: string[]; sample: string[] } | null>(null);
+  async function pickNotesCsv(f: File) {
+    // Same cap as flows.importNotesCsv — read+parse on the main thread stays bounded even before the
+    // conformance check (the planner's own guard would only run downstream, after this read).
+    if (f.size > LOCAL_TEXT_IMPORT_MAX_BYTES) {
+      importNote = { message: `“${f.name}” is too large (${Math.round(f.size / (1024 * 1024))} MB) to import as notes — check it's really a CSV of your annotations.`, ok: false };
+      return;
+    }
+    const rows = parseCsv(await f.text());
+    const head = rows[0] ?? [];
+    if (csvHeaderConforms(head)) {
+      await flows.importNotesCsv(f).catch((err) => {
+        console.error("CSV add failed", err);
+        window.alert("Couldn't add those notes.");
+      });
+      return;
+    }
+    csvMappingSheet = { file: f, header: head, sample: rows[1] ?? [] };
+  }
   // --- Bulk metadata import (Archie-3754). The dialog owns the file, the mapping and the preview; it hands
   // back updates whose patches are already KEYED PARTIALS, so this handler forwards each verbatim and
   // reconstructs nothing (.claude/rules/metadata-rights-keyed-writebacks.md rule 2).
@@ -2091,6 +2122,22 @@
       onapply={applyMetadataImport}
       onclose={() => (metadataImportOpen = false)}
     />
+    <!-- The annotation CSV door's mapping step (Archie-96e6) — opens ONLY for a header that failed
+         csvHeaderConforms (see pickNotesCsv); a conforming sheet never sees it. -->
+    {#if csvMappingSheet}
+      <AnnotationCsvImport
+        open={true}
+        file={csvMappingSheet.file}
+        header={csvMappingSheet.header}
+        sample={csvMappingSheet.sample}
+        onimport={(f, mapping) => {
+          void flows
+            .importNotesCsv(f, mapping)
+            .catch((err) => { console.error("CSV add failed", err); window.alert("Couldn't add those notes."); });
+        }}
+        onclose={() => (csvMappingSheet = null)}
+      />
+    {/if}
   </div>
 {:else}
   <header>
@@ -2528,9 +2575,9 @@
         <summary>Import notes…</summary>
         {#if vs.current && !isAvCurrent}
           <!-- Bulk on-ramp for spreadsheet-first authors (⑥): regions are xywh, so image objects only. -->
-          <button type="button" class="text-link csv-import" onclick={() => csvEl?.click()} title="Import notes from a CSV. Columns: object, comment — x, y, w, h, tags, reading all optional, header row first. Rows with no x,y,w,h arrive as “needs placement”: draw each box with Set area. Use a media item’s label in the object column, or leave it blank for the current one.">From a CSV</button>
+          <button type="button" class="text-link csv-import" onclick={() => csvEl?.click()} title="Import notes from a CSV. Columns: object, comment — x, y, w, h, tags, reading all optional, header row first. Rows with no x,y,w,h arrive as “needs placement”: draw each box with Set area. Use a media item’s label in the object column, or leave it blank for the current one. If your sheet doesn’t use these columns, Archie asks you to point each column at what it holds.">From a CSV</button>
           <input bind:this={csvEl} type="file" accept=".csv,text/csv" style="display:none" aria-label="Add notes from a CSV file"
-            onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesCsv(f).catch((err) => { console.error("CSV add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
+            onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; el.value = ""; if (f) void pickNotesCsv(f).catch((err) => { console.error("CSV add failed", err); window.alert("Couldn't add those notes."); }); }} />
           <button type="button" class="text-link csv-import" onclick={downloadCsvTemplate} title="Download a starter CSV pre-filled with this exhibit's items. Fill in the blanks in Excel or Sheets, then add it back — rows without x,y,w,h become “needs placement”.">Download a starter CSV to fill in</button>
         {/if}
         <!-- WADM on-ramp (⑦): annotations exported by Archie, Recogito, or any W3C producer. -->

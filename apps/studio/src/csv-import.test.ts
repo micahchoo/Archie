@@ -6,6 +6,9 @@ import {
   parseRegion,
   csvHeaderConforms,
   csvRoleMapping,
+  csvMappingMissing,
+  csvRegionPartiallyPointed,
+  suggestRoleGrid,
 } from "./csv-import.js";
 
 describe("parseRegion — the x,y,w,h state machine", () => {
@@ -237,5 +240,28 @@ describe("csvHeaderConforms / csvRoleMapping — the routing gate and the mapper
     expect(csvRoleMapping(["banana", "object"])).toEqual({ object: 1 });
     expect(csvRoleMapping([" Object "])).toEqual({ object: 0 });
     expect(csvRoleMapping([])).toEqual({});
+  });
+});
+
+describe("the mapping dialog's prefill and gate (Archie-96e6 door wiring)", () => {
+  it("suggestRoleGrid prefills EXACT dialect names (the planner's own match) — first occurrence wins", () => {
+    expect(suggestRoleGrid(["COMMENT", "item", "tags", "w"])).toEqual(["comment", "", "tags", "w"]);
+    expect(suggestRoleGrid(["comment", "comment"])).toEqual(["comment", ""]); // a role is claimed once
+    expect(suggestRoleGrid(["banana", ""])).toEqual(["", ""]);               // unknown names stay unmapped
+  });
+  it("csvMappingMissing: a required role is satisfied by the grid OR by its dialect name", () => {
+    expect(csvMappingMissing(["comment", "who"], ["", "object"])).toEqual([]); // object via grid, comment by name
+    expect(csvMappingMissing(["who", "text"], ["", "comment"])).toEqual(["object"]);
+    expect(csvMappingMissing(["who", "text"], ["", ""])).toEqual(["object", "comment"]);
+  });
+  it("optional roles are never 'missing' — a coordinate-free sheet needs only object and comment", () => {
+    expect(csvMappingMissing(["who", "note"], ["object", "comment"])).toEqual([]);
+    expect(csvMappingMissing(["who", "note"], ["object", "comment"])).not.toContain("x");
+  });
+  it("csvRegionPartiallyPointed — regions are all-or-nothing across grid and name", () => {
+    expect(csvRegionPartiallyPointed(["who", "x", "text"], ["object", "x", "comment"])).toBe(true); // only x
+    expect(csvRegionPartiallyPointed(["who", "note"], ["object", "comment"])).toBe(false);          // none
+    expect(csvRegionPartiallyPointed(["x", "y", "w", "h", "c"], ["", "", "", "", "comment"])).toBe(false); // all four by name
+    expect(csvRegionPartiallyPointed(["x", "y", "w", "note"], ["", "", "", "comment"])).toBe(true);  // w by name, h missing
   });
 });

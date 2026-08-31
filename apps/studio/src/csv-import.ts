@@ -164,6 +164,54 @@ export function csvRoleMapping(targets: readonly string[]): CsvColumnMapping {
   return mapping;
 }
 
+/** The mapper's dropdown labels for the roles (the dialog's vocabulary for the fixed dialect). */
+export const CSV_ROLE_LABELS: Record<CsvRole, string> = {
+  object: "Media item",
+  comment: "Note text",
+  x: "Region x",
+  y: "Region y",
+  w: "Region width",
+  h: "Region height",
+  tags: "Tags",
+  reading: "Reading",
+};
+
+/** The grid a mapping dialog OPENS with: every column whose header already says a dialect name is
+ *  prefilled with that role (first occurrence wins), the rest blank — the same "a guessed mapping
+ *  the author corrects beats empty dropdowns" reasoning as MetadataImport.pickFile. */
+export function suggestRoleGrid(header: readonly string[]): string[] {
+  const grid = Array.from<string>({ length: header.length }).fill("");
+  const taken = new Set<CsvRole>();
+  header.forEach((h, i) => {
+    const role = h.trim().toLowerCase();
+    if ((CSV_ROLES as readonly string[]).includes(role) && !taken.has(role as CsvRole)) {
+      taken.add(role as CsvRole);
+      grid[i] = role as CsvRole;
+    }
+  });
+  return grid;
+}
+
+/** The REQUIRED roles still unresolvable by this grid — the Import button's gate. A role is
+ *  resolved when the grid points a column at it OR the header names it (a partial mapping only
+ *  overrides what it points at — the same resolution planCsvImport applies). */
+export function csvMappingMissing(header: readonly string[], grid: readonly string[]): CsvRole[] {
+  const names = header.map((h) => h.trim().toLowerCase());
+  const mapping = csvRoleMapping(grid);
+  return REQUIRED.filter((c) => mapping[c] === undefined && !names.includes(c));
+}
+
+/** True when SOME but not all of x,y,w,h is resolvable (grid or name) — every region row would be a
+ *  loud skip, so the dialog warns before that happens rather than after. Regions are all-or-nothing:
+ *  point all four, or none (and draw boxes later with "Set area"). */
+export function csvRegionPartiallyPointed(header: readonly string[], grid: readonly string[]): boolean {
+  const names = header.map((h) => h.trim().toLowerCase());
+  const mapping = csvRoleMapping(grid);
+  const pointed = (["x", "y", "w", "h"] as const).map((r) => mapping[r] !== undefined || names.includes(r));
+  const count = pointed.filter(Boolean).length;
+  return count > 0 && count < 4;
+}
+
 /** Plan an import from CSV text. Header row is required (column order is therefore free).
  *
  *  `mapping` (optional, Archie-96e6) points roles at column indexes — the shared mapper's output.
