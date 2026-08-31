@@ -737,7 +737,7 @@
             <p class="line muted">Select the link or embed code above to copy it.</p>
           {/if}
         {/if}
-        <p class="line muted">This link depends on two things staying online: the place you uploaded the zip, and the Archie viewer at <code>{CANONICAL_HOST}</code>. If either moves or goes away, the link stops working — so it's best for sharing a draft, not for a permanent citation. To publish something that stands on its own, use "To GitHub Pages" instead.</p>
+        <p class="line muted">This link depends on two things staying online: the place you uploaded the zip, and the Archie viewer at <code>{CANONICAL_HOST}</code>. If either moves or goes away, the link stops working — so it's best for sharing a draft, not for a permanent citation. To publish something that stands on its own, publish the site itself — "To GitHub Pages", or the folder with the reader built in.</p>
         <div class="actions"><button class="primary" onclick={close}>Done</button></div>
       </div>
 
@@ -749,10 +749,10 @@
       </header>
       <div class="result">
         <p class="ok">Written.</p>
-        <p class="line">Upload the whole folder to any web host and it works as it is. Re-publish here any time — Archie replaces what's there and clears out what you deleted.</p>
-        <p class="line">To look at it first, serve the folder locally:</p>
-        <pre class="cmd"><code>pnpm --filter @archie/viewer dev</code></pre>
-        <p class="line muted">Then open <code>http://localhost:4321</code>.</p>
+        <p class="line">Upload the whole folder to any web host and it works as it is. Re-publish here any time — Archie rewrites the site in place. One caveat: an exhibit you deleted stays in the folder until you remove it yourself (publishing to GitHub Pages does clear deleted ones out).</p>
+        <p class="line">To look at it first, serve the folder with any static file server — it carries its own reader, so nothing else is needed. For example, from inside the folder:</p>
+        <pre class="cmd"><code>python3 -m http.server 8000</code></pre>
+        <p class="line muted">Then open <code>http://localhost:8000</code>.</p>
         {#if missingAssets.length > 0}
           <div class="broken" role="status">
             <p class="b-head">{missingAssets.length} {missingAssets.length === 1 ? "image isn't" : "images aren't"} in the folder</p>
