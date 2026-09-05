@@ -20,7 +20,7 @@
 //                   through the SAME resolveExhibitTarget path with degrade-upward. PRECEDENCE: a native
 //                   `target` WINS — `iiif-content` is the interop fallback, only consulted when `target`
 //                   is absent. Foreign/unknown → gallery; malformed → gallery (never an error).
-//   offline       — BOOLEAN attr (presence = on): block remote tile/media fetch (passed to the reader).
+//   offline       — BOOLEAN attr (presence = on): block remote resource loads; changes rebuild the view immediately.
 //   show-unlisted — BOOLEAN attr (presence = on): include `unlisted` exhibit cards in the GALLERY LISTING
 //                   (Archie-f735). Default (absent) hides them — the same UNLISTED lever the viewer hall
 //                   honors (render-core iiif/exhibits.ts `ExhibitCard.unlisted`), applied to the embed's
@@ -32,6 +32,7 @@
 // validation with no canvas graph behind it, and @render/core is already statically imported here.
 // The rule that governs this file's static edges is .claude/rules/archie-viewer-eager-closure.md —
 // `node build.mjs --check` is what proves the closure did not grow.
+import { ResourcePolicy, releaseMedia } from "./resource-policy.js";
 import { parseRoute, thumbnailCandidates, licenseLabel, metadataRows, validateArchieMarker, type Filesystem, type ViewerRoute, type ExhibitsJson, type AObject, type PortableExhibit, type RightsFields, type W3CAnnotation } from "@render/core";
 // Type-only (erased): naming the reader's surface costs the eager graph nothing. A VALUE import from
 // either module is the leak — .claude/rules/archie-viewer-eager-closure.md.
@@ -41,6 +42,7 @@ import type { ReaderChrome } from "./reader-chrome.js";
 import type { NarrativeAside } from "./narrative.js";
 import { TOKENS_CSS } from "./tokens.js";
 import {
+  SRC_MAX_BYTES,
   openFilesystem,
   openLibraryFromFile,
   openLibraryFromSrc,
@@ -179,6 +181,37 @@ export class ArchieViewerElement extends HTMLElement {
   #avSurface: AvPlayerSurface | null = null;
   /** Monotonic load token — a newer load() invalidates an in-flight older one (rapid src changes). */
   #loadSeq = 0;
+  #loadAbort = new AbortController();
+  #navigation = new AbortController();
+  #asideSeq = 0;
+
+  /** Every destination owns cancellation and teardown, including gallery and failed addresses. */
+  #beginNavigation(): AbortSignal {
+    this.#navigation.abort();
+    this.#navigation = new AbortController();
+    this.#teardownSurface();
+    return this.#navigation.signal;
+  }
+
+  #leaveReader(view: View): void {
+    this.#beginNavigation();
+    this.#setView(view);
+  }
+
+  #resources(): ResourcePolicy { return new ResourcePolicy(this.offline); }
+
+  /** Offline changes apply now: cancel old downloads, then rebuild the current view under the policy. */
+  #refreshResources(): void {
+    const view = this.#view;
+    if (this.offline) this.#loadAbort.abort();
+    if (!this.offline && this.src && !this.#library?.fs) { void this.#load(); return; }
+    if (view.kind === "reader") {
+      void this.#openObject(view.exhibit, view.object, undefined, view.section);
+    } else {
+      this.#beginNavigation();
+      this.#render();
+    }
+  }
   /** Set once connected, so attribute changes BEFORE connection don't double-load on connect. */
   #connected = false;
   // --- Embed auto-grow (DIVERGENCES §5): post rendered height to the parent so an iframe can size to it.
@@ -219,7 +252,9 @@ export class ArchieViewerElement extends HTMLElement {
 
   disconnectedCallback(): void {
     this.#connected = false;
-    this.#teardownSurface();
+    ++this.#loadSeq;
+    this.#loadAbort.abort();
+    this.#beginNavigation();
     this.#library?.revoke();
     this.#stopAutogrow();
   }
@@ -264,13 +299,15 @@ export class ArchieViewerElement extends HTMLElement {
     else if (name === "target") this.#applyAddress(); // re-route within the loaded library
     else if (name === "iiif-content") this.#applyAddress(); // interop deep-link change → re-route
     else if (name === "show-unlisted" && this.#view.kind === "gallery") this.#render(); // re-filter the listing in place
-    // offline takes effect on the NEXT object open; nothing to re-render eagerly.
+    else if (name === "offline") this.#refreshResources();
   }
 
   // --- LOAD: src → fetch/open; no src → drop zone. State on the instance. ----------------------
   async #load(): Promise<void> {
     const seq = ++this.#loadSeq;
-    this.#teardownSurface();
+    this.#loadAbort.abort();
+    this.#loadAbort = new AbortController();
+    this.#beginNavigation();
     this.#library?.revoke();
     this.#library = null;
 
@@ -296,17 +333,25 @@ export class ArchieViewerElement extends HTMLElement {
   /** Open the `src` — offline blocks a remote fetch entirely. Overridable seam for tests (so a test can
    *  inject a pre-built library without a real zip fetch). */
   async #openSrc(src: string): Promise<LoadedLibrary> {
-    if (this.offline && /^https?:|^\/\//.test(src)) {
+    if (!this.#resources().allows(src)) {
       throw new Error("This viewer is offline and can't fetch a library from a URL.");
     }
-    return openLibraryFromSrc(src);
+    const signal = this.#loadAbort.signal;
+    const fetchImpl: typeof fetch = (input, init) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (!this.#resources().allows(url)) return Promise.reject(new Error("This viewer is offline and can't fetch a library from a URL."));
+      return globalThis.fetch(input, { ...init, signal });
+    };
+    return openLibraryFromSrc(src, SRC_MAX_BYTES, fetchImpl);
   }
 
   /** The no-src load body, shared by every public opener (`openFile`, `openLibraryFs`). Sequenced by
    *  `#loadSeq` so a superseding open discards the loser's library instead of clobbering the winner's. */
   async #adopt(open: () => Promise<LoadedLibrary>): Promise<void> {
     const seq = ++this.#loadSeq;
-    this.#teardownSurface();
+    this.#loadAbort.abort();
+    this.#loadAbort = new AbortController();
+    this.#beginNavigation();
     this.#library?.revoke();
     this.#library = null;
     this.#setView({ kind: "loading" });
@@ -353,10 +398,11 @@ export class ArchieViewerElement extends HTMLElement {
   // ADR-0021 precedence: a native cite-ladder `target` is authoritative; `iiif-content` is the interop
   // FALLBACK, consulted only when `target` is absent. Both degrade upward to the gallery, never error.
   #applyAddress(): void {
+    this.#beginNavigation();
     if (!this.#library) return;
     if (this.target) { this.#applyTarget(); return; } // native wins
     if (this.iiifContent) { void this.#applyContentState(this.iiifContent); return; }
-    // neither present → nothing to route (stay on the gallery the load already set).
+    this.#setView({ kind: "gallery" });
   }
 
   // --- IIIF CONTENT STATE: the interop deep-link (ADR-0021 deferred-additive, ADR-0022 codec) ---------
@@ -368,11 +414,13 @@ export class ArchieViewerElement extends HTMLElement {
   async #applyContentState(encoded: string): Promise<void> {
     const lib = this.#library;
     if (!lib) return;
-    const seq = ++this.#loadSeq;
+    const signal = this.#navigation.signal;
     let route: ViewerRoute | null;
     try {
       route = await resolveContentState(encoded, lib.gallery, async (slug) => {
+        signal.throwIfAborted();
         const { exhibit, lib: nextLib } = await readExhibit(lib, slug);
+        if (signal.aborted) { nextLib.revoke(); signal.throwIfAborted(); }
         this.#library = nextLib; // thread the (possibly blob-augmented) library forward, like #openExhibit
         return exhibit;
       });
@@ -383,7 +431,7 @@ export class ArchieViewerElement extends HTMLElement {
       console.warn("archie-viewer: couldn't resolve the IIIF Content State address", e);
       route = null;
     }
-    if (seq !== this.#loadSeq) return; // superseded by a newer address/load
+    if (signal.aborted) return; // superseded by a newer address/load
     if (!route || route.view === "gallery") {
       // malformed / foreign / unknown → the gallery, flagged cold (the nearest existing ancestor).
       this.#setView({ kind: "gallery", cold: true });
@@ -419,11 +467,11 @@ export class ArchieViewerElement extends HTMLElement {
     // activate a layer the visitor never chose. Dropping the layer here, where the exhibit changes,
     // IS the reset (reading-layer.ts's rule is encoded in the fresh instance); stepping OBJECTS
     // inside one exhibit deliberately keeps it (see reading-layer.ts).
+    const signal = this.#beginNavigation();
     this.#reading = null;
-    const seq = ++this.#loadSeq;
     try {
       const { exhibit, lib } = await readExhibit(this.#library, slug);
-      if (seq !== this.#loadSeq) { lib.revoke(); return; }
+      if (signal.aborted) { lib.revoke(); return; }
       this.#library = lib;
       // The READING LAYER for this exhibit — one controller owning the projection (which notes,
       // which colours, base colour) and the repaint/rebuild hooks. Created HERE (exhibit boundary,
@@ -431,6 +479,7 @@ export class ArchieViewerElement extends HTMLElement {
       // module imports reader-chrome + render-core query helpers, so it stays out of the entry's
       // static closure (.claude/rules/archie-viewer-eager-closure.md).
       const { createReadingLayer } = await import("./reading-layer.js");
+      if (signal.aborted) return;
       this.#reading = createReadingLayer({
         exhibit,
         // The canvas repaint: the mount's style channel recolours every mark at draw time, so
@@ -451,7 +500,7 @@ export class ArchieViewerElement extends HTMLElement {
         route && route.view === "exhibit" ? resolveExhibitTarget(exhibit, route) : { kind: "exhibit" };
       this.#applyResolved(exhibit, resolved);
     } catch (e) {
-      if (seq !== this.#loadSeq) return;
+      if (signal.aborted) return;
       // Previously logged-and-lost (SILENCE row, tend Issue 4): console.error only, the visitor saw a
       // bare empty grid with no indication anything failed. Carry the message into the view itself,
       // same as the top-level open failure (kind:"empty").
@@ -484,7 +533,7 @@ export class ArchieViewerElement extends HTMLElement {
     resolved?: ResolvedTarget,
     section?: number,
   ): Promise<void> {
-    this.#teardownSurface();
+    const signal = this.#beginNavigation();
     this.#setView({ kind: "reader", exhibit, object, ...(section !== undefined ? { section } : {}) });
     const host = this.#root.querySelector<HTMLElement>(".reader-surface");
     if (!host) return;
@@ -495,21 +544,26 @@ export class ArchieViewerElement extends HTMLElement {
     // mount's style resolver reads can never be the previous object's (or null) — the ordering
     // hazard that once shipped V56 (the map built in #mountAside, AFTER the canvas, so every mark
     // took base grey) is structurally impossible: the projection and the repaint share one handle.
-    this.#reading?.setObject(object.id);
+    const reading = this.#reading;
+    reading?.setObject(object.id, resolved?.readingId);
 
     // MEDIUM BRANCH (ADR-0019 AV): a sound/video object mounts the plain-DOM AV player (native
     // <audio>/<video> + cue band + note-card), NOT OSD. image (and unknown) → the OSD reader below.
     // Both paths are LAZY-imported so the gallery bundle ships neither until an object opens.
     if (object.mediaType === "sound" || object.mediaType === "video") {
-      await this.#openAvObject(host, exhibit, object, resolved);
+      try {
+        await this.#openAvObject(host, exhibit, object, resolved, signal);
+      } catch {
+        if (!signal.aborted) host.innerHTML = `<p class="notice">Couldn't load this media item.</p>`;
+      }
+      if (signal.aborted) return;
       // The AV player owns the canvas half only; navigation and the note list are the reader's, and an
       // AV object in a 12-object exhibit needs the way out just as much as an image does.
       await this.#mountAside(exhibit, object, section);
       return;
     }
 
-    const { openObject } = await import("./reader.js"); // LAZY: OSD weight deferred to this point
-    const annotations = this.#reading?.notes() ?? [];
+    const annotations = reading?.notes() ?? [];
     const canvasId = exhibit.canvasIdByObject?.[object.id];
 
     // The note card is NOT created here anymore (Phase 7 openNote contract): the reader surface owns
@@ -521,23 +575,29 @@ export class ArchieViewerElement extends HTMLElement {
     };
 
     try {
-      this.#surface = await openObject(host, {
+      const { openObject } = await import("./reader.js"); // LAZY: OSD weight deferred
+      if (signal.aborted) return;
+      const surface = await openObject(host, {
         object,
         annotations,
         ...(canvasId ? { canvasId } : {}),
         offline: this.offline,
+        signal,
         onSelect,
         // V56 canvas half, Phase 7: the reading layer's colour map feeds the mount's style channel —
         // the STYLE numbers come from render-core's readingMarkerStyle inside reader.ts (the
         // reading-marks post-pass this replaces drew the same numbers in a second pass). The map is
         // the layer's, re-bound to this object by setObject above — never the previous object's.
-        markColourOf: (id) => this.#reading?.colourOf(id),
+        markColourOf: (id) => reading?.colourOf(id),
         // The surface's own note card lives in the reader's note ROW (below the canvas — ADR-0019's
         // layout row); fall back to the surface host only if the row is somehow absent.
         noteCardHost: this.#root.querySelector<HTMLElement>(".reader-note") ?? host,
       });
-      if (resolved) this.#applyFragment(this.#surface, resolved);
+      if (signal.aborted) { surface.destroy(); return; }
+      this.#surface = surface;
+      if (resolved) this.#applyFragment(surface, resolved);
     } catch (e) {
+      if (signal.aborted) return;
       // The mount failed (offline-blocked / load error): the surface never mounted, so its card was
       // never created — the error notice replaces the host content.
       const msg = e instanceof OfflineRemoteBlockedError
@@ -562,7 +622,7 @@ export class ArchieViewerElement extends HTMLElement {
     //
     // Placed after #mountAside so the chrome exists to take the row highlight in the same beat; the
     // card itself is already open (openNote ran inside #applyFragment, before the chrome mounted).
-    if (resolved?.selectId) this.#chrome?.setSelected(resolved.selectId);
+    if (!signal.aborted && resolved?.selectId) this.#chrome?.setSelected(resolved.selectId);
   }
 
   /**
@@ -576,22 +636,27 @@ export class ArchieViewerElement extends HTMLElement {
     object: AObject,
     section?: number,
   ): Promise<void> {
+    const signal = this.#navigation.signal;
+    const seq = ++this.#asideSeq;
     const aside = this.#root.querySelector<HTMLElement>(".reader-aside");
     const host = this.#root.querySelector<HTMLElement>(".reader-surface");
     if (!aside || !host) return;
 
     if (section !== undefined && (exhibit.sections?.length ?? 0) > 0) {
       const { mountNarrative } = await import("./narrative.js"); // LAZY, and only for a real spine
+      if (signal.aborted || seq !== this.#asideSeq) return;
       this.#narrative = mountNarrative(aside, {
+        resources: this.#resources(),
         exhibit,
         index: section,
         onactivate: (i) => void this.#openNarrativeSection(exhibit, i),
-        onindex: () => { this.#teardownSurface(); this.#setView({ kind: "exhibit", exhibit }); },
+        onindex: () => { this.#leaveReader({ kind: "exhibit", exhibit }); },
       });
       return;
     }
 
     const { mountReaderChrome } = await import("./reader-chrome.js");
+    if (signal.aborted || seq !== this.#asideSeq) return;
     // The list, the legend and the canvas all read the SAME projection (the reading layer) — the
     // index can never disagree with the canvas. The layer is re-bound to this object by #openObject's
     // setObject BEFORE the surface mounts, so the colour map is never stale (V56).
@@ -622,11 +687,10 @@ export class ArchieViewerElement extends HTMLElement {
       // card), so a hit lands on the note's own region, card open — not on the object's top.
       // Archie-9eeb's second half, for free, because target-resolve.ts is the embed's ONE address
       // resolver and this adds no other.
-      onfind: (objectId, noteId) => {
-        const next = exhibit.objects.find((o) => o.id === objectId);
-        if (next) void this.#openObject(exhibit, next, { kind: "object", objectId, selectId: noteId });
+      onfind: (_objectId, noteId) => {
+        this.#applyResolved(exhibit, resolveExhibitTarget(exhibit, { view: "exhibit", slug: exhibit.slug, noteId }));
       },
-      onoverview: () => { this.#teardownSurface(); this.#setView({ kind: "exhibit", exhibit }); },
+      onoverview: () => { this.#leaveReader({ kind: "exhibit", exhibit }); },
     });
   }
 
@@ -636,7 +700,9 @@ export class ArchieViewerElement extends HTMLElement {
    *  hazard and now lives behind the layer's single `setReading`. */
   #setReading(id: string | null): void {
     if (this.#view.kind !== "reader") return;
+    const view = this.#view;
     this.#reading?.setReading(id);
+    if (this.#avSurface) void this.#openObject(view.exhibit, view.object, undefined, view.section);
   }
 
   /** The ONE door to a note from the chrome list: whichever surface is mounted opens it. Each
@@ -671,7 +737,7 @@ export class ArchieViewerElement extends HTMLElement {
     if (!object) {
       // The spine points at an object that is no longer in the exhibit: show the section list against
       // the grid rather than a blank canvas (NarrativeReader's `missing-obj` degrade, simplified).
-      this.#setView({ kind: "exhibit", exhibit, error: "This section points to an item that's no longer in the exhibit." });
+      this.#leaveReader({ kind: "exhibit", exhibit, error: "This section points to an item that's no longer in the exhibit." });
       return;
     }
     const resolved: ResolvedTarget = s.start
@@ -692,10 +758,12 @@ export class ArchieViewerElement extends HTMLElement {
     host: HTMLElement,
     _exhibit: PortableExhibit,
     object: AObject,
-    resolved?: ResolvedTarget,
+    resolved: ResolvedTarget | undefined,
+    signal: AbortSignal,
   ): Promise<void> {
     const { mountAvPlayer, OfflineAvBlockedError } = await import("./av-player.js"); // LAZY: AV weight deferred
-    const annotations = _exhibit.annotationsByObject?.[object.id] ?? [];
+    if (signal.aborted) return;
+    const annotations = this.#reading?.notes() ?? _exhibit.annotationsByObject?.[object.id] ?? [];
     // The resolved cite-ladder fragment carries a `t=` offset for an AV landing → seek-paused on load.
     const initialSeek = resolved?.fragment?.kind === "t" ? resolved.fragment.value : undefined;
     try {
@@ -747,6 +815,8 @@ export class ArchieViewerElement extends HTMLElement {
   }
 
   #teardownSurface(): void {
+    ++this.#asideSeq;
+    releaseMedia(this.#root);
     this.#chrome?.destroy();
     this.#chrome = null;
     this.#narrative?.destroy();
@@ -852,7 +922,7 @@ export class ArchieViewerElement extends HTMLElement {
         <ul class="grid">
           ${cards.map((c) => `
             <li><button type="button" data-slug="${escapeAttr(c.slug)}">
-              ${c.cover ? `<img class="cover" src="${escapeAttr(c.cover)}" alt="" loading="lazy" data-fallback="${escapeAttr(c.title)}" />` : `<span class="cover">${escapeHtml(c.title)}</span>`}
+              ${c.cover && this.#resources().allows(c.cover) ? `<img class="cover" src="${escapeAttr(c.cover)}" alt="" loading="lazy" data-fallback="${escapeAttr(c.title)}" />` : `<span class="cover">${escapeHtml(c.title)}</span>`}
               <span class="caption"><span class="title">${escapeHtml(c.title)}</span>${c.description ? `<span class="desc">${escapeHtml(c.description)}</span>` : ""}</span>
             </button></li>`).join("")}
         </ul>
@@ -871,7 +941,9 @@ export class ArchieViewerElement extends HTMLElement {
   #wireCoverFallbacks(): void {
     for (const img of this.#root.querySelectorAll<HTMLImageElement>("img.cover[data-fallback]")) {
       img.addEventListener("error", () => {
-        const rest: string[] = img.dataset["srcs"] ? (JSON.parse(img.dataset["srcs"]) as string[]) : [];
+        if (!img.isConnected) return;
+        const rest = (img.dataset["srcs"] ? (JSON.parse(img.dataset["srcs"]) as string[]) : [])
+          .filter((url) => this.#resources().allows(url));
         const next = rest.shift();
         if (next) {
           if (rest.length) img.dataset["srcs"] = JSON.stringify(rest);
@@ -903,12 +975,12 @@ export class ArchieViewerElement extends HTMLElement {
         <ul class="grid">
           ${objects.map((o) => `
             <li><button type="button" data-obj="${escapeAttr(o.id)}">
-              ${objectCoverHtml(o)}
+              ${objectCoverHtml(o, this.#resources())}
               <span class="caption"><span class="title">${escapeHtml(o.label)}</span><span class="count">${countOf(o.id)} ${countOf(o.id) === 1 ? "note" : "notes"}</span></span>
             </button></li>`).join("")}
         </ul>
       </div>`;
-    this.#root.querySelector<HTMLButtonElement>('[data-act="back"]')!.addEventListener("click", () => this.#setView({ kind: "gallery" }));
+    this.#root.querySelector<HTMLButtonElement>('[data-act="back"]')!.addEventListener("click", () => this.#leaveReader({ kind: "gallery" }));
     this.#root.querySelector<HTMLButtonElement>('[data-act="narrative"]')
       ?.addEventListener("click", () => void this.#openNarrativeSection(exhibit, 0));
     this.#wireCoverFallbacks();
@@ -942,8 +1014,7 @@ export class ArchieViewerElement extends HTMLElement {
         </div>
       </div>`;
     this.#root.querySelector<HTMLButtonElement>('[data-act="back"]')!.addEventListener("click", () => {
-      this.#teardownSurface();
-      this.#setView({ kind: "exhibit", exhibit });
+      this.#leaveReader({ kind: "exhibit", exhibit });
     });
   }
 }
@@ -959,10 +1030,11 @@ export class ArchieViewerElement extends HTMLElement {
  * only an `xyz` tileSource is a MAP — a `dzi` descriptor is a tiled IMAGE. `data-fallback` carries
  * the label the final onerror degrade renders (#wireCoverFallbacks).
  */
-function objectCoverHtml(o: AObject): string {
+function objectCoverHtml(o: AObject, resources: ResourcePolicy): string {
   const kind = o.tileSource?.kind === "xyz" ? "map" : (o.mediaType ?? "image");
   if (kind === "image") {
-    const [first, ...rest] = thumbnailCandidates(o, 480);
+    const [first, ...rest] = thumbnailCandidates(o, 480).filter((url) => resources.allows(url));
+    if (!first) return `<span class="cover">${escapeHtml(o.label)}</span>`;
     const srcsAttr = rest.length ? ` data-srcs="${escapeAttr(JSON.stringify(rest))}"` : "";
     return `<img class="cover" src="${escapeAttr(first!)}"${srcsAttr} alt="" loading="lazy" data-fallback="${escapeAttr(o.label)}" />`;
   }

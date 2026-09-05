@@ -25,22 +25,18 @@ describe("createUndoWire — routing", () => {
 
     expect(notify).toHaveBeenCalledTimes(3); // one pulse per routed mutation
     expect(session.entries).toHaveLength(3); // v1 + edit + tombstone — the log is unchanged
-    // The whole block nets to nothing on the surface (the note lived and died between marks), so
-    // the squashed pending diff is EMPTY and undo has nothing to reverse. Correct — not a routing
-    // failure; the next test pins the undoable case.
-    expect(wire.mgr.canUndo).toBe(false);
+    // Each user act is independently reversible, even when create+delete net to empty.
+    expect(wire.canUndo).toBe(true);
     expect(wire.notes()).toHaveLength(0);
   });
 
-  it("routed mutations across marks form undoable blocks", () => {
+  it("routed mutations form undoable blocks without caller marks", () => {
     const session = new AnnotationSession(alice);
     const notify = vi.fn();
     const wire = createUndoWire(() => session, notify);
     const id = wire.createNote({ target: rect });
-    wire.mgr.mark("m1");
     wire.editNote(id, { body: [{ type: "TextualBody", value: "v2", purpose: "commenting" }] });
-    wire.mgr.mark("m2");
-    expect(wire.mgr.canUndo).toBe(true);
+    expect(wire.canUndo).toBe(true);
 
     notify.mockClear();
     wire.undo(); // the edit block
@@ -125,3 +121,54 @@ describe("⌘Z / ⇧⌘Z matcher vocabulary (registry rows in shortcuts.ts)", ()
     expect(matches(ev("z", { metaKey: true }), "⇧⌘Z")).toBe(false);
   });
 });
+
+
+describe("production action grouping", () => {
+  it("undoes two separately created notes in two steps without caller marks", () => {
+    const session = new AnnotationSession(alice);
+    const wire = createUndoWire(() => session, () => {});
+    const first = wire.createNote({ target: rect });
+    wire.createNote({ target: rect });
+    wire.undo();
+    expect(wire.notes().map(n => n.logicalId)).toEqual([first]);
+    wire.undo();
+    expect(wire.notes()).toEqual([]);
+  });
+
+  it("groups a synchronous bulk import as one action", () => {
+    const session = new AnnotationSession(alice);
+    const wire = createUndoWire(() => session, () => {});
+    const first = wire.createNote({ target: rect });
+    wire.batch(() => { wire.createNote({ target: rect }); wire.createNote({ target: rect }); });
+    wire.undo();
+    expect(wire.notes().map(n => n.logicalId)).toEqual([first]);
+  });
+
+  it("groups a text burst but starts a new action after a pause", () => {
+    vi.useFakeTimers();
+    try {
+      const session = new AnnotationSession(alice);
+      const wire = createUndoWire(() => session, () => {});
+      const id = wire.createNote({ target: rect });
+      wire.editNote(id, { body: [{ type: "TextualBody", value: "h" }] });
+      vi.advanceTimersByTime(100);
+      wire.editNote(id, { body: [{ type: "TextualBody", value: "hi" }] });
+      vi.advanceTimersByTime(1000);
+      wire.editNote(id, { body: [{ type: "TextualBody", value: "hi there" }] });
+      wire.undo();
+      expect(wire.notes()[0]!.body).toEqual([{ type: "TextualBody", value: "hi" }]);
+      wire.undo();
+      expect(wire.notes()[0]!.body).toBeUndefined();
+    } finally { vi.useRealTimers(); }
+  });
+});
+
+ it("redo preserves separate action stops for the next undo", () => {
+   const session = new AnnotationSession(alice);
+   const wire = createUndoWire(() => session, () => {});
+   const first = wire.createNote({ target: rect });
+   const second = wire.createNote({ target: rect });
+   wire.undo(); wire.undo(); wire.redo(); wire.redo(); wire.undo();
+   expect(wire.notes().map(n => n.logicalId)).toEqual([first]);
+   expect(wire.notes().some(n => n.logicalId === second)).toBe(false);
+ });

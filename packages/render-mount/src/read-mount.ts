@@ -48,6 +48,8 @@ export interface ReadOnlyMountSurface {
 }
 
 export interface ReadOnlyMountOptions {
+ /** Cancel a pending open. The caller owns the returned surface once mounted. */
+ signal?: AbortSignal;
  /** Image URL or IIIF source to LOAD (classified by resolveTileSource — ADR-0004). */
  source: string;
  /** Structured tile-source descriptor (an xyz map / dzi pyramid) — classifies the surface (DESIGN.md). */
@@ -229,6 +231,7 @@ export async function createReadOnlyMount(
  const tiled = ts.kind !== "image";
 
  const { viewer } = await openOsdViewer(container, ts, {
+  ...(opts.signal ? { signal: opts.signal } : {}),
   // OSD 5 CanvasDrawer (not the default WebGL drawer): each WebGL drawer holds a scarce WebGL
   // context, and several embeds on one page exhaust the browser's context cap ("WebGL context lost"
   // on recipes/08). The 2D canvas drawer has no such cap. The SVG region overlay + whole-object
@@ -257,6 +260,11 @@ export async function createReadOnlyMount(
    }
   },
  });
+
+ if (opts.signal?.aborted) {
+  viewer.destroy();
+  opts.signal.throwIfAborted();
+ }
 
  // The DOM-SVG overlay replaces the Annotorious annotator (no @annotorious/* / pixi here). Both the
  // region overlay AND the whole-object frame are DOM addOverlay layers — drawer-independent, so they

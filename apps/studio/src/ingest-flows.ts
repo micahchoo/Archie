@@ -1122,6 +1122,7 @@ export function createIngestFlows(ctx: IngestContext) {
     };
     const existing = new Set(session.entries.map((e) => keyFor(e.target, commentValue(e.body))));
     let imported = 0, dup = 0;
+    session.batch(() => {
     for (const n of plan.notes) {
       const [x, y, w, h] = n.region;
       // ADR-0026 note (review of f344114): a user-supplied `objectId` here is target-AUTHORING, not a
@@ -1143,6 +1144,7 @@ export function createIngestFlows(ctx: IngestContext) {
       });
       imported++;
     }
+    });
     if (imported > 0) ctx.bump(); // rev + dirty + scheduleSave (a template stays playground-only per save()'s gate)
     // Coordinate-free rows (no x,y,w,h) stage for "Set area" instead of importing — they can't enter the
     // log without geometry (session.ts). addPendingNotes dedups + persists, returning the NEW count.
@@ -1173,6 +1175,7 @@ export function createIngestFlows(ctx: IngestContext) {
     const keyFor = (target: unknown, body: unknown) => `${JSON.stringify(target)}|${JSON.stringify(body)}`;
     const existing = new Set(session.entries.map((e) => keyFor(e.target, e.body ?? [])));
     let imported = 0, dup = 0;
+    session.batch(() => {
     for (const n of plan.notes) {
       // ADR-0026 note (review of f344114): as in importNotesCsv, `n.objectId` is target-AUTHORING —
       // planWadmImport already gates it against the exhibit's live object ids, and a pasted legacy id
@@ -1185,6 +1188,7 @@ export function createIngestFlows(ctx: IngestContext) {
       session.createNote({ target, body: n.body }); // typed by the planner's rebuild — no casts
       imported++;
     }
+    });
     if (imported > 0) ctx.bump();
     const head = `Added ${imported} note${imported === 1 ? "" : "s"}.`;
     const dupNote = dup > 0 ? ` ${dup} already added.` : "";

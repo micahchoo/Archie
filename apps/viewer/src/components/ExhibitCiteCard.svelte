@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { useViewerAddress } from "../viewer-address-context.js";
+  const address = useViewerAddress();
   // A rich preview of a cited exhibit (the "mini version of the image/media/map" — dogfood feedback).
   // Cover + title + summary come from the gallery index (exhibits.json), already in memory — no fetch.
   // Links via the hash router (#/<slug>) so a click routes in-app (ViewerShell listens on hashchange).
@@ -11,7 +13,7 @@
   const desc = $derived(entry?.description);
 </script>
 
-<a class="cite-card" href={`#/${slug}`} title={`Open “${title}”`}>
+<a class="cite-card" href={address({ view: "exhibit", slug })} title={`Open “${title}”`}>
   <span class="cc-cover" style={cover ? `background-image:url(${cover})` : ""} aria-hidden="true"></span>
   <span class="cc-body">
     <span class="cc-title">{title}</span>

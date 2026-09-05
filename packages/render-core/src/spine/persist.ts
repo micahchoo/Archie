@@ -6,25 +6,10 @@
 // Reload reconstructs the full DAG from the history pages (NOT the consumer-minimal heads page).
 
 import { toHistory, toHeadsPage, type SerializeOptions } from "./serialize.js";
-import { fromHistory } from "./deserialize.js";
-import { isNotFound, type FsDirectory } from "../fs/seam.js";
+import { fromHistoryPage } from "./deserialize.js";
+import type { FsDirectory } from "../fs/seam.js";
+import { readHistoryRecords, writeHistoryPages, writeJson } from "./page-store.js";
 import type { AnnotationLog, W3CAnnotationPage } from "../wadm/types.js";
-
-const HISTORY_DIR = "history";
-const INDEX_FILE = "index.json";
-const HEADS_FILE = "heads.json";
-
-async function writeJson(dir: FsDirectory, name: string, data: unknown): Promise<void> {
- const file = await dir.getFile(name, { create: true });
- const w = await file.writable();
- await w.write(JSON.stringify(data, null, 2));
- await w.close();
-}
-
-async function readJson<T>(dir: FsDirectory, name: string): Promise<T> {
- const file = await dir.getFile(name);
- return JSON.parse(new TextDecoder().decode(await file.readable())) as T;
-}
 
 /**
  * Write the annotation log into `annDir`: the consumer heads page + the history sidecar +
@@ -32,30 +17,9 @@ async function readJson<T>(dir: FsDirectory, name: string): Promise<T> {
  */
 export async function writeAnnotations(annDir: FsDirectory, log: AnnotationLog, opts: SerializeOptions = {}, only?: ReadonlySet<string>): Promise<void> {
  const headsPage = toHeadsPage(log, `${opts.baseUrl ?? ""}heads.json`, opts);
- await writeJson(annDir, HEADS_FILE, headsPage);
-
- const { index, pages } = toHistory(log, opts);
- const histDir = await annDir.getDirectory(HISTORY_DIR, { create: true });
- // PERF: history pages are independent files — write them concurrently instead of awaiting each in turn
- // (the autosave latency was linear in note count: one round-trip per page). Distinct paths → race-free
- // across all fs backends (a writable locks only its own file).
- //
- // INCREMENTAL: when `only` is given (the session's dirty logicalIds), rewrite JUST those pages —
- // editing one note rewrites one file, not all N (the write-amplification fix). heads.json + index.json
- // are ALWAYS rewritten in full (small, whole-log projections that reload reads); unnamed pages stay on
- // disk from a prior full write. SAFE because the index still lists every logicalId, so reload reads them
- // all — the un-rewritten ones are byte-identical to what's on disk. `only` undefined = full write (the
- // first save / post-seed / post-merge, and every publish/zip projection).
- const entries = only ? Object.entries(pages).filter(([id]) => only.has(id)) : Object.entries(pages);
- await Promise.all(entries.map(([logicalId, page]) => writeJson(histDir, `${logicalId}.json`, page)));
- // COMMIT POINT (Issue 19): the index is written LAST — it is what `readAnnotations` reads to discover
- // the pages, so it must not name a page that isn't on disk yet. Writing it before its pages made a torn
- // write (tab close / crash / quota between the index and the pages) leave the index referencing a page
- // that never landed; reload then read that store as EMPTY and the exhibit's notes silently vanished.
- // Pages-first / index-last makes an interrupted write roll back to "no committed index" (= empty, safe)
- // instead of "index → missing page" (= silent loss). A crash between the pages and this line just leaves
- // a stale index that the NEXT full write overwrites — no torn state is ever the committed state.
- await writeJson(histDir, INDEX_FILE, index);
+ await writeJson(annDir, "heads.json", headsPage);
+ // Only dirty history pages change on incremental saves; the index still names the full log.
+ await writeHistoryPages(annDir, toHistory(log, opts), only);
 }
 
 /** A history page the index referenced but that could not be read (missing file / unparseable JSON) —
@@ -99,45 +63,17 @@ export class AnnotationsCorruptError extends Error {
  * dir, or no committed index) is genuinely empty: `{ log: [], corrupt: [] }`.
  */
 export async function readAnnotationsReport(annDir: FsDirectory): Promise<AnnotationReadResult> {
- let histDir: FsDirectory;
- try {
-  histDir = await annDir.getDirectory(HISTORY_DIR);
- } catch {
-  return { log: [], corrupt: [] }; // nothing persisted yet
- }
- let index: Record<string, string>;
- try {
-  index = await readJson<Record<string, string>>(histDir, INDEX_FILE);
- } catch (e) {
-  if (isNotFound(e)) {
-   // No committed index (absent). With pages-first / index-last ordering, an absent index
-   // means the write never reached its commit point → the store is EMPTY, not corrupt.
-   return { log: [], corrupt: [] };
+ const { log, corrupt } = await readHistoryRecords(annDir, (raw) => {
+  if (raw === null || typeof raw !== "object" ||
+   (raw as { type?: unknown }).type !== "AnnotationPage" ||
+   !Array.isArray((raw as { items?: unknown }).items)) {
+   throw new Error("not an annotation history page (expected AnnotationPage with items)");
   }
-  // The index file EXISTS but is unreadable/unparseable → corrupt (rule #2: corrupt ≠ empty).
-  // This was silently treated as empty (returned {log:[], corrupt:[]}) — a corrupt index
-  // that slipped the per-page guard. Now surface it so callers don't present corruption as
-  // "nothing authored" and the next write doesn't overwrite it blind.
-  throw new AnnotationsCorruptError(
-   [{ logicalId: INDEX_FILE, url: INDEX_FILE, reason: e instanceof Error ? e.message : String(e) }],
-   `index.json is corrupt`,
-  );
- }
- const corrupt: CorruptAnnotationPage[] = [];
- // PERF: read the history pages concurrently (exhibit-open latency was linear in note count — one
- // round-trip per page). Promise.all preserves array order, so fromHistory sees the same page order.
- const results = await Promise.all(
-  Object.entries(index).map(async ([logicalId, url]) => {
-   try {
-    return await readJson<W3CAnnotationPage>(histDir, `${logicalId}.json`);
-   } catch (e) {
-    corrupt.push({ logicalId, url, reason: e instanceof Error ? e.message : String(e) });
-    return null;
-   }
-  }),
- );
- const pages = results.filter((p): p is W3CAnnotationPage => p !== null);
- return { log: fromHistory(pages), corrupt };
+  return fromHistoryPage(raw as W3CAnnotationPage);
+ }, ({ id, url, reason }) => new AnnotationsCorruptError(
+  [{ logicalId: id, url, reason }], "index.json",
+ ));
+ return { log, corrupt: corrupt.map(({ id, url, reason }) => ({ logicalId: id, url, reason })) };
 }
 
 /**

@@ -1,0 +1,1 @@
+import{a,g as d}from"./chunk-LY6PU76L.js";import"./chunk-GW5XXYOX.js";function s(t){let i=null,e=null,r={};return{setObject(n,o){e=n,o!==void 0&&(i=o),r=d(t.exhibit,n)},notes(){return e===null?[]:a(t.exhibit,e,i)},readingId(){return i},colourOf(n){return r[n]},setReading(n){i=n,t.onRepaint(this.notes()),t.onRebuild()}}}export{s as createReadingLayer};

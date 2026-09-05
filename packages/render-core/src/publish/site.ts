@@ -28,7 +28,7 @@ import type { PortableExhibit } from "./portable.js"; // type-only (erased) — 
 import { readExhibitTree, fsJsonSource, migratedFsJsonSource } from "./read.js";
 import { libraryPageHtml, exhibitPageHtml, sitemapTxt, sitemapXml, viewerShellHtml, treeViewerBase, TREE_VIEWER_DIR, TREE_VIEWER_ENTRY, TREE_VIEWER_PAGE } from "./static-pages.js";
 import { citationCff } from "../cite/citation.js";
-import { readAnnotations } from "../spine/persist.js";
+import { readAnnotationsReport, AnnotationsCorruptError } from "../spine/persist.js";
 import { writeStructure } from "../spine/structure-persist.js";
 import type { SectionLog } from "../spine/structure.js";
 import { asExhibitId, asLibraryId } from "../wadm/brand.js";
@@ -110,10 +110,9 @@ export interface PublishOptions {
   /**
    * Publish-generation id (STALENESS / Issue 24), stamped into the root `archie.json` marker (the LAST
    * write = commit point). App-supplied for full control; ABSENT = derived deterministically from the
-   * library-level projections (exhibits.json + images.json) plus `publishedAt` when given. Deterministic
-   * so an incremental publish and a full republish of the same content stamp the SAME generation (the
-   * byte-stable-republish contract); folding in `publishedAt` makes each real (timestamped) publish unique
-   * so a note-only republish still busts caches. The Viewer keys hosted fetches on `?g=<generation>`.
+   * authored library, annotation histories, image projection and optional `publishedAt`. Identical
+   * content is deterministic; note-only changes invalidate hosted caches even without a timestamp.
+   * The Viewer keys hosted fetches on `?g=<generation>`.
    */
   generation?: string;
   /**
@@ -531,7 +530,8 @@ export async function publishLibrary(sink: Filesystem, library: Library, getLog:
   const priorFixity: FixityEntry[] = hashing ? await readPriorFixity(root) : [];
   // ADR-0020 marker (archie.json) is written LAST, not here — see the end of this function. Issue 25b: a
   // marker written FIRST validates a tree that a crash mid-publish left torn; writing it last makes it the
-  // COMMIT POINT — a partial tree has no current marker, so a consumer rejects it instead of rendering it.
+  // completion marker. In-place republish retains the prior marker until this pass completes;
+  // marker-last alone does not isolate readers from partially replaced existing content.
   await writeJson(root, "collection.json", toCollection(library, { baseUrl }));
   // Stamp the Gallery source with the schema version so it stays migratable (orphan gap §39). Keep the
   // object for the generation hash (below) so the generation id is a pure function of published content.
@@ -820,12 +820,11 @@ export async function publishLibrary(sink: Filesystem, library: Library, getLog:
     // History sidecar (exhibit-level, per logicalId) — the reload/merge + citation target.
     const { index, pages } = toHistory(log, { baseUrl: citeBase, historyBase: historyBaseAbs });
     const histDir = await (await exDir.getDirectory("annotations", { create: true })).getDirectory("history", { create: true });
-    await writeJson(histDir, "index.json", index);
-    // History pages are independent files under histDir (each a distinct {logicalId}.json); fan out under
-    // the bounded pool. Ordering vs index.json is unchanged — index.json is written above, before the pool.
+    // The discovery index must not reference a page until that page has landed.
     await mapLimit(Object.entries(pages), PUBLISH_CONCURRENCY, async ([logicalId, page]) => {
       await writeJson(histDir, `${logicalId}.json`, page);
     });
+    await writeJson(histDir, "index.json", index);
 
     // Structure rev-log sidecar (Archie-aef4): {slug}/structure/history/ beside the annotation
     // history — the exchange leg that makes the import merge (mergeImportedStructure) reachable
@@ -992,19 +991,26 @@ export async function publishLibrary(sink: Filesystem, library: Library, getLog:
   const imageIndex = stamp(await buildImageIndex(fs, library));
   await writeJson(root, "images.json", imageIndex);
 
-  // ADR-0020 marker — written LAST = the publish COMMIT POINT (Issue 25b). `generation` (Issue 24) is
-  // app-supplied or derived deterministically from the two library-level projections (so an incremental
-  // publish and a full republish of identical content stamp the SAME generation — the byte-stable
-  // contract), folding in `publishedAt` so each real timestamped publish is unique (busts caches on any
-  // republish, note-only included). The Viewer keys hosted fetches on `?g=<generation>`.
-  const generation = opts.generation ?? generationHash(JSON.stringify(exhibitsJson) + "\u0000" + JSON.stringify(imageIndex) + "\u0000" + (opts.publishedAt ?? ""));
+  // Marker-last identifies a completed publish. It does not make in-place replacements atomic.
+  // Hash authored content in bounded pieces: a note-only edit must change the default generation,
+  // without allocating a second serialization of the entire version log.
+  const generation = opts.generation ?? generationHash((function* () {
+    yield JSON.stringify(library);
+    yield JSON.stringify(exhibitsJson);
+    yield JSON.stringify(imageIndex);
+    yield opts.publishedAt ?? "";
+    for (const slug of Object.keys(logsBySlug).sort()) {
+      yield slug;
+      for (const record of logsBySlug[slug]!) yield JSON.stringify(record);
+    }
+  })());
 
   // FIXITY MANIFEST — SECOND-TO-LAST (Archie-039e). Every payload byte is on disk by this point; the
   // marker below is still the commit point. The two orderings this sits between are both load-bearing:
   //   • AFTER all content — a manifest cannot list a file that has not been written;
   //   • BEFORE archie.json — the marker is the commit point (render-core-data-integrity rule 1), so a
-  //     tree torn between the two reads as HAVING NO MARKER and is refused, rather than presenting a
-  //     complete-looking tree whose manifest is short.
+  //     fresh tree interrupted here has no new completion marker. On republish an older marker
+  //     may remain, so this ordering does not establish snapshot isolation.
   // The marker itself is therefore NOT in the manifest, and neither is the manifest. That is a
   // deliberate consequence of the ordering, not an oversight: the alternative is hashing the marker,
   // which is exactly the L2 seal ADR-0020 rejected.
@@ -1037,9 +1043,12 @@ async function readPriorFixity(root: FsDirectory): Promise<FixityEntry[]> {
 /** A tiny, dependency-free stable string hash (djb2) → base36 — the default publish-generation id when
  *  none is app-supplied. Deterministic (same input → same id) so byte-stable republishes stay byte-stable;
  *  not cryptographic (it identifies a generation, it doesn't authenticate — ADR-0020's marker stance). */
-function generationHash(s: string): string {
+function generationHash(parts: Iterable<string>): string {
   let h = 5381;
-  for (let i = 0; i < s.length; i++) h = (Math.imul(h, 33) ^ s.charCodeAt(i)) | 0;
+  for (const part of parts) {
+    for (let i = 0; i < part.length; i++) h = (Math.imul(h, 33) ^ part.charCodeAt(i)) | 0;
+    h = Math.imul(h, 33) | 0; // delimiter between serialized values
+  }
   return (h >>> 0).toString(36);
 }
 
@@ -1143,7 +1152,11 @@ export async function loadLibrary(fs: Filesystem, opts: LoadLibraryOptions = {})
   for (const card of cards) {
     const exDir = await root.getDirectory(card.slug);
     const manifest = await src.get<IIIFManifest>(`${card.slug}/manifest.json`);
-    logs[card.slug] = await readAnnotations(await exDir.getDirectory("annotations"));
+    const annotations = await readAnnotationsReport(await exDir.getDirectory("annotations"));
+    // Adoption must not replace working data with a silently partial archive. Recovery callers
+    // can use the reporting reader on the original filesystem without modifying its bytes.
+    if (annotations.corrupt.length > 0) throw new AnnotationsCorruptError(annotations.corrupt, `exhibit "${card.slug}"`);
+    logs[card.slug] = annotations.log;
     // Sections (narrative Ranges) and readings were NOT recovered here at all — a silent gap in the
     // publish↔load symmetry this function's own doc comment claims: a narrative exhibit's Ranges
     // vanished on any load→publish round trip (e.g. gen-published.mts regenerating a dropped zip),

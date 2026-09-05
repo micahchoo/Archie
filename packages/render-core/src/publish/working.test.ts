@@ -6,6 +6,7 @@
 // publishLibrary(MemoryFilesystem) → loadPortableGallery/loadPortableExhibit.
 
 import { describe, it, expect } from "vitest";
+import type { FsDirectory } from "../fs/seam.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { writeAnnotations } from "../spine/persist.js";
 import { appendNew } from "../spine/log.js";
@@ -203,5 +204,31 @@ describe("Issue 21 — Library↔Working round trip is lossless for cover/format
     expect(back.exhibits[0]!.cover).toBe("https://cdn.example/cover.jpg"); // the live-drop that used to VANISH
     expect(back.exhibits[0]!.objects[0]!.format).toBe("image/jpeg");
     expect(back.exhibits[0]!.objects[0]!.originalName).toBe("A-original.tiff");
+  });
+});
+
+// A read fault at any directory depth must propagate through the cold-read composition.
+describe("working store: absence is distinct from failure", () => {
+  it.each(["project", "annotations"])("refuses inaccessible %s directories", async (location) => {
+    const fs = await seedWorkingStore(buildLog("canvas"));
+    const failure = new DOMException("permission revoked", "NotAllowedError");
+    const wrap = (inner: FsDirectory): FsDirectory => ({
+      getDirectory: async (name, opts) => {
+        if (name === (location === "project" ? WORKING_PROJECT : "annotations")) throw failure;
+        return wrap(await inner.getDirectory(name, opts));
+      },
+      getFile: (name, opts) => inner.getFile(name, opts),
+      entries: () => inner.entries(), remove: (name) => inner.remove(name),
+    });
+    await expect(loadWorkingLibrary({ root: async () => wrap(await fs.root()) })).rejects.toBe(failure);
+  });
+
+  it("refuses malformed working metadata instead of claiming no working store exists", async () => {
+    const fs = await seedWorkingStore([]);
+    const dir = await (await fs.root()).getDirectory(WORKING_PROJECT);
+    const writer = await (await dir.getFile("library.json")).writable();
+    await writer.write("{broken");
+    await writer.close();
+    await expect(loadWorkingLibrary(fs)).rejects.toThrow(SyntaxError);
   });
 });

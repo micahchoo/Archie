@@ -1,0 +1,4 @@
+{"probe":"full-save-race","memory":{"type":"TextualBody","value":"latest-during-save"},"disk":{"type":"TextualBody","value":"v1"},"memoryVersions":2,"diskVersions":1}
+{"probe":"incremental-save-race","memory":{"type":"TextualBody","value":"latest-during-save"},"disk":{"type":"TextualBody","value":"v2"},"memoryVersions":3,"diskVersions":2}
+{"probe":"wrong-schema-page","thrown":"TypeError: page.items is not iterable","survivor":"01M1R7M39PZZ79WD5QG8NX4D0T"}
+{"probe":"failed-history-dir","annotations":{"log":[],"corrupt":[]},"structure":{"log":[],"corrupt":[]}}

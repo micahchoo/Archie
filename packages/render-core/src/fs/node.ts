@@ -123,23 +123,30 @@ class NodeFile implements FsFile {
     };
     return {
       write: async (data) => {
-        if (data instanceof Blob) {
-          handle ??= await fsp.open(tmp, "w");
-          const reader = data.stream().getReader();
-          try {
-            for (;;) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              await writeAllToHandle(handle, value);
+        try {
+          if (data instanceof Blob) {
+            if (!handle) {
+              handle = await fsp.open(tmp, "w");
+              // Switching to streaming must first preserve every earlier buffered chunk.
+              for (const chunk of chunks) await writeAllToHandle(handle, chunk);
+              chunks.length = 0;
             }
-          } catch (e) {
-            await discardTemp();
-            throw e;
+            const reader = data.stream().getReader();
+            try {
+              for (;;) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                await writeAllToHandle(handle, value);
+              }
+            } finally { reader.releaseLock(); }
+          } else {
+            const bytes = typeof data === "string" ? new TextEncoder().encode(data) : new Uint8Array(data.slice(0));
+            if (handle) await writeAllToHandle(handle, bytes);
+            else chunks.push(bytes);
           }
-        } else if (typeof data === "string") {
-          chunks.push(new TextEncoder().encode(data));
-        } else {
-          chunks.push(new Uint8Array(data.slice(0)));
+        } catch (error) {
+          await discardTemp();
+          throw error;
         }
       },
       close: async () => {

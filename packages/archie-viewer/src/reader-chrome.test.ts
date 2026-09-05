@@ -334,9 +334,8 @@ describe("the finder in the pane (Archie-1820)", () => {
     expect(aside.querySelector(".rc-where")).toBeNull(); // no locus line on the object's own notes
   });
 
-  it("a hit ELSEWHERE travels (onfind); a hit HERE is an ordinary selection (onselect)", () => {
-    // The two are different journeys and must not collapse: onfind opens another object AND lands on
-    // the note, onselect only moves the camera on the object already open.
+  it("all search hits use complete arrival resolution, including the current object", () => {
+    // A hit on the current object can still require a different Reading.
     const e = findable();
     const { aside, calls } = mount(e, e.annotationsByObject!["o1"]!);
     const find = aside.querySelector<HTMLInputElement>(".rc-find")!;
@@ -347,8 +346,8 @@ describe("the finder in the pane (Archie-1820)", () => {
     expect(calls.find).toEqual([{ objectId: "o2", noteId: "b1" }]);
     expect(calls.select).toEqual([]);
     rows[0]!.click(); // "Plate one" — the open object
-    expect(calls.select).toEqual(["a1"]);
-    expect(calls.find.length).toBe(1); // unchanged: no travel needed
+    expect(calls.select).toEqual([]);
+    expect(calls.find).toEqual([{ objectId: "o2", noteId: "b1" }, { objectId: "o1", noteId: "a1" }]);
   });
 
   it("an empty result names the query back rather than showing a bare blank", () => {

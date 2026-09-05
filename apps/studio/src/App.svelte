@@ -88,6 +88,7 @@
   // through the wire so it lands in the projection-overlay history, plus the ⌘Z/⇧⌘Z window binding
   // (registry rows in shortcuts.ts) and the tool-strip affordance (UndoControls).
   import { createUndoWire, installUndoKeyboard } from "./undo-wire.js";
+  import { bindingLocationLabel } from "./library-home.js";
   import UndoControls from "./UndoControls.svelte";
   import { hasRealWorkIn } from "./safety-state.svelte.js";
   // Persisted editor-chrome view preferences (Archie-c7ef): the filmstrip's collapsed state + the
@@ -576,7 +577,7 @@
   }
 
   async function deleteObjectNotesAndMeta(objId: string) {
-    for (const id of liveNoteIdsOn(objId)) undoWire.deleteNote(id);
+    undoWire.batch(() => { for (const id of liveNoteIdsOn(objId)) undoWire.deleteNote(id); });
     // Tag the incremental mirror BEFORE removeObject so the trigger it fires (via onAfterPersist) sees the
     // removal: rewrite the exhibit's manifest AND prune the object's orphaned tree files (spike-0002). The
     // removeObject reducer can't do this — only here do we still know the object's imported-asset name.
@@ -956,7 +957,7 @@
     const blocking = conflictsBlockingRemoval(list);
     if (blocking.length > 0) { refuseForConflicts(blocking, list.length === 1 ? "That item" : "One of the selected items"); return; }
     for (const objId of list) {
-      for (const id of liveNoteIdsOn(objId)) undoWire.deleteNote(id);
+      undoWire.batch(() => { for (const id of liveNoteIdsOn(objId)) undoWire.deleteNote(id); });
       const gone = vs.OBJECTS.find((o) => o.id === objId);
       const assetName = gone && isAsset(gone.source) ? gone.source.slice(ASSET_PREFIX.length) : undefined;
       bnd.markObjectRemoved(vs.currentSlug, objId, assetName); // per-id orphan cleanup (asset name known only here)
@@ -1013,7 +1014,7 @@
     });
     await lib.persist();
     await openExhibit(slug); // not a template → persists; seeds empty
-    for (const c of carried) undoWire.createNote({ target: c.target, ...(c.body !== undefined ? { body: c.body } : {}), ...(c.motivation !== undefined ? { motivation: c.motivation } : {}), ...(c.reading !== undefined ? { reading: c.reading } : {}), ...(c.emphasis !== undefined ? { emphasis: c.emphasis } : {}), ...(c.wholeObject !== undefined ? { wholeObject: c.wholeObject } : {}), ...(c.geo !== undefined ? { geo: c.geo } : {}) });
+    undoWire.batch(() => { for (const c of carried) undoWire.createNote({ target: c.target, ...(c.body !== undefined ? { body: c.body } : {}), ...(c.motivation !== undefined ? { motivation: c.motivation } : {}), ...(c.reading !== undefined ? { reading: c.reading } : {}), ...(c.emphasis !== undefined ? { emphasis: c.emphasis } : {}), ...(c.wholeObject !== undefined ? { wholeObject: c.wholeObject } : {}), ...(c.geo !== undefined ? { geo: c.geo } : {}) }); });
     await save();
     keeping = false;
   }
@@ -1583,7 +1584,7 @@
   function onImportTranscript(text: string) {
     const cued = importTranscript([], text, { source: vs.canvasId, lastEditor: author });
     let n = 0;
-    for (const r of cued) { undoWire.createNote({ target: r.target, ...(r.body !== undefined ? { body: r.body } : {}), ...(r.motivation !== undefined ? { motivation: r.motivation } : {}) }); n++; }
+    undoWire.batch(() => { for (const r of cued) { undoWire.createNote({ target: r.target, ...(r.body !== undefined ? { body: r.body } : {}), ...(r.motivation !== undefined ? { motivation: r.motivation } : {}) }); n++; } });
     if (n > 0) {
       importNote = { message: `Added ${n} note${n === 1 ? "" : "s"} from your captions.`, ok: true };
     } else {
@@ -2045,7 +2046,7 @@
     <!-- The one save UI (Archie-0b7b / Archie-c76d), threaded into the overview header's save slot as a
          snippet — the SAME SafetyState the editor + library mount, so ⌘S + the indicator are identical here. -->
     {#snippet overviewSafety()}
-      <SafetyState readOnly={tabReadOnly} sessDirty={sess.storeReady && sess.dirty} saveHealth={saveStatus.health}
+      <SafetyState example={isTemplate(vs.currentSlug)} destination={bindingLocationLabel(bnd.binding, isTauri())} readOnly={tabReadOnly} sessDirty={sess.storeReady && sess.dirty} saveHealth={saveStatus.health}
         bindingKind={bnd.binding.kind} bindingDirty={bnd.dirty} bindingBusy={bnd.busy} bindingError={bnd.error}
         hasRealWork={safetyHasRealWork} onflush={requestSave} />
     {/snippet}
@@ -2155,7 +2156,7 @@
     <!-- The one save UI (Archie-0b7b / Archie-c76d) — replaces the old savestate span + Save button. Inert
          text when Saved/Saving, the control itself when Action needed/Failed; owns ⌘S. sessDirty is passed
          explicitly (optional prop — silent under-report if omitted, save-reviewer contract). -->
-    <SafetyState readOnly={tabReadOnly} sessDirty={sess.storeReady && sess.dirty} saveHealth={saveStatus.health}
+    <SafetyState example={isTemplate(vs.currentSlug)} destination={bindingLocationLabel(bnd.binding, isTauri())} readOnly={tabReadOnly} sessDirty={sess.storeReady && sess.dirty} saveHealth={saveStatus.health}
       bindingKind={bnd.binding.kind} bindingDirty={bnd.dirty} bindingBusy={bnd.busy} bindingError={bnd.error}
       hasRealWork={safetyHasRealWork} onflush={requestSave} />
     <!-- ONE entry point, two verbs (Q-15): the primary publishes the library to its home (or runs the

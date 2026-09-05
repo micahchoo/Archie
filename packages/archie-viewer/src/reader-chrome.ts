@@ -175,7 +175,7 @@ export interface ReaderChromeOptions {
   onreading(id: string | null): void;
   onstep(objectId: string): void;
   onoverview(): void;
-  /** A search hit on ANOTHER object: open that object AND land on that note (Archie-1820). */
+  /** Resolve a search hit to its object, Reading and note, including hits on the current object. */
   onfind(objectId: string, noteId: string): void;
 }
 
@@ -399,14 +399,8 @@ export function mountReaderChrome(
     list.setAttribute("aria-label", "Search results");
     for (const h of hits) {
       list.append(rowFor(h.id, h.preview, h.objectLabel, () => {
-        // A hit on THIS object is an ordinary selection; one elsewhere has to travel. Both land on
-        // the note itself, never on the object's top — which is the second half of what Archie-9eeb
-        // asks for, and the half clover-iiif does NOT deliver for search hits (its poll-then-zoom at
-        // `Item.tsx:119-132` is gated on `isContentState`, a prop `ContentSearch.tsx` never passes,
-        // so its cross-canvas path stops at the canvas). No swept system demonstrates this working;
-        // the embed gets it for free only because `resolveExhibitTarget` already existed.
-        if (h.objectId === object.id) opts.onselect(h.id);
-        else opts.onfind(h.objectId, h.id);
+        // Same-object hits can belong to an inactive Reading; every hit needs complete arrival resolution.
+        opts.onfind(h.objectId, h.id);
       }));
     }
     listHost.append(list);

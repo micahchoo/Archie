@@ -41,6 +41,7 @@
 // is `.reader-surface`). The bundle auto-registers on import and lazy-loads the
 // reader chunk when an object opens.
 
+import { runReaderContracts } from "./reader-contracts.mjs";
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { readFileSync } from "node:fs"; // auditOwnSource reads this file's own text
@@ -160,6 +161,7 @@ function auditOwnSource() {
 }
 
 async function main() {
+  await runReaderContracts();
   // FIRST, before any browser cost: the gate's own bookkeeping. A suite whose coverage list has
   // silently shrunk reports PASS just as loudly as one that is whole.
   const selfAudit = auditOwnSource();

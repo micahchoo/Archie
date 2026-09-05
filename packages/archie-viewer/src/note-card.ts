@@ -22,6 +22,7 @@
 // rejects `javascript:`/`file:`/`data:text/html` and leaves the rejected URL in the prose to be
 // sanitized there instead. Labels and captions are `textContent`, never HTML.
 
+import { ResourcePolicy, releaseMedia } from "./resource-policy.js";
 import {
   commentOfAnnotation,
   renderMarkdown,
@@ -210,16 +211,17 @@ function mediaLabel(m: NoteMediaItem, verb: string): string {
 function renderNote(
   body: HTMLElement,
   parts: NoteParts,
-  opts: { size: "card" | "sheet"; failed: Set<string>; onmedia?: ((index: number) => void) | undefined },
+  opts: { size: "card" | "sheet"; resources: ResourcePolicy; failed: Set<string>; onmedia?: ((index: number) => void) | undefined },
 ): void {
   const doc = body.ownerDocument;
+  releaseMedia(body);
   body.textContent = "";
 
   if (parts.html) {
     const prose = doc.createElement("div");
     prose.className = "archie-note-card__prose";
     // Sanitized renderMarkdown output (see the module header) — safe to inject.
-    prose.innerHTML = parts.html;
+    prose.append(opts.resources.html(doc, parts.html));
     body.appendChild(prose);
   }
   if (parts.media.length === 0) return;
@@ -228,7 +230,7 @@ function renderNote(
     const strip = doc.createElement("div");
     strip.className = "archie-note-media";
     parts.media.forEach((m, i) => {
-      if (opts.failed.has(m.url)) {
+      if (!opts.resources.allows(m.url) || opts.failed.has(m.url)) {
         const dead = doc.createElement("span");
         dead.className = "tile-failed";
         dead.textContent = "Couldn't load";
@@ -241,7 +243,11 @@ function renderNote(
       // The BUTTON carries the accessible name; its child image is decorative-by-default. Labelling
       // both double-announces (NoteMedia.svelte:23-25, :33).
       tile.setAttribute("aria-label", mediaLabel(m, "Open"));
-      const fail = (): void => { opts.failed.add(m.url); renderNote(body, parts, opts); };
+      const fail = (): void => {
+      if (!body.isConnected) return;
+      opts.failed.add(m.url);
+      renderNote(body, parts, opts);
+    };
       if (m.kind === "image") {
         const img = doc.createElement("img");
         img.src = m.url;
@@ -288,7 +294,7 @@ function renderNote(
   figures.className = "archie-note-figures";
   for (const m of parts.media) {
     const fig = doc.createElement("figure");
-    if (opts.failed.has(m.url)) {
+    if (!opts.resources.allows(m.url) || opts.failed.has(m.url)) {
       const dead = doc.createElement("p");
       dead.className = "figure-failed";
       dead.textContent = m.alt ? `Couldn't load this ${m.kind}: ${m.alt}` : `Couldn't load this ${m.kind}.`;
@@ -296,7 +302,11 @@ function renderNote(
       figures.appendChild(fig);
       continue;
     }
-    const fail = (): void => { opts.failed.add(m.url); renderNote(body, parts, opts); };
+    const fail = (): void => {
+      if (!body.isConnected) return;
+      opts.failed.add(m.url);
+      renderNote(body, parts, opts);
+    };
     if (m.kind === "image") {
       const img = doc.createElement("img");
       img.src = m.url;
@@ -336,7 +346,7 @@ function focusables(el: HTMLElement): HTMLElement[] {
  * Build the note card inside `host` (the reader's `.reader-note` row, or the AV player's host), plus
  * the reading-sheet layer it expands into.
  */
-export function createNoteCard(host: HTMLElement): NoteCard {
+export function createNoteCard(host: HTMLElement, resources = new ResourcePolicy()): NoteCard {
   const doc = host.ownerDocument;
   const root = host.getRootNode() as ShadowRoot | Document;
   ensureStyles(root, doc);
@@ -436,7 +446,7 @@ export function createNoteCard(host: HTMLElement): NoteCard {
   function openSheet(): void {
     if (sheetOpen || (!parts.html && parts.media.length === 0)) return;
     sheetOpen = true;
-    renderNote(sheetBody, parts, { size: "sheet", failed, onmedia: undefined });
+    renderNote(sheetBody, parts, { size: "sheet", resources, failed, onmedia: undefined });
     layer.hidden = false;
     // HIDDEN, NOT UNMOUNTED. Focus must return to the ⤢ that opened the sheet, and that button has to
     // still be in the document for `closeSheet` to find it. Unmounting the card would strand a
@@ -452,6 +462,7 @@ export function createNoteCard(host: HTMLElement): NoteCard {
     if (!sheetOpen) return;
     sheetOpen = false;
     layer.hidden = true;
+    releaseMedia(sheetBody);
     sheetBody.textContent = "";
     // Closing the sheet is "read LESS", not "dismiss the note" — the card comes back and the
     // selection is untouched. Only the card's × clears the selection (Reader.svelte:551-556).
@@ -466,6 +477,7 @@ export function createNoteCard(host: HTMLElement): NoteCard {
     if (!parts.html && parts.media.length === 0) { hide(); return; }
     renderNote(body, parts, {
       size: "card",
+      resources,
       failed,
       // A tile opens the SHEET rather than a third surface. The shell needs a separate lightbox and
       // therefore needs a "one modal at a time" rule enforced at three call sites (Reader.svelte:
@@ -484,11 +496,14 @@ export function createNoteCard(host: HTMLElement): NoteCard {
     if (sheetOpen) closeSheet();
     card.hidden = true;
     expand.hidden = true;
+    releaseMedia(body);
     body.textContent = "";
     parts = { html: "", media: [] };
   }
 
   function destroy(): void {
+    releaseMedia(card);
+    releaseMedia(layer);
     card.remove();
     layer.remove();
   }

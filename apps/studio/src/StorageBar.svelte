@@ -62,20 +62,11 @@
     border: 1px solid var(--border-canvas);
     font-family: var(--font-ui); font-size: var(--text-ui-xs); line-height: 1.25;
     display: flex; flex-direction: column; gap: 3px;
-    /* Calm is nearly nothing: a dimmed chip that resolves only when looked at. Critical drops the
-       dimming — a witnessed failure earns full presence. */
-    opacity: 0.55;
-    transition: opacity 200ms ease;
+    /* Keep ambient text readable; semantic ink carries the difference for critical storage states. */
     pointer-events: none; /* ambient readout, never an obstacle to a click on the canvas beneath */
   }
-  .storage-bar:hover,
-  .storage-bar.critical { opacity: 1; }
-
   .ambient { color: var(--ink-canvas-muted); letter-spacing: 0.02em; white-space: nowrap; }
   .figure { color: var(--semantic-error); font-weight: 600; letter-spacing: 0.02em; }
   .consequence { color: var(--ink-canvas-secondary); font-weight: 400; text-wrap: balance; }
 
-  @media (prefers-reduced-motion: reduce) {
-    .storage-bar { transition: none; }
-  }
 </style>

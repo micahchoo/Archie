@@ -359,6 +359,8 @@ Tests live alongside source (`*.test.ts`), not in a separate directory. For new 
 
 ## Documentation
 
+- [Delivery capability matrix](docs/CAPABILITIES.md) — storage, undo, offline reading, publishing, and verification differences across Studio, Viewer, embed, and portable files.
+
 | Doc | For |
 |---|---|
 | [`docs/guide/`](docs/guide/) | **Users** — a screenshot walkthrough from library to published site |

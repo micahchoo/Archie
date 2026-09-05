@@ -79,6 +79,10 @@ export interface FsFile {
 }
 
 export interface FsWritable {
+  /** Append this chunk to the new file contents, in call order. Callers await each write before
+   * starting the next; strings encode as UTF-8 and Blob/ArrayBuffer chunks retain their byte order.
+   * After write resolves, mutating the caller's buffer cannot change the bytes captured by that write.
+   * A new writable replaces the old file on close, including truncation when nothing is written. */
   write(data: string | Blob | ArrayBuffer): Promise<void>;
   close(): Promise<void>;
 }

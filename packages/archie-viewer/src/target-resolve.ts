@@ -45,6 +45,8 @@ export interface ResolvedTarget {
    *  the route's `noteId`, which may be a logical id — the overlay keys by raw a.id (read-overlay.ts), so
    *  the element selects THIS, not the route id. */
   selectId?: string;
+  /** Reading required to expose a Reading-only note; base notes leave the current layer intact. */
+  readingId?: string;
   /** Set when a deeper rung degraded upward (ADR-0021) — drives the cold-arrival notice; absent on a clean hit. */
   degraded?: "note-not-found" | "section-not-found" | "object-not-found";
 }
@@ -62,15 +64,17 @@ function matchesNote(a: W3CAnnotation, noteId: string): boolean {
   return a.id === noteId || logicalIdOf(a) === noteId;
 }
 
-/** Which object OWNS the note `noteId`, AND that note's RAW annotation id (the overlay selects by a.id,
- *  not by the route's possibly-logical id). Scan each object's base page; first match wins. Replicates
- *  resolveNoteArrival's base scan — the portable element renders base-page heads, so the base scan is the
- *  ladder rung we need (per-reading pages aren't mounted by the read-only reader). Null = unknown id
- *  (a tombstoned cite, ADR-0003) → the caller degrades to the exhibit. */
-function ownerOfNote(exhibit: PortableExhibit, noteId: string): { objectId: string; rawId: string } | null {
+/** Resolve ownership once for direct addresses and search arrivals. Base notes take precedence. */
+function ownerOfNote(exhibit: PortableExhibit, noteId: string): { objectId: string; note: W3CAnnotation; readingId?: string } | null {
   for (const o of exhibit.objects) {
     const hit = (exhibit.annotationsByObject[o.id] ?? []).find((a) => matchesNote(a, noteId));
-    if (hit) return { objectId: o.id, rawId: hit.id };
+    if (hit) return { objectId: o.id, note: hit };
+  }
+  for (const o of exhibit.objects) {
+    for (const [readingId, notes] of Object.entries(exhibit.readingAnnotationsByObject?.[o.id] ?? {})) {
+      const hit = notes.find((a) => matchesNote(a, noteId));
+      if (hit) return { objectId: o.id, note: hit, readingId };
+    }
   }
   return null;
 }
@@ -79,9 +83,7 @@ function ownerOfNote(exhibit: PortableExhibit, noteId: string): { objectId: stri
  *  `xywh` still frames the note's region, not the whole object). `pixel:`-style FragmentSelector values
  *  only — a polygon/svg selector has no `xywh=` value, so it returns null and the object opens un-framed
  *  (the overlay still draws it; ADR-0018 whole-object fallback). */
-function regionOfNote(exhibit: PortableExhibit, objectId: string, noteId: string): string | null {
-  const note = (exhibit.annotationsByObject[objectId] ?? []).find((a) => matchesNote(a, noteId));
-  if (!note) return null;
+function regionOfNote(note: W3CAnnotation): string | null {
   const targets = Array.isArray(note.target) ? note.target : [note.target];
   for (const t of targets) {
     if (typeof t === "string") continue;
@@ -107,16 +109,16 @@ export function resolveExhibitTarget(exhibit: PortableExhibit, route: ViewerRout
   if (route.noteId) {
     const owner = ownerOfNote(exhibit, route.noteId);
     if (!owner) return { kind: "exhibit", degraded: "note-not-found" }; // unknown id → its exhibit
-    const { objectId, rawId } = owner;
+    const { objectId, note, readingId } = owner;
     // The route's explicit xywh/t wins; else the note's own region selector frames it; else whole object.
     const explicit: TargetFragment | undefined = route.xywh
       ? { kind: "xywh", value: route.xywh }
       : route.t
       ? { kind: "t", value: route.t }
       : undefined;
-    const fragment = explicit ?? fragmentFromRegion(regionOfNote(exhibit, objectId, route.noteId));
+    const fragment = explicit ?? fragmentFromRegion(regionOfNote(note));
     // selectId = the raw a.id so the overlay can select+fit the note's own shape (the real nav contract).
-    return { kind: "object", objectId, selectId: rawId, ...(fragment ? { fragment } : {}) };
+    return { kind: "object", objectId, selectId: note.id, ...(readingId ? { readingId } : {}), ...(fragment ? { fragment } : {}) };
   }
 
   // ---- SECTION rung (`/s/<sectionId>`) ----------------------------------------------------------

@@ -1,0 +1,23 @@
+# Persistence and adoption fixes (S1–S4)
+
+Implemented:
+- `packages/render-core/src/session/session.ts`: save calls serialize; each operation drains its dirty IDs before I/O and restores them on failure. A merge during I/O retains the full-save requirement. Per-edit operations are unchanged by this persistence work.
+- New `packages/render-core/src/spine/page-store.ts`: one internal module owns classified directory/index absence, index schema validation, per-page decoding/recovery, revision deduplication, pages-before-index writes, and settling all started writes before a retry. Annotation and structure codecs and domain errors remain separate.
+- `spine/persist.ts`, `spine/structure-persist.ts`: use shared mechanics. Wrong-schema annotation pages fail within the per-page recovery operation. Permission/I/O failures no longer produce clean empty logs.
+- `spine/structure-serialize.ts`: removed unused `logFromPageRecords`; its repeated revision-deduplication contract now lives in page-store.
+- `publish/site.ts`: loadLibrary throws AnnotationsCorruptError for any reported unreadable annotation page, before returning data that an adopter could install; original input remains unchanged. Publish history indexes now follow history page writes.
+- `publish/working.ts`: only classified not-found returns absent project/annotations; unreadable directories and malformed metadata reject.
+
+Tests:
+- New `session/session-save.test.ts`: 10 interface tests covering full/incremental/post-merge saves, concurrent edits, merges during saves, failure restoration, overlapping saves, and partial-write residue versus queued retry.
+- New `spine/history-recovery.test.ts`: 24 paired annotation/structure interface tests covering wrong page and index schemas, permission failures, I/O failures, and not-found.
+- `publish/site.test.ts`: three corrupt adoption fixtures, source preservation, history pages committed before indexes.
+- `publish/working.test.ts`: inaccessible project and annotation directories, malformed metadata.
+- Focused run: 8 files / 144 tests passed (session save/session, annotation persistence/corruption, history recovery, structure persistence, site, working).
+- Final focused rerun after strengthening restoration fixture and deleting dead helper: 3 files / 49 tests passed.
+- Core typecheck passed after final changes. `git diff --check` passed.
+
+Residual limits:
+- Existing in-place publication and page replacement still do not provide snapshot isolation. Correct index ordering prevents discovery of unwritten new pages, but does not make all existing pages atomic as a group.
+- No new recovery UI: adoption now refuses incomplete annotation history explicitly; recovery remains available through readAnnotationsReport on the unchanged original filesystem.
+- No commits, hub edits, or tracker changes. Root concurrently owns session editNote/undo changes; these are preserved.

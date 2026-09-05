@@ -1,0 +1,40 @@
+booting /tmp/archie-review-cargo-check/debug/archie on :98
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Activating service name='org.a11y.Bus' requested by ':1.0' (uid=1000 pid=2977699 comm="/tmp/archie-review-cargo-check/debug/archie" label="unconfined")
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Successfully activated service 'org.a11y.Bus'
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Activating service name='org.freedesktop.portal.Desktop' requested by ':1.2' (uid=1000 pid=2977699 comm="/tmp/archie-review-cargo-check/debug/archie" label="unconfined")
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Activating service name='org.freedesktop.impl.portal.PermissionStore' requested by ':1.3' (uid=1000 pid=2977736 comm="/usr/libexec/xdg-desktop-portal" label="unconfined")
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Successfully activated service 'org.freedesktop.impl.portal.PermissionStore'
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Activating service name='org.freedesktop.portal.Documents' requested by ':1.3' (uid=1000 pid=2977736 comm="/usr/libexec/xdg-desktop-portal" label="unconfined")
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Successfully activated service 'org.freedesktop.portal.Documents'
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Activating service name='org.freedesktop.impl.portal.desktop.gnome' requested by ':1.3' (uid=1000 pid=2977736 comm="/usr/libexec/xdg-desktop-portal" label="unconfined")
+
+** (xdg-desktop-portal-gnome:2977760): WARNING **: 01:04:38.579: Failed to open service channel Wayland connection, portals dialogs may missbehave (Cannot invoke method; proxy is for the well-known name org.gnome.Mutter.ServiceChannel without an owner, and proxy was constructed with the G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START flag).
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Activating service name='org.gtk.vfs.Daemon' requested by ':1.6' (uid=1000 pid=2977760 comm="/usr/libexec/xdg-desktop-portal-gnome" label="unconfined")
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Successfully activated service 'org.gtk.vfs.Daemon'
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Activating service name='org.gnome.Settings.GlobalShortcutsProvider' requested by ':1.6' (uid=1000 pid=2977760 comm="/usr/libexec/xdg-desktop-portal-gnome" label="unconfined")
+
+** (process:2977798): WARNING **: 01:04:38.713: Failed to open service channel Wayland connection, portals dialogs may missbehave (Cannot invoke method; proxy is for the well-known name org.gnome.Mutter.ServiceChannel without an owner, and proxy was constructed with the G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START flag).
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Successfully activated service 'org.gnome.Settings.GlobalShortcutsProvider'
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Successfully activated service 'org.freedesktop.impl.portal.desktop.gnome'
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Activating service name='org.freedesktop.impl.portal.desktop.gtk' requested by ':1.3' (uid=1000 pid=2977736 comm="/usr/libexec/xdg-desktop-portal" label="unconfined")
+dbus-daemon[2977729]: Activating service name='org.a11y.atspi.Registry' requested by ':1.1' (uid=1000 pid=2977819 comm="/usr/libexec/xdg-desktop-portal-gtk" label="unconfined")
+dbus-daemon[2977729]: Successfully activated service 'org.a11y.atspi.Registry'
+SpiRegistry daemon is running with well-known name - org.a11y.atspi.Registry
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Successfully activated service 'org.freedesktop.impl.portal.desktop.gtk'
+
+(/usr/libexec/xdg-desktop-portal:2977736): xdg-desktop-portal-WARNING **: 01:04:38.893: Failed connect to PipeWire: Couldn't connect to PipeWire
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Activating service name='org.freedesktop.secrets' requested by ':1.3' (uid=1000 pid=2977736 comm="/usr/libexec/xdg-desktop-portal" label="unconfined")
+** Message: 01:04:38.898: couldn't access control socket: /tmp/archie-review-desktop-profile/runtime/keyring/control: No such file or directory
+discover_other_daemon: 0dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Successfully activated service 'org.freedesktop.secrets'
+dbus-daemon[2977579]: [session uid=1000 pid=2977579 pidfd=5] Successfully activated service 'org.freedesktop.portal.Desktop'
+library written; stopping the app
+=== app-data: /tmp/archie-review-desktop-profile/data/digital.compost.archie
+ok     origin is tauri_localhost_0 (packaged frontendDist)
+ok     no dev-server origin in the profile
+ok     no 0-byte files (2 files on disk)
+ok     no leftover .tmp-* files
+ok     library.json is 21597 bytes
+ok     library.json parses — 6 exhibit(s)
+
+RESULT: PASS
+A connection to the bus can't be made

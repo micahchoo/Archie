@@ -16,7 +16,7 @@
 <div class="undo-controls" role="group" aria-label="Note history">
   <button type="button" disabled={!canUndo} onclick={onundo} title="Undo the last note change (⌘Z)">↶ Undo</button>
   <button type="button" disabled={!canRedo} onclick={onredo} title="Redo a note change you undid (⇧⌘Z)">↷ Redo</button>
-  <span class="scope-note">Undo lasts this visit — it doesn't survive closing the exhibit.</span>
+  <span class="scope-note">Undo is temporary. Reopening restores saved notes.</span>
 </div>
 
 <style>
@@ -26,9 +26,9 @@
     gap: 0.375rem;
   }
   button {
-    border: 1px solid var(--line, #ccc);
-    background: var(--surface, #fff);
-    color: var(--ink, #222);
+    border: 1px solid var(--border-canvas);
+    background: var(--surface-canvas-raised);
+    color: var(--ink-canvas-primary);
     border-radius: 6px;
     padding: 0.2rem 0.55rem;
     font: inherit;
@@ -39,7 +39,7 @@
     cursor: default;
   }
   .scope-note {
-    color: var(--ink-soft, #777);
+    color: var(--ink-canvas-secondary);
     font-size: 0.8rem;
   }
 </style>

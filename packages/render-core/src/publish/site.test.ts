@@ -6,7 +6,7 @@ import type { DziTileSource } from "../iiif/resolve.js";
 import { ZipFilesystem } from "../fs/zip.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import type { Filesystem, FsDirectory, FsFile, FsWritable } from "../fs/seam.js";
-import { readAnnotations } from "../spine/persist.js";
+import { readAnnotations, AnnotationsCorruptError } from "../spine/persist.js";
 import { appendNew } from "../spine/log.js";
 import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import { encodeLinkRef } from "../link/link.js";
@@ -50,6 +50,24 @@ describe("publishLibrary — write the full site data tree via the seam", () => 
     const annDir = await (await (await fs.root()).getDirectory("a")).getDirectory("annotations");
     const reloaded = await readAnnotations(annDir);
     expect(reloaded.map((r) => r.rev)).toEqual(logA.map((r) => r.rev));
+  });
+
+  it.each(["missing", "wrong schema", "invalid JSON"])("refuses adoption of %s committed annotation history and preserves the source", async (failure) => {
+    const fs = new MemoryFilesystem();
+    const second = appendNew(logA, { target: "https://img/a.jpg", body: { type: "TextualBody", value: "healthy" }, lastEditor: alice });
+    await publishLibrary(fs, library, (id) => id === "exA" ? second.log : [], { baseUrl: "https://u.gh.io/lib/" });
+    const root = await fs.root();
+    const hist = await (await (await root.getDirectory("a")).getDirectory("annotations")).getDirectory("history");
+    const name = `${logA[0]!.logicalId}.json`;
+    if (failure === "missing") await hist.remove(name);
+    else {
+      const writer = await (await hist.getFile(name)).writable();
+      await writer.write(failure === "wrong schema" ? "{}" : "{broken");
+      await writer.close();
+    }
+    const before = await collectFiles(root);
+    await expect(loadLibrary(fs)).rejects.toThrow(AnnotationsCorruptError);
+    expect(await collectFiles(root)).toEqual(before);
   });
 
   it("writes imported-asset bytes + rewrites the canvas image URL (P2-X getAsset)", async () => {
@@ -751,12 +769,15 @@ describe("publishLibrary — incremental scope (spike-0002)", () => {
 // A Filesystem that delegates to a MemoryFilesystem but records the path of every file at the moment its
 // writer COMMITS (writable().close()) — the durable-write instant. Lets a test observe actual write order
 // under the concurrent publish scheduler, which collectFiles (a content snapshot) cannot.
-function recordingFs(): { fs: Filesystem; order: string[] } {
+function recordingFs(failCommit?: (path: string) => boolean): { fs: Filesystem; order: string[] } {
   const inner = new MemoryFilesystem();
   const order: string[] = [];
   const wrapWritable = (w: FsWritable, path: string): FsWritable => ({
     write: (d) => w.write(d),
-    close: async () => { await w.close(); order.push(path); },
+    close: async () => {
+      if (failCommit?.(path)) throw new Error(`commit failed: ${path}`);
+      await w.close(); order.push(path);
+    },
   });
   const wrapFile = (f: FsFile, path: string): FsFile => ({
     readable: () => f.readable(),
@@ -774,6 +795,29 @@ function recordingFs(): { fs: Filesystem; order: string[] } {
 }
 
 describe("publishLibrary — archie.json is the COMMIT MARKER, written LAST under the concurrent scheduler (Issue 25b)", () => {
+  it("a failed first history page never commits its discovery index or the completion marker", async () => {
+    const path = `a/annotations/history/${logA[0]!.logicalId}.json`;
+    const { fs } = recordingFs((candidate) => candidate === path);
+    await expect(publishLibrary(fs, library, getLog)).rejects.toThrow("commit failed");
+    const root = await fs.root();
+    await expect(root.getFile("archie.json")).rejects.toThrow(/no such file/);
+    const hist = await (await (await root.getDirectory("a")).getDirectory("annotations")).getDirectory("history");
+    await expect(hist.getFile("index.json")).rejects.toThrow(/no such file/);
+  });
+
+  it("an interrupted in-place republish retains the older marker; marker-last is not snapshot isolation", async () => {
+    let failing = false;
+    const { fs } = recordingFs((path) => failing && path.includes("/annotations/history/") && !path.endsWith("/index.json"));
+    await publishLibrary(fs, library, getLog, { generation: "previous" });
+    failing = true;
+    await expect(publishLibrary(fs, { ...library, title: "updated" }, getLog, { generation: "next" })).rejects.toThrow("commit failed");
+    const root = await fs.root();
+    const marker = JSON.parse(new TextDecoder().decode(await (await root.getFile("archie.json")).readable()));
+    expect(marker.generation).toBe("previous");
+    const gallery = new TextDecoder().decode(await (await root.getFile("exhibits.json")).readable());
+    expect(gallery).toContain("updated"); // some existing content has already changed
+  });
+
   it("commits archie.json strictly after every exhibit's content, even with exhibits fanned out", async () => {
     // 8 exhibits > PUBLISH_CONCURRENCY so the pool actually interleaves; each has an object + a note log so
     // real content (manifest, canvas heads page, history index + page) is written per exhibit.
@@ -799,6 +843,13 @@ describe("publishLibrary — archie.json is the COMMIT MARKER, written LAST unde
     const exhibitWrites = order.filter((p) => /^[a-h]\//.test(p));
     expect(exhibitWrites.length).toBeGreaterThan(slugs.length); // manifests + canvas pages + history pages
     for (const p of exhibitWrites) expect(order.indexOf(p)).toBeLessThan(marker);
+    for (const slug of slugs) {
+      const prefix = `${slug}/annotations/history/`;
+      const index = order.indexOf(`${prefix}index.json`);
+      const pages = order.filter((path) => path.startsWith(prefix) && !path.endsWith("/index.json"));
+      expect(pages.length).toBeGreaterThan(0);
+      for (const page of pages) expect(order.indexOf(page)).toBeLessThan(index);
+    }
     // The library-level projections (images.json, exhibits.json) likewise precede the marker.
     expect(order.indexOf("images.json")).toBeLessThan(marker);
     expect(order.indexOf("exhibits.json")).toBeLessThan(marker);

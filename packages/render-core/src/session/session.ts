@@ -15,7 +15,7 @@ import type { FsDirectory } from "../fs/seam.js";
 import type { Emphasis, GeoAnchor } from "../wadm/types.js";
 import { mergeLogs, resolveConflict } from "../spine/merge.js";
 import type { AnnotationLog, AnnotationRecord, W3CAnnotation, W3CBody, W3CTarget } from "../wadm/types.js";
-import type { ClientId, LogicalId } from "../wadm/brand.js";
+import type { ClientId, LogicalId, RevId } from "../wadm/brand.js";
 
 export interface NewNote {
   target: W3CTarget;
@@ -80,6 +80,8 @@ export class AnnotationSession {
   /** True once the full log is known to be on disk (after a full write, or a load FROM disk). Until then
    *  the next save is a FULL write — incremental writes are only safe once every page exists on disk. */
   private persistedFully = false;
+  /** Serialize writes, including retries after all in-flight page writes have settled. */
+  private saveTail: Promise<void> = Promise.resolve();
   /** Pages the load could not read (torn write / corruption) — empty on a clean or fresh session. The
    *  studio-open path reads this to surface corruption AND to refuse to seed-fresh-over a torn store
    *  (which would orphan the unreadable pages permanently — Issue 19). Public, read-only for callers. */
@@ -220,10 +222,15 @@ export class AnnotationSession {
     return record.logicalId;
   }
 
-  /** Append an edited version (carries unchanged fields forward).
-   *  Throws on a degenerate replacement target — same log-boundary invariant as createNote. */
-  editNote(logicalId: LogicalId, changes: NoteEdit): void {
+  /** Append a new authored version. After session-only undo, `fromRevision` identifies
+   *  the visible content to carry forward. The parent remains the current single head,
+   *  including a tombstone: editing a restored note explicitly resumes its history.
+   *  Without that live historical basis, editing a tombstone still refuses. */
+  editNote(logicalId: LogicalId, changes: NoteEdit, fromRevision?: RevId): void {
     if (changes.target !== undefined && isDegenerateTarget(changes.target)) throw new Error("editNote: degenerate target selector (empty/NaN geometry) must not enter the log");
+    const head = this.index.linearHead(logicalId);
+    const basis = fromRevision === undefined ? head : this.index.version(logicalId, fromRevision);
+    if (!basis) throw new Error(`no such note revision: ${logicalId}/${fromRevision}`);
     // The head comes from the index (O(1)); appendEdit would otherwise re-derive it with a whole-log
     // scan on every keystroke-scale edit. Same guards either way — see log.ts `linearHeadOf`.
     const record = editRecord(logicalId, {
@@ -236,8 +243,8 @@ export class AnnotationSession {
       ...(changes.wholeObject !== undefined ? { wholeObject: changes.wholeObject } : {}),
       ...(changes.geo !== undefined ? { geo: changes.geo } : {}),
       ...(changes.motivation !== undefined ? { motivation: changes.motivation } : {}),
-    }, this.index.linearHead(logicalId));
-    this.advance(record);
+    }, basis);
+    this.advance({ ...record, parent: head.rev, version: head.version + 1 });
   }
 
   /** Append a tombstone (append-only delete). */
@@ -316,16 +323,23 @@ export class AnnotationSession {
    *  disk: rewrites only the pages changed since the last save (the write-amplification fix). The first
    *  save (or one after a merge) writes everything. */
   async save(annDir: FsDirectory, opts: SerializeOptions = {}): Promise<void> {
-    if (!this.persistedFully) {
-      await writeAnnotations(annDir, this.entries, opts); // full projection — every page to disk
+    const saving = this.saveTail.then(async () => {
+      const full = !this.persistedFully;
+      const snapshot = this.dirty;
+      const log = this.entries;
+      this.dirty = new Set();
+      // Establish this baseline before yielding. An import during I/O invalidates it again;
+      // successful completion must never overwrite that newer full-save requirement.
       this.persistedFully = true;
-      this.dirty.clear();
-      return;
-    }
-    // Snapshot the dirty set, write just those pages, then clear ONLY what we wrote — edits that land
-    // during the async write stay dirty for the next save (the log passed reflects this snapshot).
-    const snapshot = new Set(this.dirty);
-    await writeAnnotations(annDir, this.entries, opts, snapshot);
-    for (const id of snapshot) this.dirty.delete(id);
+      try {
+        await writeAnnotations(annDir, log, opts, full ? undefined : snapshot);
+      } catch (error) {
+        for (const id of snapshot) this.dirty.add(id);
+        if (full) this.persistedFully = false;
+        throw error;
+      }
+    });
+    this.saveTail = saving.catch(() => {});
+    await saving;
   }
 }

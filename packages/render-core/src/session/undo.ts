@@ -126,10 +126,13 @@ export class AnnotationUndoManager {
 
   editNote(logicalId: LogicalId, changes: NoteEdit): void {
     this.assertNotApplying("editNote");
-    const from = this.headOf(logicalId);
-    this.session.editNote(logicalId, changes);
+    const from = this.shownHead(logicalId);
+    if (!from) throw new Error(`cannot edit a hidden note: ${logicalId}`);
+    this.session.editNote(logicalId, changes, from.rev);
     this.selfRevisions += 1; // an edit appends exactly one version (C2)
     const to = this.headOf(logicalId);
+    this.overlay.delete(logicalId);
+    this.composed = null;
     if (from !== undefined && to !== undefined) {
       this.accumulate({ ...emptyDiff<LogicalId, AnnotationRecord>(), updated: { [logicalId]: [from, to] } as Record<LogicalId, [AnnotationRecord, AnnotationRecord]> });
     }
@@ -137,9 +140,16 @@ export class AnnotationUndoManager {
 
   deleteNote(logicalId: LogicalId): void {
     this.assertNotApplying("deleteNote");
-    const from = this.headOf(logicalId);
-    this.session.deleteNote(logicalId);
-    this.selfRevisions += 1; // a delete appends exactly one tombstone (C3)
+    const from = this.shownHead(logicalId);
+    if (!from) throw new Error(`cannot delete a hidden note: ${logicalId}`);
+    // A restored deletion already has a tombstone in durable history. Deleting the
+    // visible restoration removes that overlay; it does not append a duplicate delete.
+    if (!this.headOf(logicalId)?.deleted) {
+      this.session.deleteNote(logicalId);
+      this.selfRevisions += 1;
+    }
+    this.overlay.delete(logicalId);
+    this.composed = null;
     // The tombstone is the new head but the projection drops it, so the projection-level change is
     // a REMOVAL of the record that was live. Undoing it re-shows that record; the tombstone stays
     // in the log regardless, which is exactly the immutability property this class exists to keep.
@@ -211,6 +221,7 @@ export class AnnotationUndoManager {
   redo(): void {
     const diff = this.redos.pop();
     if (diff === undefined) return;
+    this.mark("redo");
     this.applyDiff(diff);
     this.pushUndo({ type: "diff", diff });
   }
@@ -320,6 +331,14 @@ export class AnnotationUndoManager {
   private headOf(logicalId: LogicalId): AnnotationRecord | undefined {
     const heads = this.session.conflictHeads(logicalId);
     return heads.length === 1 ? heads[0] : undefined;
+  }
+
+  /** Authoring follows the displayed revision, with the normal O(1) head fast path. */
+  private shownHead(logicalId: LogicalId): AnnotationRecord | undefined {
+    const shown = this.overlay.get(logicalId);
+    if (shown) return shown.present ? shown.record : undefined;
+    const head = this.headOf(logicalId);
+    return head?.deleted ? undefined : head;
   }
 
   private assertNotApplying(what: string): void {

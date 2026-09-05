@@ -7,7 +7,7 @@ scope:
   - "docs/adr/**"
   - "docs/decisions/**"
   - "docs/guide/**"
-updated: 2026-08-08
+updated: 2026-09-05
 ---
 # product
 > *what is Archie and why is it shaped this way?*
@@ -70,3 +70,5 @@ cycle reverts. Architecture changes additionally require a same-commit ADR or de
   glossary and doesn't contain it — §6 itself is the real source.)
 - GOAL.md §4a: after 3 consecutive dry `/goal` cycles the run stops and defers to seeds — a
   report of "no improvement found" is the loop working as designed, not a failure to diagnose
+
+- Review 2026-09-05 → Delivery capabilities and a first-use protocol are documented; scholar/curator cohort remains a hypothesis until observed sessions. Evidence: `ledgers/IMPLEMENT-review-2026-09-05.md`; contracts: `ledgers/DESIGN-review-modules-2026-09-05.md`.

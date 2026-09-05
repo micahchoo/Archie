@@ -2,6 +2,7 @@
 // Serves: unit tests (the persistence round-trip oracle) and the Playground working store
 // (ephemeral OPFS-equivalent — UX-Q1). Donor pattern: anvil storage/backends/test.ts.
 
+import { bufferedWritable } from "./buffered-writable.js";
 import type { Filesystem, FsDirectory, FsFile, FsWritable } from "./seam.js";
 
 class MemFile implements FsFile {
@@ -14,17 +15,7 @@ class MemFile implements FsFile {
     return copy.buffer;
   }
   async writable(): Promise<FsWritable> {
-    let buf = new Uint8Array(0);
-    return {
-      write: async (data) => {
-        if (typeof data === "string") buf = new TextEncoder().encode(data);
-        else if (data instanceof ArrayBuffer) buf = new Uint8Array(data);
-        else buf = new Uint8Array(await data.arrayBuffer());
-      },
-      close: async () => {
-        this.bytes = buf;
-      },
-    };
+    return bufferedWritable((bytes) => { this.bytes = bytes; });
   }
   async getFile(): Promise<File> {
     return new File([this.bytes.slice()], this.name);

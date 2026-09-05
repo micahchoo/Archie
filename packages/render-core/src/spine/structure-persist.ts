@@ -9,28 +9,13 @@
 // Crash-consistency (rule render-core-data-integrity #1): content pages FIRST, index LAST. The
 // index is what the read discovers pages through, so a torn write (crash/quota between files)
 // leaves either "no committed index" (reads as EMPTY — stale, safe) or a stale index the next
-// full write overwrites — never a state that reads as complete-but-wrong.
+// full write overwrites. In-place page replacement does not provide snapshot isolation.
 
-import { toStructureHistory, sectionRecordsFromPage, logFromPageRecords, type StructureSerializeOptions } from "./structure-serialize.js";
-import type { SectionLog, SectionRecord } from "./structure.js";
+import { toStructureHistory, sectionRecordsFromPage, type StructureSerializeOptions } from "./structure-serialize.js";
+import type { SectionLog } from "./structure.js";
 import type { ExhibitId } from "../wadm/brand.js";
-import { isNotFound, type FsDirectory } from "../fs/seam.js";
-
-const HISTORY_DIR = "history";
-const INDEX_FILE = "index.json";
-
-// Tiny JSON helpers, duplicated from persist.ts (private there; keeping that module untouched).
-async function writeJson(dir: FsDirectory, name: string, data: unknown): Promise<void> {
- const file = await dir.getFile(name, { create: true });
- const w = await file.writable();
- await w.write(JSON.stringify(data, null, 2));
- await w.close();
-}
-
-async function readJson<T>(dir: FsDirectory, name: string): Promise<T> {
- const file = await dir.getFile(name);
- return JSON.parse(new TextDecoder().decode(await file.readable())) as T;
-}
+import type { FsDirectory } from "../fs/seam.js";
+import { readHistoryRecords, writeHistoryPages } from "./page-store.js";
 
 /**
  * Write the structure log into `structDir` (the exhibit's structure directory): one history page
@@ -39,12 +24,7 @@ async function readJson<T>(dir: FsDirectory, name: string): Promise<T> {
  * index is the COMMIT POINT, written last, so it never names a page that isn't on disk yet.
  */
 export async function writeStructure(structDir: FsDirectory, log: SectionLog, opts: StructureSerializeOptions = {}): Promise<void> {
- const { index, pages } = toStructureHistory(log, opts);
- const histDir = await structDir.getDirectory(HISTORY_DIR, { create: true });
- await Promise.all(Object.entries(pages).map(([localId, page]) => writeJson(histDir, `${localId}.json`, page)));
- // COMMIT POINT: index LAST. An interrupted write rolls back to "no committed index" (= empty,
- // safe) instead of "index -> missing page" (= reported corrupt), never "complete".
- await writeJson(histDir, INDEX_FILE, index);
+ await writeHistoryPages(structDir, toStructureHistory(log, opts));
 }
 
 /** A history page the index referenced but that could not be read (missing file / unparseable or
@@ -91,40 +71,11 @@ export class StructureCorruptError extends Error {
  * where the pages live, not from the pages themselves.
  */
 export async function readStructureReport(structDir: FsDirectory, exhibitId: ExhibitId): Promise<StructureReadResult> {
- let histDir: FsDirectory;
- try {
-  histDir = await structDir.getDirectory(HISTORY_DIR);
- } catch {
-  return { log: [], corrupt: [] }; // nothing persisted yet
- }
- let index: Record<string, string>;
- try {
-  index = await readJson<Record<string, string>>(histDir, INDEX_FILE);
- } catch (e) {
-  if (isNotFound(e)) {
-   // No committed index (absent). With pages-first / index-last ordering, an absent index
-   // means the write never committed → the store is EMPTY, not corrupt.
-   return { log: [], corrupt: [] };
-  }
-  // The index file EXISTS but is unreadable/unparseable → corrupt (rule #2: corrupt ≠ empty).
-  throw new StructureCorruptError(
-   [{ localId: INDEX_FILE, url: INDEX_FILE, reason: e instanceof Error ? e.message : String(e) }],
-   `structure index.json is corrupt`,
-  );
- }
- const corrupt: CorruptStructurePage[] = [];
- const results = await Promise.all(
-  Object.entries(index).map(async ([localId, url]): Promise<readonly SectionRecord[] | null> => {
-   try {
-    return sectionRecordsFromPage(await readJson<unknown>(histDir, `${localId}.json`), exhibitId);
-   } catch (e) {
-    corrupt.push({ localId, url, reason: e instanceof Error ? e.message : String(e) });
-    return null;
-   }
-  }),
+ const { log, corrupt } = await readHistoryRecords(structDir,
+  (page) => sectionRecordsFromPage(page, exhibitId),
+  ({ id, url, reason }) => new StructureCorruptError([{ localId: id, url, reason }], "structure index.json"),
  );
- const pages = results.filter((p): p is readonly SectionRecord[] => p !== null);
- return { log: logFromPageRecords(pages), corrupt };
+ return { log, corrupt: corrupt.map(({ id, url, reason }) => ({ localId: id, url, reason })) };
 }
 
 /**

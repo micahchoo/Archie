@@ -159,6 +159,19 @@ describe("deployToPages — orchestration", () => {
     expect(result).toEqual({ url: "https://alice.github.io/my-exhibit/", commitSha: "deadbeef", manualPagesNeeded: true });
   });
 
+  it.each(["lookup", "creation"])("a Pages %s transport failure retains the successful push and destination", async (phase) => {
+    const fetcher = vi.fn().mockResolvedValueOnce({ status: 201, ok: true, json: async () => ({}) });
+    if (phase === "creation") fetcher.mockResolvedValueOnce({ status: 404, ok: false });
+    fetcher.mockRejectedValue(new TypeError("network unavailable"));
+    vi.stubGlobal("fetch", fetcher);
+    const flows = await makeFlows();
+    const result = await flows.deployToPages(session, target, () => {});
+    expect(result).toEqual({ url: "https://alice.github.io/my-exhibit/", commitSha: "deadbeef", manualPagesNeeded: true });
+    expect(invoke).toHaveBeenCalledOnce();
+    const { rememberedTarget } = await import("./deploy-flows.svelte.js");
+    expect(rememberedTarget("lib-1")).toMatchObject({ target, url: "https://alice.github.io/my-exhibit/" });
+  });
+
   it("cleans up the temp dir on success", async () => {
     stubFetch([repoCreated, ...pagesFresh]);
     const flows = await makeFlows();

@@ -639,10 +639,8 @@ test.describe("Archie-4524 · the reading legend the AV surface did not have", (
     await openAudioObject(page);
     await expect(legend(page)).toBeVisible();
 
-    // By name, in order. `voynichReadings` (fixtures/voynich.ts:254-258) is cipher · hoax · abjad, and
-    // the base radio leads. Renaming a reading without updating this reddens it, which is the point:
-    // the names are what prove the registry reached the control rather than a hard-coded stub.
-    //
+    // The object-scoped legend omits empty readings (July 29 amendment).
+    // The base and Natural-language layers are the only ones with notes on this recording.
     // The base count is 5 and the transcript is 4 lines, which is not a discrepancy: `readingCount`
     // counts NOTES on the recording and the spine renders the TIME-RANGED ones, and o12 also carries a
     // whole-track note (the band above the transcript — `the whole-track note opens too` drives it).
@@ -650,8 +648,6 @@ test.describe("Archie-4524 · the reading legend the AV surface did not have", (
     // doing its job.
     await expect(legend(page).locator("[role='radio']")).toHaveText([
       "General notes5",
-      "Cipher reading0",
-      "Hoax reading0",
       "Natural-language reading1",
     ]);
     // Base-only on arrival (ADR-0007 / Q16 — no camp privileged).
@@ -661,6 +657,7 @@ test.describe("Archie-4524 · the reading legend the AV surface did not have", (
   test("the abjad layer adds its line to the transcript, in its own colour", async ({ page }) => {
     await openAudioObject(page); // asserts 4 cues — the base state
     await legend(page).locator("[role='radio']", { hasText: "Natural-language reading" }).click();
+    await page.getByRole("button", { name: "Enter reading →", exact: true }).click();
 
     // THE LOAD-BEARING ASSERTION. The reading-bearing AV note was in the published tree and structurally
     // unreachable before this control existed; this is the first thing that can see it.

@@ -1,0 +1,11 @@
+import { MemoryFilesystem } from '/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/render-core/src/fs/memory.ts';
+import { AnnotationSession } from '/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/render-core/src/session/session.ts';
+import { publishLibrary, loadLibrary } from '/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/render-core/src/publish/site.ts';
+import { validateArchieMarker } from '/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/render-core/src/publish/marker.ts';
+import { readAnnotationsReport } from '/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/render-core/src/spine/persist.ts';
+const fs=new MemoryFilesystem();const s=new AnnotationSession('alice' as any);const a=s.createNote({target:'https://img/a.jpg',body:{type:'TextualBody',value:'A'}});const b=s.createNote({target:'https://img/a.jpg',body:{type:'TextualBody',value:'B'}});
+const lib:any={id:'lib',title:'Lib',exhibits:[{id:'a',slug:'a',title:'A',objects:[{id:'o1',source:'https://img/a.jpg',label:'A1',width:10,height:10}]}]};
+await publishLibrary(fs,lib,()=>s.entries);
+const root=await fs.root();const ann=await(await root.getDirectory('a')).getDirectory('annotations');const hist=await ann.getDirectory('history');await hist.remove(`${b}.json`);
+await validateArchieMarker(fs);const loaded=await loadLibrary(fs);console.log(JSON.stringify({probe:'loadLibrary-silent-loss',input:s.entries.length,loaded:loaded.logs.a.length,report:(await readAnnotationsReport(ann)).corrupt}));
+const fs2=new MemoryFilesystem();await publishLibrary(fs2,lib,()=>s.entries);const root2=await fs2.root();const marker=()=>root2.getFile('archie.json').then(f=>f.readable()).then(b=>JSON.parse(new TextDecoder().decode(b)));const before=await marker();s.editNote(a,{body:{type:'TextualBody',value:'updated'}});await publishLibrary(fs2,lib,()=>s.entries);console.log(JSON.stringify({probe:'note-only-generation',before,after:await marker()}));

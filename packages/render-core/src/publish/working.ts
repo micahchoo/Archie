@@ -11,7 +11,7 @@
 //                                                   pre-multi-exhibit location, kept by the writer)
 //   {project}/exhibits/{slug}/annotations/       — every OTHER exhibit's annotations
 //   {project}/exhibits/{slug}/assets/{name}      — imported display masters
-import type { Filesystem, FsDirectory } from "../fs/seam.js";
+import { isNotFound, type Filesystem, type FsDirectory } from "../fs/seam.js";
 // The ONE classified absent-vs-failed traversal — getAsset/getThumbnail collapse their hand-rolled walks onto it.
 import { tryResolveFile } from "../fs/resolve.js";
 import type { Library, Section, Reading, RightsFields, MediaType, LayoutType } from "../model/model.js";
@@ -297,7 +297,8 @@ async function readExhibitLog(projectDir: FsDirectory, slug: string, _editor: Cl
     annDir = slug === SAMPLE_SLUG
       ? await projectDir.getDirectory("annotations")
       : await (await (await projectDir.getDirectory("exhibits")).getDirectory(slug)).getDirectory("annotations");
-  } catch {
+  } catch (error) {
+    if (!isNotFound(error)) throw error;
     return []; // no annotations dir for this exhibit — genuinely nothing authored yet
   }
   // corrupt ≠ empty (Issue 19): a torn/unparseable page under a committed index must NOT be swallowed
@@ -322,7 +323,8 @@ export async function loadWorkingLibrary(fs: Filesystem, opts: LoadWorkingOption
     projectDir = await (await fs.root()).getDirectory(project);
     const file = await projectDir.getFile("library.json");
     meta = JSON.parse(new TextDecoder().decode(await file.readable())) as WorkingLibraryMeta;
-  } catch {
+  } catch (error) {
+    if (!isNotFound(error)) throw error;
     return null; // no working store here (first run / different browser / cross-origin)
   }
   const library = workingToLibrary(meta, opts);

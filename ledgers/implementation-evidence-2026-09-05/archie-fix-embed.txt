@@ -1,0 +1,24 @@
+C1–C4 implementation complete.
+
+Changed packages/archie-viewer/src plus authorized read-mount.ts/osd-open.ts and focused cancellation test; added recipes/reader-contracts.mjs and called it at recipes/smoke.mjs startup. Package dist and dist-single freshly built; root dist still needs root-owned sync-dist/final build. No commits, hub or tracker changes. Baseline untouched.
+
+C1: ResourcePolicy owns embedded-only (blob/data) offline permission. Covers and all thumbnail candidates/fallbacks filter before src assignment. Card/sheet media and sanitized note/narrative HTML use the same policy; authored HTML enters an inert template before fetch-capable attrs/CSS are stripped and the fragment joins live DOM. Primary image/AV guards use the same URL predicate, including structured xyz templates. Hosted library fetches receive policy checks and abort signal. Teardown clears image/srcset/poster/media sources, pauses/loads media, and detached error callbacks cannot retry resources. Offline changes apply immediately: abort pending library/OSD requests, destroy/remount current reader under new policy, retaining exhibit/object/Reading/section while resetting playback/camera and closing note/sheet. No retrospectively undoing requests sent while online. Turning online back on for hosted trees reloads its source so the cancelled fetch context is renewed.
+
+C2: one note ownership scan includes base and Reading-only pages and carries raw selection id, object, Reading, and recovered region. Direct citations and all search hits (including same-object) resolve through it. Reading projection activates the required Reading before mounting either image or AV. AV Reading toggles now remount its projected player too.
+
+C3: initialSelect looks through all annotations independently from optional cue seek. Whole-recording bodies open at current paused playback; timed notes retain clamped seek and explicit-time precedence.
+
+C4: a navigation abort owner invalidates and tears down every destination, including gallery, unknown/missing/removed targets, library changes and disconnect. All async exhibit/content-state/import/mount continuations check ownership; superseded completed surfaces are destroyed. Aside rebuilds have independent sequencing. Optional AbortSignal flows through openObject→createReadOnlyMount→openOsdViewer to destroy/reject pending OSD opens before they can mount later.
+
+Validation:
+- @render/archie-viewer test: 230/230 passing (13 files), including 12 new tests against real publishLibrary→openLibraryFs bytes.
+- @render/archie-viewer typecheck: pass.
+- @render/mount typecheck: pass.
+- Focused @render/mount read-mount + cancellation tests: 22/22 pass.
+- embed bundle:check: pass unchanged baseline: eager 38.9→41.1KB gzip (+2.2, limit +10); total 274.9→282.8 (+7.9, limit +27.5); single 274.5→281.5 (+7, limit +27.5).
+- Real Chromium recipes/reader-contracts.mjs: 6/6 pass against freshly built package dist. Zero intercepted tracker requests in offline covers/thumbs/note bodies/media sheet/narrative; online positive control requests the same hostile resources. Reading direct/search opens decodable WAV paused. Live offline switch blocks later note requests. Held reading-layer and reader imports lose to newer gallery. Pending OSD→offline→audio cannot revive abandoned canvas. The gate is invoked by existing recipes/smoke.mjs CI entry.
+- git diff --check on owned files: pass.
+
+Logs: /tmp/embed-tests.log, /tmp/embed-browser.log, /tmp/embed-bundle-check.log, /tmp/embed-build.log.
+
+Residuals: Root owns full workspace checks, final dist sync and general embed smoke. Browser harness uses intercepted local test resources; it does not contact tracker.test. Exact per-request network cancellation bytes already sent are not asserted; it proves zero prohibited new requests and teardown/ownership after transition. Browser harness requires local bind/browser sandbox escalation in this environment; automatic review approved and run completed.

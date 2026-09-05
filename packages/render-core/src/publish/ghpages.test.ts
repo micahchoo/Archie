@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { collectFiles, buildGitTree, publishToGitHub, pagesUrlFor, ensureRepo, GitHubPublishError, type FileContent } from "./ghpages.js";
+import { collectFiles, buildGitTree, publishToGitHub, pagesUrlFor, ensureRepo, enablePagesFor, GitHubPublishError, type FileContent } from "./ghpages.js";
 import { localBlobShas } from "./push-delta.js";
 import { publishLibrary } from "./site.js";
 import { MemoryFilesystem } from "../fs/memory.js";
@@ -93,7 +93,7 @@ describe("publishToGitHub — network sequence + error mapping (mocked fetch)", 
     { method: "GET", match: "/git/ref/heads/", status: 404 }, // fresh branch
     { method: "POST", match: "/git/trees", json: { sha: "tree1" } },
     { method: "POST", match: "/git/commits", json: { sha: "c1", html_url: "https://github.com/alice/exhibit/commit/c1" } },
-    { method: "POST", match: "/git/refs/heads/", json: {} },
+    { method: "POST", match: "/git/refs", json: {} },
   ];
 
   it("uploads blobs, creates tree/commit/ref, enables Pages, returns commit + pages URL", async () => {
@@ -102,6 +102,9 @@ describe("publishToGitHub — network sequence + error mapping (mocked fetch)", 
     expect(res.commitUrl).toBe("https://github.com/alice/exhibit/commit/c1");
     expect(res.pagesUrl).toBe("https://alice.github.io/exhibit/");
     expect(res.pagesEnabled).toBe(true);
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith("https://api.github.com/repos/alice/exhibit/git/refs", expect.objectContaining({
+      method: "POST", body: JSON.stringify({ ref: "refs/heads/gh-pages", sha: "c1" }),
+    }));
   });
 
   it("a bad token (401) on tree creation rejects with an actionable cause, not undefined.sha", async () => {
@@ -309,7 +312,7 @@ describe("publishToGitHub — incremental push: upload only what GitHub can't al
       { method: "GET", match: "/git/ref/heads/", status: 404 },
       { method: "POST", match: "/git/trees", json: { sha: "tree1" } },
       { method: "POST", match: "/git/commits", json: { sha: "c1", html_url: "https://github.com/alice/exhibit/commit/c1" } },
-      { method: "POST", match: "/git/refs/heads/", json: {} },
+      { method: "POST", match: "/git/refs", json: {} },
       { method: "GET", match: "/pages", json: { source: { branch: "gh-pages" } } },
     ]);
     await publishToGitHub({ ...files }, target);
@@ -355,5 +358,23 @@ describe("ensureRepo — create the target repo (creation only, never mutate an 
   it("any other status (403 no repo scope) throws a mapped GitHubPublishError", async () => {
     stub([{ method: "POST", match: "/user/repos", status: 403, json: { message: "Forbidden" } }]);
     await expect(ensureRepo("alice", "my-exhibit", "github_pat_x")).rejects.toBeInstanceOf(GitHubPublishError);
+  });
+});
+
+describe("enablePagesFor — failures after a successful push remain manual setup results", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it.each(["lookup", "creation", "response"])("does not throw on a %s failure", async (phase) => {
+    const fetcher = vi.fn();
+    if (phase === "creation") fetcher.mockResolvedValueOnce(new Response(null, { status: 404 }));
+    if (phase === "response") fetcher.mockResolvedValueOnce(new Response("{broken", { status: 200 }));
+    fetcher.mockRejectedValue(new TypeError("network unavailable"));
+    vi.stubGlobal("fetch", fetcher);
+    await expect(enablePagesFor("alice", "exhibit", "token")).resolves.toBe(false);
+  });
+  it("does not create Pages after an inaccessible configuration lookup", async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(null, { status: 403 }));
+    vi.stubGlobal("fetch", fetcher);
+    await expect(enablePagesFor("alice", "exhibit", "token")).resolves.toBe(false);
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 });

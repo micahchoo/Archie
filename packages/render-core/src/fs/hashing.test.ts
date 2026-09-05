@@ -109,6 +109,21 @@ describe("HashingFilesystem — records what is written, passes everything else 
     expect(h.written()[0]!.sha256).toBe(nodeSha256(new TextEncoder().encode("two")));
   });
 
+  it("mixed chunks produce the same stored bytes and fixity digest", async () => {
+    const fs = new HashingFilesystem(new MemoryFilesystem());
+    const file = await (await fs.root()).getFile("mixed.bin", { create: true });
+    const writer = await file.writable();
+    const input = new Uint8Array([0, 255]);
+    await writer.write("start");
+    await writer.write(input.buffer);
+    input.fill(9);
+    await writer.write(new Blob(["end"]));
+    await writer.close();
+    const expected = new Uint8Array(await new Blob(["start", new Uint8Array([0, 255]), "end"]).arrayBuffer());
+    expect(new Uint8Array(await file.readable())).toEqual(expected);
+    expect(fs.written()).toEqual([{ path: "mixed.bin", bytes: expected.length, sha256: nodeSha256(expected) }]);
+  });
+
   it("removing a directory drops every record beneath it, and reports the prefix", async () => {
     const h = new HashingFilesystem(new MemoryFilesystem());
     await write(h, "keep/a.txt", "a");

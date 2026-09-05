@@ -12,7 +12,8 @@ import { SCHEMA_VERSION } from "../migrate/migrate.js";
 import { treeMigrationsSince } from "../migrate/tree.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { ZipFilesystem } from "../fs/zip.js";
-import { asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
+import { appendNew, appendEdit } from "../spine/log.js";
+import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import type { Library } from "../model/model.js";
 
 // ADR-0020: every published `.archie.zip` carries a root `archie.json` self-ID marker so the
@@ -65,6 +66,22 @@ describe("ADR-0020 L1 self-ID marker — write side (publishLibrary)", () => {
     const g3 = ((await readJson(fs3, "archie.json")) as { generation: string }).generation;
     expect(g3).not.toBe(g1); // content changed (a new exhibit) → generation changed
   });
+  it("note-only edits change the default generation without a timestamp; identical republishes stay stable", async () => {
+    const editor = asClientId("generation-test");
+    const initial = appendNew([], { target: "https://img/a.jpg", body: { type: "TextualBody", value: "original" }, lastEditor: editor });
+    const edited = appendEdit(initial.log, initial.record.logicalId, { body: { type: "TextualBody", value: "revised" }, lastEditor: editor });
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, library, () => initial.log);
+    const first = await readJson(fs, "archie.json");
+    await publishLibrary(fs, library, () => edited.log);
+    const second = await readJson(fs, "archie.json");
+    expect(second).not.toEqual(first);
+    await publishLibrary(fs, library, () => edited.log);
+    expect(await readJson(fs, "archie.json")).toEqual(second);
+    await publishLibrary(fs, library, () => edited.log, { generation: "explicit" });
+    expect(await readJson(fs, "archie.json")).toMatchObject({ generation: "explicit" });
+  });
+
 });
 
 // LENIENT-ON-ABSENT rule (mirrors the hosted-tree path): a PRESENT marker is validated (format +

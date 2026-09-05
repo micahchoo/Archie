@@ -54,7 +54,7 @@ export interface ReadingLayer {
   /** Point the projection at an object WITHIN this exhibit (object stepping / grid round-trips) —
    *  the active reading persists (the header's persist rule). Runs before any surface mounts, so a
    *  style resolver can never see the previous object's colour map (the V56 hazard). */
-  setObject(objectId: string): void;
+  setObject(objectId: string, readingId?: string): void;
   /** The notes ON the canvas for the open object under the active reading: base + the overlay
    *  (reader-chrome annotationsFor). The list, the legend counts and the marks all read this one
    *  projection, so the index can never disagree with the canvas. */
@@ -84,8 +84,9 @@ export function createReadingLayer(opts: ReadingLayerOptions): ReadingLayer {
   let colourById: Record<string, string> = {};
 
   return {
-    setObject(id: string): void {
+    setObject(id: string, readingId?: string): void {
       objectId = id;
+      if (readingId !== undefined) activeReading = readingId;
       colourById = readingColourById(opts.exhibit, id);
     },
     notes(): W3CAnnotation[] {

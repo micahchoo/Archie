@@ -6,7 +6,7 @@ scope:
   - "packages/render-core/src/model/**"
   - "packages/render-core/src/session/**"
   - "packages/render-core/src/state/**"
-updated: 2026-08-08
+updated: 2026-09-05
 ---
 # data
 > *How is knowledge stored, merged, and kept safe?*
@@ -94,3 +94,5 @@ gate that matters is that suite plus `fs/conformance.ts` run against every backe
   two gate shapes over the one shared `classifyArchieMarker`.
 - Zip-open cap rescale is an accepted DoS tradeoff: a crafted `?src=` URL can now cost a tab ~4GiB
   before any guard fires (marker/ratio guards unchanged, only the ceiling moved).
+
+- Review 2026-09-05 → Save snapshots retain concurrent dirt; shared history reads distinguish corruption from absence; writable Adapters append mixed chunks consistently. Evidence: `ledgers/IMPLEMENT-review-2026-09-05.md`; contracts: `ledgers/DESIGN-review-modules-2026-09-05.md`.

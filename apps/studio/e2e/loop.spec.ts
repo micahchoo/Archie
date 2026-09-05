@@ -83,21 +83,10 @@ const marker = (page: Page) => ({
 const hashOf = (page: Page) => page.evaluate(() => location.hash);
 const goHash = (page: Page, h: string) => page.evaluate((x) => { location.hash = x; }, h);
 
-// Boot with a CLEAN slate: wipe OPFS + localStorage so the forked-copy slug is deterministic across
-// repeats (`--repeat-each`), then reload so the app re-seeds fresh. The init script (set below, per
-// test) re-applies the pre-seeded identity + picker removal on every navigation.
+// Playwright creates a fresh browser context for each test and repetition, including empty OPFS.
+// Deleting that OPFS after App mounts races its initial metadata save and can invalidate a writer.
 async function bootClean(page: Page) {
   await page.goto("/studio/");
-  await expect(marker(page).libraryCard.first()).toBeVisible();
-  await page.evaluate(async () => {
-    try {
-      const root = await navigator.storage.getDirectory();
-      // @ts-expect-error keys() is present on the OPFS dir handle at runtime.
-      for await (const name of root.keys()) await root.removeEntry(name, { recursive: true });
-    } catch { /* no OPFS / already empty — fine */ }
-    localStorage.clear();
-  });
-  await page.reload();
   await expect(marker(page).libraryCard.first()).toBeVisible();
 }
 

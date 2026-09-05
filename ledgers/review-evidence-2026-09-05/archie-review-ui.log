@@ -1,0 +1,109 @@
+create Archie
+STUDIO
+
+LIBRARY · 6 EXHIBITS
+
+Library
+Saved
+✎ DETAILS
+?
+
+An exhibit is a collection of annotated media — images, audio, video, or maps you mark up with notes. Create one any time; your work is kept automatically as you go.
+
+New exhibit
+×
++
+Start empty
+Begin with a blank exhibit and add media as you go.
+⌸
+From a media folder
+Point at a folder of images, audio, or video — each file becomes an object, in folder order.
+⇲
+From a IIIF link
+Paste a IIIF link (from a library or museum site) and Archie fetches its pages for you.
+
+Living in this browser
+·
+Open a library…
+
+EXHIBITS
+ALL IMAGES
+⌕
++
+New exhibit
+EXAMPLES (6)
+▴
+
+Explore how exhibits work — edits here aren't kept unless you keep a copy.
+
+EXAMPLE
+The Rosettes
+1 MEDIA ITEM · /VOYNICH-ROSETTES
+Explore freely — changes aren't kept. Keep a copy to make it yours.
+✎
+EXAMPLE
+The Whole Manuscript
+12 MEDIA ITEMS · /VOYNICH
+Explore freely — changes aren't kept. Keep a copy to make it yours.
+✎
+EXAMPLE
+Reading the Unreadable
+12 MEDIA ITEMS · /VOYNICH-READING
+Explore freely — changes aren't kept. Keep a copy to make it yours.
+✎
+EXAMPLE
+Where Languages Go Silent
+8 MEDIA ITEMS · /LANGUAGE-ATLAS
+Explore freely — changes aren't kept. Keep a copy to make it yours.
+✎
+EXAMPLE
+World map (geo-annotation prototype)
+1 MEDIA ITEM · /GEO-MAP
+Explore freely — changes aren't kept. Keep a copy to make it yours.
+✎
+EXAMPLE
+Showroom Sampler
+3 MEDIA ITEMS · /SAMPLER
+Explore freely — changes aren't kept. Keep a copy to make it yours.
+✎
+21 KB stored on this device
+sampler ← EXHIBITS
+
+EXHIBIT · 3 MEDIA ITEMS · READING ORDER
+
+Showroom Sampler
+
+A WALL OF MEDIA TO BROWSE
+
+Saved
+✎ DETAILS
+GRID
+LIST
+⌕
+SORT
+Reading order
+Name
+Recently annotated
+COMFORTABLE
+COMPACT
+＋ ADD MEDIA
+IMPORT METADATA…
+SELECT
+
+EXHIBIT NARRATIVE
+
+Guide visitors through the media with your writing.
+
+＋ Start the narrative
+
+Drag a media item to set the reading order.
+
++
+Add media
+
+Click a media item to open and add notes
+
+21 KB stored on this device
+axe-studio [{"id":"color-contrast","impact":"serious","nodes":[{"target":[".back"],"summary":"Fix any of the following:\n  Element has insufficient color contrast of 3.85 (foreground color: #708573, background color: #fdfcf5, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"},{"target":[".intent"],"summary":"Fix any of the following:\n  Element has insufficient color contrast of 2.45 (foreground color: #94a192, background color: #f7f4ec, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"},{"target":[".safety-state"],"summary":"Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #6e826f, background color: #f7f4ec, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"},{"target":[".chip"],"summary":"Fix any of the following:\n  Element has insufficient color contrast of 3.85 (foreground color: #708573, background color: #fdfcf5, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"},{"target":["button[title=\"Plain list\"]"],"summary":"Fix any of the following:\n  Element has insufficient color contrast of 2.45 (foreground color: #94a192, background color: #f7f4ec, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"},{"target":[".tb-lbl"],"summary":"Fix any of the following:\n  Element has insufficient color contrast of 2.45 (foreground color: #94a192, background color: #f7f4ec, font size: 8.4pt (11.2px), font weight: normal). Expected contrast ratio of 4.5:1"},{"target":["button[type=\"button\"]:nth-child(2)"],"summary":"Fix any of the following:\n  Element has insufficient color contrast of 2.45 (foreground color: #94a192, background color: #f7f4ec, font size: 8.4pt (11.2px), font weight: normal). Expected contrast ratio of 4.5:1"},{"target":["button[title=\"Add media to this exhibit\"]"],"summary":"Fix any of the following:\n  Element has insufficient color contrast of 3.85 (foreground color: #708573, background color: #fdfcf5, font size: 9.8pt (13px), font weight: normal). Expected contrast ratio of 4.5:1"}],"count":19}]
+axe-viewer-mobile [{"id":"color-contrast","impact":"serious","nodes":[{"target":[".text-link"],"summary":"Fix any of the following:\n  Element has insufficient color contrast of 3.62 (foreground color: #9a7b39, background color: #f7f4ec, font size: 8.4pt (11.2px), font weight: normal). Expected contrast ratio of 4.5:1"},{"target":["button[type=\"button\"]:nth-child(2)"],"summary":"Fix any of the following:\n  Element has insufficient color contrast of 3.85 (foreground color: #708573, background color: #fdfcf5, font size: 8.4pt (11.2px), font weight: normal). Expected contrast ratio of 4.5:1"},{"target":["a[href$=\"#/screenshots\"] > .caption > .desc"],"summary":"Fix any of the following:\n  Element has insufficient color contrast of 3.85 (foreground color: #708573, background color: #fdfcf5, font size: 12.8pt (17px), font weight: normal). Expected contrast ratio of 4.5:1"},{"target":["a[href$=\"#/voynich-rosettes\"] > .caption > .desc"],"summary":"Fix any of the following:\n  Element has insufficient color contrast of 3.85 (foreground color: #708573, background color: #fdfcf5, font size: 12.8pt (17px), font weight: normal). Expected contrast ratio of 4.5:1"},{"target":["a[href$=\"#/voynich\"] > .caption > .desc"],"summary":"Fix any of the following:\n  Element has insufficient color contrast of 3.85 (foreground color: #708573, background color: #fdfcf5, font size: 12.8pt (17px), font weight: normal). Expected contrast ratio of 4.5:1"},{"target":["a[href$=\"#/voynich-reading\"] > .caption > .desc"],"summary":"Fix any of the following:\n  Element has insufficient color contrast of 3.85 (foreground color: #708573, background color: #fdfcf5, font size: 12.8pt (17px), font weight: normal). Expected contrast ratio of 4.5:1"},{"target":["a[href$=\"#/language-atlas\"] > .caption > .desc"],"summary":"Fix any of the following:\n  Element has insufficient color contrast of 3.85 (foreground color: #708573, background color: #fdfcf5, font size: 12.8pt (17px), font weight: normal). Expected contrast ratio of 4.5:1"},{"target":["a[href$=\"#/geo-map\"] > .caption > .desc"],"summary":"Fix any of the following:\n  Element has insufficient color contrast of 3.85 (foreground color: #708573, background color: #fdfcf5, font size: 12.8pt (17px), font weight: normal). Expected contrast ratio of 4.5:1"}],"count":8}]
+mobile-layout { scrollWidth: 390, innerWidth: 390 } pageerrors []

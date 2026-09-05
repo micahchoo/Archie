@@ -470,6 +470,7 @@
           {readOnly}
           saveHealth={saveStatus.health}
           bindingKind={binding.kind}
+          destination={bindingLocationLabel(binding, isTauri())}
           {bindingDirty}
           {bindingBusy}
           {bindingError}

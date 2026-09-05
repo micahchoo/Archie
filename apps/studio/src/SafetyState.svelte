@@ -17,6 +17,7 @@
   import { computeSafetyState } from "./safety-state.svelte.js";
   import type { Binding } from "@render/core";
   import type { SaveHealth } from "./save-queue.svelte.js";
+  import { isTauri } from "./tauri-fs.js";
 
   let {
     readOnly = false,
@@ -27,6 +28,8 @@
     bindingBusy,
     bindingError,
     hasRealWork,
+    destination,
+    example = false,
     onflush,
   }: {
     /** Writer-lock stage — true when another tab holds the writer lock so this tab's writes are refused
@@ -46,6 +49,10 @@
     bindingError: string | null;
     /** Mirror stage (unbound only) — see `hasRealWorkIn` in safety-state.svelte.ts. */
     hasRealWork: boolean;
+    /** The same location phrase the library uses, including a bound folder or file's name. */
+    destination?: string;
+    /** The current exhibit is a playground example whose edits are not retained. */
+    example?: boolean;
     /** The one save act: flush a stale file binding, bind an unbound library to disk, or retry a
      *  failure — binding-store.svelte.ts `saveProject`. The SAME handler ⌘S invokes. */
     onflush: () => void;
@@ -58,6 +65,9 @@
   // Action-needed has two causes with different copy (CONTEXT.md — "Save" names exactly one act, but the
   // OBJECT differs): a stale `file` binding needs updating; an `unbound` library needs its first bind.
   const actionLabel = $derived(bindingKind === "file" ? "Save (⌘S)" : "Save to disk");
+  const location = $derived(destination ?? (bindingKind === "unbound"
+    ? (isTauri() ? "Archie’s own folder" : "this browser")
+    : `linked ${bindingKind}`));
 
   // ⌘S while clean is a harmless no-op — flash "Saved" so the keystroke visibly did something, without
   // starting any write (CONTEXT.md: "a flush request while clean briefly affirms Saved").
@@ -70,7 +80,7 @@
   }
 
   function act(): void {
-    if (safety === "read-only") return; // this tab doesn't save (UX-CRITIQUE O2) — no flush, no false "Saved" flash
+    if (safety === "read-only" || (example && safety !== "failed")) return;
     if (safety === "saved") flashSaved();
     else if (safety === "failed" || safety === "action-needed") onflush();
     // "saving": nothing to do — the act is already underway.
@@ -92,24 +102,26 @@
        churn. The take-over control AND the explanation stay with the read-only banner; this only tells the
        truth about saving (no hover-only tooltip — no sibling state uses one, and it has no keyboard/SR path). -->
   <span class="safety-state read-only" role="status">Read-only</span>
+{:else if example && safety !== "failed"}
+  <span class="safety-state read-only" role="status">Example · edits aren't kept</span>
 {:else if safety === "saved"}
-  <span class="safety-state saved" class:affirm role="status">Saved</span>
+  <span class="safety-state saved" class:affirm role="status">Saved · {location}</span>
 {:else if safety === "saving"}
-  <span class="safety-state saving" role="status">Saving…</span>
+  <span class="safety-state saving" role="status">Saving… · {location}</span>
 {:else if safety === "failed"}
   <button type="button" class="text-link safety-state failed" onclick={act} title={bindingError ?? undefined}>
-    <span aria-hidden="true">⚠</span> Retry save
+    <span aria-hidden="true">⚠</span> Retry save · {location}
   </button>
 {:else}
   <button type="button" class="text-link safety-state action-needed" onclick={act}>
-    {actionLabel}
+    {actionLabel} · {location}
   </button>
 {/if}
 
 <style>
   .safety-state {
     font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); font-weight: 600;
-    letter-spacing: 0.02em; line-height: 1;
+    letter-spacing: 0.02em; line-height: 1.4;
   }
   span.safety-state { display: inline-block; }
   .safety-state.saved { color: var(--ink-canvas-secondary); font-weight: 400; transition: color 200ms ease; }

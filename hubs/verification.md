@@ -9,7 +9,7 @@ scope:
   - "scripts/export-fidelity.mjs"
   - "scripts/export-fidelity.ts"
   - "scripts/export-fidelity.html"
-updated: 2026-08-08
+updated: 2026-09-05
 ---
 # verification
 > *how do I prove a change works?*
@@ -74,3 +74,5 @@ claim from the table below before reaching for a test framework at random.
 - doclint wired into CI 2026-07-27 (job `doclint`). All 12 checks proven red-green same day; the allowlist (scripts/doclint-allow.json) carried ticket ids for its deliberate deferrals; both (Archie-e149 ledger migration, Archie-1f60 accretion rewrite) resolved later the same day and their allowlist entries are empty again.
 - Red-green discipline: inject the defect, confirm it fails for the reason you intended (not a precondition failure), then confirm clean — never trust an assertion you haven't watched fail.
 - Before citing a count or "N/N" figure from any of the above gates, reconcile it against a number the tool itself printed — see [[post-review-fixes-are-unreviewed]]'s counting traps.
+
+- Review 2026-09-05 → Review regressions cover corrupt adoption, racing saves, undo, source identity, contrast and built embed navigation; final counts and limits are in the implementation ledger. Evidence: `ledgers/IMPLEMENT-review-2026-09-05.md`; contracts: `ledgers/DESIGN-review-modules-2026-09-05.md`.

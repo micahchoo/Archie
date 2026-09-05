@@ -85,7 +85,7 @@ class FakeDirHandle {
 
   // FileSystemDirectoryHandle is async-iterable of [name, handle] — FsaDir enumerates it.
   async *[Symbol.asyncIterator](): AsyncGenerator<readonly [string, FakeDirHandle | FakeFileHandle]> {
-    for await (const { name, kind } of await dirAt(this.mem, this.parts)) {
+    for await (const { name, kind } of (await dirAt(this.mem, this.parts)).entries()) {
       yield kind === "directory"
         ? [name, new FakeDirHandle(name, this.mem, [...this.parts, name])] as const
         : [name, new FakeFileHandle(name, this.mem, this.parts)] as const;

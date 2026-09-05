@@ -1,0 +1,22 @@
+reading-only note target: { kind: 'exhibit', degraded: 'note-not-found' }
+search finds hidden reading note: [
+  {
+    id: 'https://lib.test/e/annotations/n1/v1',
+    objectId: 'o1',
+    objectLabel: 'Audio',
+    preview: 'Reading exclusive zebra'
+  }
+]
+but current surface has IDs: []
+section target: { kind: 'object', objectId: 'o1' }
+offline gallery remote images: [ 'https://tracker.test/pixel.png' ]
+note card remote images (no offline option available): [ 'https://tracker.test/note.png' ]
+uncued initialSelect card hidden: true
+real fixture reading-only note: {
+  object: 'ex-voynich.o1',
+  reading: 'cipher',
+  id: 'https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000C5M05B5H33KBKENTM/v1',
+  logicalId: '000000000C5M05B5H33KBKENTM',
+  resolution: { kind: 'exhibit', degraded: 'note-not-found' }
+}
+latest gallery target race: { target: '#/', renderedReader: true, renderedTitle: 'Audio' }

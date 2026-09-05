@@ -164,12 +164,9 @@ class HashingFile implements FsFile {
     const chunks: Uint8Array<ArrayBuffer>[] = [];
     return {
       write: async (data) => {
-        // Chunks are CONCATENATED (append), matching ZipStreamFilesystem and the FSA writable
-        // stream. MemoryFilesystem/ZipFilesystem instead treat each write as a replace — the seam
-        // has never pinned multi-write semantics because every caller writes exactly once. If that
-        // ever stops being true the backends disagree with each other before they disagree with us.
+        // Hash the same ordered chunk sequence the writable seam commits.
         if (typeof data === "string") chunks.push(new TextEncoder().encode(data));
-        else if (data instanceof ArrayBuffer) chunks.push(new Uint8Array(data));
+        else if (data instanceof ArrayBuffer) chunks.push(new Uint8Array(data.slice(0)));
         else if (ArrayBuffer.isView(data)) {
           // Archie-7f6d — an ArrayBufferView (Uint8Array, DataView, any subarray view) is not one of
           // the seam's declared write types (string|ArrayBuffer|Blob), so it used to fall through to

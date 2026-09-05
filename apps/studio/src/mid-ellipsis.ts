@@ -3,6 +3,12 @@
 // exactly the informative part. CSS can't middle-truncate, hence this pure helper. Kept
 // framework-free (cf. reorder-state.ts) so it's headless-testable.
 
+/** Filenames and compact identifiers need their suffix; prose titles need room to wrap.
+ * Imported filenames may contain spaces, so retain the suffix policy for media extensions too. */
+export function isIdentifierTitle(title: string): boolean {
+  return !/\s/u.test(title.trim()) || /\.(?:avif|gif|heic|jpeg|jpg|png|svg|tiff?|webp|mp3|m4a|wav|ogg|flac|mp4|mov|webm|pdf)$/iu.test(title.trim());
+}
+
 /** Truncate `s` to at most `max` display characters by dropping the MIDDLE, keeping both ends.
  *  The tail gets the extra character on odd splits — the suffix is the distinguishing part.
  *  Operates on code points (not UTF-16 units) so surrogate pairs never split. Grapheme CLUSTERS

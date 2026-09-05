@@ -2,7 +2,7 @@
 scope:
   - "packages/archie-viewer/**"
   - "recipes/**"
-updated: 2026-08-08
+updated: 2026-09-05
 ---
 # embed
 > *how does `<archie-viewer>` work and stay small?*
@@ -67,3 +67,5 @@ receiver-brand-checks, or hydration timing, all classes vitest is structurally b
 - CI's `embed-smoke` job is the only gate driving real Chromium against current source
   (hit-testing, fetch brand-checks, completeness); eager-closure is caught separately by
   `archie-viewer-artifact`'s `bundle:check` (esbuild metafile, no browser)
+
+- Review 2026-09-05 → Resource policy covers all media sinks; Reading/untimed AV arrival works; target/policy changes cancel lazy and pending mounts through teardown. Evidence: `ledgers/IMPLEMENT-review-2026-09-05.md`; contracts: `ledgers/DESIGN-review-modules-2026-09-05.md`.

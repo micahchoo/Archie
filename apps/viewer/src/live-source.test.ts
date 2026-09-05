@@ -11,7 +11,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { WORKING_PROJECT } from "@render/core";
 import { fakeOpfsRoot } from "./fake-opfs.js";
-import { initLiveSource, loadGallery } from "./published.js";
+import { initLiveSource, loadGallery, isLiveSlug } from "./published.js";
 
 // Real-looking JPEG magic bytes — a non-zero byte length the blob-URL stub records, so the
 // assertion proves the cover mints over the actual thumbnail bytes, not an empty Blob.
@@ -83,4 +83,18 @@ describe("initLiveSource end to end over a faked OPFS (Archie-cebf)", () => {
     expect(card!.cover, "cover rewritten onto a blob URL").toMatch(/^blob:/);
     expect(created).toEqual([{ url: expect.stringMatching(/^blob:/), size: JPEG.byteLength }]);
   });
+});
+
+it("removes a formerly live exhibit when the working library becomes empty", async () => {
+  let files = WORKING_STORE;
+  vi.stubGlobal("navigator", { storage: { getDirectory: async () => fakeOpfsRoot(files) } });
+  vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 404 })));
+  try {
+    expect(await initLiveSource()).toBe(true);
+    expect(isLiveSlug("mine")).toBe(true);
+    files = {} as typeof WORKING_STORE;
+    expect(await initLiveSource()).toBe(false);
+    expect(isLiveSlug("mine")).toBe(false);
+    await expect(loadGallery()).rejects.toThrow();
+  } finally { vi.unstubAllGlobals(); }
 });

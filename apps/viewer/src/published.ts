@@ -222,12 +222,22 @@ export function isLiveSlug(slug: string): boolean {
  * authored (templates don't count), or a failed read — with one console line either way: the probe
  * outcome must be observable, or "why isn't my exhibit here" is undebuggable (Q-3).
  */
+function clearLiveSource(): void {
+  liveSeq++;
+  liveRevoke?.();
+  liveRevoke = null;
+  revokeLiveAssetUrls();
+  liveFs = null;
+  liveSlugs = new Set();
+}
+
 export async function initLiveSource(): Promise<boolean> {
   try {
     const storage = (navigator as Navigator & { storage?: { getDirectory?: () => Promise<FileSystemDirectoryHandle> } }).storage;
-    if (!storage?.getDirectory) return false; // no OPFS on this browser — published sources only
+    if (!storage?.getDirectory) { clearLiveSource(); return false; } // no OPFS on this browser — published sources only
     const working = await loadWorkingLibrary(new FsaFilesystem(await storage.getDirectory()), { editor: asClientId("viewer-live") });
     if (!working || working.library.exhibits.length === 0) {
+      clearLiveSource();
       console.info("Archie: no local working library here — showing published exhibits only");
       return false;
     }
@@ -246,9 +256,7 @@ export async function initLiveSource(): Promise<boolean> {
     return true;
   } catch (e) {
     console.warn("Archie: live-source probe failed — showing published exhibits only", e);
-    revokeLiveAssetUrls();
-    liveFs = null;
-    liveSlugs = new Set();
+    clearLiveSource();
     return false;
   }
 }

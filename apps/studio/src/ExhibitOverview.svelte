@@ -23,7 +23,7 @@
   import { viewPrefs, overviewDensityMetrics } from "./view-prefs.svelte.js";
   import { hintSeen, markHintSeen } from "./canvas-first-use.js";
   import { isReorderable, reorderBlockedMessage, canCommitSort, commitSortBlockedMessage } from "./reorder-state.js";
-  import { midEllipsis, splitForMidTruncation } from "./mid-ellipsis.js";
+  import { isIdentifierTitle, midEllipsis, splitForMidTruncation } from "./mid-ellipsis.js";
   import type { IngestActivity } from "./ingest-activity.js";
   import Spinner from "./Spinner.svelte";
   import {
@@ -841,7 +841,7 @@
           role="presentation" aria-hidden="true"></div>
         {#each displayObjects as o (o.id)}
           {@const thumb = thumbFor(o)}
-          {@const lbl = splitForMidTruncation(o.label)}
+          {@const lbl = isIdentifierTitle(o.label) ? splitForMidTruncation(o.label) : null}
           <div class="plate-wrap" class:dragging={dragId === o.id} class:selected={selection.has(o.id)}>
             <button class="plate" class:over={overId === o.id} class:sel-on={selectMode}
               data-plate-id={o.id}
@@ -872,7 +872,7 @@
                    Full title stays in the plate's title tooltip above. "0 notes" ×52 is noise — the
                    count renders only when real. -->
               <span class="caption">
-                <span class="lbl">{#if lbl.tail}<span class="lbl-head">{lbl.head}</span><span class="lbl-tail">{lbl.tail}</span>{:else}<span class="lbl-head">{lbl.head}</span>{/if}</span>
+                <span class="lbl" class:authored={!lbl}>{#if lbl}<span class="lbl-head">{lbl.head}</span><span class="lbl-tail">{lbl.tail}</span>{:else}{o.label}{/if}</span>
                 {#if noteCountOf(o.id) > 0}<span class="cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>{/if}
               </span>
             </button>
@@ -963,7 +963,7 @@
               {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
               <span class="li-order">{(orderIndexOf.get(o.id) ?? 0) + 1}</span>
               <span class="li-thumb" class:av={!thumbFor(o) || failed.has(o.id)}>{#if thumbFor(o) && !failed.has(o.id)}<img src={thumbFor(o)} alt="" loading="lazy" decoding="async" draggable="false" onerror={() => markFailed(o.id)} />{:else}<span class="glyph" aria-hidden="true">{typeGlyph(o.mediaType)}</span>{/if}</span>
-              <span class="li-lbl">{midEllipsis(o.label, 40)}</span>
+              <span class="li-lbl" class:authored={!isIdentifierTitle(o.label)}>{isIdentifierTitle(o.label) ? midEllipsis(o.label, 40) : o.label}</span>
               {#if noteCountOf(o.id) > 0}<span class="li-cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>{/if}
             </button>
           </span>
@@ -1155,6 +1155,7 @@
   .caption .lbl { display: flex; min-width: 0; font-family: var(--font-display); font-size: 1.2rem; font-weight: 400; line-height: 1.15; color: var(--ink-canvas-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .caption .lbl .lbl-head { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .caption .lbl .lbl-tail { flex: none; white-space: nowrap; }
+  .caption .lbl.authored, .li-lbl.authored { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; white-space: normal; overflow: hidden; overflow-wrap: anywhere; }
   .caption .cnt { font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); }
   .plate.add { background: transparent; box-shadow: none; border: 1px dashed var(--border-canvas-emphasis); justify-content: center; }
   .plate.add:hover { background: var(--surface-canvas-raised); }

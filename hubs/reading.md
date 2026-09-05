@@ -5,7 +5,7 @@ scope:
   - "apps/viewer/src/lib/**"
   - "apps/viewer/e2e/**"
   - "apps/viewer/astro.config.mjs"
-updated: 2026-08-08
+updated: 2026-09-05
 ---
 # reading
 > *how do readers experience things? (the Viewer app)*
@@ -85,3 +85,5 @@ Chromium — jsdom/vitest cannot hit-test or catch hydration timing.
   (CI `perf-ratchets`) — the ledger's "no ratchet yet" line predates the fix by 12 minutes
 - `ExhibitView.svelte` is the shared mount point across slices (AV surface / finder both touch it) —
   append-only at mount sites, new props optional-with-defaults so merge order doesn't matter
+
+- Review 2026-09-05 → One source-aware address Interface covers links and locus updates; changing source reloads the library session; empty live stores drop stale exhibits. Evidence: `ledgers/IMPLEMENT-review-2026-09-05.md`; contracts: `ledgers/DESIGN-review-modules-2026-09-05.md`.

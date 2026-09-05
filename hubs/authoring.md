@@ -2,7 +2,7 @@
 scope:
   - "apps/studio/src/**"
   - "apps/studio/e2e/**"
-updated: 2026-08-08
+updated: 2026-09-05
 ---
 # authoring
 > *how do authors make things?*
@@ -59,3 +59,5 @@ check`. Neither alone is sufficient — see below.
 - Archie-623e — native folder as canonical desktop store: code (Phases 1-6) is in the tree at authoring's `resident-store.ts`, but unverified end-to-end (blocked on Archie-9ece, the packaged-run verification, also open).
 - Worker-pool fallback is silent by design (`bakeFallbackCount()` is the only witness) — a broken worker path degrades to slow-but-looks-healthy, not to a visible error; don't remove the counter or the CI worker-smoke gate.
 - `apps/studio/e2e/playwright.config.ts` defaults to port 5198 with `reuseExistingServer: !CI`, same shared-port shape as [[viewer-e2e-shared-port]] — `STUDIO_E2E_PORT` exists precisely so concurrent agents don't drive each other's stale build.
+
+- Review 2026-09-05 → UndoWire owns action grouping and edits the visible revision; save status names its destination; sampled contrast and title geometry pass browser checks. Evidence: `ledgers/IMPLEMENT-review-2026-09-05.md`; contracts: `ledgers/DESIGN-review-modules-2026-09-05.md`.

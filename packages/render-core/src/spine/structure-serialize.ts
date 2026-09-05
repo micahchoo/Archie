@@ -228,22 +228,3 @@ export function sectionRecordsFromPage(v: unknown, exhibitId: ExhibitId): Sectio
   }
   return out;
 }
-
-/**
- * Reconstruct the log from per-page record arrays, DEDUPED by rev — the same invariant the
- * annotation `fromHistory` carries (Issue 19c): a doubled write must not put one rev in the log
- * twice, or `linearHead` reads two identical records as PLURAL heads and refuses further edits.
- * Distinct revs sharing (key, version) — a genuine unresolved merge — are preserved.
- */
-export function logFromPageRecords(pages: Iterable<readonly SectionRecord[]>): SectionLog {
-  const seen = new Set<RevId>();
-  const out: SectionRecord[] = [];
-  for (const page of pages) {
-    for (const rec of page) {
-      if (seen.has(rec.rev)) continue;
-      seen.add(rec.rev);
-      out.push(rec);
-    }
-  }
-  return out;
-}

@@ -94,6 +94,8 @@ export interface OpenOsdViewerLike {
 }
 
 export interface OpenOsdOptions {
+  /** Cancel a pending open and destroy its viewer before it can continue loading tiles. */
+  signal?: AbortSignal;
   /** OSD drawer choice. The read-only path forces `"canvas"` (the 2D canvas drawer): each WebGL
    *  drawer holds a scarce WebGL context, and several embeds on one page exhaust the browser's
    *  context cap ("WebGL context lost" on recipes/08). The editor keeps OSD's default WebGL drawer. */
@@ -127,7 +129,12 @@ export async function openOsdViewer(
   tileSource: TileSource,
   opts: OpenOsdOptions = {},
 ): Promise<{ viewer: OpenSeadragon.Viewer; ownedBlobUrl: string | null }> {
+  opts.signal?.throwIfAborted();
   const { tileSources, ownedBlobUrl } = await resolveOsdTileSources(tileSource, opts.nativeFetch);
+  if (opts.signal?.aborted) {
+    if (ownedBlobUrl) URL.revokeObjectURL(ownedBlobUrl);
+    opts.signal.throwIfAborted();
+  }
   const logPrefix = opts.logPrefix ?? "[@render/mount]";
 
   const viewer = OpenSeadragon({
@@ -176,8 +183,12 @@ export async function openOsdViewer(
   // in the DOM yet; that one is the editor mount's, applied post-annotator.)
   applyCanvasA11y(viewer as unknown as A11yViewerLike);
 
+  let cancelOpen: (() => void) | undefined;
   try {
     await new Promise<void>((resolve, reject) => {
+      cancelOpen = () => reject(opts.signal?.reason ?? new DOMException("Open cancelled", "AbortError"));
+      opts.signal?.addEventListener("abort", cancelOpen, { once: true });
+      if (opts.signal?.aborted) { cancelOpen(); return; }
       viewer.addOnceHandler("open", () => {
         if (!opts.onOpen) {
           resolve();
@@ -204,6 +215,8 @@ export async function openOsdViewer(
     if (ownedBlobUrl) URL.revokeObjectURL(ownedBlobUrl);
     viewer.destroy();
     throw e;
+  } finally {
+    if (cancelOpen) opts.signal?.removeEventListener("abort", cancelOpen);
   }
 
   return { viewer, ownedBlobUrl };

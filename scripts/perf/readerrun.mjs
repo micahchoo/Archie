@@ -33,6 +33,8 @@ import { launchBrowser } from "../lib/driver.mjs";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const DIST = path.join(REPO, "apps/viewer/dist");
+// Match the base baked into this build (e.g. READER_BASE=/viewer/ for the front door).
+const SITE_BASE = (process.env.READER_BASE ?? "/").replace(/\/$/, "");
 
 const MIME = {
   ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json",
@@ -43,6 +45,7 @@ const MIME = {
 const server = createServer(async (req, res) => {
   try {
     let rel = decodeURIComponent((req.url ?? "/").split("?")[0]);
+    if (SITE_BASE && (rel === SITE_BASE || rel.startsWith(`${SITE_BASE}/`))) rel = rel.slice(SITE_BASE.length) || "/";
     let file = path.join(DIST, rel);
     // Astro emits directory-style routes; serve index.html for a directory request.
     if ((await stat(file).catch(() => null))?.isDirectory()) file = path.join(file, "index.html");
@@ -56,7 +59,7 @@ const server = createServer(async (req, res) => {
   }
 });
 await new Promise((r) => server.listen(5395, r));
-const BASE = "http://localhost:5395";
+const BASE = `http://localhost:5395${SITE_BASE}`;
 console.log(`• serving apps/viewer/dist at ${BASE}\n`);
 
 const browser = await launchBrowser({ headless: !process.env.HEADED });

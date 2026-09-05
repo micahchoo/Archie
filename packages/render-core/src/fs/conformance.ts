@@ -102,6 +102,30 @@ export function runReadConformance(
 /** Register the conformance describe-block for a backend factory. */
 export function runConformance(name: string, makeFs: () => Filesystem): void {
   describe(`Filesystem conformance: ${name}`, () => {
+    it.each([
+      ["one", "two", "three"],
+      ["α", new Blob(["β"]), new Uint8Array([0, 255]).buffer, "end", new Blob(["!"])],
+      [new Blob(["start"]), "middle", new Uint8Array([1, 2]).buffer, new Blob(["end"])],
+    ])("appends repeated and mixed write chunks in order: %j", async (...parts) => {
+      const root = await makeFs().root();
+      const file = await root.getFile("chunks.bin", { create: true });
+      const writer = await file.writable();
+      for (const part of parts) await writer.write(part);
+      await writer.close();
+      const expected = new Uint8Array(await new Blob(parts).arrayBuffer());
+      expect(new Uint8Array(await file.readable())).toEqual(expected);
+    });
+
+    it("a completed buffer write captures its bytes before the caller mutates the input", async () => {
+      const file = await (await makeFs().root()).getFile("copy.bin", { create: true });
+      const writer = await file.writable();
+      const input = new Uint8Array([1, 2, 3]);
+      await writer.write(input.buffer);
+      input.fill(9);
+      await writer.close();
+      expect(new Uint8Array(await file.readable())).toEqual(new Uint8Array([1, 2, 3]));
+    });
+
     it("round-trips a string write to a readable ArrayBuffer", async () => {
       const root = await (makeFs()).root();
       const w = await (await root.getFile("a.txt", { create: true })).writable();

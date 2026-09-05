@@ -1,0 +1,22 @@
+$ node build.mjs --check
+
+  ...../../../../../tmp/archie-viewer-check-pKCdKE/reader-5OGVXFXO.js  804.2kb
+  .../../../../../../tmp/archie-viewer-check-pKCdKE/chunk-GW5XXYOX.js   78.2kb
+  ..../../../../../../tmp/archie-viewer-check-pKCdKE/archie-viewer.js   30.8kb
+  .../../../../../../tmp/archie-viewer-check-pKCdKE/chunk-LY6PU76L.js   12.3kb
+  .../../../../../../tmp/archie-viewer-check-pKCdKE/chunk-U7M343HA.js   11.4kb
+  ...../../../../tmp/archie-viewer-check-pKCdKE/av-player-5VYN4DN6.js    5.9kb
+  ...../../../../tmp/archie-viewer-check-pKCdKE/narrative-4ZH4QCXW.js    5.2kb
+  .../../../../../../tmp/archie-viewer-check-pKCdKE/chunk-4SLSEVNN.js    1.1kb
+  .../../../../../../tmp/archie-viewer-check-pKCdKE/chunk-HYOANWOM.js    452b
+  ..../../../tmp/archie-viewer-check-pKCdKE/reading-layer-2AI4LZUH.js    354b
+  ..../../../tmp/archie-viewer-check-pKCdKE/reader-chrome-THZWKB5U.js    244b
+
+⚡ Done in 96ms
+
+  ...../tmp/archie-viewer-single-check-4nj8VB/archie-viewer.single.js  955.7kb
+
+⚡ Done in 94ms
+ok   eager (page load)    38.9KB → 41.1KB gz (Δ +2.2KB, allowed +10.0KB)
+ok   total (object open)  274.9KB → 282.8KB gz (Δ +7.9KB, allowed +27.5KB)
+ok   single-file (offline) 274.5KB → 281.5KB gz (Δ +7KB, allowed +27.5KB)

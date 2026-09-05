@@ -454,7 +454,7 @@ class StreamFile implements FsFile {
           chunks.push(strToU8(data));
         } else {
           isText = false;
-          chunks.push(data instanceof ArrayBuffer ? new Uint8Array(data) : new Uint8Array(await data.arrayBuffer()));
+          chunks.push(data instanceof ArrayBuffer ? new Uint8Array(data.slice(0)) : new Uint8Array(await data.arrayBuffer()));
         }
       },
       close: async () => {

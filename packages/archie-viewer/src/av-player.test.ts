@@ -293,7 +293,7 @@ describe("mountAvPlayer — an /a/<noteId> cite to a TIMED note lands on the mom
     expect(h.querySelector('[data-cue="a"]')!.classList.contains("active")).toBe(false);
   });
 
-  it("an initialSelect naming a whole-track (non-timed) note is an ordinary landing — head 0, no card", () => {
+  it("an initialSelect naming a whole-track note opens its body without seeking or playing", () => {
     const h = host();
     mountAvPlayer(h, {
       object: soundObj(),
@@ -306,7 +306,9 @@ describe("mountAvPlayer — an /a/<noteId> cite to a TIMED note lands on the mom
     media.dispatchEvent(new Event("loadedmetadata"));
 
     expect(m.ct()).toBe(0); // no cue to land on — playhead stays at the head, paused
-    expect((h.querySelector(".archie-note-card") as HTMLElement).hidden).toBe(true);
+    expect(m.played()).toBe(false);
+    expect((h.querySelector(".archie-note-card") as HTMLElement).hidden).toBe(false);
+    expect(h.querySelector(".archie-note-card")!.textContent).toContain("about the whole tape");
   });
 });
 

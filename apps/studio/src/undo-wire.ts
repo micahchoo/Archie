@@ -1,19 +1,6 @@
-// UndoWire (Archie-9da0) — the ONE studio-side seam between the editing surface and
-// `AnnotationUndoManager`. WHY A SEAM AND NOT BARE MANAGER CALLS: the manager records history
-// only for mutations routed through it, and a missed call site fails SILENTLY — the edit lands
-// in the log but is absent from history. So the editor holds a wire, not a raw session: every
-// note mutation goes through here (the manager's internal tripwire turns any bypass loud), and
-// `importChanges` — the ONE legitimate log-level bypass — is re-baselined automatically.
-//
-// SESSION-FOLLOWING: `sess.session` is REPLACED on every exhibit open (exhibit-session.svelte.ts),
-// so the wire takes a session GETTER, not an instance, and pairs each session with its own fresh
-// manager. That makes the per-context isolation (feasibility rec 3) structural: history never
-// crosses an exhibit switch, because the switch mints a new manager — the session-scoped undo
-// decision (Archie-69a6) enforced by construction, not by discipline.
-//
-// Each routed mutation pulses `notify`. Routed mutations already move `session.revision` (the
-// App epoch edge fires on its own); undo/redo move ONLY the projection overlay, so `notify`
-// (App's resync tick) is what makes them visible at all.
+// Studio note commands: each mutation is an undo action; body edits coalesce during a
+// short typing burst and batch() groups synchronous imports/drags. Session replacement
+// resets history. Callers never manage marks or projection reconciliation.
 
 import {
   AnnotationUndoManager,
@@ -32,10 +19,8 @@ import { matches, typingInField } from "./shortcuts.js";
 export type ResolveChoice = Parameters<AnnotationSession["resolve"]>[1];
 
 export interface UndoWire {
-  /** The CURRENT session's manager — read side and gesture marks (`notes()`, `canUndo`,
-   *  `mark()`/`bailToMark()` around composite gestures). Mutations go through the routed methods
-   *  below. Replaced (empty history) whenever the session itself is replaced. */
-  readonly mgr: AnnotationUndoManager;
+  /** Group synchronous mutations (a completed import or composite gesture) as one action. */
+  batch<T>(action: () => T): T;
   readonly canUndo: boolean;
   readonly canRedo: boolean;
   createNote(input: NewNote): LogicalId;
@@ -63,58 +48,67 @@ export interface UndoWire {
 export function createUndoWire(getSession: () => AnnotationSession, notify: () => void): UndoWire {
   let current: AnnotationSession | null = null;
   let currentMgr: AnnotationUndoManager;
+  let depth = 0;
+  let sequence = 0;
+  let typing: { id: LogicalId; at: number } | null = null;
   const manager = (): AnnotationUndoManager => {
-    const s = getSession();
-    if (s !== current) {
-      // A new session instance = a new exhibit (or a wholesale replace): EMPTY history, by design.
-      current = s;
-      currentMgr = new AnnotationUndoManager(s);
+    const session = getSession();
+    if (session !== current) {
+      current = session;
+      currentMgr = new AnnotationUndoManager(session);
+      currentMgr.resyncLog();
+      typing = null;
     }
     return currentMgr;
   };
+  function perform<T>(action: (mgr: AnnotationUndoManager) => T, textId?: LogicalId): T {
+    const mgr = manager();
+    const now = Date.now();
+    if (depth === 0) {
+      if (!textId || typing?.id !== textId || now - typing.at >= 800) mgr.mark(`action:${++sequence}`);
+      typing = textId ? { id: textId, at: now } : null;
+    }
+    const result = action(mgr);
+    if (depth === 0) notify();
+    return result;
+  }
+  const resolve = (id: LogicalId, choice: ResolveChoice = {}) => perform(m => m.resolveNote(id, choice));
   return {
-    get mgr() { return manager(); },
+    batch<T>(action: () => T): T {
+      const mgr = manager();
+      const outer = depth === 0;
+      if (outer) { typing = null; mgr.mark(`batch:${++sequence}`); }
+      depth += 1;
+      try { return action(); }
+      finally {
+        depth -= 1;
+        // Partial synchronous work remains one reversible action if an import throws.
+        if (outer) { mgr.mark(`end:${++sequence}`); notify(); }
+      }
+    },
     get canUndo() { return manager().canUndo; },
     get canRedo() { return manager().canRedo; },
-    createNote(input: NewNote): LogicalId {
-      const id = manager().createNote(input);
-      notify();
-      return id;
-    },
-    editNote(logicalId: LogicalId, changes: NoteEdit): void {
-      manager().editNote(logicalId, changes);
-      notify();
-    },
-    deleteNote(logicalId: LogicalId): void {
-      manager().deleteNote(logicalId);
-      notify();
-    },
-    resolveNote(logicalId: LogicalId, choice: ResolveChoice = {}): void {
-      manager().resolveNote(logicalId, choice);
-      notify();
-    },
-    resolve(logicalId: LogicalId, choice: ResolveChoice = {}): void {
-      manager().resolveNote(logicalId, choice);
-      notify();
-    },
-    importChanges(incoming: AnnotationLog): LogicalId[] {
+    createNote: input => perform(m => m.createNote(input)),
+    editNote: (id, changes) => perform(m => m.editNote(id, changes),
+      Object.keys(changes).length === 1 && changes.body !== undefined ? id : undefined),
+    deleteNote: id => perform(m => m.deleteNote(id)),
+    resolveNote: resolve,
+    resolve,
+    importChanges(incoming) {
+      const mgr = manager();
+      typing = null;
+      mgr.mark(`import:${++sequence}`);
       const ids = getSession().importChanges(incoming);
-      manager().resyncLog();
+      mgr.resyncLog();
       notify();
       return ids;
     },
-    undo(): void {
-      manager().undo();
-      notify();
-    },
-    redo(): void {
-      manager().redo();
-      notify();
-    },
+    undo() { typing = null; manager().undo(); notify(); },
+    redo() { typing = null; manager().redo(); notify(); },
     notes: () => manager().notes(),
     workingAnnotations: () => manager().workingAnnotations(),
     conflicts: () => getSession().conflicts(),
-    conflictHeads: (logicalId: LogicalId) => getSession().conflictHeads(logicalId),
+    conflictHeads: id => getSession().conflictHeads(id),
     get entries() { return getSession().entries; },
   };
 }

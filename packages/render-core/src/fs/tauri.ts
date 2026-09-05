@@ -116,16 +116,9 @@ class TauriFile implements FsFile {
     // over the destination. plugin-fs writeFile/open truncates-then-writes, so a crash mid-flush
     // straight to the destination would leave `library.json`/`manifest.json` truncated and
     // unparseable — a durability guarantee the FSA/OPFS backends give for free. Same-dir temp keeps
-    // the rename atomic (one filesystem). Each `write(data)` DISPATCHES BY ITS OWN TYPE (not a mode
-    // fixed by the first chunk) — the first Blob write lazily `open()`s the streaming handle and every
-    // later Blob write streams into it; string/ArrayBuffer writes buffer into `chunks`:
-    //   - string / ArrayBuffer (authored JSON): buffer in heap, flush once via writeFile on close(). The
-    //     proven durable-JSON path — kept deliberately unchanged (small, atomicity is what matters).
-    //   - Blob (an imported asset, potentially a multi-GB AV file): STREAM it into a plugin-fs
-    //     `open()` handle, so it never fully materializes. The buffered path would concatenate the
-    //     whole file (~2× in heap) and OOM (fs/tauri.ts header / Archie-623e Phase 1).
-    // In practice one writable() sees a single kind (the seam's callers never mix); close() then
-    // commits whichever leg ran — a live handle (streamed) or the buffered `chunks` (JSON / 0-byte).
+    // the rename atomic (one filesystem). Small string/ArrayBuffer writes buffer until close;
+    // the first Blob switches to streaming after flushing those chunks. Every later chunk goes
+    // through the handle, preserving mixed-write order without materializing large assets.
     const tmp = `${this.path}.tmp-${tmpSeq++}`;
     const chunks: Uint8Array[] = [];
     let handle: TauriWriteHandle | null = null;
@@ -143,23 +136,30 @@ class TauriFile implements FsFile {
     };
     return {
       write: async (data) => {
-        if (data instanceof Blob) {
-          handle ??= await this.bridge.open(tmp);
-          const reader = data.stream().getReader();
-          try {
-            for (;;) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              await writeAllToHandle(handle, value);
+        try {
+          if (data instanceof Blob) {
+            if (!handle) {
+              handle = await this.bridge.open(tmp);
+              // Switching to streaming must first preserve every earlier buffered chunk.
+              for (const chunk of chunks) await writeAllToHandle(handle, chunk);
+              chunks.length = 0;
             }
-          } catch (e) {
-            await discardTemp();
-            throw e;
+            const reader = data.stream().getReader();
+            try {
+              for (;;) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                await writeAllToHandle(handle, value);
+              }
+            } finally { reader.releaseLock(); }
+          } else {
+            const bytes = typeof data === "string" ? new TextEncoder().encode(data) : new Uint8Array(data.slice(0));
+            if (handle) await writeAllToHandle(handle, bytes);
+            else chunks.push(bytes);
           }
-        } else if (typeof data === "string") {
-          chunks.push(new TextEncoder().encode(data));
-        } else {
-          chunks.push(new Uint8Array(data.slice(0)));
+        } catch (error) {
+          await discardTemp();
+          throw error;
         }
       },
       close: async () => {

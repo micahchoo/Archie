@@ -22,6 +22,7 @@
 // DOMPurify, with media lifted out by splitNoteMedia first), the
 // same sanitized pipeline the image note-card uses. Cue/whole-track LABELS use textContent, never HTML.
 
+import { ResourcePolicy, releaseMedia } from "./resource-policy.js";
 import {
   parseMediaFragment,
   activeNoteIndex,
@@ -101,8 +102,7 @@ export class OfflineAvBlockedError extends Error {
 /** A source is REMOTE if it fetches over the network; blob:/data: are in-document (allowed offline).
  *  AV objects carry a plain `source` string (no structured tileSource), so this is the string test. */
 function isRemoteAvSource(object: AObject): boolean {
-  const u = object.source;
-  return !(u.startsWith("blob:") || u.startsWith("data:"));
+  return !new ResourcePolicy(true).allows(object.source);
 }
 
 /**
@@ -228,7 +228,7 @@ export function mountAvPlayer(host: HTMLElement, opts: AvPlayerOptions): AvPlaye
   host.appendChild(root);
 
   // The shared note-card (sanitized bodies) — the host is the positioned ancestor it anchors to.
-  const card: NoteCard = createNoteCard(host);
+  const card: NoteCard = createNoteCard(host, new ResourcePolicy(opts.offline));
 
   // ---- whole-track notes (no t=): the persistent band above the cues -----------------------------
   if (wholeNotes.length > 0) {
@@ -333,11 +333,13 @@ export function mountAvPlayer(host: HTMLElement, opts: AvPlayerOptions): AvPlaye
     didLandSeek = true;
     const landCue = opts.initialSelect ? cues.find((c) => c.id === opts.initialSelect) : undefined;
     const target = opts.initialSeek ?? (landCue ? String(landCue.range.start) : undefined);
-    if (target === undefined) return; // ordinary landing — leave the playhead at the head (0), paused
+    if (opts.initialSelect && annotations.some((a) => a.id === opts.initialSelect)) {
+      card.showNote(annotations, opts.initialSelect);
+    }
+    if (target === undefined) return; // whole-recording notes open without moving playback
     const at = clampSeekStart(target, media.duration);
     if (at > 0) media.currentTime = at; // paused: no play() (the AV-landing rule)
     if (landCue) {
-      card.showNote(annotations, landCue.id); // the click path's card open, on arrival
       onTimeUpdate(); // sync the active-cue highlight to the landed playhead
     }
   };
@@ -359,6 +361,7 @@ export function mountAvPlayer(host: HTMLElement, opts: AvPlayerOptions): AvPlaye
       media.removeEventListener("timeupdate", onTimeUpdate);
       media.removeEventListener("error", onError);
       media.removeEventListener("loadedmetadata", onMeta);
+      releaseMedia(stage);
       card.destroy();
       root.remove();
     },

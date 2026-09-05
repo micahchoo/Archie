@@ -58,8 +58,8 @@
  /* pale sage-tinted overlay */
  --ink-canvas-primary: #1A3C23;
  /* deep forest moss, never pure black */
- --ink-canvas-secondary: rgba(26, 60, 35, 0.62);
- --ink-canvas-muted: rgba(26, 60, 35, 0.45);
+ --ink-canvas-secondary: rgba(26, 60, 35, 0.78);
+ --ink-canvas-muted: rgba(26, 60, 35, 0.72);
  --border-canvas: rgba(26, 60, 35, 0.10);
  --border-canvas-emphasis: rgba(26, 60, 35, 0.18);
 
@@ -68,8 +68,8 @@
  --surface-paper-card: #FDFCF5;
  --surface-paper-hover: #ECF0E3;
  --ink-paper-primary: #1A3C23;
- --ink-paper-secondary: rgba(26, 60, 35, 0.62);
- --ink-paper-muted: rgba(26, 60, 35, 0.45);
+ --ink-paper-secondary: rgba(26, 60, 35, 0.78);
+ --ink-paper-muted: rgba(26, 60, 35, 0.72);
  --border-paper: rgba(26, 60, 35, 0.10);
  --border-paper-emphasis: rgba(26, 60, 35, 0.18);
 
@@ -77,18 +77,18 @@
  --surface-gallery: #E9EEDF;
 
  /* ── Accent — emerald. RATIONED: primary action / active state only. ── */
- --accent: #3A8C5D;
- --accent-hover: #46A06E;
+ --accent: #2D754C;
+ --accent-hover: #286943;
  --accent-muted: rgba(58, 140, 93, 0.14);
  --ink-on-accent: #F7F4EC;
  /* parchment text on emerald */
 
  /* ── Accent (secondary) — golden amber (links, connectors). Deep enough to read on parchment. ── */
- --accent-2: #9A7B39;
- --accent-2-hover: #B8954A;
+ --accent-2: #836425;
+ --accent-2-hover: #72571F;
  --accent-2-muted: rgba(154, 123, 57, 0.14);
- --accent-2-paper: #9A7B39;
- --accent-2-paper-hover: #836425;
+ --accent-2-paper: #836425;
+ --accent-2-paper-hover: #72571F;
  --accent-2-paper-muted: rgba(154, 123, 57, 0.12);
 
  /* ── Accent (tertiary) — hunter (deep green line-art, subtle highlights) ── */
@@ -97,9 +97,9 @@
  --accent-3-muted: rgba(45, 95, 58, 0.12);
 
  /* ── Semantic — kept distinct from the emerald accent / amber link ── */
- --semantic-success: #5E9648;
+ --semantic-success: #467331;
  /* leaf green — yellower than the emerald accent */
- --semantic-warning: #C68A3E;
+ --semantic-warning: #895B1D;
  /* ochre */
  --semantic-error: #BC4A36;
  /* warm rust — errors stay red */

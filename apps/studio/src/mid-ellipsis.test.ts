@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { midEllipsis, splitForMidTruncation } from "./mid-ellipsis.js";
+import { isIdentifierTitle, midEllipsis, splitForMidTruncation } from "./mid-ellipsis.js";
+
+describe("title presentation", () => {
+  it("gives authored descriptions room while preserving filename and identifier suffixes", () => {
+    for (const title of ["Big Buck Bunny — a frame", "Kryptogramm — transcript", "A study of folio 07a"])
+      expect(isIdentifierTitle(title)).toBe(false);
+    for (const title of ["BHC006_GM_folio_scan_07a", "BHC006_GM_folio_scan_07b", "Folio scan 07a.JPG", "Folio scan 07b.JPG"])
+      expect(isIdentifierTitle(title)).toBe(true);
+  });
+});
 
 describe("midEllipsis", () => {
   it("returns short strings unchanged", () => {

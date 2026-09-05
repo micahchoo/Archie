@@ -121,8 +121,8 @@ export function pagesUrlFor(owner: string, repo: string): string {
 
 /**
  * Ensure the target repo exists under the authenticated user, creating it if not. POSTs `/user/repos`
- * with `{ name, private: false }` and NO `auto_init` — the publish engine self-creates the branch ref,
- * and an auto-init README would pollute `main` while we publish to `gh-pages`
+ * with `{ name, private: false }` and NO `auto_init` — desktop git push creates the first branch,
+ * and an auto-init README would add unrelated content on `main` while we publish to `gh-pages`
  * (docs/plans/GHPAGES-PUBLISH-UX.md correction). Creation ONLY: a 422 ("name already exists") means the
  * repo is already there and is returned as `'exists'` — this never repoints or mutates an existing repo.
  * Any other non-201 status throws a mapped `GitHubPublishError` via `ghError`.
@@ -168,7 +168,7 @@ async function readRemoteTree(api: string, headers: Record<string, string>, comm
 /**
  * LEGACY browser-PAT path — do NOT extend. The one-motion desktop deploy uploads via a single git pack
  * push in Rust (`gh_push_tree`), not this per-blob JS engine; see docs/decisions/archie.md Q-13. This
- * function survives only for the browser paste-a-PAT flow; its `ghJson`/`ghError` REST helpers,
+ * function has no current application caller and remains a deprecated compatibility export; its `ghJson`/`ghError` REST helpers,
  * `pagesUrlFor`, `enablePages`, and `ensureRepo` are reused by the desktop path, but the upload sequence
  * below is not.
  *
@@ -194,6 +194,9 @@ async function readRemoteTree(api: string, headers: Record<string, string>, comm
  * republish costs one blob POST per CHANGED asset instead of one per asset. Deletions stay structural:
  * a path absent from `files` is absent from the tree. See `push-delta.ts` for why the failure
  * directions are all "re-upload" and never "skip".
+ *
+ * @deprecated No current app upload route uses this adapter. It requires an initialized repository
+ * (GitHub cannot create a reference in an empty repository). Desktop uses git push instead.
  *
  * BROWSER/NETWORK — verified in the browser, not headless. The pure tree-building and the pure delta
  * are unit-tested; the sequence + error mapping are covered with a mocked fetch.
@@ -246,7 +249,7 @@ export async function publishToGitHub(
     body: JSON.stringify({ message: "Publish via Archie", tree: treeSha, ...(baseCommitSha ? { parents: [baseCommitSha] } : {}) }),
   }, "commit");
   // 6. point the branch at the new commit (create the ref if the branch is new).
-  await ghJson(`${api}/git/refs/heads/${branch}`, {
+  await ghJson(baseCommitSha ? `${api}/git/refs/heads/${branch}` : `${api}/git/refs`, {
     method: baseCommitSha ? "PATCH" : "POST", headers,
     body: JSON.stringify(baseCommitSha ? { sha: commit.sha, force: true } : { ref: `refs/heads/${branch}`, sha: commit.sha }),
   }, "branch update");
@@ -276,13 +279,19 @@ export async function enablePagesFor(owner: string, repo: string, token: string,
 }
 
 async function enablePages(api: string, headers: Record<string, string>, branch: string): Promise<boolean> {
-  // Already configured? (200) — only "on" for us if it already serves OUR branch. Don't repoint it.
-  const get = await fetch(`${api}/pages`, { headers });
-  if (get.ok) {
-    const cur = (await get.json().catch(() => null)) as { source?: { branch?: string } } | null;
-    return cur?.source?.branch === branch;
+  try {
+    // Only a confirmed missing configuration permits creation. Failed reads are not absence.
+    const get = await fetch(`${api}/pages`, { headers });
+    if (get.ok) {
+      const cur = (await get.json()) as { source?: { branch?: string } } | null;
+      return cur?.source?.branch === branch;
+    }
+    if (get.status !== 404) return false;
+    const post = await fetch(`${api}/pages`, { method: "POST", headers, body: JSON.stringify({ source: { branch, path: "/" } }) });
+    return post.ok || post.status === 409;
+  } catch {
+    // The commit has already landed. A transport or response failure belongs to the manual-Pages
+    // result, so deploy can retain its destination and report the successful push honestly.
+    return false;
   }
-  // Not yet enabled (404) → create it for our branch. 201 created · 409 already exists ⇒ on.
-  const post = await fetch(`${api}/pages`, { method: "POST", headers, body: JSON.stringify({ source: { branch, path: "/" } }) });
-  return post.ok || post.status === 409;
 }

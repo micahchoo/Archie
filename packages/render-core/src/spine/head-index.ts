@@ -186,6 +186,11 @@ export class HeadIndex<R extends DagRecord<string>> {
     return this.groups.get(logicalId)?.heads ?? [];
   }
 
+  /** Find an authored revision without scanning other notes' history. */
+  version(logicalId: R["logicalId"], rev: RevId): R | undefined {
+    return this.groups.get(logicalId)?.versions.find((record) => record.rev === rev);
+  }
+
   /** The single head of one logicalId — equivalent to `linearHead(log, logicalId)`, including its
    *  absent / plural / cyclic throws, which come from the SHARED `linearHeadOf` guards rather than a
    *  second copy. O(1) instead of a whole-log filter: this is what takes `appendEdit`/`appendDelete`

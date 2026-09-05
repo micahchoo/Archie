@@ -66,6 +66,21 @@ async function writeBin(fs: Filesystem, path: string, bytes: Uint8Array): Promis
   await w.close();
 }
 
+it("streaming zip preserves mixed chunk order and captures buffer bytes at write time", async () => {
+  const output = collector();
+  const fs = new ZipStreamFilesystem(output.sink);
+  const writer = await (await (await fs.root()).getFile("mixed.bin", { create: true })).writable();
+  const input = new Uint8Array([0, 255]);
+  await writer.write("start");
+  await writer.write(input.buffer);
+  input.fill(9);
+  await writer.write(new Blob(["end"]));
+  await writer.close();
+  await fs.finish();
+  const expected = new Uint8Array(await new Blob(["start", new Uint8Array([0, 255]), "end"]).arrayBuffer());
+  expect(unzipSync(output.bytes())["mixed.bin"]).toEqual(expected);
+});
+
 describe("ZipStreamFilesystem — write-through streaming zip sink", () => {
   it("entry integrity: a stream-written archive reopens via fromZip with identical contents", async () => {
     const c = collector();

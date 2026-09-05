@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { useViewerAddress } from "../viewer-address-context.js";
+  const address = useViewerAddress();
   // A typed cite preview for the non-exhibit ladder rungs (object / note / region) — ADR-0018 Phase 4.
   // Sibling to ExhibitCiteCard (which keeps the exhibit cover card). Links via the slug-qualified hash
   // router so a click routes in-app (ViewerShell listens on hashchange): object → #/<slug>/o/<id>,
@@ -16,12 +18,12 @@
     crop?: string;
   } = $props();
 
-  const href = $derived(
+  const href = $derived(address(
     cite.kind === "object" ? `#/${cite.slug}/o/${cite.objectId}`
     : cite.kind === "region" ? `#/${cite.slug}/a/${cite.noteId}?xywh=${cite.xywh}`
     : cite.kind === "note" ? `#/${cite.slug}/a/${cite.noteId}`
-    : `#/${cite.slug}`,
-  );
+    : `#/${cite.slug}`
+  ));
   const kindLabel = $derived(cite.kind === "object" ? "Object" : cite.kind === "region" ? "Detail" : "Note");
   const go = $derived(cite.kind === "object" ? "→ open object" : cite.kind === "region" ? "→ open detail" : "→ open note");
   // Region cites show the cropped detail (baked IIIF/preview url); others fall back to the exhibit cover.

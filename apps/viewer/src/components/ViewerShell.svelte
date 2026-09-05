@@ -11,12 +11,17 @@
     loadGallery, loadImageIndex, probeViewerMode, bootErrorMessage, openLibraryFromSrc, openLibraryFromFile, closePortableLibrary,
     initLiveSource, isPortable,
   } from "../published.js";
+  import { viewerAddress } from "../viewer-address.js";
+  import { VIEWER_ADDRESS } from "../viewer-address-context.js";
   import Gallery from "./Gallery.svelte";
   // ExhibitView is imported LAZILY in the exhibit-route block below — its subtree (Reader/NarrativeReader →
   // @render/svelte → @render/mount) pulls OpenSeadragon + Annotorious (~1 MB), none of which the gallery
   // landing needs. Static-importing it here forced that chunk onto the highest-traffic page.
   import EmptyHall from "./EmptyHall.svelte";
 
+  let activeSource = $state<string | undefined>();
+  const address = viewerAddress(() => activeSource);
+  setContext(VIEWER_ADDRESS, address);
   let route = $state<ViewerRoute>({ view: "gallery" });
   let gallery = $state<ExhibitsJson | null>(null);
   let imageIndex = $state<ImageIndex | null>(null); // ADR-0023 wall source; null → Gallery hides the wall
@@ -52,7 +57,11 @@
   let carousel = $state<CarouselNav | null>(null);
 
   function sync() {
-    route = parseRoute(location.hash);
+    const next = parseRoute(location.hash);
+    // A source change replaces the entire library session. Reload also cancels all old readers
+    // and makes browser Back use exactly the same path as a copied address.
+    if (next.src !== activeSource) { location.reload(); return; }
+    route = next;
     // V2: any navigation — including browser Back — dismisses the chooser. Without this the hash changed
     // underneath a hall that stayed mounted, so the address said "#/{slug}" while the pixels said "no
     // library open", and only a reload reconciled them. Guarded on `ready` so a genuine empty state (no
@@ -105,7 +114,7 @@
     // fires `hashchange` → `sync()`, which would immediately wipe the notice we just set; and replaceState
     // doesn't add a history entry, so Back still goes where the reader came from rather than bouncing off
     // the dead target. Same policy now applies on the note/object/section rungs inside ExhibitView.
-    const want = route.view === "gallery" ? "#/" : `#/${route.slug}`;
+    const want = address(route);
     if (location.hash !== want) history.replaceState(null, "", want);
   }
 
@@ -115,7 +124,7 @@
   // the empty hall a signal may mean a first library now exists — re-boot to pick it up.
   let refreshing = false;
   async function refreshLive(): Promise<void> {
-    if (refreshing || isPortable()) return;
+    if (refreshing || isPortable() || activeSource) return;
     refreshing = true;
     try {
       if (phase === "ready") {
@@ -134,9 +143,10 @@
 
   async function boot() {
     route = parseRoute(location.hash);
+    activeSource = route.src;
     // Live source (Q-3): probe the same-origin Studio working store BEFORE the gallery load so an
     // authored exhibit appears with no publish step. Quiet no-op everywhere it can't apply.
-    await initLiveSource();
+    if (!activeSource) await initLiveSource();
     // ?src= (ADR-0009): open the hosted library first, then apply the rest of the route. Since
     // Archie-6d85 the src may be a `.archie.zip` OR a published TREE BASE — openLibraryFromSrc
     // dispatches on the extension, so nothing here needs to know which.
@@ -174,6 +184,9 @@
       openError = e instanceof Error ? e.message : "That file isn’t an Archie library.";
       return;
     }
+    activeSource = undefined;
+    route = { view: "gallery" };
+    history.replaceState(null, "", address(route));
     if (!(await loadAndShow())) {
       closePortableLibrary();
       openError = "That library couldn’t be opened. Make sure it’s an Archie .archie.zip file.";
@@ -306,7 +319,7 @@
                    rather than an href that points at the current hash (which would no-op). -->
               <button type="button" class="text-link crumb-link" onclick={() => carousel?.toOverview?.()}>{c.label}</button>
             {:else}
-              <a class="text-link" href={c.hash}>{c.label}</a>
+              <a class="text-link" href={address(c.hash)}>{c.label}</a>
             {/if}
           {/each}
         </nav>

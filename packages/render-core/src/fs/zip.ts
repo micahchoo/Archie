@@ -3,7 +3,8 @@
 // (fflate). On non-Chromium the zip IS the canonical file: explicit Save = download the zip,
 // Open = pick it (the "Word-doc 2003" model). Directories are implicit (zip path prefixes).
 
-import { zipSync, unzipSync, strToU8, type Unzipped, type Zippable, type ZipOptions } from "fflate";
+import { zipSync, unzipSync, type Unzipped, type Zippable, type ZipOptions } from "fflate";
+import { bufferedWritable } from "./buffered-writable.js";
 import type { Filesystem, FsDirectory, FsFile, FsWritable } from "./seam.js";
 import { assertSafeName } from "./names.js";
 
@@ -187,17 +188,7 @@ class ZipFile implements FsFile {
     return bytes.slice().buffer;
   }
   async writable(): Promise<FsWritable> {
-    let buf = new Uint8Array(0);
-    return {
-      write: async (data) => {
-        if (typeof data === "string") buf = strToU8(data);
-        else if (data instanceof ArrayBuffer) buf = new Uint8Array(data);
-        else buf = new Uint8Array(await data.arrayBuffer());
-      },
-      close: async () => {
-        this.store.set(this.path, buf);
-      },
-    };
+    return bufferedWritable((bytes) => { this.store.set(this.path, bytes); });
   }
   async getFile(): Promise<File> {
     const bytes = this.store.files.get(this.path) ?? new Uint8Array(0);

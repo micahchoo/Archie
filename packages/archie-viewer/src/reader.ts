@@ -13,6 +13,7 @@
 // style resolver is derived HERE from the caller's reading colours (reading-layer colourOf) +
 // BASE_MARK_COLOUR + render-core's readingMarkerStyle, the ONE source of the 0.18/0.95/2 numbers.
 
+import { ResourcePolicy } from "./resource-policy.js";
 import {
   createReadOnlyMount,
   type ReadOnlyMountSurface,
@@ -89,7 +90,7 @@ export async function openObject(
   // Declared BEFORE the mount so the mount's own onSelect closure can drive it; if the mount fails
   // (offline-blocked / load error), the catch destroys the card so nothing is orphaned in the
   // element's note row.
-  const card = createNoteCard(opts.noteCardHost ?? container);
+  const card = createNoteCard(opts.noteCardHost ?? container, new ResourcePolicy(opts.offline));
   // The card resolves ids against the CURRENT projection — re-armed on every showAnnotations, so a
   // legend switch (the reading layer's setReading → showAnnotations) re-targets the card too.
   let current: W3CAnnotation[] = opts.annotations;
@@ -98,6 +99,7 @@ export async function openObject(
   try {
     surface = await createReadOnlyMount(container, {
       source: opts.object.source,
+      ...(opts.signal ? { signal: opts.signal } : {}),
       ...(opts.object.tileSource ? { tileSource: opts.object.tileSource } : {}),
       ...(opts.canvasId ? { canvasId: opts.canvasId } : {}),
       // V56 canvas half, Phase 7: the mount's per-annotation style channel. Every drawn mark is

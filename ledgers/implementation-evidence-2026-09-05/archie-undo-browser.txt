@@ -1,0 +1,20 @@
+Real Studio undo regression evidence
+
+Added apps/studio/e2e/undo-actions.spec.ts with three tests driven entirely through the production UI. Tests use fresh browser contexts, fork the bundled Rosettes via Keep a copy, and use the root-owned existing front door at localhost:5173. No internal session/manager injection or state assertion is used.
+
+1. Two completed whole-image note creations: note count increases twice; Undo removes only the second, then the first; Redo restores each separately. The first created note's DOM identity is checked throughout.
+2. Edit → Undo → edit: change an existing note body, Undo restores the original textarea value, a new edit becomes visible and clears Redo. Done → Overview flush → reopen → browser reload preserves the new body under the same note identity and does not restore the undone body.
+3. Delete → Undo → edit: Delete removes the selected note, Undo restores its same identity and original body, editing the restored note succeeds. Done → Overview flush → reopen → reload preserves its new body and restores the original note count. Redo clears after the new edit.
+
+All three scenarios pass and report zero page errors. A repeated run with final screenshots also passed (3/3 in 5.2s). Undo is disabled after the actual browser reload in both persistence scenarios, matching its session-only history contract. Keep a copy itself supplies undo history, so fixture setup does not assume an empty history immediately after that action.
+
+Screenshots visually inspected:
+- /tmp/archie-undo-browser/undo-actions-edit-after-un-42db5--the-visible-and-saved-note-chromium/test-finished-1.png
+- /tmp/archie-undo-browser/undo-actions-a-deleted-not-f9680-ndo-can-be-edited-and-saved-chromium/test-finished-1.png
+
+The note list visibly carries the newly saved interpretation in each screenshot. Remote IIIF requests are aborted for hermetic execution, so the expected media-load error is visible; these tests exercise note commands, not canvas image loading or a freehand gesture.
+
+No production fixes were needed; no core/session/App changes made. git diff --check passed.
+
+Export-surface triage:
+The failing full-suite assertion at export-surface.spec.ts:68 is not stale. SetupFlow.svelte still renders data-destination rows for the three site destinations. The unchanged recommendation test passed 6/6 isolated runs on the running stack (first run plus five repeats), each around one second. Original full-suite rows=0 points to an unresolved/failed archive probe, but that cause was not reproduced and cannot be claimed as diagnosed. Assertions and timeouts remain unchanged; root retains the original failure log for integrated investigation.

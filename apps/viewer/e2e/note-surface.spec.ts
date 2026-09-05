@@ -103,6 +103,7 @@ test.describe("one modal at a time — the sheet never stacks (Archie-dbbc revie
     const reading = page.locator('.legend .opt[role="radio"]').nth(1); // tags ride on reading-scoped notes
     await expect(reading).toBeVisible();
     await reading.click();
+    await page.getByRole("button", { name: "Enter reading →", exact: true }).click();
 
     const notes = page.locator("aside li");
     const n = await notes.count();
@@ -319,6 +320,7 @@ test.describe("the sheet is the card at a larger size (V64)", () => {
     const reading = page.locator('.legend .opt[role="radio"]').nth(1); // [0] is "General notes"
     await expect(reading).toBeVisible();
     await reading.click();
+    await page.getByRole("button", { name: "Enter reading →", exact: true }).click();
 
     const notes = page.locator("aside li");
     const n = await notes.count();

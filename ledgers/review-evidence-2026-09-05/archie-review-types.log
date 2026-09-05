@@ -1,0 +1,21 @@
+$ pnpm -r typecheck
+Scope: 6 of 7 workspace projects
+packages/render-core typecheck$ node ../../node_modules/typescript-native/bin/tsc --noEmit
+packages/render-core typecheck: Done
+packages/render-mount typecheck$ node ../../node_modules/typescript-native/bin/tsc --noEmit
+packages/render-mount typecheck: Done
+packages/archie-viewer typecheck$ node ../../node_modules/typescript-native/bin/tsc --noEmit
+packages/render-svelte typecheck$ node ../../node_modules/typescript-native/bin/tsc --noEmit
+packages/render-svelte typecheck: Done
+packages/archie-viewer typecheck: Done
+apps/studio typecheck$ node ../../node_modules/typescript-native/bin/tsc --noEmit
+apps/viewer pretypecheck$ astro sync
+apps/studio typecheck: Done
+apps/viewer pretypecheck: Done
+apps/viewer typecheck$ node ../../node_modules/typescript-native/bin/tsc --noEmit
+apps/viewer typecheck: src/fake-opfs.ts(88,40): error TS2504: Type 'FsDirectory' must have a '[Symbol.asyncIterator]()' method that returns an async iterator.
+apps/viewer typecheck: Failed
+/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @archie/viewer@1.0.0 typecheck: `node ../../node_modules/typescript-native/bin/tsc --noEmit`
+Exit status 1
+[ELIFECYCLE] Command failed with exit code 1.

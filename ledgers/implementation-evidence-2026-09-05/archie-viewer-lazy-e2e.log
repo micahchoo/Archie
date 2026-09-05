@@ -1,0 +1,52 @@
+$ playwright test --config e2e/playwright.config.ts av-surface.spec.ts note-surface.spec.ts source-address.spec.ts
+[2m[WebServer] [22m(node:3003063) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m[2m$ vite-node scripts/gen-published.mts[22m
+[2m[WebServer] [22m(node:3003076) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m[2m$ astro build[22m
+[2m[WebServer] [22m(node:3003223) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:3004539) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:3004562) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 30 tests using 1 worker
+
+(node:3004696) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3004696) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › e2e/av-surface.spec.ts:136:3 › V53 · the note surface the AV reader had no way to reach › a real click on a transcript line opens THE NOTE, and the line is genuinely hittable (360ms)
+  ✓   2 [chromium] › e2e/av-surface.spec.ts:177:3 › V53 · the note surface the AV reader had no way to reach › the cue's cite is LIVE in the card and LITERAL nowhere (472ms)
+  ✓   3 [chromium] › e2e/av-surface.spec.ts:217:3 › V53 · the note surface the AV reader had no way to reach › the card clears the temporal map instead of sitting on it (335ms)
+  ✓   4 [chromium] › e2e/av-surface.spec.ts:238:3 › V53 · the note surface the AV reader had no way to reach › one click both TRAVELS the recording and opens the note (357ms)
+  ✓   5 [chromium] › e2e/av-surface.spec.ts:252:3 › V53 · the note surface the AV reader had no way to reach › ⤢ expands to the reading sheet, and the note is on screen exactly once (311ms)
+  ✓   6 [chromium] › e2e/av-surface.spec.ts:265:3 › V53 · the note surface the AV reader had no way to reach › the whole-track note opens too — the one note with no cue row to reach it by (275ms)
+  ✓   7 [chromium] › e2e/av-surface.spec.ts:276:3 › V53 · a note's picture, on a TIME-RANGED note › the tile renders on the card and a real click opens the lightbox (258ms)
+  ✓   8 [chromium] › e2e/av-surface.spec.ts:327:3 › V53 · an AV note's tags are a real door into the finder › a tag chip on a time-ranged note opens the finder ALREADY SCOPED to that tag (553ms)
+  ✓   9 [chromium] › e2e/av-surface.spec.ts:426:3 › V53 · the Escape ladder this surface did not have › Escape walks out one rung at a time: sheet → card → the exhibit (307ms)
+  ✓  10 [chromium] › e2e/av-surface.spec.ts:450:3 › V53 · the transcript aside resizes (and deliberately does not collapse) › dragging the divider narrows the transcript, and it survives a reload (509ms)
+  ✓  11 [chromium] › e2e/av-surface.spec.ts:482:3 › V53 · the transcript aside resizes (and deliberately does not collapse) › there is no collapse toggle — collapsing this aside would take the object nav with it (203ms)
+  ✓  12 [chromium] › e2e/av-surface.spec.ts:526:3 › V49 · the temporal map clears the item strip (Archie-b135) › the transcript's temporal map is not covered by the filmstrip (312ms)
+  ✓  13 [chromium] › e2e/av-surface.spec.ts:564:3 › V49 · the temporal map clears the item strip (Archie-b135) › the map is on screen ON ARRIVAL, not pushed off the bottom INSTEAD of being covered (281ms)
+  ✓  14 [chromium] › e2e/av-surface.spec.ts:638:3 › Archie-4524 · the reading legend the AV surface did not have › the legend lists the exhibit's readings, with per-layer counts on THIS recording (211ms)
+  ✓  15 [chromium] › e2e/av-surface.spec.ts:657:3 › Archie-4524 · the reading legend the AV surface did not have › the abjad layer adds its line to the transcript, in its own colour (319ms)
+  ✓  16 [chromium] › e2e/av-surface.spec.ts:689:3 › Archie-4524 · the reading legend the AV surface did not have › there is no Hide-all on this legend — the notes here ARE the transcript (447ms)
+  ✓  17 [chromium] › e2e/av-surface.spec.ts:711:3 › the audio stage draws its recording (V50) › a sound object renders a waveform canvas, and keeps its native controls (278ms)
+  ✓  18 [chromium] › e2e/av-surface.spec.ts:727:3 › the audio stage draws its recording (V50) › the waveform is hidden from assistive tech — the <audio> element is the control (214ms)
+  ✓  19 [chromium] › e2e/note-surface.spec.ts:38:3 › only ONE note-content element is on screen at a time (V60) › with the sheet open, exactly one element renders the note's body (376ms)
+  ✓  20 [chromium] › e2e/note-surface.spec.ts:49:3 › only ONE note-content element is on screen at a time (V60) › closing the sheet brings the card back — hidden is not gone (420ms)
+  ✓  21 [chromium] › e2e/note-surface.spec.ts:58:3 › only ONE note-content element is on screen at a time (V60) › the sidebar entry marks position instead of restating the note (351ms)
+  ✓  22 [chromium] › e2e/note-surface.spec.ts:94:3 › one modal at a time — the sheet never stacks (Archie-dbbc review) › a tag chip inside the sheet REPLACES it with the finder (590ms)
+  ✓  23 [chromium] › e2e/note-surface.spec.ts:136:3 › one modal at a time — the sheet never stacks (Archie-dbbc review) › never two `aria-modal` elements, on any route out of the sheet (355ms)
+  ✓  24 [chromium] › e2e/note-surface.spec.ts:226:3 › one modal at a time — the sheet never stacks (Archie-dbbc review) › a media tile inside the sheet REPLACES it with the lightbox — the image reader (370ms)
+  ✓  25 [chromium] › e2e/note-surface.spec.ts:236:3 › one modal at a time — the sheet never stacks (Archie-dbbc review) › a media tile inside the sheet REPLACES it with the lightbox — the AV reader (614ms)
+  ✓  26 [chromium] › e2e/note-surface.spec.ts:245:3 › one modal at a time — the sheet never stacks (Archie-dbbc review) › a media tile inside the sheet REPLACES it with the lightbox — the narrative reader (447ms)
+  ✓  27 [chromium] › e2e/note-surface.spec.ts:289:3 › the sheet is the card at a larger size (V64) › the sheet's accessible name EQUALS the card's, not merely non-empty (334ms)
+  ✓  28 [chromium] › e2e/note-surface.spec.ts:297:3 › the sheet is the card at a larger size (V64) › the sheet SHOWS the same identity line the card showed (364ms)
+  ✓  29 [chromium] › e2e/note-surface.spec.ts:309:3 › the sheet is the card at a larger size (V64) › expanding does not drop the note's tags (531ms)
+  ✓  30 [chromium] › e2e/source-address.spec.ts:5:1 › foreign source survives reader address updates, reload, links, and Back (328ms)
+
+  30 passed (22.5s)

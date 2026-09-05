@@ -8,7 +8,7 @@ scope:
   - "packages/render-core/src/fs/tauri.test.ts"
   - "docs/plans/native-canonical-store.md"
   - "docs/plans/folder-av-originals.md"
-updated: 2026-08-08
+updated: 2026-09-05
 ---
 # desktop
 > *How is the desktop app different?*
@@ -73,3 +73,5 @@ twice already.
 - A new `TauriFsBridge` method is invisible to unit tests until `pnpm capabilities:check` runs it
   through both audits — the bridge interface is the derivation source, so an unmapped method fails
   loudly instead of shipping a silent data-loss bug a third time.
+
+- Review 2026-09-05 → Current offline packaged build and isolated native boot persist a valid six-exhibit library; full native import/edit/publish remains unverified. Evidence: `ledgers/IMPLEMENT-review-2026-09-05.md`.

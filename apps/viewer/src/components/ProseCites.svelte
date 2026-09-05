@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { useViewerAddress } from "../viewer-address-context.js";
+  const address = useViewerAddress();
   // Renders note/section prose, promoting BLOCK exhibit cites to rich cards (ExhibitCiteCard) while
   // every other span stays plain sanitized HTML. Drop-in for `{@html renderMarkdown(text)}` in the
   // viewer prose sites. The gallery index (for cover/title lookup + the known-slug set) comes from
@@ -52,12 +54,18 @@
 
   // Delegated hover + keyboard-focus reveal on the prose wrapper. Action (not markup handlers) so a
   // presentational wrapper draws no a11y lint, and focusin/focusout (the bubbling variants) reach it.
-  function citeHover(node: HTMLElement) {
+  function citeHover(node: HTMLElement, _text: string) {
+    const scopeLinks = () => {
+      for (const link of node.querySelectorAll<HTMLAnchorElement>('a[href^="#/"]')) {
+        link.setAttribute("href", address(link.getAttribute("href")!));
+      }
+    };
+    scopeLinks();
     node.addEventListener("mouseover", onOver);
     node.addEventListener("mouseout", scheduleHide);
     node.addEventListener("focusin", onOver);
     node.addEventListener("focusout", scheduleHide);
-    return { destroy() {
+    return { update: scopeLinks, destroy() {
       clearTimeout(hideTimer);
       node.removeEventListener("mouseover", onOver);
       node.removeEventListener("mouseout", scheduleHide);
@@ -82,7 +90,7 @@
   }
 </script>
 
-<div class="prose-cites" use:citeHover>{#each segments as seg}{#if seg.kind === "html"}{@html seg.html}{:else if seg.cite.kind === "exhibit"}<ExhibitCiteCard slug={seg.cite.slug ?? ""} label={seg.label} entry={entryFor(seg.cite.slug)} />{:else}<CiteCard cite={seg.cite} label={seg.label} entry={entryFor(seg.cite.slug)} />{/if}{/each}</div>
+<div class="prose-cites" use:citeHover={text}>{#each segments as seg}{#if seg.kind === "html"}{@html seg.html}{:else if seg.cite.kind === "exhibit"}<ExhibitCiteCard slug={seg.cite.slug ?? ""} label={seg.label} entry={entryFor(seg.cite.slug)} />{:else}<CiteCard cite={seg.cite} label={seg.label} entry={entryFor(seg.cite.slug)} />{/if}{/each}</div>
 
 {#if hover}
   <div class="cite-hover" use:portal use:hoverKeep style="left:{hover.x}px; top:{hover.y}px">

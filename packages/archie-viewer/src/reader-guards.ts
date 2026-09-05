@@ -15,6 +15,7 @@
 // canvas lives in reader.ts. A type-only import of reader.ts is always safe (erased); a value import
 // is the leak. reader.ts re-exports these, so its own importers (and reader.test.ts) are unaffected.
 
+import { ResourcePolicy } from "./resource-policy.js";
 import type { AObject, W3CAnnotation } from "@render/core";
 
 /** What the element hands the reader to open one object: the object (source/tileSource), its published
@@ -28,6 +29,8 @@ export interface OpenObjectOptions {
   /** When true, refuse to mount a REMOTE source (http/https) — offline embeds show only embedded
    *  (blob:/data:) media. Gates the remote tile/media fetch at the mount boundary (ADR-0019 offline). */
   offline?: boolean;
+  /** Cancel a pending OSD open. The caller owns teardown after the surface has mounted. */
+  signal?: AbortSignal;
   /** Fired on overlay selection (the element can drive a sidebar / deep-link). */
   onSelect?: (id: string | null) => void;
   /** V56: annotation id → its Reading's colour (undefined = a base note, which takes the BASE
@@ -55,11 +58,12 @@ export class OfflineRemoteBlockedError extends Error {
  *  assets the portable load minted) and are always allowed; everything else (http/https/IIIF info.json,
  *  protocol-relative) is remote. A structured tileSource is remote unless every URL in it is blob/data. */
 export function isRemoteSource(object: AObject): boolean {
-  const local = (u: string): boolean => u.startsWith("blob:") || u.startsWith("data:");
+  const policy = new ResourcePolicy(true);
+  const local = (u: string): boolean => policy.allows(u);
   // A structured xyz/dzi descriptor overrides the source string (model.ts): classify by its URLs.
-  const ts = object.tileSource as { url?: string; tilesUrl?: string; filesPath?: string } | undefined;
+  const ts = object.tileSource as { url?: string; infoUrl?: string; template?: string; tilesUrl?: string; filesPath?: string } | undefined;
   if (ts) {
-    const urls = [ts.url, ts.tilesUrl, ts.filesPath].filter((u): u is string => typeof u === "string");
+    const urls = [ts.url, ts.infoUrl, ts.template, ts.tilesUrl, ts.filesPath].filter((u): u is string => typeof u === "string");
     return urls.length === 0 ? !local(object.source) : urls.some((u) => !local(u));
   }
   return !local(object.source);

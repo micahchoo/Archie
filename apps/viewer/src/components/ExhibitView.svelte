@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { useViewerAddress } from "../viewer-address-context.js";
+  const address = useViewerAddress();
   // Exhibit-layout orchestrator (v1: Single + Grid + Narrative). Loads the exhibit from the PUBLISHED
   // form (published.ts: publish → read back as a consumer) — so the Viewer renders what the publish
   // pipeline emits. The layout DECISION comes from `@render/core` `resolveLayout`: sections ⇒
@@ -8,10 +10,9 @@
   import { fade } from "svelte/transition";
   import {
     resolveLayout, selectorOf, asExhibitId,
-    routeToHash, logicalIdOf, citationFor, encodeContentState,
+    logicalIdOf, citationFor, encodeContentState,
     type Exhibit, type LayoutDescriptor, type RightsFields, type W3CAnnotation, type ViewerRoute,
   } from "@render/core";
-  import ReadingWallText from "./ReadingWallText.svelte";
   import { loadPublishedExhibit, type PublishedExhibit } from "../published.js";
   import { canvasIdFor } from "../published-base.js";
   import { locate, noteById } from "../note-tree.js";
@@ -31,6 +32,7 @@
   const MediaPlayerLazy = lazyComponent(() => import("./MediaPlayer.svelte"));
   const SearchOverlayLazy = lazyComponent(() => import("./SearchOverlay.svelte"));
   const CitePanelLazy = lazyComponent(() => import("./CitePanel.svelte"));
+  const ReadingWallTextLazy = lazyComponent(() => import("./ReadingWallText.svelte"));
   import { stepObjectId } from "../exhibit-nav.js";
 
   // `onnav` (dba2): publishes the object-nav snapshot up to ViewerShell, which renders the carousel in
@@ -191,7 +193,7 @@
    * that rung rewrote the address while these three did not, which is the inconsistency V4 names.
    */
   function normalizeAddressToExhibit() {
-    const want = `#/${slug}`;
+    const want = address({ view: "exhibit", slug });
     if (location.hash !== want) history.replaceState(null, "", want);
   }
 
@@ -235,7 +237,7 @@
       ...(noteId && locusRegion ? { xywh: locusRegion } : {}),
       ...(noteId && locusTime ? { t: locusTime } : {}),
     };
-    return routeToHash(route);
+    return address(route);
   });
 
   $effect(() => {
@@ -678,8 +680,8 @@
 
   <!-- The reading's wall text — its full voice at the threshold (single-scrim: opens only from the
        legend's chrome, never from inside another scrimmed surface). Dismissal IS entry. -->
-  {#if reading.wallReading}
-    <ReadingWallText reading={reading.wallReading} noteCount={reading.wallStats.notes} sourceCount={reading.wallStats.sources} onclose={reading.dismissWallText} />
+  {#if reading.wallReading && ReadingWallTextLazy.current}
+    <ReadingWallTextLazy.current reading={reading.wallReading} noteCount={reading.wallStats.notes} sourceCount={reading.wallStats.sources} onclose={reading.dismissWallText} />
   {/if}
   {#if citeOpen && CitePanelLazy.current}
     <CitePanelLazy.current

@@ -14,10 +14,12 @@
 // title, then an ordered list of sections where each row is `title` + its prose. Ported structure,
 // not the component (ADR-0019: framework-free by design).
 
+import { ResourcePolicy, releaseMedia } from "./resource-policy.js";
 import { renderMarkdown, type PortableExhibit, type Section } from "@render/core";
 import { injectStyle, positionLabel } from "./reader-chrome.js";
 
 export interface NarrativeOptions {
+  resources?: ResourcePolicy;
   exhibit: PortableExhibit;
   /** Index of the active section. */
   index: number;
@@ -108,7 +110,7 @@ export function mountNarrative(aside: HTMLElement, opts: NarrativeOptions): Narr
     // renderMarkdown is render-core's snarkdown → DOMPurify pipeline — the SAME sanitized channel
     // note-card.ts uses. Section prose is authored markdown, so it must render as prose; it must also
     // never reach innerHTML unsanitized, and this is the one function in the repo that guarantees both.
-    prose.innerHTML = renderMarkdown(s.prose ?? "");
+    prose.append((opts.resources ?? new ResourcePolicy()).html(doc, renderMarkdown(s.prose ?? "")));
     btn.append(num, prose);
     btn.addEventListener("click", () => opts.onactivate(i));
     li.append(btn);
@@ -150,6 +152,7 @@ export function mountNarrative(aside: HTMLElement, opts: NarrativeOptions): Narr
 
   return {
     destroy(): void {
+      releaseMedia(pane);
       pane.remove();
       style.remove();
     },

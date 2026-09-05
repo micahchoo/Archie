@@ -371,3 +371,63 @@ describe("AnnotationUndoManager — the bypass tripwire (a missed call site must
     err.mockRestore();
   });
 });
+
+
+describe("editing the visible note after undo", () => {
+  it("carries the visible content into a new durable descendant of the current head", async () => {
+    const { session, undo } = fresh();
+    const id = undo.createNote({ target: rect(0, 0, 10, 10), body: text("original"), reading: "cipher" });
+    undo.mark("edit");
+    undo.editNote(id, { body: text("discarded"), reading: "hoax" });
+    const oldHead = session.notes()[0]!;
+    const history = [...session.entries];
+    undo.undo();
+    undo.mark("resume");
+    undo.editNote(id, { target: rect(20, 20, 10, 10) });
+    expect(bodyText(undo.notes()[0]!)).toBe("original");
+    expect(undo.notes()[0]!.reading).toBe("cipher");
+    expect(undo.notes()[0]!.target).toEqual(rect(20, 20, 10, 10));
+    expect(undo.notes()).toBe(session.notes());
+    expect(session.notes()[0]!.parent).toBe(oldHead.rev);
+    expect(session.notes()[0]!.version).toBe(oldHead.version + 1);
+    expect(session.entries.slice(0, history.length)).toEqual(history);
+    const dir = await new MemoryFilesystem().root();
+    await session.save(dir);
+    expect((await AnnotationSession.load(dir, alice)).notes()).toEqual(undo.notes());
+    undo.undo();
+    expect(undo.notes()[0]!.target).toEqual(rect(0, 0, 10, 10));
+    expect(bodyText(undo.notes()[0]!)).toBe("original");
+  });
+
+  it("edits a visibly restored deletion while preserving its tombstone history", () => {
+    const { session, undo } = fresh();
+    const id = undo.createNote({ target: rect(0, 0, 10, 10), body: text("restored"), section: "s1" });
+    undo.mark("delete");
+    undo.deleteNote(id);
+    const tombstone = session.entries.at(-1)!;
+    undo.undo();
+    undo.mark("resume");
+    undo.editNote(id, { body: text("new authored version") });
+    expect(bodyText(undo.notes()[0]!)).toBe("new authored version");
+    expect(undo.notes()[0]!.section).toBe("s1");
+    expect(session.notes()[0]!.parent).toBe(tombstone.rev);
+    expect(session.entries).toContain(tombstone);
+    expect(session.conflicts()).toEqual([]);
+    undo.undo();
+    expect(bodyText(undo.notes()[0]!)).toBe("restored");
+  });
+
+  it("can delete a restored note again without treating its displayed state as absent", () => {
+    const { session, undo } = fresh();
+    const id = undo.createNote({ target: canvas, body: text("restored") });
+    undo.mark("delete");
+    undo.deleteNote(id);
+    undo.undo();
+    undo.mark("delete again");
+    expect(() => undo.deleteNote(id)).not.toThrow();
+    expect(undo.notes()).toEqual([]);
+    expect(session.notes()).toEqual([]);
+    undo.undo();
+    expect(bodyText(undo.notes()[0]!)).toBe("restored");
+  });
+});

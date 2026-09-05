@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { useViewerAddress } from "../viewer-address-context.js";
+  const address = useViewerAddress();
   // The Library Gallery (CONTEXT §Gallery, UX-Q7) — rendered FROM exhibits.json at runtime, PLUS an
   // all-images wall from the baked image index (ADR-0023 / Phase 3.3). One surface, two views (Exhibit
   // cards / all-images wall), one search box filtering the ACTIVE view by title. Cards link via the hash
@@ -22,6 +24,21 @@
 
   let view = $state<GalleryView>("exhibits");
   let query = $state("");
+  let summaryExpanded = $state(false);
+  let summaryElement: HTMLParagraphElement | undefined = $state();
+  let summaryOverflows = $state(false);
+  $effect(() => {
+    const element = summaryElement;
+    if (!element || !gallery.library.summary) return;
+    const measure = () => {
+      const lineHeight = Number.parseFloat(getComputedStyle(element).lineHeight);
+      summaryOverflows = element.scrollHeight > lineHeight * 2 + 1;
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    measure();
+    return () => observer.disconnect();
+  });
   // The wall can vanish on a live refresh (index goes null) — never leave the view stranded there.
   $effect(() => { if (!wall && view === "wall") view = "exhibits"; });
 
@@ -67,7 +84,15 @@
   <header class="intro">
     <p class="eyebrow">Gallery · {cards.length} {cards.length === 1 ? "exhibit" : "exhibits"}</p>
     <h1>{title}</h1>
-    {#if gallery.library.summary}<p class="blurb">{gallery.library.summary}</p>{/if}
+    {#if gallery.library.summary}
+      <p bind:this={summaryElement} id="gallery-summary" class="blurb" class:expanded={summaryExpanded}>{gallery.library.summary}</p>
+      {#if summaryOverflows}
+        <button class="summary-toggle text-link" type="button" aria-expanded={summaryExpanded}
+          aria-controls="gallery-summary" onclick={() => (summaryExpanded = !summaryExpanded)}>
+          {summaryExpanded ? "Show less" : "Read more"}
+        </button>
+      {/if}
+    {/if}
     <p class="credit-row"><Credit rights={gallery.library} tone="paper" /></p>
   </header>
 
@@ -131,7 +156,7 @@
     {#each items as ex (ex.slug)}
       {@const c = coverSrcOf(ex)}
       <li>
-        <a class="card" href={`#/${ex.slug}`}>
+        <a class="card" href={address({ view: "exhibit", slug: ex.slug })}>
           {#if c}
             <img class="cover" src={c.src} alt="" loading="lazy" decoding="async" onerror={() => markFailed(c.key)} />
           {:else}
@@ -151,7 +176,7 @@
   <ul class="grid wallgrid" style:--grid-min={metrics.minCol} style:--grid-intrinsic={metrics.intrinsic}>
     {#each items as img (`${img.exhibitSlug}/${img.objectId}`)}
       <li style:aspect-ratio={aspectOf(img.width, img.height)}>
-        <a class="tile" href={wallHref(img)} title={img.title}>
+        <a class="tile" href={address(wallHref(img))} title={img.title}>
           {#if img.thumbnail && !failed.has(`${img.exhibitSlug}/${img.objectId}`)}
             <img src={publishedAssetUrl(img.thumbnail)} alt={img.title} loading="lazy" decoding="async" onerror={() => markFailed(`${img.exhibitSlug}/${img.objectId}`)} />
           {:else}
@@ -170,6 +195,7 @@
   .intro h1 { font-family: var(--font-display); font-weight: 300; font-size: 3rem; line-height: 1.1; margin: var(--space-2) 0 var(--space-3); color: var(--ink-paper-primary); text-shadow: var(--shadow-text-haze); }
   .blurb { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; }
   .credit-row { margin: var(--space-3) 0 0; }
+  .summary-toggle { display: none; }
 
   /* Toolbar — quiet: a view toggle, one search field, an optional density switch. Matches the landing voice. */
   .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-bottom: var(--space-8); }
@@ -226,4 +252,16 @@
   .tile-fallback { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; box-sizing: border-box; padding: var(--space-4); text-align: center; font-family: var(--font-display); font-size: 1.2rem; line-height: 1.2; color: var(--ink-canvas-secondary); background: var(--surface-canvas); }
 
   .empty { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.6; color: var(--ink-paper-secondary); padding: var(--space-8); background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-lg); box-shadow: var(--shadow-inset-fog); }
+
+  @media (max-width: 600px) {
+    .gallery { padding: var(--space-6) var(--space-4); }
+    .intro { margin-bottom: var(--space-5); }
+    .intro h1 { font-size: 2.25rem; }
+    .blurb { font-size: 1rem; line-height: 1.5; }
+    .blurb:not(.expanded) { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+    .summary-toggle { display: inline-block; margin-top: var(--space-1); padding: var(--space-2) 0; }
+    .toolbar { margin-bottom: var(--space-5); }
+    .cards { grid-template-columns: minmax(0, 1fr); }
+    .cover { aspect-ratio: 16 / 9; }
+  }
 </style>

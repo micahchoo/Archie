@@ -7,7 +7,7 @@ scope:
   - "scripts/perf/publish*"
   - "scripts/perf/worker-smoke.mjs"
   - ".github/workflows/deploy.yml"
-updated: 2026-08-08
+updated: 2026-09-05
 ---
 # publishing
 > *How does authored become published?*
@@ -81,3 +81,5 @@ end-to-end wall-clock over a real library (`scripts/perf/publishrun.mjs`), not a
 ## Open & hazards
 - Archie-6a99 (open, P2) — web-tier publish peaked at **16.9GB RSS** in the 1,000-image acceptance
   run: the per-exhibit fan-out inside `publishLibrary` is uncapped; found by c74e / 14b380d.
+
+- Review 2026-09-05 → History pages precede indexes; note-only publishes change generation; Pages transport failures preserve successful push results; in-place publication remains nontransactional. Evidence: `ledgers/IMPLEMENT-review-2026-09-05.md`; contracts: `ledgers/DESIGN-review-modules-2026-09-05.md`.
