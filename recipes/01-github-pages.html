@@ -1,19 +1,12 @@
 <!doctype html>
 <!--
-  Recipe 01 — Embed a library published to GitHub Pages
-  =====================================================
-  Scenario: you ran Studio's "Publish" and pushed the resulting static tree to a
-  GitHub Pages site. The published tree is just static files (one folder per exhibit),
-  so `src` points at the TREE BASE URL — the viewer reads the library straight from it.
+  Recipe 01 — Embed a library from GitHub Pages
 
-  Contract: ADR-0021 (src = a published-tree base URL).
-  Delivered by: Phase 2 (hosted-tree src).
-
-  GitHub Pages already sends permissive CORS headers, so this works cross-origin with
-  no extra configuration — your page can live on any other origin.
-
-  REPLACE (if you fork):
-    micahchoo.github.io/Archie  ->  your actual GitHub Pages base
+  Set src to the published-tree base URL, which contains exhibits.json.
+  Replace the sample GitHub Pages URL with your own library URL.
+  Cross-origin library reads require CORS permission from the hosting server.
+  This example uses the pinned v1.1 CDN bundle.
+  See EMBED.md for the reference and README.md for the current local build.
 -->
 <html lang="en">
 <head>
@@ -21,15 +14,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Archie viewer — GitHub Pages library</title>
   <style>
-    /* The element is display:inline by default — give it a box to fill. */
+    /* Give the viewer a suitable height for this page. */
     body { margin: 0; font-family: system-ui, sans-serif; }
     archie-viewer { display: block; width: 100%; height: 80vh; }
     header { padding: 1rem 1.25rem; border-bottom: 1px solid #ddd; }
   </style>
 
   <!--
-    The runtime, from jsDelivr serving the pinned @v1 git tag, with SRI.
-    crossorigin="anonymous" is required for SRI to validate cross-origin.
+    The runtime uses the pinned v1.1 git tag. This snippet has no integrity attribute.
+    See EMBED.md for optional SRI and the hash for this release.
   -->
   <script
     type="module"

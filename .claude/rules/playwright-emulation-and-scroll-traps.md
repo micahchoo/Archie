@@ -1,5 +1,5 @@
 ---
-scope:
+paths:
   - "apps/viewer/e2e/**"
   - "apps/studio/e2e/**"
   - "recipes/**"

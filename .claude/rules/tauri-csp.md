@@ -1,5 +1,6 @@
 ---
-scope: src-tauri/tauri.conf.json
+paths:
+  - "src-tauri/tauri.conf.json"
 tags: [tauri, csp, security, pixi, annotorious]
 priority: high
 source: hand-written

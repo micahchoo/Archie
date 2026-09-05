@@ -32,8 +32,8 @@ next cycle on a guessed interval. Rely on auto-compaction; after a compaction, r
 
 4. **Implement** the one change. Match surrounding code. **For a feature cycle, FIRST do the targeted
    pre-build research** (GOAL.md §5b.1): scout the donor + prior-art `relpath:line` the seed cites,
-   query `mcp__context__get_docs` for any library in `.claude/rules/deps-index.md`, cache durable
-   findings to mulch `product-research` — then implement. If it changes architecture, write the
+   check installed dependency APIs and official versioned documentation, then record durable
+   findings in a dated ledger (or mulch `product-research` when available) — then implement. If it changes architecture, write the
    `docs/adr/NNNN-*.md` or a mulch `decision` record **in the same commit** (GOAL.md §6).
 
 5. **Code-review (feature cycles)** — dispatch the `code-reviewer` subagent (or `requesting-code-review`)
@@ -64,7 +64,7 @@ seed instead of retrying. Otherwise keep going.
 
 ## Hard rails (from GOAL.md §6 — do not violate)
 
-- Respect the locked frames in `CONTEXT.md` (OSD+Annotorious, Studio/Viewer, WADM, IIIF, static, no server).
+- Respect the locked frames in `docs/GOAL.md` §6 (OSD+Annotorious, Studio/Viewer, WADM, IIIF, static, no server).
 - One improvement per cycle. Bigger than one gateable cycle → seed and defer — UNLESS it's a *large*
   item already on the §5a backlog, which is **decomposed into gateable sub-cycles** (§5c), not shelved.
 - Look & feel outrank features. Features come from the **researched contributor-broadening backlog**

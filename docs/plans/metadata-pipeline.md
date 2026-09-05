@@ -1,5 +1,9 @@
 # Metadata pipeline (Dublin Core) — implementation plan (Archie-5a9b)
 
+> **Status review — 2026-09-05: completed historical plan.** Seeds issue `Archie-5a9b` records implementation, merge, and successful checks on main.
+> The metadata epic `Archie-c6bf` is closed. The current code includes `iiif/metadata.ts`, metadata import, and metadata editors.
+> Current behavior: [capabilities](../CAPABILITIES.md). Current guidance: [data hub](../../hubs/data.md) and [seeds](../agents/issue-tracker.md).
+
 Decisions are fixed by the closed grill tickets (Archie-c6bf epic); research asset:
 `docs/research/dublin-core-vocab.md`. This plan sequences the build only.
 

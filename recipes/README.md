@@ -1,173 +1,68 @@
-# Recipes — embedding `<archie-viewer>`
+# Embed recipes
 
-Copy-paste examples for dropping an Archie exhibit into a third-party page (a museum CMS,
-WordPress/Ghost, an LMS, a plain HTML file). Each recipe is a complete, minimal page you can
-copy, swap the placeholder URLs, and ship.
+These examples put a read-only Archie library on a web page.
+[EMBED.md](EMBED.md) owns the installation instructions, attributes, target routes, offline behavior, and iframe reference.
 
-> ## Status — all phases shipped
->
-> **The `<archie-viewer>` element is shipped, not in progress.** Phases 0–4 of the build plan
-> (`docs/plans/EMBED-VIEWER-IMPLEMENTATION-STRATEGY.md`) are all done: the element, local-zip
-> drop, `src` (hosted zip / hosted tree), `offline`, the full `target` cite ladder with
-> degrade-upward, and multiple instances on one page. The runtime is published on jsDelivr at the
-> pinned **`@v1`** tag (ADR-0019). These recipes target the **finished v1 public contract** locked
-> in **ADR-0021** (`docs/adr/0021-archie-viewer-target-contract.md`) — copy, swap the placeholder
-> URLs, and ship.
+## Choose an example
 
----
+| File | Use |
+|---|---|
+| [try.html](try.html) | Open the current local build against the generated sample library. |
+| [example.html](example.html) | Start from a complete page with an object target. |
+| [01-github-pages.html](01-github-pages.html) | Open a published tree from GitHub Pages. |
+| [02-self-host-zip.html](02-self-host-zip.html) | Open a hosted `.archie.zip`. |
+| [03-local-drop.html](03-local-drop.html) | Let the visitor choose or drop a local `.archie.zip`. |
+| [04-deep-link.html](04-deep-link.html) | Open an object or note through `target`. |
+| [05-offline.html](05-offline.html) | Open a local archive with the `offline` attribute. |
+| [06-wordpress.md](06-wordpress.md) | Use a Custom HTML block or an iframe. |
+| [07-ghost.md](07-ghost.md) | Use an HTML card or an iframe. |
+| [08-multiple-on-one-page.html](08-multiple-on-one-page.html) | Put two independent viewers on one page. |
+| [09-autogrow.html](09-autogrow.html) | Resize an iframe from its content height with the local build. |
 
-## What a recipe is
+The numbered examples `01`–`08` and `example.html` use the pinned `v1.1` CDN bundle.
+`try.html` and `09-autogrow.html` use the local root `dist/` bundle.
+Current source behavior does not establish which fixes the pinned release contains.
 
-A recipe is the smallest correct way to put one Archie library on one page. It is **not** a
-config file or a build step — it is HTML you paste. There is no server, no npm install, no plugin
-to install: a `<script>` tag pulls the runtime from a CDN, and one `<archie-viewer>` element
-renders the library.
+Before reuse, replace the sample library URLs, exhibit slugs, and object or note identifiers.
+The `yourmuseum.org` URLs and `n3` note identifier are placeholders.
+A missing note target opens the exhibit grid, so a visible page does not prove that the note resolved.
 
----
+## Run the current build locally
 
-## The contract (ADR-0021)
+Run these commands from the repository root after you install the workspace dependencies:
 
-### 1. The script tag
-
-Load the runtime once per page, from **jsDelivr serving a pinned git tag**, with Subresource
-Integrity so the host page can't be served tampered code:
-
-```html
-<script
-  type="module"
-  src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js"
-  crossorigin="anonymous"></script>
+```bash
+pnpm --filter @archie/viewer run gen
+pnpm --filter @render/archie-viewer build
+node scripts/sync-dist.mjs
+python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-- `@v1` is a **pinned tag** — pin it so an upstream change can never silently alter your embed.
-- `crossorigin="anonymous"` is required for SRI to work cross-origin.
-- A real `integrity="sha384-…"` hash is published with each tagged release; add it to lock the
-  exact bytes. (The recipes leave a placeholder so they stay copy-pasteable before a release.)
-- `type="module"` — the runtime is an ES module / custom-element definition.
+Open <http://localhost:8000/recipes/try.html>.
+For the iframe example, open <http://localhost:8000/recipes/09-autogrow.html>.
 
-### 2. The element
+The generator creates the sample library under `apps/viewer/public/published/`.
+The build creates the package bundle.
+The sync step copies that bundle and its chunks into root `dist/`, which the local recipes load.
+A package build alone leaves the local recipe on the previous root bundle.
 
-```html
-<archie-viewer
-  src="…"
-  target="…"
-  offline></archie-viewer>
+The page serves the runtime and library from the same origin.
+Sample covers, thumbnails, and media can still request external servers.
+For a library with bundled media, use the [offline local-drop example](EMBED.md#offline).
+Adding `offline` to `try.html` blocks its URL-based library load in the current build.
+
+## Run the browser checks
+
+After the generation, build, and sync steps, run:
+
+```bash
+node recipes/smoke.mjs
 ```
 
-Three attributes, and that is the **whole** public surface. Adding attributes later is allowed;
-renaming or removing these is not (ADR-0021 — frozen public API).
+The script starts its own server and drives the built embed in Playwright Chromium.
+It requires the workspace dependencies and the Playwright Chromium browser.
+The script checks gallery navigation, reader interactions, and the contracts in [reader-contracts.mjs](reader-contracts.mjs).
+The [script header](smoke.mjs) records preconditions and a known timing flake.
+If a run fails, retain its failure details before another run.
 
-#### `src` — which library, and from where
-
-| `src` value | Meaning |
-|-------------|---------|
-| *(absent)* | **Local drop screen** — the visitor drops a `.archie.zip` from their own machine. Nothing is fetched. |
-| a `.archie.zip` URL | Fetch + open that hosted zip (e.g. `https://yourmuseum.org/libraries/codex.archie.zip`). |
-| a **published-tree base URL** | Open a tree the Studio published to static hosting (e.g. `https://micahchoo.github.io/Archie/viewer/published/` — replace with your own published-tree base URL if you fork). |
-
-A `.archie.zip` carries the **L1 self-identification marker** (`archie.json`, ADR-0020); the
-element validates it before parsing and refuses a non-Archie or version-mismatched zip cleanly
-instead of rendering garbage.
-
-#### `target` — open to a specific place (the full cite ladder)
-
-`target` is a **native-route address** — *the exact string the viewer shows in its own address
-bar*. A curator copies it verbatim. It carries the full five-rung cite ladder:
-
-| Rung | `target` form |
-|------|---------------|
-| **Exhibit** | `#/{slug}` |
-| **Object** | `#/{slug}/o/<objectId>` |
-| **Note** | `#/{slug}/a/<logicalId>` |
-| **Note + region** | `#/{slug}/a/<logicalId>?xywh=x,y,w,h` |
-| **Section** | `#/{slug}/s/<sectionId>` *(new route grammar)* |
-
-A `target` that **cannot be resolved degrades upward, never errors**: a missing note → its
-exhibit; a missing region → the whole object; an out-of-range section → the nearest valid
-section; a missing exhibit → the library gallery (or the lone exhibit if there is only one). The
-visitor always sees *something* — never a blank or error screen.
-
-#### `offline` — block remote fetch
-
-A boolean attribute (present = on). With `offline`, the element **blocks remote tile/media
-fetch** — useful for a kiosk, an air-gapped display, or a privacy-conscious page that must not
-phone home. Pair it with a `src` whose tiles/media are bundled locally (or with the local drop
-screen).
-
----
-
-## The iframe fallback (anvil ADR-0006)
-
-Some hosts **strip `<script>` tags and custom elements** — Notion, Substack, Squarespace, and
-many locked-down WordPress themes. The Web Component simply won't run there.
-
-The universal floor, per **anvil ADR-0006** (*"Web Component + iframe, nothing else"* — the prior
-art Archie's embed design adopts), is the **iframe**. Host a tiny page that itself contains the
-`<script>` + `<archie-viewer>`, then point an `<iframe>` at it. Iframes survive almost every CMS:
-
-```html
-<!-- embed-codex.html — host this on your own static hosting -->
-<!doctype html>
-<meta charset="utf-8">
-<style>html,body{margin:0;height:100%}archie-viewer{display:block;height:100%}</style>
-<script type="module"
-  src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js"
-  crossorigin="anonymous"></script>
-<archie-viewer src="https://yourmuseum.org/libraries/codex.archie.zip"></archie-viewer>
-```
-
-```html
-<!-- paste THIS into the restricted CMS -->
-<iframe src="https://yourmuseum.org/embed-codex.html"
-        style="width:100%;height:600px;border:0"
-        loading="lazy"
-        title="Codex — Archie viewer"></iframe>
-```
-
-> **iframe height note:** iframes do not auto-grow with their content. Give the iframe a fixed
-> `height` (above) — the no-JavaScript floor that works everywhere — **or**, if your host page can run
-> `<script>`, drop in the built auto-grow listener ([EMBED.md → "Auto-grow the iframe to its content"](EMBED.md);
-> live demo `recipes/09-autogrow.html`): the embed posts its height and the listener sizes the iframe to
-> fit. Hosts that strip `<script>` also strip the listener, so the fixed height stays the answer there.
-
-The WordPress (`06`) and Ghost (`07`) recipes show both: the `<script>`+element first, and the
-iframe fallback if the theme strips it.
-
----
-
-## CORS + HTTPS notes
-
-When `src` points at **another origin** than the host page (the common case — your zip on
-`yourmuseum.org`, your page on `someblog.com`):
-
-- **HTTPS is required.** A browser on an `https://` page refuses to fetch an `http://` resource
-  (mixed content), and the strict host CSPs these embeds are designed to run under only allow
-  `https:`.
-- **CORS is required.** The server hosting the `.archie.zip` (or the published tree) must send
-  `Access-Control-Allow-Origin` covering the host page's origin (`*` works for fully public
-  libraries). Without it, the browser blocks the cross-origin read and the viewer can't load.
-  - GitHub Pages and jsDelivr already send permissive CORS — `01` (GitHub Pages tree) and the CDN
-    script tag work cross-origin out of the box.
-  - A zip on **your own** server (`02`) needs you to set the CORS header yourself.
-- **Same-origin needs neither** — if the page and the zip live on the same origin, CORS doesn't
-  apply.
-
----
-
-## The recipes
-
-| File | Scenario |
-|------|----------|
-| `01-github-pages.html` | Library published to GitHub Pages — `src` = the tree base URL. |
-| `02-self-host-zip.html` | A hosted `.archie.zip` — `src` = the zip URL (CORS note). |
-| `03-local-drop.html` | No `src` → the drop-a-zip starting screen. |
-| `04-deep-link.html` | `target` a specific note and a specific object (two examples). |
-| `05-offline.html` | The `offline` attribute (no remote fetch). |
-| `06-wordpress.md` | Paste into a Custom HTML block; iframe fallback. |
-| `07-ghost.md` | An HTML card; iframe fallback. |
-| `08-multiple-on-one-page.html` | Two embeds on one page (multi-instance). |
-
-**Replace if you fork** (the recipes resolve live against `micahchoo.github.io/Archie/viewer/published/`):
-`micahchoo.github.io/Archie` (your own GitHub Pages published-tree base),
-`yourmuseum.org` (your own hosting), `codex` / `voynich` (your library's exhibit slug),
-`sha384-PLACEHOLDER…` (the real SRI hash from the tagged release).
+[TESTING.md](TESTING.md) provides the manual walkthrough and expected results for local variants.

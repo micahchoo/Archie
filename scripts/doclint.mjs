@@ -52,7 +52,7 @@ function frontmatter(text) {
   return out;
 }
 
-const scopesOf = (fm) => (Array.isArray(fm.scope) ? fm.scope : fm.scope ? fm.scope.split(",").map((x) => x.trim()) : []);
+const scopesOf = (fm) => (Array.isArray(fm.paths) ? fm.paths : []);
 
 function mdFiles(dir) {
   const abs = join(ROOT, dir);
@@ -87,16 +87,22 @@ const wikiFiles = [...ruleFiles, ...hubFiles, ...priorArtFiles];
   bad.length ? err("links", `dangling wikilinks (add page or allowlist):\n    ${bad.join("\n    ")}`) : ok("links", `all [[links]] resolve across ${wikiFiles.length} pages`);
 }
 
-// ---------- 2. dead scopes ----------
+// ---------- 2. native rule paths and dead scopes ----------
 {
   const bad = [];
   for (const f of [...ruleFiles, ...hubFiles]) {
-    for (const scope of scopesOf(frontmatter(readFileSync(join(ROOT, f), "utf8")))) {
+    const fm = frontmatter(readFileSync(join(ROOT, f), "utf8"));
+    if (!Array.isArray(fm.paths) || !fm.paths.length || fm.paths.some((p) => typeof p !== "string" || !p.trim())) {
+      bad.push(`${f} — paths must be a nonempty YAML list for native conditional loading`);
+      continue;
+    }
+    if (Object.hasOwn(fm, "scope")) bad.push(`${f} — replace legacy scope with paths (one source of truth)`);
+    for (const scope of scopesOf(fm)) {
       const re = globToRegex(scope);
       if (!trackedFiles.some((t) => re.test(t))) bad.push(`${f} — scope "${scope}" matches no tracked file`);
     }
   }
-  bad.length ? err("scopes", `dead scopes (retarget or delete per CLAUDE.md pruning):\n    ${bad.join("\n    ")}`) : ok("scopes", "every scope glob matches ≥1 tracked file");
+  bad.length ? err("scopes", `invalid rule paths (retarget or prune):\n    ${bad.join("\n    ")}`) : ok("scopes", "every native paths list is valid and every glob matches ≥1 tracked file");
 }
 
 // ---------- 3. stale hubs ----------
@@ -105,7 +111,7 @@ const wikiFiles = [...ruleFiles, ...hubFiles, ...priorArtFiles];
   for (const f of hubFiles) {
     const fm = frontmatter(readFileSync(join(ROOT, f), "utf8"));
     const scopes = scopesOf(fm);
-    if (!fm.updated || !scopes.length) { bad.push(`${f} — missing updated:/scope: frontmatter`); continue; }
+    if (!fm.updated || !scopes.length) { bad.push(`${f} — missing updated:/paths: frontmatter`); continue; }
     const pathspecs = scopes.map((s) => `":(glob)${s}"`).join(" ");
     let last = "";
     try { last = git(`log -1 --format=%cs -- ${pathspecs}`); } catch { /* no commits */ }

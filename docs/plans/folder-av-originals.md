@@ -1,5 +1,9 @@
 # Plan: AV originals in the bound folder (outside quota)
 
+> **Status review — 2026-09-05: historical proposal, folded into the native-store work.** Seeds issue `Archie-623e` explicitly incorporates this AV scope.
+> `resident-store.ts` and `asset-store.ts` implement the shared storage seam, but `Archie-623e` and packaged verification `Archie-9ece` remain open.
+> Current plan: [native canonical store](native-canonical-store.md). Current work: [desktop hub](../../hubs/desktop.md) and [seeds](../agents/issue-tracker.md).
+
 **Status:** designed, not built — deliberately split from the 2026-07-20 storage batch
 (quota-preflight removal · storage chip · TIFF transcode · `persist()`), which shipped together.
 **Why it exists:** WICG File System Access §6.3 — files written through a user-granted directory

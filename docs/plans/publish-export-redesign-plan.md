@@ -1,5 +1,10 @@
 # Publish/Export Redesign — Implementation Plan
 
+> **Status review — 2026-09-05: completed historical plan.** All seven listed task issues are closed in seeds.
+> `Publish.svelte` mounts `ExportMenu`, `SetupFlow`, and `PublishSheet`.
+> The checkboxes and execution instructions below preserve the original plan.
+> Current behavior: [capabilities](../CAPABILITIES.md). Current work: [publishing hub](../../hubs/publishing.md) and [seeds](../agents/issue-tracker.md).
+
 > **For agentic workers:** Use executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax.
 > Spec: `docs/plans/publish-export-redesign.md` (locked decisions LD1–LD5 are constraints, not open).
 >
@@ -28,7 +33,7 @@ Archie-7d9b) are reused untouched.
 
 **Gates for every wave:** `pnpm --filter @archie/studio run check` (0/0),
 `cd apps/studio && pnpm typecheck`, `cd apps/studio && pnpm exec vitest run`. Any prop-wiring or
-visibility claim additionally needs a browser drive ([[svelte-no-typecheck-net]]).
+visibility claim additionally needs a browser drive ([[two-typescript-compilers]]).
 
 ---
 
@@ -122,7 +127,7 @@ visibility claim additionally needs a browser drive ([[svelte-no-typecheck-net]]
 **Files:** Modify: `apps/studio/src/App.svelte` — the header entry is the `publish-signal` button at `:2097` (`onclick` → `ensurePub().then((p) => p.openMenu())`; `openMenu` is `publish-flows.svelte.ts:726`, a DIFFERENT function from `openPublish:834`). The `<Publish>` mount props sit near `:2797` (`onenterweb={p.openPublish}`). Locate by `grep -a -rn "publish-signal" apps/studio/src` — NOT by grepping `openPublish`, which never surfaces the button. Also modify: `apps/studio/src/Publish.svelte` (accept `intent` prop, default "publish"). NUL-byte warning: `publish-flows.svelte.ts` contains NUL bytes — plain `grep` returns zero matches on it; always `grep -a`.
 
 - [ ] Split-button: primary = Publish (sheet or setup), menu item = "Export a copy…" (ExportMenu).
-- [ ] Run gates + drive: both entries land on the right surface; a prop typed but not destructured is exactly the [[svelte-no-typecheck-net]] class — the drive is the gate, not svelte-check.
+- [ ] Run gates + drive: both entries land on the right surface; a prop typed but not destructured is exactly the [[two-typescript-compilers]] class — the drive is the gate, not svelte-check.
 - [ ] Commit.
 
 ### Task 7: Copy pass, refusal cross-link, dead code, e2e

@@ -1,5 +1,7 @@
 ---
-scope: packages/render-core/src/fs/tauri.ts,apps/studio/src/tauri-fs.ts
+paths:
+  - "packages/render-core/src/fs/tauri.ts"
+  - "apps/studio/src/tauri-fs.ts"
 tags: [durability, security, filesystem, tauri, atomic-write, path-traversal]
 priority: high
 source: hand-written

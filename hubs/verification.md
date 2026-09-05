@@ -1,5 +1,5 @@
 ---
-scope:
+paths:
   - "recipes/**"
   - "apps/viewer/e2e/**"
   - "apps/studio/e2e/**"
@@ -14,20 +14,16 @@ updated: 2026-09-05
 # verification
 > *how do I prove a change works?*
 
-This territory is every gate that turns "I believe it" into "I measured it": the CI jobs in
-`.github/workflows/checks.yml`, the perf ratchets under `scripts/perf/`, the browser-driven
-recipes/e2e suites, and `scripts/doclint.mjs` for the knowledge layer itself. The one rule that
-cuts across all of them: **a gate answers the question it was asked, and "did this actually
-exercise anything?" is a question no gate asks itself** ([[svelte-no-typecheck-net]]). Pick your
-claim from the table below before reaching for a test framework at random.
+Select the gate that exercises the changed behavior. Read its output before reporting results.
+Type checking, browser interaction, and artifact inspection answer different questions.
 
 ## Claim → gate
 
 | claim | gate | caveat |
 | --- | --- | --- |
 | clicks work in the embed | `recipes/smoke.mjs` (real Chromium) | keyboard Enter / synthetic `.click()` pass even when OSD's overlay wrapper swallows a real click — [[osd-overlay-wrapper]] |
-| an island's `.svelte` script typechecks | per-app `svelte-check` (`pnpm --filter @archie/studio run check`, viewer's `check:svelte`) | `tsc`/`astro check` never parse `.svelte` script bodies — [[svelte-no-typecheck-net]] |
-| `.ts` strictness in apps/studio | `pnpm typecheck` (native tsc, explicit path) | svelte-check relaxes `exactOptionalPropertyTypes` — [[studio-ts-typecheck-gate]], [[two-typescript-compilers]] |
+| an island's `.svelte` script typechecks | per-app `svelte-check` (`pnpm --filter @archie/studio run check`, viewer's `check:svelte`) | `tsc`/`astro check` never parse `.svelte` script bodies — [[two-typescript-compilers]] |
+| `.ts` strictness in apps/studio | `pnpm typecheck` (native tsc, explicit path) | svelte-check relaxes `exactOptionalPropertyTypes` — [[two-typescript-compilers]] |
 | embed bundle kept OSD off the page-load path | `eagerGzKB` in `packages/archie-viewer/build.mjs --check` | `entryGzKB`/`totalGzKB` moved Δ+0KB while a real leak grew eager 36→270.5KB — [[archie-viewer-eager-closure]] |
 | publish got faster | `scripts/perf/publishrun.mjs` (end-to-end, real Chromium, no `--check`/budget — read the printed numbers; ARCHIVAL-tier only, the tier engine is never exercised — Archie-e870) | a primitive bench misleads: tiling alone measured 19–37x, end-to-end 1.9–4.7x — [[perf-measure-the-flow]] |
 | reader arrival payload in budget | `scripts/perf/readerrun.mjs --check` vs `reader-budget.json` | raw transferred JS bytes on arrival, per route |
@@ -42,37 +38,20 @@ claim from the table below before reaching for a test framework at random.
 | knowledge layer (rules/hubs/tickets) is consistent | `scripts/doclint.mjs` (CI job `doclint`, checks.yml) | needs full git history — the job checks out with `fetch-depth: 0`; a shallow local clone gives false reds on pointers/stale-hubs |
 
 ## Binding rules
-- [[a-green-run-is-one-sample]] — one red-green proves an assertion CAN fail, not that it passes reliably; order/timing-sensitive assertions need ~20 unchanged runs.
-- [[post-review-fixes-are-unreviewed]] — code written to address review feedback is unreviewed by default; red-green it and read the DETAIL line, not just PASS/FAIL.
-- [[drive-must-not-recreate-the-thing-under-test]] — a drive that `goto`s destroys the state you're asserting about; inject the defect and watch it fail before trusting any assertion.
-- [[playwright-count-does-not-wait]] — `Locator.count()` right after a navigation reads 0 pre-hydration; a bare-count skip passes vacuously.
-- [[playwright-emulation-and-scroll-traps]] — assert an emulation option (`reducedMotion`, etc.) actually applied before depending on it; a synthetic wheel is dropped mid-smooth-scroll.
-- [[viewer-e2e-shared-port]] — concurrent e2e runs share port 4326 and silently drive a sibling's build; assign distinct `VIEWER_E2E_PORT`s.
-- [[shared-worktree-agent-collisions]] — in a shared checkout even `git restore --source=HEAD` can destroy a sibling's uncommitted edit.
 
-## Decisions
-- (arch deepening + read-seam probes, no ticket) / 8341381 — svelte-check caught a wiring bug neither
-  tsc nor 1293 passing studio tests could see (`publishBlocked` returning a boolean where
-  publish-machine invokes a predicate); `scripts/lib/checklist.mjs` gave every script gate one
-  tolerant per-item tail, which is what let two adversarial read-path probes surface 9 finding
-  classes in ONE run each instead of one per fix-and-rerun. Counter-lesson from the same commit: its
-  own "1521 green" line was never reconciled against a run — the committed tree had 7 red tests / `ledgers/PROBE-read-seam-adversarial-2026-08-08.md`
-- Archie-c314 — `build.mjs`'s baseline write gated behind `--update`; a plain `pnpm -r build` was silently rewriting the eagerGzKB ratchet's own reference point.
-- Archie-f90d — `CONTRACTED_LABELS` completeness check restored to 40/40 after a post-review splice silently dropped it to 35/35 with every gate still green.
-- Archie-64ef — `recipes/smoke.mjs` proven the only gate that catches OSD's overlay-wrapper click-swallow; keyboard/synthetic-click probes pass regardless.
-- Archie-4635 — svelte-check (1464 files, 0/0) proven blind to unbound prop wiring; only a driven browser click caught the dead Cancel button.
-- Archie-656a — a TS2379 violation passed vitest (542 green) and svelte-check (0/0); only `pnpm typecheck` caught it.
-- Archie-676f — scale-check made `workflow_dispatch`-only by design: a multi-minute real-ingest drill must never gate an ordinary PR.
-- Archie-027c — export-fidelity gate shipped and wired as CI job `export-fidelity` (~2s, 12/12 unchanged runs, 9/9 checks red-greened); found `verify-publish.mjs`'s heads line is `check(true, …)` — a report, not an assertion: a 0-of-9-heads tree passed it exit 0 / 35ef836
-- Archie-b5c2 — FSA real-folder autosave measured 1.2–2.7 ms median vs the 800 ms debounce (within 0.5 ms of OPFS; 125 samples/config, `.crswap` temp-swap proven, tmpfs trap dodged — check the device of BOTH sides); web folder-canonical needs NO cadence change; `scripts/perf/fsafolderrun.mjs` is the headed-Xvfb runner (headless can only reach OPFS, which never exercises the temp-swap path) / 3423c92, ledger `ledgers/PERF-fsa-autosave-2026-07-28.md`
+- [[two-typescript-compilers]] — compiler selection, Svelte checks, and prop wiring.
+- [[a-green-run-is-one-sample]] — reliability needs repeated samples for timing-sensitive checks.
+- [[post-review-fixes-are-unreviewed]] — review fixes and reconcile the actual assertion counts.
+- [[drive-must-not-recreate-the-thing-under-test]] — preserve the state a transition check exercises.
+- [[playwright-count-does-not-wait]] — wait for expected elements before counting them.
+- [[playwright-emulation-and-scroll-traps]] — check that emulation and input reached the browser.
+- [[viewer-e2e-shared-port]] — give concurrent app checks separate ports.
+- [[shared-worktree-agent-collisions]] — protect preexisting edits during temporary test injections.
 
-## Evidence
-- `.github/workflows/checks.yml` — enumerates the live gate set: typecheck, unit-scripts, doclint, test, astro-check, svelte-check, gh-pages-build, archie-viewer-artifact, embed-smoke, export-fidelity, perf-ratchets, e2e.
-- `recipes/smoke.mjs` header — documents its own two silent-failure preconditions (unbuilt fixtures, stale root `dist/`) and one still-unattributed flake (2026-07-26).
+## Evidence and limits
 
-## Open & hazards
-- doclint wired into CI 2026-07-27 (job `doclint`). All 12 checks proven red-green same day; the allowlist (scripts/doclint-allow.json) carried ticket ids for its deliberate deferrals; both (Archie-e149 ledger migration, Archie-1f60 accretion rewrite) resolved later the same day and their allowlist entries are empty again.
-- Red-green discipline: inject the defect, confirm it fails for the reason you intended (not a precondition failure), then confirm clean — never trust an assertion you haven't watched fail.
-- Before citing a count or "N/N" figure from any of the above gates, reconcile it against a number the tool itself printed — see [[post-review-fixes-are-unreviewed]]'s counting traps.
-
-- Review 2026-09-05 → Review regressions cover corrupt adoption, racing saves, undo, source identity, contrast and built embed navigation; final counts and limits are in the implementation ledger. Evidence: `ledgers/IMPLEMENT-review-2026-09-05.md`; contracts: `ledgers/DESIGN-review-modules-2026-09-05.md`.
+- `.github/workflows/checks.yml` defines the required CI jobs. Inspect that file for the live set.
+- `docs/CAPABILITIES.md` records delivery limits and the packaged desktop verification boundary.
+- Review 2026-09-05 → Final gate results and limitations are recorded in `ledgers/IMPLEMENT-review-2026-09-05.md`.
+- Documentation refresh 2026-09-05 → Guide checks and rule-loading validation are recorded in `ledgers/DOCS-refresh-2026-09-05.md`.
+- Earlier gate failures and measurements: [archived hub](../ledgers/DOCS-hubs-before-2026-09-05.md#verification).

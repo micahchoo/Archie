@@ -1,5 +1,5 @@
 ---
-scope:
+paths:
   - "packages/render-core/src/spine/**"
   - "packages/render-core/src/fs/**"
   - "packages/render-core/src/publish/**"
@@ -11,88 +11,31 @@ updated: 2026-09-05
 # data
 > *How is knowledge stored, merged, and kept safe?*
 
-`render-core` is the engine: an append-only per-note version DAG (`spine/`, ADR-0003) read/written
-through one `Filesystem` seam — Memory/Zip/FSA/OPFS (`fs/`), node:fs (`fs/node.ts`,
-`NodeFilesystem`, subpath `@render/core/node`), read-only HTTP (`fs/http.ts`, `HttpFilesystem`),
-Tauri (path-based, `fs/tauri.ts`), a streaming zip writer (`fs/zip-stream.ts`) and a fixity
-decorator (`fs/hashing.ts`) — and published/opened through `publish/`. The one spec that matters is
-`spine/MERGE-CONTRACT.md` (C1-C18, each pinned by a named test in `merge-contract.test.ts`); the one
-gate that matters is that suite plus `fs/conformance.ts` run against every backend.
+The shared core stores append-only annotation history behind the Filesystem interface.
+The merge contract is `packages/render-core/src/spine/MERGE-CONTRACT.md`, with executable coverage in its neighboring tests.
+
+## Current guidance
+
+- Use the shared history codec and classified read helpers. Corrupt data, missing data, and failed reads require different recovery decisions.
+- Save snapshots retain edits made during a write. Failed writes restore the pending dirty IDs for retry.
+- Writable adapters append successive chunks consistently. Multi-file saves still need explicit ordering.
+- Undo changes the session projection without rewriting history. It does not survive reopening as an undo stack.
+- `packages/render-core/src/publish/open.ts` owns archive decoding and marker validation.
+- Tree readers share the marker policy and migration registry. Older formats migrate on read without rewriting the source.
+- MERGE-CONTRACT OQ-2, OQ-3, and OQ-5 document known edge cases. Read them before adding importers or alternate history writers.
 
 ## Binding rules
-- [[render-core-data-integrity]] — multi-file writes: content before index/marker; reads are
-  per-item tolerant (corrupt ≠ empty, absent ≠ failed); every hand-mapped model field carries a
-  compiler-guarded `carry.ts` sentinel — an unguarded new mapper is how a field silently stops
-  copying.
-- [[untrusted-archive-open-seam]] — `publish/open.ts` is the ONLY place `ZipFilesystem.fromZip` +
-  `validateArchieMarker` compose; a second hand-rolled copy is how studio's `ingest-flows.ts` once
-  shipped with marker validation skipped entirely.
-- [[tauri-fs-seam]] — the Tauri backend must re-earn what browser handle APIs give free: atomic
-  replace (temp-then-rename in `close()`) and name containment (`assertSafeName`, blocks `..`
-  traversal) — both are desktop-only write-escape / torn-write risks a naive path-join port drops.
-- [[bound-fetch-defaults]] — `fs/http.ts`'s ctor-defaulted `fetch` must be
-  `globalThis.fetch.bind(globalThis)`; unbound, it throws `Illegal invocation` in every real browser
-  and passes every Node vitest suite silently.
-- [[perf-measure-the-flow]] — §3: the spine's hot path is per-EDIT; a whole-log op added to
-  `createNote`/`editNote`/`notes()` is quadratic at scale and every gate here is a RATIO, never a
-  ms threshold.
 
-## Decisions
-- (arch deepening P1-P3, no ticket) / 8341381 — the READ seam is one composition in core:
-  `NodeFilesystem` on the `@render/core/node` subpath (off the browser barrel — the esbuild gate
-  caught the node:fs drag), `tryResolveFile` the one classified traversal, `httpJsonSource` +
-  `fetchZipBytesIfAny` in core, 5 script bridges collapsed; one `classifyArchieMarker` with typed
-  verdicts behind both gates; `recordsToWorking` / segment-safety / `FileContent` twins collapsed.
-  Adversarially re-probed the same week — 9 finding classes, 5 fixed, 4 open (zip name gate, raw
-  fflate decode text, silently-short STORED entries, torn-marker surface) / `ledgers/PROBE-read-seam-adversarial-2026-08-08.md`
-- Archie-69f9 — an OLDER published tree now MIGRATES on read (`migrate/tree.ts` + `migratingJsonSource`
-  over the `JsonSource` seam), never rewritten in place; the marker gates accept `version <
-  SCHEMA_VERSION` ONLY where the registry covers every step, so a gap is still a clean refusal /
-  e0416f4. The remainder landed same-day: Archie-5c8d wired the hosted-tree reader
-  (`apps/viewer/src/published.ts`) to the same seam / 857e1fa — every reader now migrates.
-- Archie-01c9 — minimal signals layer (`state/`: atom/computed/transact, 322 code lines, tldraw-cited)
-  ADOPTED per grill 2026-07-28; `workingAnnotations` is a computed over a revision atom, Δ 0.0KB in the
-  embed's eager chunk, perf ratchet live 13/13; the learn-ledger's "transact batches recomputation"
-  claim was wrong — laziness does that, transact batches the SUBSCRIBER tick (both pinned separately)
-  / 90fa87a
-- Archie-69a6 — RecordsDiff undo proven over the PROJECTION, never the log (`session/undo.ts`,
-  `session.entries` byte-identical across undo/redo/bailToMark, O(1) per mutation); freecut's
-  whole-projection snapshot disqualified by the merge model (resurrects an undone note, measured);
-  known limit: undo does not survive save+reload — build ruled session-scoped per grill 2026-07-28
-  / 1ce65c5, `docs/research/undo-feasibility.md`
-- Archie-6b8e — note→section attribution is a 7th content field, dropped on tombstone (non-revivable
-  by section un-delete, deliberate) / facb09c
-- Archie-494c — spine stays append-only-DAG, not promoted to an op-log (decision gate, closed)
-- Archie-d71c — collaboration signals: wire or remove (closed) — feeds MERGE-CONTRACT OQ-6
-  (`projectHeads` hides delete-vs-edit conflicts; MergeReview must read `headsOf`)
-- Archie-5a9b — Dublin Core metadata pipeline: model field + carry sentinels + lossless
-  `archieMetadata` round-trip at Collection/Manifest/Canvas / 30c1356
-- Archie-1cf0 — Zip64 writer: streaming zip's 4 GiB and 65,535-entry caps removed (bytes: c27aa95,
-  entries: 56cf7c5)
+- [[render-core-data-integrity]] — preserve ordering, classified recovery, and compiler-checked field carry.
+- [[untrusted-archive-open-seam]] — reuse the archive validation composition.
+- [[tauri-fs-seam]] — preserve atomic replacement and safe names.
+- [[bound-fetch-defaults]] — bind browser fetch defaults.
+- [[perf-measure-the-flow]] — measure per-edit cost and full workflows separately.
 
-## Evidence
-- `ledgers/PERF-annotation-spine-2026-07-24.md` — per-edit cost was O(log): 20k records = 17.75ms
-  (past the 16ms bar) for ONE edit; `HeadIndex` (incremental projection) makes it O(versions-of-note),
-  23-314x measured (23x at small logs, 130x+ at 2k-20k). Save's `toZip` was the real freeze (5.7s at 272MB, not Open, which cost 155ms) —
-  per-entry STORE-for-media fixed it to 0.6s (9x, end-to-end validated, not just micro-benched).
-- `docs/state/CANON.md` — the untrusted-archive seam's canonicalization: zero remaining call sites of
-  `ZipFilesystem.fromZip` outside `open.ts`; caps rescaled 2026-07-19 (`SRC_MAX_BYTES` 256MB→1GiB,
-  `maxEntries` 50k→500k) after a legit 100-object library blew past the old ones.
-- `packages/render-core/src/spine/MERGE-CONTRACT.md` — OQ-2 (rev-collision content mismatch is
-  silently unchecked), OQ-3 (tombstone-primary resolution yields a live, body-less node), OQ-5
-  (duplicate explicit `logicalId` forks an unguarded second root) are PINNED, not fixed — read before
-  assuming any of the three can't happen.
+## Verification and evidence
 
-## Open & hazards
-- MERGE-CONTRACT OQ-2/3/5 above are load-bearing gaps, not oversights — a new caller that can inject
-  duplicate revs or replay `logicalId`s (an importer) hits them for real.
-- CANON.md's maximal-flexibility design flagged an HTTP backend as "not built" — the backend half HAS
-  since landed: `fs/http.ts`'s `HttpFilesystem` is the read-only HTTP backend, composed by core's
-  `httpJsonSource` (`publish/read.ts`) and consumed by `apps/viewer/src/published.ts` and
-  `packages/archie-viewer/src/load.ts`. What stays deferred is the unification half: the zip-open
-  marker gate (`open.ts`) and the tree-over-HTTP gate (`read.ts`'s `assertArchieTreeMarker`) remain
-  two gate shapes over the one shared `classifyArchieMarker`.
-- Zip-open cap rescale is an accepted DoS tradeoff: a crafted `?src=` URL can now cost a tab ~4GiB
-  before any guard fires (marker/ratio guards unchanged, only the ceiling moved).
+- `packages/render-core/src/fs/conformance.ts` checks backend behavior. Native atomic-write tests cover additional guarantees.
+- Review 2026-09-05 → Save races, corrupt adoption, and mixed writable chunks pass regression checks. Evidence: `ledgers/IMPLEMENT-review-2026-09-05.md`.
+- `ledgers/DESIGN-review-modules-2026-09-05.md` records codec, save, and undo contracts.
 
-- Review 2026-09-05 → Save snapshots retain concurrent dirt; shared history reads distinguish corruption from absence; writable Adapters append mixed chunks consistently. Evidence: `ledgers/IMPLEMENT-review-2026-09-05.md`; contracts: `ledgers/DESIGN-review-modules-2026-09-05.md`.
+Earlier decisions and measurements: [archived hub](../ledgers/DOCS-hubs-before-2026-09-05.md#data).

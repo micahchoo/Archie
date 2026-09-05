@@ -1,21 +1,13 @@
 <!doctype html>
 <!--
-  recipes/try.html — local same-origin smoke page for <archie-viewer>
-  ==================================================================
-  EVERYTHING here is served from the REPO ROOT, so there is NO CORS, NO internet
-  needed: the bundle is /dist/archie-viewer.js and the library is the baked
-  published tree under /apps/viewer/public/published/.
+  Local page for the current archie-viewer build
 
-  Run it two ways:
-    • Manual:    cd <repo root> && python3 -m http.server 8000
-                 open http://localhost:8000/recipes/try.html
-    • Headless:  node recipes/smoke.mjs   (spins up its own server + Chromium)
-
-  What you should see: the gallery — a grid of exhibit cards ("The Rosettes",
-  "The Whole Manuscript", …). Click a card → its object grid. Click an object →
-  the deep-zoom reader (an OpenSeadragon canvas).
-
-  See recipes/TESTING.md for the full walkthrough (deep-link / offline / drop).
+  This page loads /dist/archie-viewer.js and /apps/viewer/public/published/ from the repository server.
+  The runtime and library use the same origin. External covers and media can still require network access.
+  See README.md for the generation, build, sync, and local server procedure.
+  Open http://localhost:8000/recipes/try.html.
+  Run node recipes/smoke.mjs after the build and sync steps for browser checks.
+  See TESTING.md for the manual walkthrough and EMBED.md for the reference.
 -->
 <html lang="en">
 <head>
@@ -30,7 +22,7 @@
   <!-- The local same-origin bundle. It auto-registers the <archie-viewer> element
        and lazily imports ./reader-*.js (the deep-zoom mount) when an object opens.
        The ./chunk-*.js / ./reader-*.js refs resolve relative to /dist/, so an
-       absolute /dist/ src is the only thing that keeps them reachable. -->
+       entry module must stay beside its imported chunks. -->
   <script type="module" src="/dist/archie-viewer.js"></script>
 </head>
 
@@ -49,32 +41,27 @@
        COMMENTED-OUT VARIANTS — swap one in for the live element above to try it.
        ============================================================================ -->
 
-  <!-- (a) DEEP-LINK target — land on a real published note (cite ladder, ADR-0018/0021).
-       `0000000001SEBWXFTSHHP00TVY` is a REAL note logicalId in this tree (object o1,
-       region xywh=pixel:260,240,2400,3300 — the f1r opening-page note).
-
-       HONEST NOTE on THIS published tree: its inline annotations carry only their
-       full-URL `id` (no inline `archie:logicalId`), and parseRoute splits the hash on
-       "/", so a full-URL noteId can't ride the hash. This short logicalId therefore
-       DEGRADES UPWARD (ADR-0021, note-not-found) to the voynich object grid — it never
-       errors, it lands on the nearest ancestor. To land ON the object instead, use the
-       `/o/<objectId>` rung, which resolves cleanly here (object id = o1):
+  <!-- (a) NOTE TARGET — current generated fixture.
+       The voynich manifest includes archie:logicalId 0000000001SEBWXFTSHHP00TVY for a note on o1.
+       In the current build, this target opens the note. An unmatched note opens the exhibit grid.
+       Replace the live element with one of these commented examples:
 
   <archie-viewer
     src="/apps/viewer/public/published/"
     target="#/voynich/a/0000000001SEBWXFTSHHP00TVY"
     style="display:block;height:90vh"></archie-viewer>
 
-       clean object landing (no degrade):
+       Object target:
   <archie-viewer
     src="/apps/viewer/public/published/"
     target="#/voynich/o/o1"
     style="display:block;height:90vh"></archie-viewer>
   -->
 
-  <!-- (b) OFFLINE — boolean attribute (presence = on). Blocks remote tile/media fetch
-       on object open. The gallery/grid still render from the local tree; opening an
-       object whose tiles live on a remote IIIF service shows the offline notice. -->
+  <!-- (b) OFFLINE URL-LOAD CHECK — expected refusal in the current build.
+       This variant blocks the relative src URL and shows a library-load error.
+       For offline reading, remove src and choose an archive with bundled media.
+       See EMBED.md#offline. -->
   <!--
   <archie-viewer
     src="/apps/viewer/public/published/"

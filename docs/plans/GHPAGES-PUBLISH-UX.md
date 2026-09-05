@@ -1,5 +1,10 @@
 # GitHub Pages publishing UX — redesign for GitHub novices
 
+> **Status review — 2026-09-05: historical proposal.** The implementation now includes `publish-machine.svelte.ts` and native GitHub device flow.
+> The later [Publish/Export redesign](publish-export-redesign-plan.md) records its seven completed tasks in seeds.
+> The proposal's original engine assumptions and deferred phases are not current implementation instructions.
+> Current behavior: [capabilities](../CAPABILITIES.md). Current work: [publishing hub](../../hubs/publishing.md) and [seeds](../agents/issue-tracker.md).
+
 Status: proposal · Author: product-design + architect · Date: 2026-06-20
 Scope: front-of-house + auth redesign of the GitHub-Pages publish path. The push engine is reused unchanged.
 

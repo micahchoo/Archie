@@ -1,7 +1,7 @@
 ---
-scope:
-  - apps/viewer/e2e/**
-  - recipes/**
+paths:
+  - "apps/viewer/e2e/**"
+  - "recipes/**"
 tags: [testing, e2e, concurrency, worktrees]
 priority: high
 source: hand-written
@@ -47,7 +47,7 @@ proves nothing, and neither does the green either side of it.
 `recipes/smoke.mjs` binds an ephemeral port (`listen(0, …)`, safe), but `recipes/try.html` loads the
 **repo-root** `/dist/archie-viewer.js` — run `node scripts/sync-dist.mjs` after every rebuild or the
 drive silently exercises the previous bundle. `apps/studio/e2e` (port 5198, `STUDIO_E2E_PORT`) has
-the identical shape. The general form is in [[svelte-no-typecheck-net]]: a gate answers the question
+the identical shape. The general form is in [[two-typescript-compilers]]: a gate answers the question
 it was asked, and *"did this run against my code?"* is a question the gate never asks itself.
 
 The structural fix — derive the default port from the worktree path, or `reuseExistingServer: false`

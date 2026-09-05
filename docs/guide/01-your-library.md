@@ -1,25 +1,35 @@
 # Your library
 
-The library is your workspace. Every exhibit you are building lives here, and
-this is where you start a new one.
+The library contains your exhibits. Each exhibit holds media objects, notes, and
+optional narrative sections.
 
-![The Archie Studio library: three example exhibits and a "new exhibit" card](../screenshots/auto/studio-library.desktop.png)
+Archie includes example exhibits, such as **The Rosettes**, **The Whole Manuscript**,
+and **Reading the Unreadable**. Example edits do not persist.
 
-Archie ships with **The Archie Library** — three exhibits to explore, each marked
-**Example**. They are the Voynich manuscript (Beinecke MS 408) read three ways, one
-per layout:
+To edit an example and keep your changes:
 
-- **The Rosettes** — a single deep-zoom folio (a Single exhibit).
-- **The Whole Manuscript** — all the folios side by side, with a sounded page (a Grid exhibit).
-- **Reading the Unreadable** — a prose walk through the manuscript (a Narrative exhibit).
+1. Open the example.
+2. Select **Keep a copy**.
+3. Edit the copy.
 
-Open an example to look around — but it is a template, so your changes there
-are not saved. To make one your own, use **Keep a copy**; your own exhibits
-save as you work. To start fresh, type a title into **New exhibit title…** and
-**Create**.
+To create an empty exhibit:
 
-One thing to know up front: *your library lives only in this browser* until you
-**Save to disk**. Saving gives you a file you can back up, move to another
-machine, or **Open a library** from later.
+1. Select **New exhibit** in the library.
+2. Select **Start empty**.
+3. Enter an exhibit title.
+4. Select **Create exhibit**.
+
+The same dialog also offers imports from a media folder or a IIIF link.
+
+Your own exhibits save automatically. Browser Studio keeps its working library
+in browser storage. Desktop Studio keeps its working library in a resident folder.
+The save indicator shows whether work is saved, in progress, or needs attention.
+
+**Save to disk** chooses a destination. Folder access depends on the browser or
+desktop app. A linked file needs an explicit **Save** after further edits.
+
+For a separate portable copy, use **Publish** → **Export a copy** → **A working copy**.
+The `.archie.zip` contains the library and its local original files. It does not
+automatically include media from remote sources. If you clear site data, browser storage can disappear.
 
 → Next: [Inside an exhibit](02-inside-an-exhibit.md)

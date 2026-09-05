@@ -1,5 +1,5 @@
 ---
-scope:
+paths:
   - "packages/**/vitest.config.ts"
   - "packages/**/build.mjs"
 tags: [build, vitest, css, testing]
@@ -33,7 +33,7 @@ was styled exactly as intended. Only the test runtime saw an empty string. So:
   runtime was right and the TEST runtime was wrong, so no amount of driving the real thing would have
   surfaced it. Only asserting the string's content in a test does.
 
-Same shape as [[svelte-no-typecheck-net]]: the gate answered a real question correctly, and it was not
+Same shape as [[two-typescript-compilers]]: the gate answered a real question correctly, and it was not
 the question that mattered.
 
 ## The fix: a virtual module id

@@ -1,8 +1,8 @@
 ---
-scope:
-  - recipes/**
-  - apps/viewer/e2e/**
-  - apps/studio/e2e/**
+paths:
+  - "recipes/**"
+  - "apps/viewer/e2e/**"
+  - "apps/studio/e2e/**"
 tags: [testing, e2e, drive, vacuous-tests]
 priority: high
 source: hand-written
@@ -78,5 +78,5 @@ than merely present, reconcile every reported number against one you actually re
 line and not just `PASS`/`FAIL` — are in `[[post-review-fixes-are-unreviewed]]`. Read both; they are
 the same failure wearing different clothes.
 
-Parent principle in `[[svelte-no-typecheck-net]]`: a gate answers the question it was asked, and
+Parent principle in `[[two-typescript-compilers]]`: a gate answers the question it was asked, and
 *"did this actually exercise anything?"* is a question no gate asks itself.

@@ -1,37 +1,13 @@
 <!doctype html>
 <!--
   Recipe 08 — Two embeds on one page
-  ==================================
-  Scenario: a comparison view, a syllabus page, or a catalogue that shows two (or more)
-  Archie libraries side by side. You load the runtime ONCE (one <script> tag) and place
-  several <archie-viewer> elements.
 
-  ⚠ MULTI-INSTANCE IS PHASE 4 — READ THIS BEFORE SHIPPING TWO ON A LIVE PAGE ⚠
-  ------------------------------------------------------------------------------
-  Today, the viewer's load context lives in MODULE-LEVEL GLOBALS (published.ts) — there is
-  one shared decoded-library / route / pending-target state for the whole page. So before
-  Phase 4 lands, two <archie-viewer> elements on the same page would CLOBBER each other:
-  the second to load overwrites the first's state. This is item 7 in
-  docs/plans/EMBED-VIEWER-IMPLEMENTATION-STRATEGY.md (Phase 4 — Multi-instance):
-
-    7.1  instance-scoped refactor: module-globals -> per-element context
-    7.2  decoded-library-by-URL cache, ref-counted vs blob-revoke
-         (so a shared src fetches/decodes ONCE; one element closing doesn't
-          revoke another's live blob URLs)
-    7.3  explicit pending-target state machine
-
-  Until Phase 4:
-    - ONE <archie-viewer> per page is the supported configuration.
-    - For two-on-a-page TODAY, isolate each in its own IFRAME (each iframe is a fresh
-      document with its own module globals — no shared state). The iframe fallback (anvil
-      ADR-0006, see recipes 06/07) doubles as the pre-Phase-4 multi-instance workaround.
-
-  The markup below is the FINISHED Phase-4 contract — correct once 7.x ships, and it doubles
-  as the Phase-4 integration fixture. The iframe variant beneath it is what works right now.
-
-  REPLACE (if you fork):
-    micahchoo.github.io/Archie  ->  your published tree base
-    voynich / language-atlas     ->  your exhibit slugs
+  Load the runtime once, then add an element for each library or target.
+  The current element owns its library and navigation state per instance.
+  Iframes are an alternative for hosts that permit frames but remove custom elements or scripts.
+  Replace the sample source URLs, exhibit slugs, and iframe wrapper URLs before reuse.
+  This example uses the pinned v1.1 CDN bundle.
+  See EMBED.md for the reference and README.md for the current local build.
 -->
 <html lang="en">
 <head>
@@ -55,14 +31,10 @@
 
 <body>
 
-  <!-- ============================================================
-       PHASE 4 contract (correct once item 7.x ships). Two direct
-       elements, one shared runtime. DO NOT ship on a live page yet
-       — pre-Phase-4 they share global state and clobber each other.
-       ============================================================ -->
+  <!-- Two elements share the runtime and have separate source and target attributes. -->
   <p class="note">
-    Multi-instance is <strong>Phase 4</strong>. The two direct elements below are the
-    finished contract; until 7.x ships, use the iframe variant at the bottom.
+    The two elements use one runtime. Each has its own target.
+    The iframe examples need hosted wrapper pages at the placeholder URLs.
   </p>
 
   <!-- replace with your own published-tree base URL if you fork -->
@@ -83,21 +55,15 @@
 
   <hr>
 
-  <!-- ============================================================
-       WORKS TODAY (pre-Phase-4): each embed in its own iframe.
-       Each iframe is a separate document -> separate module globals
-       -> no shared-state clobbering. Host one tiny wrapper page per
-       library (see recipes 06/07 for the wrapper HTML), then iframe
-       each. This is the supported two-on-a-page path until 7.x lands.
-       ============================================================ -->
+  <!-- Alternative: host a wrapper page for each iframe. See EMBED.md for iframe requirements. -->
   <div class="grid">
     <section>
-      <h2>Voynich (iframe — works today)</h2>
+      <h2>Voynich (iframe)</h2>
       <iframe src="https://yourmuseum.org/embed-voynich.html"
               loading="lazy" title="Voynich — Archie viewer"></iframe>
     </section>
     <section>
-      <h2>Language Atlas (iframe — works today)</h2>
+      <h2>Language Atlas (iframe)</h2>
       <iframe src="https://yourmuseum.org/embed-language-atlas.html"
               loading="lazy" title="Language Atlas — Archie viewer"></iframe>
     </section>

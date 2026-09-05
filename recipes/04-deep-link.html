@@ -1,32 +1,15 @@
 <!doctype html>
 <!--
-  Recipe 04 — Deep-link to a specific place (the target attribute)
-  ===============================================================
-  Scenario: you want the embed to OPEN to a specific note or a specific object, not the
-  gallery. The `target` attribute is a native-route address — the EXACT string the viewer
-  shows in its own address bar. Open the location in the standalone viewer, copy the hash
-  from the address bar, paste it as `target`. It carries the full cite ladder:
+  Recipe 04 — Open an object or note through target
 
-    Exhibit         #/{slug}
-    Object          #/{slug}/o/<objectId>
-    Note            #/{slug}/a/<logicalId>
-    Note + region   #/{slug}/a/<logicalId>?xywh=x,y,w,h
-    Section         #/{slug}/s/<sectionId>      (new route grammar)
-
-  DEGRADE-UPWARD (ADR-0021): a target that can't be resolved NEVER errors — it falls back
-  upward. Missing note -> its exhibit; missing region -> the whole object; out-of-range
-  section -> nearest valid section; missing exhibit -> the gallery. The visitor always
-  sees something.
-
-  Contract: ADR-0021 (target = full cite-ladder native-route address + degrade-upward).
-  Delivered by: Phase 3 (target ladder + degrade-upward).
-
-  Two live examples below. They share one library (src) and differ only in `target`.
-
-  REPLACE (if you fork):
-    micahchoo.github.io/Archie  ->  your published tree base
-    voynich                      ->  your exhibit slug
-    n3 / obj-folio-1             ->  your note logicalId / objectId
+  Copy the route hash beginning with #/ from a Viewer link into target.
+  The object example is active. The note example remains commented out.
+  Replace the sample source URL, exhibit slug, object ID, and note logical ID before reuse.
+  The n3 note ID is a placeholder.
+  In the current build, missing objects, notes, and sections open the exhibit grid.
+  A missing exhibit opens the gallery. Source or media failures can still show an error.
+  This example uses the pinned v1.1 CDN bundle.
+  See EMBED.md#targets for current behavior and README.md for the local build.
 -->
 <html lang="en">
 <head>
@@ -63,8 +46,8 @@
   <!-- EXAMPLE B: open straight to a specific NOTE.
        target = #/{slug}/a/{logicalId}. Append ?xywh=x,y,w,h to also frame a sub-region.
 
-       note-level deep-link — resolves only when the published annotations carry a bare
-       logicalId (slash-free); otherwise degrades to the object. Uncomment to try:
+       The n3 value is a placeholder. Replace it with a published note identifier.
+       In the current build, an unmatched note opens the exhibit grid. Uncomment to try:
 
   <section>
     <h2>B — Land on a note</h2>

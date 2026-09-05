@@ -1,5 +1,10 @@
 # Viewer preview + self-contained export — Implementation Plan
 
+> **Status review — 2026-09-05: implementation present. remaining acceptance is separate.** `Publish.svelte` mounts `ViewerPreview`, and publish flows call `buildSingleFileHtml`.
+> Closed seeds issue `Archie-c34f` records browser evidence for the single-file prototype.
+> Safety work `Archie-3c94` and bundle freshness `Archie-d0ce` remain open. This plan is not proof that those checks passed.
+> Current behavior: [capabilities](../../CAPABILITIES.md). Current work: [publishing hub](../../../hubs/publishing.md) and [seeds](../../agents/issue-tracker.md).
+
 > **For agentic workers:** Use executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** An author can see their library exactly as a reader will, without publishing — and can export
@@ -124,7 +129,7 @@ whole point of handing over the `Filesystem` is to skip that.
   from `createPublishFlows`'s return block beside `writeToFolder` / `downloadProjectZip`.
 - [ ] **Step 4: Run tests + typecheck.**
   Run: `cd apps/studio && pnpm exec vitest run && pnpm typecheck` — Expected: PASS, tsc 0 errors.
-  (`pnpm typecheck` is the real gate for `.ts` here — `.claude/rules/studio-ts-typecheck-gate.md`.)
+  (`pnpm typecheck` is the real gate for `.ts` here — `.claude/rules/two-typescript-compilers.md`.)
 - [ ] **Step 5: Commit** — `feat(studio): previewTree — the published tree without serializing it`
 
 ---
@@ -190,7 +195,7 @@ dialog trapping focus across that boundary is the non-obvious part)
 - [ ] **Step 4: Gates.**
   Run: `cd apps/studio && pnpm exec vitest run && pnpm typecheck && pnpm --filter @archie/studio run check`
   Expected: vitest PASS, tsc 0, svelte-check **0 errors / 0 warnings** (the standing baseline).
-- [ ] **Step 5: Drive it.** Per `.claude/rules/svelte-no-typecheck-net.md`, a prop can be typed and not
+- [ ] **Step 5: Drive it.** Per `.claude/rules/two-typescript-compilers.md`, a prop can be typed and not
   bound and nothing static complains. Use the `run-app` skill; open Studio, click "Preview as reader",
   assert `.openseadragon-canvas` appears inside the element's shadow root.
   Expected: the reader renders the current library. **Do not claim this task done on green gates alone.**

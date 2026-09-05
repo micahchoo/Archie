@@ -1,5 +1,6 @@
 ---
-scope: packages/render-core/**
+paths:
+  - "packages/render-core/**"
 tags: [data-integrity, persistence, serialization]
 priority: high
 source: hand-written

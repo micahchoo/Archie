@@ -1,22 +1,15 @@
 <!doctype html>
 <!--
-  Recipe 03 — Local drop screen (no src)
-  ======================================
-  Scenario: you want the visitor to open a `.archie.zip` FROM THEIR OWN MACHINE — a
-  classroom handout, a reviewer copy, an offline kiosk loaded from USB. With NO `src`
-  attribute, the element shows its drop-a-zip starting screen ("EmptyHall"). Nothing is
-  fetched from the network; the visitor drops (or picks) a file and it opens locally.
+  Recipe 03 — Local file picker and drop screen
 
-  Contract: ADR-0021 (src absent -> local drop screen).
-  Delivered by: Phase 1 (the element + local-zip drop, the first thing that works).
-
-  The dropped zip is validated against the L1 marker (archie.json — ADR-0020) and a
-  decompression cap before parsing, so a non-Archie file or a zip-bomb is refused cleanly.
-
-  No CORS or HTTPS concerns here — there is no remote fetch. This page even works opened
-  directly from `file://`.
-
-  REPLACE:
+  Without src, the element lets the visitor choose or drop a .archie.zip.
+  The library opens from the file without a library download.
+  The loader checks the Archie format marker and archive size limits.
+  The CDN runtime still needs network access. External media can also require network requests.
+  For disconnected use, serve the runtime locally and use a library with bundled media.
+  See EMBED.md#offline for the current offline policy.
+  This example uses the pinned v1.1 CDN bundle.
+  See README.md for the current local build and server procedure.
 -->
 <html lang="en">
 <head>

@@ -1,5 +1,9 @@
 # Plan — Tauri desktop port of Archie
 
+> **Status review — 2026-09-05: historical port and build record.** The repository contains the Tauri shell and desktop workflow.
+> The shipped status below concerns that original port. Native-store packaged verification remains open in seeds issue `Archie-9ece`.
+> Current build instructions: [desktop README](../../src-tauri/README.md). Current work: [desktop hub](../../hubs/desktop.md) and [seeds](../agents/issue-tracker.md).
+
 Status: **shipped** — a Flatpak (`digital.compost.archie`) builds, installs, and runs on Linux.
 Author: session 2026-06-20
 

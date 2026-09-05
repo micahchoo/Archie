@@ -1,5 +1,5 @@
 ---
-scope:
+paths:
   - "packages/render-core/src/publish/**"
   - "apps/studio/src/dzi-*.ts"
   - "apps/studio/src/bake-*.ts"
@@ -12,74 +12,32 @@ updated: 2026-09-05
 # publishing
 > *How does authored become published?*
 
-`publishLibrary` (`packages/render-core/src/publish/site.ts:517`) is the ONE function that turns a
-`Library` + log into a tree: collection.json/exhibits.json first, `archie.json` marker LAST as the
-commit point (ADR-0020, generation hash keys viewer cache-busting). `apps/viewer/scripts/gen-published.mts`
-is the disk-writing wrapper the Viewer's dev/deploy path calls; `.github/workflows/deploy.yml` is the
-GH Pages sink. DZI tiling (`apps/studio/src/dzi-slicer.ts` + `dzi-slice-pool.ts`/`dzi-tile-worker.ts`)
-and bake (`bake-async.ts`/`bake-worker.ts`) are the two worker-backed perf paths inside publish/ingest —
-both fall back to a slow inline path **silently** on worker failure. The one metric that matters:
-end-to-end wall-clock over a real library (`scripts/perf/publishrun.mjs`), not a single-image bench
-  (that bench is ARCHIVAL-TIER ONLY — it never exercises the tier engine; don't cite it for web-tier
-  numbers — Archie-e870).
+`publishLibrary` in `packages/render-core/src/publish/site.ts` projects a library into a published file tree.
+`apps/viewer/scripts/gen-published.mts` creates the Viewer fixtures and deployed tree.
+For user controls, read `docs/guide/06-publish.md`.
+
+## Current guidance
+
+- Write history pages before indexes and `archie.json` last. The marker records completion but does not make in-place publication transactional.
+- A note-only publish must change the generation used for reader cache invalidation.
+- A published manifest must not reference missing assets. Preserve `PublishResult.danglingRefs` checks over the finished output.
+- Preserve unrelated exhibits during fixture regeneration. Review generated diffs before committing them.
+- Derive the base URL from the destination before projection. Keep local links relative where the format allows it.
+- Separate site publication from artifact export. The earlier single-dialog design is historical.
 
 ## Binding rules
-- [[perf-measure-the-flow]] — a primitive win (DZI tiling 19x/image) was 1.9-4.7x end-to-end because
-  `publishLibrary` already fans out `mapLimit(exhibits, 6)`; worker pools must be sized by memory
-  (`POOL_BYTE_BUDGET`), never per-call — a per-call pool at library scale silently destroyed itself
-  and every object fell back to inline, still reporting a healthy publish.
-- [[render-core-data-integrity]] — multi-file writes: content first, `archie.json` marker LAST is the
-  commit point; a torn write must read as stale/refused, never as complete.
-- [[bound-fetch-defaults]] — `publish/open.ts`'s `fetchArchieLibraryBytes` default must be
-  `globalThis.fetch.bind(globalThis)`; Node tests can't see the unbound-receiver break, only
-  `embed-smoke` in a real browser can.
-- [[tauri-csp]] — `worker-src 'self' blob:` is load-bearing for `dzi-tile-worker.ts`/`bake-worker.ts`;
-  both fallbacks are silent, so a CSP regression here reads as a healthy but 37x-slower publish.
-- [[untrusted-archive-open-seam]] — the marker this hub writes is validated by exactly one module
-  (`publish/open.ts`); don't grow a second decode-then-validate copy for a new consumer.
 
-## Decisions
-- (arch deepening P2-P4, no ticket) / 8341381 — marker version policy is ONE
-  `classifyArchieMarker` that both gates adapt (verify-publish composes it, no third copy);
-  `FileContent`/`collectFiles` moved to `publish/snapshot.ts` and republish-tree became a thin
-  composition; `loadLibrary` is lossless on request (`preservePublishFields`); the video tier got a
-  neutral contract (`video-profiles.ts`, one `pickTarget`/`unavailableReason`, `TILE_MIN_EDGE` one home).
-- Archie-9b93 — gen-published tree is a UNION (merge-preserving); rm-everything regen deleted
-  committed exhibits on every dev run and CI deploy — fixed, don't reintroduce full-wipe regen.
-- Archie-3db4 — gen-published `--from` bakes the real deploy BASE (`published-base.js`), not the
-  sample-data fixture's demo base, into user manifests.
-- Archie-4b0a — quality-tier engine (archival/web) at the publish seam; web tier fenced on selector
-  rescale into served pixel space / `1074795`.
-- Archie-53e3 — incremental GitHub push: blob-sha delta against what GitHub already has, truncation
-  degrades to full re-upload / `ec4c763`.
-- Archie-e09d — self-replicating publish prototype: tree can carry its own viewer bundle (opt-in
-  `getViewerBundle`) / `c2f1ade`.
-- Archie-039e — BagIt-shaped deposit export with a fixity manifest, validated against `bagit-python`
-  / `b0c73f4`.
-- Archie-c85f — object-storage publish probe (rclone, two-pass marker-last ordering) / `d7ae26f`.
-- Archie-19d7 — a published manifest may not reference an asset file the tree lacks; enforced as a
-  CLOSING invariant over the finished manifest (`PublishResult.danglingRefs`), because the JSON-only
-  recovery path writes no bytes and so cannot check its own output / 896a92f, 2c997fe
-- Archie-fde8 — post-publish verification (`verify-publish.mjs` + `verify-publish-run.mts`, reads the
-  tree back through the REAL render-core readers; 26/26 checks against the baked tree) / `7fbd87d`.
-- Archie-c367 — one-flow export surface (probe recommendation, greyed-with-reason sinks, tier
-  control, deposit bag) shipped / f63a90f (on `main`).
-- Archie-c74e — 1,000-image acceptance PASSED: web tier fits GitHub at 63%, archival does not
-  (549%); tile arithmetic exact; peak-RSS finding ticketed Archie-6a99 / 14b380d (harness and the
-  ACCEPT-thousand-images ledger live on `main`, not this branch).
+- [[render-core-data-integrity]] — preserve write ordering and classified recovery.
+- [[untrusted-archive-open-seam]] — reuse the shared archive validation path.
+- [[bound-fetch-defaults]] — bind browser fetch defaults.
+- [[perf-measure-the-flow]] — measure real libraries and keep worker pools bounded across calls.
+- [[tauri-csp]] — worker failures can silently select slower fallbacks.
 
-## Evidence
-- `ledgers/PERF-image-pipeline-2026-07-24.md` — DZI tiling per-image 19x at shipped concurrency=48
-  (a separate worker-pool path measures 37.8x, but concurrency is what ships); the
-  dominant cost was the serial `await`, not CPU; end-to-end library figure is the one to report.
-- `scripts/perf/worker-smoke.mjs` — proves the BUILT `dzi-tile-worker`/`bake-worker` boot in real
-  Chromium; the bench's `@render/core` shim can't see the barrel's module-load-time DOMPurify hang.
-- `.github/workflows/deploy.yml` (comment at the `deploy` job) — build/deploy are separate jobs
-  because a build rerun after a transient Pages failure double-uploads the pages artifact and
-  hard-fails (run 28698550063).
+## Verification and evidence
 
-## Open & hazards
-- Archie-6a99 (open, P2) — web-tier publish peaked at **16.9GB RSS** in the 1,000-image acceptance
-  run: the per-exhibit fan-out inside `publishLibrary` is uncapped; found by c74e / 14b380d.
+- `scripts/export-fidelity.mjs` checks emitted files through a real browser publication.
+- `scripts/perf/worker-smoke.mjs` checks built workers. `scripts/perf/publishrun.mjs` measures archival-tier end-to-end behavior.
+- Archie-6a99 records the memory finding from the thousand-image acceptance run. Check its live seed before selecting follow-up work.
+- Review 2026-09-05 → Ordering, generation, and Pages transport failures have regression coverage. Evidence: `ledgers/IMPLEMENT-review-2026-09-05.md`.
 
-- Review 2026-09-05 → History pages precede indexes; note-only publishes change generation; Pages transport failures preserve successful push results; in-place publication remains nontransactional. Evidence: `ledgers/IMPLEMENT-review-2026-09-05.md`; contracts: `ledgers/DESIGN-review-modules-2026-09-05.md`.
+Earlier decisions and measurements: [archived hub](../ledgers/DOCS-hubs-before-2026-09-05.md#publishing).

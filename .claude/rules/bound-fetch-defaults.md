@@ -1,7 +1,7 @@
 ---
-scope:
-  - packages/render-core/**
-  - packages/archie-viewer/**
+paths:
+  - "packages/render-core/**"
+  - "packages/archie-viewer/**"
 tags: [browser-compat, seam, testing]
 priority: high
 source: hand-written

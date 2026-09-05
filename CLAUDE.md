@@ -1,80 +1,32 @@
-# context-mode — MANDATORY routing rules
+# Working on Archie
 
-You have context-mode MCP tools available. These rules are NOT optional — they protect your context window from flooding. A single unrouted command can dump 56 KB into context and waste the entire session.
+Archie is a pnpm workspace with a shared TypeScript core, Svelte Studio, Astro/Svelte Viewer, and Tauri desktop shell.
 
-## BLOCKED commands — do NOT attempt these
+- Before editing a territory, read its page in [hubs/INDEX.md](hubs/INDEX.md) and the rules it links.
+- For domain terms, read [CONTEXT.md](CONTEXT.md). For architectural decisions, read the relevant file in `docs/adr/`.
+- For current delivery limits, read [docs/CAPABILITIES.md](docs/CAPABILITIES.md).
+- For issue work, use `.seeds/` through `sd`. [Issue tracking](docs/agents/issue-tracker.md) defines the workflow. `ISSUES.md` is frozen history.
+- For app startup and browser checks, use the project `run-app` skill.
+- For verification, select the relevant gates in [hubs/verification.md](hubs/verification.md). Root commands are `pnpm typecheck`, `pnpm test`, and `pnpm build`.
+- Preserve existing uncommitted changes. Before staging, inspect the diff and select explicit paths. Coordinate shared files with their owners.
 
-### curl / wget — BLOCKED
-Any Bash command containing `curl` or `wget` is intercepted and replaced with an error message. Do NOT retry.
-Instead use:
-- `ctx_fetch_and_index(url, source)` to fetch and index web pages
-- `ctx_execute(language: "javascript", code: "const r = await fetch(...)")` to run HTTP calls in sandbox
+## Documentation
 
-### Inline HTTP — BLOCKED
-Any Bash command containing `fetch('http`, `requests.get(`, `requests.post(`, `http.get(`, or `http.request(` is intercepted and replaced with an error message. Do NOT retry with Bash.
-Instead use:
-- `ctx_execute(language, code)` to run HTTP calls in sandbox — only stdout enters context
+Rules in `.claude/rules/` use `paths` for conditional loading. Other agents must read matching rules through the territory hub.
+Hubs hold current constraints and links. Dated ledgers hold measurements and historical context.
 
-### WebFetch — BLOCKED
-WebFetch calls are denied entirely. The URL is extracted and you are told to use `ctx_fetch_and_index` instead.
-Instead use:
-- `ctx_fetch_and_index(url, source)` then `ctx_search(queries)` to query the indexed content
+When a change touches a hub's paths, update the relevant verdict and evidence link in the same change.
+Keep each instruction in one authoritative document. Read that document before adding a duplicate.
+For completed plans, preserve a dated archive and replace active instructions with a short pointer.
 
-## REDIRECTED tools — use sandbox equivalents
+Before a docs, rules, or hubs commit, run `node scripts/doclint.mjs`.
+To regenerate the hub index, run `node scripts/doclint.mjs --index`.
+To regenerate the tracker map, run `node scripts/trackers-gen.mjs`.
 
-### Bash (>20 lines output)
-Bash is ONLY for: `git`, `mkdir`, `rm`, `mv`, `cd`, `ls`, `npm install`, `pip install`, and other short-output commands.
-For everything else, use:
-- `ctx_batch_execute(commands, queries)` — run multiple commands + search in ONE call
-- `ctx_execute(language: "shell", code: "...")` — run in sandbox, only stdout enters context
+## Available tools
 
-### Read (for analysis)
-If you are reading a file to **Edit** it → Read is correct (Edit needs content in context).
-If you are reading to **analyze, explore, or summarize** → use `ctx_execute_file(path, language, code)` instead. Only your printed summary enters context. The raw file content stays in the sandbox.
+Use context-mode search and indexing tools when the session exposes them. Follow any active tool-routing hooks.
+If those tools are absent, use bounded file reads and `rg`. Save long command output to a file and inspect relevant excerpts.
+For dependency APIs, check the installed package and official documentation for its version. Use an indexed documentation service only when available.
 
-### Grep (large results)
-Grep results can flood context. Use `ctx_execute(language: "shell", code: "grep ...")` to run searches in sandbox. Only your printed summary enters context.
-
-## Tool selection hierarchy
-
-1. **GATHER**: `ctx_batch_execute(commands, queries)` — Primary tool. Runs all commands, auto-indexes output, returns search results. ONE call replaces 30+ individual calls.
-2. **FOLLOW-UP**: `ctx_search(queries: ["q1", "q2", ...])` — Query indexed content. Pass ALL questions as array in ONE call.
-3. **PROCESSING**: `ctx_execute(language, code)` | `ctx_execute_file(path, language, code)` — Sandbox execution. Only stdout enters context.
-4. **WEB**: `ctx_fetch_and_index(url, source)` then `ctx_search(queries)` — Fetch, chunk, index, query. Raw HTML never enters context.
-5. **INDEX**: `ctx_index(content, source)` — Store content in FTS5 knowledge base for later search.
-
-## Subagent routing
-
-When spawning subagents (Agent/Task tool), the routing block is automatically injected into their prompt. Bash-type subagents are upgraded to general-purpose so they have access to MCP tools. You do NOT need to manually instruct subagents about context-mode.
-
-## Output constraints
-
-- Keep responses under 500 words.
-- Write artifacts (code, configs, PRDs) to FILES — never return them as inline text. Return only: file path + 1-line description.
-- When indexing content, use descriptive source labels so others can `ctx_search(source: "label")` later.
-
-## ctx commands
-
-| Command | Action |
-|---------|--------|
-| `ctx stats` | Call the `ctx_stats` MCP tool and display the full output verbatim |
-| `ctx doctor` | Call the `ctx_doctor` MCP tool, run the returned shell command, display as checklist |
-| `ctx upgrade` | Call the `ctx_upgrade` MCP tool, run the returned shell command, display as checklist |
-
-# Knowledge layer (design: ledgers/DESIGN-knowledge-layer-2026-07-27.md)
-
-- **hubs/** — one pull-side page per territory, named after the question it answers
-  (`verification.md` = "how do I prove a change works?"). Read the relevant hub BEFORE
-  writing a dispatch brief; briefs carry a `hub:` line. `hubs/INDEX.md` is generated
-  (`node scripts/doclint.mjs --index`) — never hand-edit it.
-- **Hub lines are verdicts + pointers, never prose**: `Archie-xxxx / <sha> → verdict`,
-  with stakes in the wording. Evidence stays where it was measured.
-- **Closing a ticket = one hub line.** If your diff touches a hub's `scope`, add the
-  one-liner to that hub in the same commit. Enforced: `node scripts/doclint.mjs`
-  (stale-hubs check) — run it before any docs/rules/hubs commit.
-- **Adding knowledge = choosing a rung** (see design §3b): scope-pushed rule (rarest,
-  every in-scope task needs it) → hub line (leads need it) → raw layer (default: the
-  ticket/ledger you were writing anyway). Rules follow writing-great-skills pruning;
-  3+ inline corrections means rewrite (doclint enforces).
-- **Trackers**: `.seeds/` is canonical; ISSUES.md is FROZEN; `docs/TRACKERS.md` maps
-  Issue-N ↔ Archie-xxxx ↔ Q-N.
+Keep user-facing responses under 500 words unless the task requires more detail. Write large artifacts to files and link them.

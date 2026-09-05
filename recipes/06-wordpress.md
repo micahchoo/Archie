@@ -1,22 +1,16 @@
 # Recipe 06 — WordPress
 
-Embed an Archie library in a WordPress post or page. WordPress has two flavours; the right
-recipe depends on whether your theme/plan allows raw `<script>` tags.
+This recipe embeds an Archie library through a Custom HTML block or an iframe.
+Host permissions determine whether scripts, custom elements, and iframes remain in the published page.
+The examples use the pinned `v1.1` CDN bundle.
+[EMBED.md](EMBED.md) owns the attributes, offline policy, SRI, and hosting requirements.
 
-> Contract: ADR-0021. Delivered by Phase 1+ (drop) / Phase 2+ (hosted `src`).
-> Iframe fallback rationale: **anvil ADR-0006** (Web Component + iframe, nothing else —
-> restricted CMSes strip `<script>`).
+## Direct element
 
----
+If your site permits scripts and custom elements, use the Custom HTML block.
 
-## Path A — Custom HTML block (script-tolerant sites)
-
-Works on self-hosted WordPress (`wordpress.org`) and Business/Commerce plans on
-`wordpress.com`, where the block editor's **Custom HTML** block keeps `<script>` and custom
-elements.
-
-1. Edit the post → **add a block** → search **"Custom HTML"**.
-2. Paste this, replacing the placeholder URLs:
+1. Add a Custom HTML block to the post.
+2. Paste this example into it:
 
    ```html
    <script
@@ -30,27 +24,24 @@ elements.
      style="display:block;width:100%;height:600px"></archie-viewer>
    ```
 
-3. **Preview** (not just the editor — the editor sometimes blocks scripts even when the
-   published page allows them). The library should render.
+3. Replace the sample library URL with your published-tree or archive URL.
+4. Open the post preview.
+5. Check that the library appears and its objects open.
 
-- Swap `src` for a hosted `.archie.zip` URL (recipe `02`) or drop it entirely for the local
-  drop screen (recipe `03`).
-- Add `target="#/{slug}/a/{logicalId}"` to deep-link (recipe `04`), or `offline` for a
-  no-fetch embed (recipe `05`).
-- The inline `style` height matters — the element is `display:inline` by default and would
-  otherwise collapse to nothing.
+The editor view and published page can apply different restrictions.
+A blank viewer can also indicate a source, CORS, or Content Security Policy error.
 
----
+For a local file picker, remove `src`.
+For a direct arrival, add a `target` from [the target reference](EMBED.md#targets).
+Keep a suitable height for the reader.
+For offline reading, use [the local archive instructions](EMBED.md#offline).
+Adding `offline` to a hosted-tree example blocks its library URL in the current build.
 
-## Path B — iframe fallback (script-stripping sites)
+## Iframe alternative
 
-Many WordPress themes, security plugins, and `wordpress.com` Free/Personal/Premium plans
-**strip `<script>` and custom elements** from post content. The Custom HTML block silently
-drops them and you get a blank space. This is exactly the case **anvil ADR-0006** names — the
-iframe is the universal floor.
+If your site removes scripts or custom elements but permits iframes, use a hosted wrapper page.
 
-**Step 1 — host a tiny wrapper page** on static hosting you control (GitHub Pages,
-`yourmuseum.org`, Netlify — anywhere that serves a raw `.html`). Call it `embed-codex.html`:
+1. Create `embed-codex.html` on your static hosting with this content:
 
 ```html
 <!doctype html>
@@ -62,9 +53,8 @@ iframe is the universal floor.
 <archie-viewer src="https://yourmuseum.org/libraries/codex.archie.zip"></archie-viewer>
 ```
 
-**Step 2 — paste an iframe** into the post. An `<iframe>` survives the strippers. Even the
-Custom HTML block isn't required on most plans — the classic editor or a shortcode-free HTML
-paste works:
+2. Replace the archive URL with your library URL.
+3. Add this iframe to the Custom HTML block:
 
 ```html
 <iframe src="https://yourmuseum.org/embed-codex.html"
@@ -73,16 +63,13 @@ paste works:
         title="Codex — Archie viewer"></iframe>
 ```
 
-**iframe height:** iframes do not auto-grow with content. Use a fixed `height` (above). A
-responsive `postMessage` height handshake is possible (anvil ADR-0006 follow-up F1) but the
-fixed height is the no-JavaScript floor and works everywhere.
+4. Replace the iframe URL with your hosted wrapper URL.
+5. Open the post preview.
+6. Check that the library appears inside the frame.
 
----
+An iframe requires permission from the host and the embedded page's framing policy.
+A host that removes iframes cannot use this fallback.
 
-## Which path?
-
-- Self-hosted WordPress, or a `.com` Business plan, and the preview renders → **Path A**.
-- Preview shows a blank gap where the embed should be, or you're on Free/Personal/Premium →
-  **Path B (iframe)**.
-
-When in doubt, **Path B always works** — it's the floor for a reason.
+The fixed height works without a script on the parent page.
+[Automatic iframe height changes](EMBED.md#auto-grow-the-iframe-to-its-content) require a parent-page script.
+The reader retains the current iframe height.

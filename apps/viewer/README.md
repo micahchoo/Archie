@@ -1,43 +1,63 @@
 # @archie/viewer
 
-The **published static site** — Astro with Svelte islands (ADR-0002 / Q-2). Read-only. It renders the static tree that the Studio's publish step emits (WADM heads pages + IIIF Presentation 3), deploys to GitHub Pages, and needs no backend. It depends on `@render/svelte` → `@render/mount` → `@render/core`; it shares no code with `@archie/studio`.
+Viewer is the read-only site, built with Astro and Svelte islands (ADR-0002 / Q-2).
+It reads published W3C Web Annotations and IIIF Presentation 3 manifests.
+Its static build needs no application backend.
 
-> **Status:** Phase 2 — built and dogfooded on the Voynich and Bidar exhibits; browser-regression verification pending. See the [root README](../../README.md#status--roadmap) for the full status.
+Viewer uses the shared `@render/svelte`, `@render/mount`, and `@render/core` packages.
+Hosted Viewer and the embeddable reader are separate delivery surfaces.
+
+> See [capabilities](../../docs/CAPABILITIES.md) for supported workflows and [verification](../../hubs/verification.md) for the test gates.
 
 ## Run it
 
-Run from the repo root with Node ≥ 22:
+From the repository root, run:
 
 ```bash
-pnpm --filter @archie/viewer gen      # generate the published static tree (do this first)
-pnpm --filter @archie/viewer dev      # Astro dev server on http://localhost:4321
-pnpm --filter @archie/viewer build    # production build (runs gen in prebuild)
+pnpm dev
 ```
 
-`gen` runs `gen-published.mts` (via vite-node) to build `public/published/` — the same projection the Studio produces. `dev` and `build` auto-run it in their prebuild step; run it manually if you start Astro directly.
+Viewer opens at `http://localhost:5173/viewer/`. Studio shares this origin at
+`http://localhost:5173/studio/`, so Viewer can read the browser working library.
 
-## What it does today
+For Viewer alone or a production build, run:
 
-- **Gallery landing** — the library index of exhibits (`index.astro`).
-- **Single reading mode** — OSD + a 3-state pane (collapsed / preview / detail).
-- **Grid reading mode** — multi-object gallery with read-on-select.
-- **Narrative reading mode** — prose spine (Bidar's 25 reflections) + a map canvas; marker click scrolls to the note.
-- **Deep-link arrival** — `#/a/<id>` lands on the target note with fading chrome.
-- **Markdown notes** — inline photos / audio in the reader.
-- **Media player** — `<audio>` / `<video>` + transcript cues with click-to-seek and active-line highlight.
+```bash
+pnpm --filter @archie/viewer dev      # http://localhost:4321
+pnpm --filter @archie/viewer build
+```
 
-## Key files
+The `predev` and `prebuild` hooks generate `public/published/` from the configured
+libraries. To generate this tree separately, run:
+
+```bash
+pnpm --filter @archie/viewer gen
+```
+
+## Reading and navigation
+
+Viewer offers an exhibit gallery, object views, narrative sections, notes, and
+media playback. Visitors can open a local `.archie.zip` or read from a source URL.
+Source availability determines access to remote media.
+
+A note route has the form `#/<slug>/a/<logical-id>`. Object and section routes
+retain the exhibit slug too. Navigation and citation links preserve the active
+source. Breadcrumbs let visitors return to the exhibit or library.
+
+## Entry points
 
 | File | Role |
 |------|------|
-| `src/pages/index.astro` | Gallery landing |
-| `src/pages/*.astro` | Per-exhibit pages (`voynich`, `bidar`, `av`) |
-| `src/components/ExhibitView.svelte` | Context holder |
-| `src/components/Reader.svelte` | Popup/drawer OSD reader |
-| `src/components/NarrativeReader.svelte` | Prose-spine layout |
-| `src/components/MediaPlayer.svelte` | A/V playback + cues |
-| `gen-published.mts` | Builds the static published tree |
+| `src/pages/index.astro` | Viewer landing page |
+| `src/pages/[slug].astro` | Generated exhibit pages |
+| `src/components/ViewerShell.svelte` | Source loading, routes, and navigation shell |
+| `src/components/ExhibitView.svelte` | Exhibit context and reading modes |
+| `src/components/Reader.svelte` | Canvas and note reader |
+| `src/components/NarrativeReader.svelte` | Narrative layout |
+| `src/components/MediaPlayer.svelte` | Audio/video playback and transcript cues |
+| `src/published.ts` | Published and working library sources |
+| `src/viewer-address.ts` | Addresses that preserve the source |
+| `scripts/gen-published.mts` | Static data generation |
 
-## Not yet built
-
-Breadcrumb / zoom-to-fit chrome on deep-link arrival, and IIIF Content-State arrival (`?iiif-content`). See [`docs/IMPLEMENTATION-STRATEGY.md`](../../docs/IMPLEMENTATION-STRATEGY.md).
+The [embeddable reader](../../packages/archie-viewer/) supplies the reader
+that portable sites include.

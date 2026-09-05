@@ -1,5 +1,5 @@
 ---
-scope:
+paths:
   - "recipes/**"
   - "packages/**/build.mjs"
   - "scripts/**"

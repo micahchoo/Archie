@@ -1,5 +1,10 @@
 # `<archie-viewer>` — Implementation Strategy
 
+> **Status review — 2026-09-05: historical build strategy.** The element exists in `packages/archie-viewer/src/element.ts`.
+> Seeds records the later embed audit map `Archie-cc98` as complete.
+> This does not establish completion of every deferred feature or original human gate below.
+> Current contract: [embed reference](../../recipes/EMBED.md). Current work: [embed hub](../../hubs/embed.md) and [seeds](../agents/issue-tracker.md).
+
 **Status:** compiled 2026-06-21 (grill-with-docs strategy phase). The method and sequence for building
 the embeddable read-only viewer from the locked design. NOT a task list — each phase gets its own
 detailed plan when it starts. This is the meta-level: ordering, phases, reducibility, the mechanical

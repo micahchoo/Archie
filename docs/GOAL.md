@@ -148,11 +148,10 @@ look/feel/perf cycles don't:
 
 1. **Pre-build research (targeted — not a re-survey).** Open the seed; scout the **specific donor +
    prior-art `relpath:line`** it cites (e.g. `cozy-iiif parseURL`, `field-studio` exceljs/
-   `AnnotationTemplateService`, biiif `Directory.ts`) and the relevant `Prior Art/NN-*.md` axis. If
-   the donor's API is a library in `.claude/rules/deps-index.md`, query
-   `mcp__context__get_docs(<pkg@ref>, <topic>)` before writing code. Cache anything durable to mulch
-   `product-research`. This is Prep — it precedes the first edit.
-2. **Build** the one change, matching surrounding code. The locked frames in `CONTEXT.md` are inviolable.
+   `AnnotationTemplateService`, biiif `Directory.ts`) and the relevant `Prior Art/NN-*.md` axis. Check the installed dependency API and its official versioned documentation before writing code.
+   If an indexed documentation service is available, check its version and freshness before using it.
+   Record durable findings in a dated ledger or the available mulch `product-research` store. This is Prep — it precedes the first edit.
+2. **Build** the one change, matching surrounding code. The locked frames in §6 are inviolable.
 3. **Code-review before the gate.** Dispatch the `code-reviewer` subagent (or the
    `requesting-code-review` skill) on the diff against the plan + the perfectionist-dev bar; fix what
    it flags. A feature cycle does **not** reach the gate un-reviewed — this is what separates "builds"
@@ -233,9 +232,9 @@ appeal. If it can't, it's overambition — **file a seed and defer**, don't buil
 | FCP (published home, localhost median) | **84 ms** | was 232 ms; fonts self-hosted (ADR-0012) |
 | Canonical origin | `https://micahchoo.github.io/Archie/` | ADR-0013 — one config source, observable drift (wiring pending) |
 
-**Standing notes:** any viewer build regenerates `apps/viewer/public/published/` with fresh
-ULIDs (Archie-dcde) — restore before committing. Measurement harness conventions live in
-HANDOFF.md §"/goal LOOP RUN".
+**Historical baseline:** the numbers above describe the original loop run.
+Measure a new baseline before each run. Current gate selection lives in [verification](../hubs/verification.md).
+Viewer builds regenerate `apps/viewer/public/published/`. Inspect those diffs before committing.
 
 ## 9. How to run
 

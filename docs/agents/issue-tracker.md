@@ -1,29 +1,37 @@
 # Issue tracker — seeds (`sd`)
 
-This repo tracks issues with [seeds](https://github.com/) — git-native, stored in
-`.seeds/issues.jsonl`. The tend backlog in `ISSUES.md` is a separate, older system
-managed by /tend; don't mix the two. `sd --help` for the command surface.
+The canonical tracker is `.seeds/issues.jsonl`. `ISSUES.md` is frozen historical evidence.
+[TRACKERS.md](../TRACKERS.md) maps legacy `Issue N` and `Q-N` identifiers to seeds issues.
+[The process hub](../../hubs/process.md) holds shared-worktree and evidence conventions.
 
-## Wayfinding operations
+## Task workflow
 
-- **The map** is a seeds issue labelled `wayfinder:map`; its description holds the
-  Notes / Decisions so far / Fog sections. Find it: `sd list --label wayfinder:map`.
-- **Tickets** are seeds issues carrying two labels: `map:<map-slug>` (the child
-  relationship) and `wayfinder:<type>` (research | prototype | grilling | task).
-  Find a map's children: `sd list --label map:<map-slug>`.
-- **Claiming**: `sd update <id> --assignee <name> --status in_progress` — do this
-  *before* any work. Open + unassigned = unclaimed.
-- **Blocking** uses seeds' native deps: `sd dep add <ticket> <blocker>` (ticket
-  depends on blocker). `sd blocked` shows the blocked set.
-- **Frontier**: `sd ready` (open, no unresolved blockers) — filter to the map's
-  children by label; the map issue itself also appears there, skip it.
-- **Resolving**: post the answer as the close reason —
-  `sd close <id> --reason "<the answer / where the asset lives>"` — then append a
-  one-line gist to the map's Decisions-so-far via `sd update <map-id> --description`.
-- Assets created while resolving (docs, prototypes) live in the repo and are
-  referenced by path from the close reason, not pasted into it.
-- Commit `.seeds/` changes only when the user asks (repo rule); `sd sync` exists
-  but stages *and commits* — prefer plain `git add .seeds` in a user-requested commit.
+1. Read the issue with `sd show <id>`.
+2. Before work, claim it with `sd update <id> --assignee <name> --status in_progress`.
+3. For a dependency, run `sd dep add <ticket> <blocker>`.
+4. Record the result with `sd close <id> --reason "<answer and evidence path>"`.
 
-Current map: **Studio UX overhaul** (`Archie-21b1`) — 18 tickets from
-`ledgers/UX-AUDIT-studio-wireframes.md` (W1–W25).
+`sd ready` lists open issues without unresolved blockers. `sd blocked` lists blocked issues.
+`sd list` and `sd ready` each default to 50 results. For backlog counts, use `sd stats`.
+For a complete enumeration, choose a `--limit` that covers the total from `sd stats`.
+
+## Maps
+
+A map is an issue with the `wayfinder:map` label. Its description holds Notes, Decisions so far, and Fog sections.
+Each child has `map:<map-slug>` and `wayfinder:<type>` labels, where type is `research`, `prototype`, `grilling`, or `task`.
+
+- Find maps with `sd list --label wayfinder:map`.
+- Find children with `sd list --label map:<map-slug>`.
+- Find ready children with `sd ready --label map:<map-slug>`.
+
+After closing a child, add its result to the map's Decisions so far section.
+Read the current map description before you use `sd update <map-id> --description "<complete description>"`.
+The command replaces the description, so preserve its other sections.
+
+## Tracker changes
+
+For an authorized commit, inspect the changed issue IDs before you stage `.seeds/issues.jsonl`.
+The shared file can contain changes from other sessions. The [shared-worktree rule](../../.claude/rules/shared-worktree-agent-collisions.md) explains this hazard.
+`sd sync` stages and commits tracker changes. Use it only within an authorized commit workflow.
+
+For the installed command surface, run `sd --help` or `sd <command> --help`.

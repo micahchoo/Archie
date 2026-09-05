@@ -7,7 +7,8 @@ description: Run the perpetual adversarial code-review loop — find where the c
 The product `/goal` loop (docs/GOAL.md) asks "is the product better?" This loop asks: **"where
 is the codebase lying?"** Run them alternately, never merged — growth and audit obey different
 gates. This file is self-contained; the loop survives compaction by re-reading it plus
-`HANDOFF.md`, `ISSUES.md`, and `docs/state/REVIEW-COVERAGE.md`.
+the active dated review ledger and `.seeds/`.
+`docs/state/REVIEW-COVERAGE.md` is historical bootstrap evidence.
 
 ## 0. Role
 
@@ -37,12 +38,11 @@ The atom: **one target, driven to exactly one terminal bucket** — `fixed@hash`
 `escalated`. Never batch two findings into one fix. Open each cycle with a one-line contract:
 lane, attack, done-when, and the control phrase **"log it, don't fix it yet"** — attack
 inventories to the ledger; only the fix phase touches the tree. After compaction: re-read this
-file, HANDOFF.md, REVIEW-COVERAGE.md; resume mid-rotation.
+file and the active dated review ledger. Resume mid-rotation.
 
 1. **Sync + safety.** `git fetch`; investigate (don't clobber or adopt) any concurrent-session
    WIP in `git status`; confirm `git branch --show-current` — recheck before every commit and
-   merge, a concurrent session can move HEAD. Read matching `.claude/rules/*`: they are prior
-   incident reports.
+   merge, a concurrent session can move HEAD. Read matching `.claude/rules/*`: they contain current constraints and links to incident evidence.
 2. **Recon.** Next target from the lane rotation (§3), or the top queued survivor in the
    ledger. Read the code end-to-end, plus its tests and ledger claims. Sweeps use `fff` or
    `grep -a` — NUL bytes recur in source here; plain grep silently lies; zero-matches are
@@ -65,9 +65,9 @@ file, HANDOFF.md, REVIEW-COVERAGE.md; resume mid-rotation.
    your own fix. Reviewer dies verdict-less → re-dispatch; unreviewed work does not merge.
 8. **Gate** (§6). All green or revert to the clean baseline.
 9. **Commit → merge → push** (§7). The push is the save.
-10. **Log + harvest.** Update REVIEW-COVERAGE.md, including **clean cells** (what was checked,
+10. **Log + harvest.** Update the active dated review ledger, including **clean cells** (what was checked,
     how, at which commit — so no future cycle re-walks it). A bug _class_ grows a
-    `.claude/rules/` file; deferred work is filed (§4.3). Refresh HANDOFF.md. Ledger rows over
+    `.claude/rules/` file; deferred work is filed (§4.3). Link the current result from the relevant hub. Ledger rows over
     essays — more markdown than the code audited is half theater.
 11. **Report.** ≤8 lines, headed `CYCLE <n> [<bucket>]` (or `CYCLE <n> DRY`, or
     `ESCALATION: <question>`): target, attack, finding, **pasted** gate summary lines, next
@@ -86,10 +86,9 @@ unread code; "would a fresh agent continue this path?" when a fix keeps growing.
 
 Lanes ordered by blast radius, walked in rotation, proven by the ledger.
 
-`docs/state/REVIEW-COVERAGE.md` — same discipline as the rest of `ledgers/`: row-per-item, action
-recorded the moment it happens (stale ledger = fragmented run: stop, reconcile), kept forever,
-dated section per cycle. Per lane: last commit examined, files walked, findings, clean cells —
-re-walk only when the examined-commit is stale or a fix landed inside. Findings log:
+Use one row per item in the active dated review ledger. Record each action as it happens.
+For each lane, record the examined commit, files, findings, and clean cells.
+When code changes in that lane, repeat the affected checks. Findings log:
 `id | sev | evidence (file:line) | bucket (§2's six) | catchable?` — catchable = a test/lint/
 rule can kill the class permanently. A row citing no files is a template; delete it.
 
@@ -106,9 +105,8 @@ rule can kill the class permanently. A row citing no files is a template; delete
 **Rotation:** lanes 1–2 every other cycle until their clean cells are current; then weighted
 round-robin toward the stalest examined-commit. Never camp on a comfortable lane.
 
-Deferrals go to the existing backlog (`sd create`, or `ISSUES.md` on its skeleton — Evidence ·
-Lesson · Strength · Status) — no parallel tracker. Check the `## Decided` index and prior
-ledgers first: decided rows resurrect only on new cited evidence.
+File deferrals in `.seeds/` with `sd create`. Include evidence, impact, and the next action.
+Check existing seeds, decisions, and prior ledgers first. Reopen decided work only with new cited evidence.
 
 ## 4. Judgment doctrine
 
@@ -248,21 +246,20 @@ public API, or CSP; two documented decisions conflict; an S0 has no small fix; y
 rewrite history, or touch another session's uncommitted work.
 
 **Dry-streak:** a cycle with no finding and no fix counts only if clean cells were recorded.
-3 consecutive dry cycles across distinct lanes → stop, print the coverage map + ISSUES queue,
+3 consecutive dry cycles across distinct lanes → stop, print the coverage map + `.seeds/` queue,
 report diminishing returns; new value needs new attacks or new code. Never manufacture a
 finding — a fabricated defect costs more than an idle cycle.
 
-**Compaction:** fine. This file + HANDOFF.md + REVIEW-COVERAGE.md are the full recovery state;
-needing more is itself the next finding.
+**Compaction:** re-read this file, the active dated review ledger, and the claimed seed.
+Record the current lane, commit, evidence, and next action in the ledger before a handoff.
 
 ## 9. First-run bootstrap
 
-1. Read: `CLAUDE.md` (context-mode routing — mandatory), `CONTEXT.md`, `docs/GOAL.md`,
-   `ISSUES.md`, `HANDOFF.md`, every `.claude/rules/*` — the scar tissue.
-2. Run the §6 suite; record the baseline + commit hash in REVIEW-COVERAGE.md.
-3. Build the lane map; last-examined = HEAD.
-4. Issues 13, 14, 16, 17, 18, 22, 25 were live at last tend pass — verify still live (the code
-   may have moved), then take one as cycle 1 or start Lane 1.
+1. Read `CLAUDE.md`, `CONTEXT.md`, the relevant territory hub, and its linked rules.
+2. Read `docs/agents/issue-tracker.md` and inspect the live `.seeds/` queue.
+3. Create a dated review ledger under `ledgers/`. Record its path in the claimed seed.
+4. Run the §6 suite and record the baseline commit and output in that ledger.
+5. Build the lane map from current code and begin the first lane.
 
 ## 10. Running under /goal
 
@@ -286,7 +283,7 @@ reports headed "CYCLE <n> DRY" on distinct lanes. If there is a report headed
 it shows: lane + attack; exactly one bucket per finding from {fixed@<hash>, filed <id>,
 cut@<hash>, refuted-because, clean-cell, escalated}; the pasted summary line of every gate
 run; and, for fixed/cut, pasted output of `git log origin/main -1 --oneline` (push proof)
-and `git show --stat <hash>` (file list must include docs/state/REVIEW-COVERAGE.md and no CI or
+and `git show --stat <hash>` (file list must include the active dated review ledger and no CI or
 gate-config file). Non-merging buckets state "no merge: <bucket>". A DRY report counts ONLY
 with its clean-cell rows pasted. Honest buckets count toward N equally with fixed — never
 bend a finding into "fixed" to satisfy the count. Stop retrying any target after 2

@@ -1,26 +1,28 @@
 # Annotate an image
 
-Clicking a folio opens it in the deep-zoom editor. This is the core of Archie —
-where you attach meaning to a place on the image.
+The image editor attaches notes to places on an image or map. Notes remain
+anchored to their regions as you pan and zoom.
 
-![The image editor: a Voynich folio with the note panel and drawing toolbar](../screenshots/auto/studio-editor-image.desktop.png)
+To create a note about a region:
 
-To make a note: pick **Rect** or **Polygon**, draw the region on the folio, and
-write your note in the popover that appears right there on the canvas. The note
-list on the left collects every note on this object; click one to fly back to its
-region. Markers stay anchored as you pan and zoom — the note lives *at* the place,
-not beside it.
+1. Open an image from the exhibit overview.
+2. Select **Box** for a rectangle or **Outline** for an irregular region.
+3. Draw the region.
+4. Enter the note in the form that opens.
 
-Two tools shape how notes are read:
+**Whole image** creates a note without a region. The note list contains the
+notes on the current object. A note selection returns the canvas to its region.
 
-- **Readings** — a named interpretive pass over the object (e.g. a *cipher*
-  reading vs a *hoax* reading of the same folio). The visitor switches between
-  them; only one shows at a time. Use the **+ Reading** control and the reading
-  selector in the toolbar.
-- **Tags** — lightweight, additive labels (paleography, material, a motif). They
-  stack freely and become filter chips a visitor can toggle.
+The **Readings** panel names different interpretations, such as a cipher reading
+and a hoax reading of a manuscript. Its visibility controls show or hide readings.
+The active reading determines where new notes belong. General notes are available
+across readings.
 
-You can also cite one note from another with <kbd>Cmd</kbd> + <kbd>K</kbd>,
-turning your notes into a navigable web.
+Tags label notes with subjects such as paleography, material, or a recurring motif.
+Tag filters can narrow the visible notes.
+
+To find a citation target, press <kbd>Cmd</kbd> + <kbd>K</kbd> on macOS or
+<kbd>Ctrl</kbd> + <kbd>K</kbd> on other systems. The citation picker links notes
+and exhibits across the library.
 
 → Next: [Annotate audio & video](04-annotate-audio-and-video.md)

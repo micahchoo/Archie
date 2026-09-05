@@ -1,10 +1,10 @@
 ---
-scope:
-  - packages/render-core/src/spine/**
-  - packages/render-core/src/session/**
-  - apps/studio/src/dzi-*.ts
-  - apps/studio/src/bake-*.ts
-  - scripts/perf/**
+paths:
+  - "packages/render-core/src/spine/**"
+  - "packages/render-core/src/session/**"
+  - "apps/studio/src/dzi-*.ts"
+  - "apps/studio/src/bake-*.ts"
+  - "scripts/perf/**"
 tags: [perf, benchmarking, workers, spine]
 priority: high
 source: hand-written

@@ -1,5 +1,5 @@
 ---
-scope:
+paths:
   - "docs/adr/**"
   - "ledgers/**"
   - "apps/viewer/e2e/**"

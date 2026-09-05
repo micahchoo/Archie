@@ -1,5 +1,10 @@
 # Plan: the native folder is the canonical desktop working store
 
+> **Status review — 2026-09-05: implementation present. packaged verification pending.** `resident-store.ts`, `store.ts`, and `asset-store.ts` route desktop storage through the native filesystem.
+> Seeds issues `Archie-623e` and `Archie-9ece` remain open. The latter records the outstanding packaged-app checks.
+> The original blocked-by list and phase instructions below are historical planning records.
+> Current work: [desktop hub](../../hubs/desktop.md) and [seeds](../agents/issue-tracker.md).
+
 **Ticket:** Archie-623e (Phase-3 spine). **Blocked by (seeds):** Archie-cf93 (asset-store split),
 Archie-fada (native-fetch-images). **Coordinates with:** Archie-cf54 (freecut storage findings),
 Archie-b0b1 (rev-log enact), pending task #5 / `docs/plans/folder-av-originals.md`.
@@ -253,7 +258,7 @@ hot files — resolve semantically, sequential merges only, per the fleet dispat
   the atomic-write + streaming-write guarantees need their own targeted tests (they stay green whether or
   not close() is atomic — see tauri-fs-seam rule).
 - **`.ts` under apps/studio:** `pnpm typecheck` is the real strictness gate, **not** svelte-check
-  (`.claude/rules/studio-ts-typecheck-gate.md`). Run both when `.svelte` changes.
+  (`.claude/rules/two-typescript-compilers.md`). Run both when `.svelte` changes.
 - **Packaged verification is mandatory before merge** — the mount, migration, `convertFileSrc`,
   WebKitGTK OSD, and single-instance behaviors are *only* observable in the built Flatpak. Hand each to
   the **Archie-a09d** native tauri-build smoke; do not claim done on vitest alone.

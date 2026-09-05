@@ -1,5 +1,6 @@
 ---
-scope: packages/archie-viewer/**
+paths:
+  - "packages/archie-viewer/**"
 tags: [bundle, performance, lazy-loading, embed]
 priority: high
 source: hand-written

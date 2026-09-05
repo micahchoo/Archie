@@ -1,5 +1,5 @@
 ---
-scope:
+paths:
   - "apps/viewer/src/components/**"
   - "apps/viewer/src/pages/**"
   - "apps/viewer/src/lib/**"
@@ -10,80 +10,28 @@ updated: 2026-09-05
 # reading
 > *how do readers experience things? (the Viewer app)*
 
-`apps/viewer` is the SPA a museum visitor drives: gallery grid, `Reader`/`MediaPlayer`/
-`NarrativeReader` canvases, the note surface (`NotePopup`/`NoteLightbox`/`NoteMedia`), the finder
-(`SearchOverlay`), and scroll-coupling between narrative prose and the canvas. Entry points are
-`ExhibitView.svelte` (mounts the three readers plus the finder and cite panel behind lazy imports) and `astro.config.mjs`
-(`optimizeDeps.include` — the dev-server correctness seam). The gate that matters for any `.svelte`
-edit here is `pnpm --filter @archie/viewer run check:svelte` (svelte-check, `--fail-on-warnings`,
-baseline 0/0); for anything claiming a real interaction, `apps/viewer/e2e/*.spec.ts` driven in real
-Chromium — jsdom/vitest cannot hit-test or catch hydration timing.
+Viewer is the read-only Astro/Svelte app. Start at `apps/viewer/README.md` for its routes and code entry points.
+
+## Current guidance
+
+- `apps/viewer/src/components/ExhibitView.svelte` composes the readers, finder, and citation surface through lazy imports.
+- Keep source identity in the shared viewer address context. Links, citations, and location updates must retain the selected library source.
+- A source change reloads the library session. An empty live store must clear stale exhibit metadata and media.
+- Reading citations resolve the owning interpretation. Whole-recording AV notes open without inventing a time cue.
+- Keep arrival payloads within `scripts/perf/reader-budget.json`. Run `scripts/perf/readerrun.mjs --check` for payload claims.
 
 ## Binding rules
-- [[svelte-no-typecheck-net]] — svelte-check gates compile errors but not prop WIRING (a
-  typed-not-destructured prop renders nothing, 0/0 green); assert the control in a browser drive.
-- [[viewer-optimizedeps-bare-includes]] — a bare-name dep reached only via `@render/*` source or a
-  lazy `import("./ExhibitView.svelte")` needs BOTH a direct dep AND `optimizeDeps.include`, or dev
-  504s with no MIME — three bites (fflate/dompurify/snarkdown, minisearch, the OSD trio).
-- [[wall-clock-quiet-is-a-load-sensitive-gate]] — "suppress until scroll goes quiet" re-arms forever
-  under continuous scroll, releases too early on a stalled frame; end suppression on computed
-  arrival, never on silence.
-- [[stop-the-machine-not-just-the-token]] — clearing a scroll-intent flag doesn't cancel the
-  in-flight `scrollTo`; 3 of 4 cancel inputs worked only because Chromium happens to cancel
-  smooth-scroll on that gesture — `pointerdown` doesn't, and the observer kept firing mid-animation.
-- [[osd-overlay-wrapper]] — `addOverlay` wraps your element in an unstyled div that eats clicks; this
-  is the embed's DOM-overlay hazard, NOT the viewer's Annotorious/WebGL canvas (GL layer stacks above
-  the wrapper) — verify here via the wrapper's computed `pointer-events`, not a hit test.
-- [[playwright-count-does-not-wait]] — `Locator.count()` right after `page.goto()`, before an island
-  hydrates, reads 0; a conditional skip/return then passes having tested nothing. Safe once a prior
-  action forced hydration.
-- [[playwright-emulation-and-scroll-traps]] — `test.use({ reducedMotion })` inside a `describe`
-  block silently doesn't apply (assert `matchMedia(...).matches` first); a synthetic wheel is
-  dropped outright during a running smooth-scroll animation.
-- [[drive-must-not-recreate-the-thing-under-test]] — a drive helper that does a full `page.goto`
-  recreates the custom element, so "does field X persist/reset" built on it is vacuous; cross the
-  transition the way a reader would (click through), reserve `goto` for the starting point.
-- [[viewer-e2e-shared-port]] — concurrent e2e runs share port 4326 and silently drive a *different*
-  worktree's build (false-green is the dangerous direction); pass a distinct `VIEWER_E2E_PORT`.
 
-## Decisions
-- (arch deepening P5 + P6, no ticket) / 8341381 — `note-tree.ts` gives the V100 bug class ONE home
-  (one walk), `createNoteSurface()` one open-note state machine (three hosts ~100 lines lighter
-  each), `readingSession` sheds ~15 locals from `ExhibitView`; the mount gained `overlay-core.ts`
-  (one lifecycle, `makeClickable` the V68 home) and `osd-open.ts` (one OSD construction). The gate
-  caught a REAL regression: the merged `applyFitBounds` dropped the OSD Rect→Box conversion (NaN fits).
-- Archie-0d6c — narrative-scroll↔camera coupling ships arrival-based (not quiet-timer) suppression,
-  both directions / 87b4bd1
-- Archie-36e6 — exhibit-level credit/licence/metadata renders beside the object credit on all three
-  readers (Reader/MediaPlayer/NarrativeReader `.credit-row`); dock and a UV-style panel both rejected / a44436b
-- Archie-7b86 — AV reading surface: live client-side waveform via WaveSurfer attached to the existing `<audio>` element (V50; baked peaks were the road NOT taken — Studio's cache is keyed on the working store), note surface restored (V53), temporal
-  map clears the item strip (V49) / 325de74, 17fd2e5, 5b08f9a
-- Archie-9eeb — finder result states where it lives, not just what matched (V106) / e7716be
-- Archie-06fb — selection.spec's order-dependent failure was TWO defects: OSD overlay re-render
-  lags the DOM resize under load, and the spec's "pure translation" premise was false (frame
-  rescales 1.0808x) — the spec now records the mark as a FRACTION of the frame and awaits arrival / b376aa8
-- Archie-4524 / d37d — AV note card gets a reading legend; cite-trigger occlusion fixed once the dock
-  landed / 27d02e4 (1cdf706 was the fixture half only, ticket stayed open there)
-- Archie-5185 — flip-and-read stepper stays removed with the note-card redesign (decided, not reverted)
-- note-dismiss reflow (no separate ticket) — accepted: dismissing a note grows the canvas 416→557px;
-  `preserveImageSizeOnResize` was tried and measured WORSE (17/20 → 9/20 pass) — reverted
+- [[two-typescript-compilers]] — check Svelte scripts and drive changed controls in a browser.
+- [[viewer-optimizedeps-bare-includes]] — maintain direct dependencies and dev optimization for lazy imports.
+- [[stop-the-machine-not-just-the-token]] — cancel active work as well as stale completions.
+- [[wall-clock-quiet-is-a-load-sensitive-gate]] — suppress feedback using arrival state rather than quiet timers.
+- [[viewer-e2e-shared-port]] — use distinct ports for concurrent browser runs.
 
 ## Evidence
-- `ledgers/PERF-reader-2026-07-24.md` — exhibit route shipped the whole canvas engine (OSD+pixi) to
-  render a grid: 1149KB→148KB JS on arrival (7.8x) via `lazyComponent` memoized dynamic import; no
-  ratchet exists yet for this (embed has `eagerGzKB`, the app doesn't) — the stated gap
-- same ledger, "deeper scan" — on `/sampler` video is 82% of page weight (`preload="metadata"` pulled
-  1648KB for a 1MB file); fix identified (baked poster) but NOT shipped — needs a design call
-- `ledgers/HANDOFF-viewer-ux-2026-07-26.md` — `selection.spec.ts:96` two assertions (A: re-derive mark
-  box from `#archie-object-frame` after dismissal, red 4/10→green 20/20; B: dismissed row height
-  returns to image, red 3/3) proven red-green against 5 injections that silently targeted
-  `Reader.svelte` while the fixture route renders `NarrativeReader.svelte` — see 1a-bis in
-  [[post-review-fixes-are-unreviewed]]
 
-## Open & hazards
-- The viewer's eager-bytes ratchet is `scripts/perf/readerrun.mjs --check` vs `reader-budget.json`
-  (CI `perf-ratchets`) — the ledger's "no ratchet yet" line predates the fix by 12 minutes
-- `ExhibitView.svelte` is the shared mount point across slices (AV surface / finder both touch it) —
-  append-only at mount sites, new props optional-with-defaults so merge order doesn't matter
+- Review 2026-09-05 → Source-aware navigation, citation resolution, and empty-store refresh pass regression checks. Evidence: `ledgers/IMPLEMENT-review-2026-09-05.md`.
+- `ledgers/DESIGN-review-modules-2026-09-05.md` records address and session contracts.
+- Documentation refresh 2026-09-05 → Viewer routes and shipped-feature descriptions match the code. Evidence: `ledgers/DOCS-refresh-2026-09-05.md`.
 
-- Review 2026-09-05 → One source-aware address Interface covers links and locus updates; changing source reloads the library session; empty live stores drop stale exhibits. Evidence: `ledgers/IMPLEMENT-review-2026-09-05.md`; contracts: `ledgers/DESIGN-review-modules-2026-09-05.md`.
+Earlier decisions and measurements: [archived hub](../ledgers/DOCS-hubs-before-2026-09-05.md#reading).

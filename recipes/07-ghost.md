@@ -1,21 +1,16 @@
 # Recipe 07 — Ghost
 
-Embed an Archie library in a Ghost post or page. Ghost's editor has an **HTML card** that
-keeps raw markup, so the Web Component usually works directly; an iframe fallback covers the
-cases where a theme or proxy sanitises scripts.
+This recipe embeds an Archie library through a HTML card or an iframe.
+Host permissions determine whether scripts, custom elements, and iframes remain in the published page.
+The examples use the pinned `v1.1` CDN bundle.
+[EMBED.md](EMBED.md) owns the attributes, offline policy, SRI, and hosting requirements.
 
-> Contract: ADR-0021. Delivered by Phase 1+ (drop) / Phase 2+ (hosted `src`).
-> Iframe fallback rationale: **anvil ADR-0006** (Web Component + iframe, nothing else —
-> restricted hosts strip `<script>`).
+## Direct element
 
----
+If your site permits scripts and custom elements, use the HTML card.
 
-## Path A — HTML card (the normal case)
-
-Ghost's HTML card preserves `<script>` and custom elements, so the Web Component runs.
-
-1. In the editor, click the **`+`** → choose **HTML** (or type `/html`).
-2. Paste this into the card, replacing the placeholder URLs:
+1. Add a HTML card to the post.
+2. Paste this example into it:
 
    ```html
    <script
@@ -29,25 +24,24 @@ Ghost's HTML card preserves `<script>` and custom elements, so the Web Component
      style="display:block;width:100%;height:600px"></archie-viewer>
    ```
 
-3. **Preview / publish** to test — the Koenig editor shows a placeholder for HTML cards, so
-   you won't see the live embed until you preview the rendered post.
+3. Replace the sample library URL with your published-tree or archive URL.
+4. Open the post preview.
+5. Check that the library appears and its objects open.
 
-- Swap `src` for a hosted `.archie.zip` (recipe `02`) or drop it for the local drop screen
-  (recipe `03`).
-- Add `target="#/{slug}/o/{objectId}"` to deep-link (recipe `04`), or `offline` for a
-  no-fetch embed (recipe `05`).
-- Keep the inline `style` height — the element is `display:inline` by default and would
-  otherwise collapse.
+The editor view and published page can apply different restrictions.
+A blank viewer can also indicate a source, CORS, or Content Security Policy error.
 
----
+For a local file picker, remove `src`.
+For a direct arrival, add a `target` from [the target reference](EMBED.md#targets).
+Keep a suitable height for the reader.
+For offline reading, use [the local archive instructions](EMBED.md#offline).
+Adding `offline` to a hosted-tree example blocks its library URL in the current build.
 
-## Path B — iframe fallback
+## Iframe alternative
 
-If your Ghost theme, a reverse proxy, or a content filter strips `<script>` / custom elements
-(it happens with hardened setups and some hosted-Ghost plans), fall back to the iframe — the
-universal floor per **anvil ADR-0006**.
+If your site removes scripts or custom elements but permits iframes, use a hosted wrapper page.
 
-**Step 1 — host a tiny wrapper page** on static hosting you control. Call it `embed-codex.html`:
+1. Create `embed-codex.html` on your static hosting with this content:
 
 ```html
 <!doctype html>
@@ -59,7 +53,8 @@ universal floor per **anvil ADR-0006**.
 <archie-viewer src="https://yourmuseum.org/libraries/codex.archie.zip"></archie-viewer>
 ```
 
-**Step 2 — put an iframe in the HTML card** instead of the Web Component:
+2. Replace the archive URL with your library URL.
+3. Add this iframe to the HTML card:
 
 ```html
 <iframe src="https://yourmuseum.org/embed-codex.html"
@@ -68,13 +63,13 @@ universal floor per **anvil ADR-0006**.
         title="Codex — Archie viewer"></iframe>
 ```
 
-**iframe height:** iframes don't auto-grow with content — use a fixed `height` (above). A
-`postMessage` height handshake is possible (anvil ADR-0006 follow-up F1); the fixed height is
-the floor that works everywhere.
+4. Replace the iframe URL with your hosted wrapper URL.
+5. Open the post preview.
+6. Check that the library appears inside the frame.
 
----
+An iframe requires permission from the host and the embedded page's framing policy.
+A host that removes iframes cannot use this fallback.
 
-## Which path?
-
-- HTML card renders the embed in preview → **Path A**.
-- HTML card preview is blank → **Path B (iframe)**, which always works.
+The fixed height works without a script on the parent page.
+[Automatic iframe height changes](EMBED.md#auto-grow-the-iframe-to-its-content) require a parent-page script.
+The reader retains the current iframe height.

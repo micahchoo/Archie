@@ -1,5 +1,9 @@
 # Agent Drive Harness Implementation Plan
 
+> **Status review — 2026-09-05: proposal. completion not verified.** The planned `scripts/drive.mjs` and `scripts/lib/verbs.mjs` are absent.
+> The existing `scripts/lib/driver.mjs` supports other browser scripts. Its presence does not establish completion of this proposed harness.
+> Current browser workflow: [run-app skill](../../../.claude/skills/run-app/SKILL.md). Current work: [verification hub](../../../hubs/verification.md) and [seeds](../../agents/issue-tracker.md).
+
 > **For agentic workers:** Use executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** An agent can boot the real studio in Chromium, act on it with app-level verbs, and read semantic app state back as JSON — one command, no per-check boot tax.
@@ -307,7 +311,7 @@ Expected: all three non-zero/matching.
 | Q-5 | Source-before-projection: authoritative source + thin derived projection | Task 1 (the seam is a thin read-only projection over the authoritative runes state — it derives, never owns) |
 | Q-14 | Drive harness acts through the UI, observes through the seam (minted with this plan) | Tasks 1, 2, 4, 6; Flow Map discipline note |
 
-Repo rules applied (stable named handles, not Q-N): `bound-fetch-defaults` (browser-vs-Node epistemics — the plan's reason to exist), `svelte-no-typecheck-net` + `studio-ts-typecheck-gate` (Task 1 Step 6 gates), `viewer-optimizedeps-bare-includes` (Wave 2 open question).
+Repo rules applied (stable named handles, not Q-N): `bound-fetch-defaults` (browser-vs-Node epistemics — the plan's reason to exist), `two-typescript-compilers` + `two-typescript-compilers` (Task 1 Step 6 gates), `viewer-optimizedeps-bare-includes` (Wave 2 open question).
 
 ## Shape Changes Summary
 

@@ -1,16 +1,20 @@
 # Archie — User Guide
 
-A walkthrough for putting your media online as an annotated, self-contained
-website. No server, no database, no account.
+A walkthrough from your first exhibit to a published site or portable copy.
+Local authoring needs no account. Online publishing needs a destination, such as
+a static web host or GitHub Pages.
 
-We follow one arc, start to finish, using **The Archie Library** — the demo Archie
-ships with. It reframes the Voynich manuscript (Beinecke MS 408) as a contested
-object: the same undeciphered marks read three ways across three exhibits — **The
-Rosettes** (a single deep-zoom folio), **The Whole Manuscript** (a grid, with a
-sounded page), and **Reading the Unreadable** (a narrative). Open them in the
-Studio as you read.
+The guide uses **The Archie Library**, the sample library in Studio. Its Voynich
+exhibits show three approaches to the same manuscript:
 
-| # | Page | You'll learn to… |
+- **The Rosettes** focuses on one deep-zoom folio.
+- **The Whole Manuscript** presents a grid of objects.
+- **Reading the Unreadable** adds a narrative.
+
+Open these examples in Studio as you read. Use **Keep a copy** before edits that
+you want to retain.
+
+| # | Page | Task |
 |---|---|---|
 | 0 | [What is Archie?](00-what-is-archie.md) | See what a finished, published exhibit looks like |
 | 1 | [Your library](01-your-library.md) | Find your exhibits and start a new one |
@@ -20,5 +24,6 @@ Studio as you read.
 | 5 | [Shape the story](05-shape-the-story.md) | Add readings, tags, and a narrative spine |
 | 6 | [Publish](06-publish.md) | Put the whole library online |
 
-> The screenshots in this guide are produced by `scripts/capture-screenshots.mjs`
-> against the running apps. Re-run it after a UI change to refresh them.
+Screenshots illustrate selected views and can show earlier interface layouts.
+The walkthrough text uses the current controls. See [delivery capabilities](../CAPABILITIES.md)
+for differences between browser, desktop, and reader workflows.

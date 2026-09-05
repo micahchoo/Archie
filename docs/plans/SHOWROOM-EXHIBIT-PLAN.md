@@ -1,5 +1,10 @@
 # Showroom Exhibit — Archie annotates Archie
 
+> **Status review — 2026-09-05: assets prepared. final acceptance not verified.** The [assembly manifest](../showroom/exhibit.md), screenshots, and CSVs exist.
+> This review does not establish completion of the final assembly and publication steps.
+> Seeds issue `Archie-0c1d` remains open for example visibility and publish opt-in.
+> Current product guidance: [product hub](../../hubs/product.md). Current work: [seeds](../agents/issue-tracker.md).
+
 **Goal:** a self-documenting Archie exhibit whose Objects are screenshots of Archie's own
 UI, with annotation regions labeling every feature. Functions simultaneously as a feature
 list, a tutorial, and a showroom for Studio + Viewer + Web Embed.

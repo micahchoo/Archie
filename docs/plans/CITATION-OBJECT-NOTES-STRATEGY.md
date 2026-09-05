@@ -1,5 +1,10 @@
 # Implementation Strategy — Object-level Notes + Rich Citation Rendering
 
+> **Status review — 2026-09-05: historical strategy, full acceptance not verified.** Whole-object handling exists in `geometry/coverage.ts` and its tests.
+> Seeds records subsequent whole-object and citation work under closed issues `Archie-dace` and `Archie-3ea1`.
+> This review does not establish completion of every original UI or human gate.
+> Current behavior: [capabilities](../CAPABILITIES.md). Current work: [reading hub](../../hubs/reading.md) and [seeds](../agents/issue-tracker.md).
+
 **Scope:** feature-level; sibling to the project-wide `docs/IMPLEMENTATION-STRATEGY.md`. **Compiled** 2026-06-20 from the grilling corpus. **Inputs (sole):** ADR-0018 (keystone identity), CONTEXT.md §"Object-level Notes + rich citation rendering", the §109/Q-1 linkability decisions, ADR-0003 (append-only spine), ADR-0007 (Readings), ADR-0011 (gesture creation), ADR-0014 (self-describing artifact), ADR-0015 (map extent), ADR-0017 (section-as-annotation). Prior art cited inline in ADR-0018.
 
 This is the **method and sequence**, not a task list — each phase earns its own detailed plan (leaf tasks + pre-written tests) when it starts.

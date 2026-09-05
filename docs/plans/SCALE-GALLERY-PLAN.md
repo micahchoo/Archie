@@ -1,5 +1,10 @@
 # Scale & Gallery plan — Studio/Viewer beyond 20 images
 
+> **Status review — 2026-09-05: partially implemented historical plan. full acceptance not verified.** Studio includes `overview-selection.ts` and `gallery-data.ts`.
+> Seeds records gallery parity work in `Archie-a897`, but open issue `Archie-9c00` still identifies a portable gallery defect.
+> These records do not prove that every phase or scale criterion below is complete.
+> Current behavior: [capabilities](../CAPABILITIES.md). Current work: [authoring hub](../../hubs/authoring.md) and [seeds](../agents/issue-tracker.md).
+
 **Origin:** grill session 2026-07-05 (user-gated; shared understanding confirmed). Both apps
 degrade past ~20 images — in performance AND interaction design. Confirmed scale reality: 20+
 Objects inside a single Exhibit AND 50+ Objects total across the Library; both levels crowd.

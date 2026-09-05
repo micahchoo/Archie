@@ -1,19 +1,25 @@
 # Inside an exhibit
 
-Open an exhibit that has several objects and you land on its overview — every
-object laid out on one zoomable canvas:
+Every exhibit opens on its overview, including empty exhibits and exhibits with
+one object. The overview shows the objects as a grid or a list.
 
-![The exhibit overview: five Voynich folios as plates on a canvas](../screenshots/auto/studio-overview.desktop.png)
+To add media:
 
-This is where you arrange the order a visitor will move through. Each object is a
-**plate**; drag a plate to set the **reading order** (the numbers update). Drag
-the empty canvas to pan, scroll to zoom — the same gestures your visitors use.
+1. Open your exhibit.
+2. Select **Add media**.
+3. Choose the source in the dialog.
 
-To work on one object up close, **click its plate**. That opens the editor, where
-the annotating happens (the next two pages).
+To change the order of objects:
 
-> An exhibit with a single object — like **The Rosettes** — skips the overview and
-> opens straight into the editor. The overview only appears when there is an order
-> to arrange.
+1. Clear any search filter.
+2. Select **Reading order** as the sort order.
+3. Drag an object to its new position.
+
+The overview also supports selection of several objects for changes as a group.
+Object order controls the media sequence. Narrative sections have a separate order.
+
+To annotate an object, select its image or list row. The editor opens that object.
+**Overview** returns to the exhibit so you can choose another object or arrange its
+contents.
 
 → Next: [Annotate an image](03-annotate-an-image.md)

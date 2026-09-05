@@ -1,5 +1,5 @@
 ---
-scope:
+paths:
   - "apps/viewer/src/**"
   - "apps/studio/src/**"
   - "packages/render-*/src/**"

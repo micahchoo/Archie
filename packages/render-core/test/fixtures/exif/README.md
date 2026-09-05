@@ -1,9 +1,9 @@
 # EXIF orientation fixture set
 
-The 8-orientation test corpus stood up in **Phase 0** (per `IMPLEMENTATION-STRATEGY.md` §18).
+The 8-orientation test corpus originated in Phase 0 of the [historical implementation strategy](../../../../../docs/archive/IMPLEMENTATION-STRATEGY-2026-08-08.md#phases).
 
 **The consumer test is deliberately NOT wired in Phase 0.** EXIF-bake-at-ingest is an
-*orphan gate* (CONTEXT.md / strategy §39) — it fires at its *condition* ("before the first
+*orphan gate* (CONTEXT.md / historical strategy, “Continuous — orphan gates & cross-cutting”) — it fires at its *condition* ("before the first
 phone-photo public exhibit"), not at a phase. So Phase 0 owns the **spec** (`manifest.json`),
 and the test that consumes the fixtures lands with the EXIF normalize code.
 

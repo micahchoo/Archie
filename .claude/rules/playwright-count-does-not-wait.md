@@ -1,8 +1,8 @@
 ---
-scope:
-  - apps/viewer/e2e/**
-  - apps/studio/e2e/**
-  - recipes/**
+paths:
+  - "apps/viewer/e2e/**"
+  - "apps/studio/e2e/**"
+  - "recipes/**"
 tags: [testing, e2e, playwright, vacuous-tests]
 priority: high
 source: hand-written
@@ -63,7 +63,7 @@ could ever draw), and the V48 sweep that passed against an injected defect becau
 pick the one clearing note. Every one is **a measurement that looks valid and isn't** — and the
 false-green direction never prompts anyone to investigate.
 
-`[[svelte-no-typecheck-net]]` states the parent principle: a gate answers the question it was asked,
+`[[two-typescript-compilers]]` states the parent principle: a gate answers the question it was asked,
 and *"did this actually exercise anything?"* is a question no gate asks itself. The counter-discipline
 is the one this repo already uses everywhere else — **inject the defect and watch the test fail**
 before trusting it. A test that cannot be made to fail is not a gate, and a test that skips itself

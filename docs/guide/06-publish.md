@@ -1,36 +1,56 @@
 # Publish
 
-Publishing projects your **whole library** — every exhibit — into a static site.
-This closes the loop: what you authored in the Studio becomes the public Viewer.
+Publishing writes your library as a static site. The output includes the exhibit
+data, static pages, and an interactive reader. Visitors can browse the exhibits
+without an application server.
 
-The published site opens on a gallery of your exhibits:
+## Publish a site
 
-![The published Viewer: "The Archie Library" gallery listing every exhibit](../screenshots/auto/gallery-after-sunset.png)
+1. Open **Publish**.
+2. Choose where the library will live.
+3. If Archie asks for media quality, choose the quality for this destination.
+4. Complete the steps for that destination.
 
-…and each exhibit becomes its own page — the same folios you annotated, now live
-for visitors to open, zoom into, and read three ways:
+Archie remembers the destination for later updates. **Preview as reader** opens
+a preview from the publish surface.
 
-![A published exhibit page: the Voynich manuscript as a grid](../screenshots/auto/viewer-voynich.desktop.png)
+A folder destination writes a site to a folder that you choose. Folder access
+depends on the browser or desktop app. A static web host can serve that folder.
 
-You have a few destinations, all from the **Publish…** menu:
+Desktop Studio offers GitHub sign-in with a device code. **Continue with GitHub**
+starts the flow. Archie uses the OS keyring to retain the token for later visits.
+If the keyring is unavailable, Archie reports that it cannot keep you signed in.
+**Sign out** clears the stored credential.
 
-- **Locally** — preview the published site on your machine before sharing it.
-- **A portable `.archie.zip`** — download a single self-contained file and hand it
-  to someone. The Viewer opens it in the browser; no host needed.
-- **To GitHub Pages** — choose **Connect to GitHub**, enter your repo owner and
-  name, a branch (defaults to `gh-pages`), and a fine-grained access token with
-  `contents: write` scope. Archie pushes the library's data tree via the GitHub
-  Contents API; the token is used once and never stored. (The project's deploy
-  workflow then builds and hosts the Viewer shell alongside your data — see the
-  README's *Publishing & deploying* section.)
+The desktop flow uploads the site and attempts to enable GitHub Pages. If GitHub needs manual setup, Archie shows the remaining
+steps and the site address.
 
-Credit your sources as you go: each library, exhibit, and object can carry an
-attribution and a license, edited under **Details & rights** in the Studio. The
-Viewer shows a quiet credit line, with the full license behind an ⓘ disclosure.
+Browser Studio offers an advanced **I already use GitHub** path. This form takes
+a repository owner, repository name, branch, and personal access token. The default
+branch is `gh-pages`. The token stays in memory for the attempt and clears after
+completion, failure, or dismissal.
 
-Your site goes live at `https://<owner>.github.io/<repo>/` — plain files,
-standards on disk ([W3C Web Annotation](https://www.w3.org/TR/annotation-model/)
-notes, [IIIF Presentation 3](https://iiif.io/api/presentation/3.0/) manifests),
-readable by other IIIF tools and yours to keep.
+## Export a copy
+
+1. Open **Publish**.
+2. Select **Export a copy**.
+3. Choose the copy that fits your task.
+
+- **A working copy** produces a `.archie.zip` for backup, exchange, or later editing in Studio.
+- **One `.html` file** includes a reader for direct opening, subject to the size limit in the dialog.
+- **A folder with the reader built in** produces a site for static hosting.
+- **A deposit copy** includes checksums in a BagIt archive layout.
+
+Export keeps the remembered publish destination. Local assets travel with the
+appropriate copy. Remote media still depends on its source. The Viewer can open
+a working copy, but the archive alone does not contain the Viewer application.
+
+## Credit the sources
+
+Library, exhibit, and object details can include attribution and license
+information. Published output carries these credits with the material.
+
+The [delivery capabilities](../CAPABILITIES.md) describe storage, offline access,
+and export limits.
 
 ← Back to the [guide index](README.md)

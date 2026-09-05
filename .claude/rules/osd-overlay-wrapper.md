@@ -1,5 +1,6 @@
 ---
-scope: "packages/render-mount/src/**"
+paths:
+  - "packages/render-mount/src/**"
 tags: [openseadragon, hazard, pointer-events]
 priority: high
 source: hand-written

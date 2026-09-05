@@ -1,29 +1,15 @@
 <!doctype html>
 <!--
   Recipe 02 — Embed a hosted .archie.zip
-  ======================================
-  Scenario: you exported a single self-contained `.archie.zip` from Studio and uploaded
-  it to your own static hosting. `src` points directly at the zip URL; the element
-  fetches it, validates its L1 marker (archie.json — ADR-0020), and renders.
 
-  Contract: ADR-0021 (src = a hosted .archie.zip URL).
-  Delivered by: Phase 2 (remote-zip src, reuses openLibraryFromSrc).
-
-  ⚠ CORS — READ THIS:
-    The zip lives on a DIFFERENT origin than this page (yourmuseum.org vs. wherever this
-    page is served). For the browser to fetch it cross-origin, the server hosting the zip
-    MUST send an Access-Control-Allow-Origin header covering this page's origin
-    (use `*` for a fully public library). Without it the browser blocks the read and the
-    viewer shows "Couldn't load this media item."
-
-  ⚠ HTTPS:
-    Both the page and the zip must be https. A browser on an https page refuses to fetch
-    an http resource (mixed content), and the strict host CSPs these embeds run under
-    only permit https:.
-
-  REPLACE:
-    yourmuseum.org           ->  your own hosting
-    codex.archie.zip         ->  your exported library file
+  Export a .archie.zip from Studio and upload it to static hosting.
+  Set src to its URL. The loader checks the Archie format marker.
+  External media references still need their origin unless the archive includes those assets.
+  For a cross-origin read, the archive server must permit the page origin through CORS.
+  Use HTTPS for public deployment. An HTTPS page can block HTTP resources as mixed content.
+  Replace yourmuseum.org and codex.archie.zip with your hosting and archive name.
+  This example uses the pinned v1.1 CDN bundle.
+  See EMBED.md for the reference and README.md for the current local build.
 -->
 <html lang="en">
 <head>

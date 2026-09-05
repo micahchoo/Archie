@@ -1,25 +1,16 @@
 <!doctype html>
 <!--
-  Recipe 05 — Offline mode (no remote fetch)
-  ==========================================
-  Scenario: a kiosk, an air-gapped display, a privacy-conscious page, or a classroom that
-  must not phone home. The boolean `offline` attribute tells the element to BLOCK remote
-  tile/media fetch — a network-egress mitigation (ADR-0020 hardening).
+  Recipe 05 — Local archive with offline enabled
 
-  Pair `offline` with a source whose pixels live LOCALLY, or the images won't load:
-    - the local drop screen (no src) — the dropped .archie.zip carries its own tiles/media,
-      so everything renders from the file the visitor opened; OR
-    - a src whose media is genuinely local/bundled.
-  An `offline` embed pointed at a src whose tiles are remote IIIF will render the structure
-  but cannot fetch those remote tiles — by design.
-
-  Contract: ADR-0021 (offline = boolean attr, block remote tile/media fetch).
-  Delivered by: Phase 2 (offline mode, alongside hosted-src).
-
-  `offline` is a BOOLEAN attribute — its mere PRESENCE turns it on. `offline="false"` would
-  still be ON (that's how HTML boolean attributes work); to turn it off, REMOVE the attribute.
-
-  REPLACE:
+  Without src, the visitor chooses or drops a .archie.zip that includes its media.
+  The offline attribute restricts resources within the element.
+  In the current build, it permits only blob: and data: resources.
+  It also blocks HTTP and relative URL library loads, including a locally served tree.
+  The surrounding page and runtime have separate network requirements.
+  This example uses the pinned v1.1 CDN bundle, so it still requests runtime files from the CDN.
+  See EMBED.md#offline for current behavior and local runtime instructions.
+  Presence enables the boolean attribute, including offline="false".
+  To disable it, remove the attribute.
 -->
 <html lang="en">
 <head>
@@ -41,11 +32,11 @@
 
 <body>
   <header><h1>Kiosk — offline</h1></header>
-  <p class="hint">No network fetch: drop a self-contained <code>.archie.zip</code> below.</p>
+  <p class="hint">Drop a <code>.archie.zip</code> that includes its media. This page loads its runtime from the CDN.</p>
 
   <!--
-    `offline` present = remote fetch blocked. No src here, so the visitor opens a local
-    self-contained zip; everything renders from that file, nothing leaves the machine.
+    No src: the visitor opens a local archive.
+    The offline policy controls element resources, not requests from the page or module loader.
   -->
   <archie-viewer offline></archie-viewer>
 </body>

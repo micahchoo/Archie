@@ -25,7 +25,7 @@ implements them.
   how a measurement was actually taken, and what the wrong first conclusion was.
 - [`packages/render-core/src/spine/MERGE-CONTRACT.md`](../packages/render-core/src/spine/MERGE-CONTRACT.md)
   — the merge rules, stated as a contract. Use for: anything about concurrent edits.
-- [`ISSUES.md`](../ISSUES.md) / [`HANDOFF.md`](../HANDOFF.md) — open work and in-flight state.
+- [Issue tracking](../docs/agents/issue-tracker.md) — current work in `.seeds/`. [HANDOFF.md](../HANDOFF.md) provides orientation.
 
 ## Knowledge — external specs Archie implements
 
@@ -53,6 +53,5 @@ learner hasn't expressed an interest in joining any.
   bytes on disk → manifest → published tree → viewer render). The pieces exist across
   `ingest-flows.ts`, `publish/site.ts`, and `published.ts`; the connecting narrative is
   missing. Candidate for an early lesson + a reference diagram.
-- `mcp__context__get_docs` has indexed copies of most deps (see
-  [`.claude/rules/deps-index.md`](../.claude/rules/deps-index.md)) but most are marked
-  **very-stale**. Refresh before relying on one for a load-bearing API claim.
+- For dependency APIs, use installed packages and official versioned documentation.
+  The [old dependency index](../ledgers/DOCS-agent-guidance-before-2026-09-05.md#deps-index) is historical evidence.

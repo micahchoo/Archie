@@ -1,5 +1,5 @@
 ---
-scope:
+paths:
   - "README.md"
   - "PRFAQ.md"
   - "DIVERGENCES.md"
@@ -12,63 +12,26 @@ updated: 2026-09-05
 # product
 > *what is Archie and why is it shaped this way?*
 
-Archie is a static-publishable, multi-media exhibit annotation platform (image/map/audio/video)
-built on open standards — notes are W3C Web Annotations, exhibits are IIIF Presentation 3
-manifests — so the published site is a plain file tree with no server and no lock-in. `README.md`
-is the spine (start there); `docs/GOAL.md` is the north-star the `/goal` autonomous loop re-reads
-every cycle; `PRFAQ.md` + `DIVERGENCES.md` are the graft-discovery pipeline that turns observed
-friction into specced features; `docs/adr/` (0001–0026) are ratified architecture decisions;
-`docs/decisions/` holds citable Q-N records. The one gate that matters for any product-shape
-change: `docs/GOAL.md` §3's dual gate — Family A regressions (typecheck/tests/build/bundle/a11y/
-console/screenshots) must ALL stay green, and ≥1 Family B improvement scalar must move, or the
-cycle reverts. Architecture changes additionally require a same-commit ADR or decision record
-(§6) — no unattended architecture change ships with no provenance trail.
+Archie lets authors annotate images, maps, audio, and video, then publish a static exhibit.
+Notes use W3C Web Annotation. Exhibits use IIIF Presentation 3.
+
+## Current guidance
+
+- `README.md` is the introduction. `docs/guide/` holds user workflows. `docs/CAPABILITIES.md` defines delivery limits.
+- `CONTEXT.md` defines domain terms. `docs/adr/` and `docs/decisions/` hold architecture and product decisions.
+- `PRFAQ.md` and `DIVERGENCES.md` record product proposals. Check the linked seed before treating a proposal as shipped or queued.
+- For an explicitly requested product loop, read `docs/GOAL.md`. Its gates and locked frames apply to that workflow.
+- Q-15 separates **Publish** for a website from **Export a copy** for a portable artifact. Preserve those user intentions.
+- Q-12/Q-13 use desktop device authentication, OS keyring persistence, and a Git pack push. Browser advanced-token publishing has a separate path.
+- For the current embed attributes, read `recipes/EMBED.md`. The original three-attribute ADR records the earlier contract.
 
 ## Binding rules
-- [[prior-art-citation-discipline]] — every divergence/PRFAQ claim cites prior art; a plausible
-  citation that nobody re-opens is the recurring failure (7 bad ones caught in one session) —
-  open the file and grep usage, don't cite from memory.
 
-## Decisions
-- Q-15 — the publish surface is split by AUTHOR INTENT, not by sink: publishing a SITE (a place that
-  stays updated, opened on a remembered home) and exporting a FILE (an artifact you carry away) are
-  different verbs behind one entry point. Rules out the c367 one-wall dialog, per-run destination
-  choice, and a global quality setting / 58bd8e1
-- Archie-ebe7 — AV posters: canvas frame-grab now, `mediabunny` deferred until rotation/audio
-  bites / dc012e9
-- Archie-5fb5 — untrusted-archive import validates marker + structure only, not content
-  (`[[untrusted-archive-open-seam]]` is the enforcement seam) / 0efc2a1
-- Archie-be3a — desktop CSP cleartext `http://**` grant removed, tightened to `https:`
-  (`[[tauri-csp]]` covers the rest of that CSP) / baa86a7
-- Archie-3754 — bulk catalogue-spreadsheet metadata import built: columns → Dublin Core, rows →
-  objects by filename / c800a83
-- Archie-19c5 / Archie-3504 — publish base URL derived from the destination BEFORE projection,
-  relative-first (absolute only for `og:url`/JSON-LD/IIIF ids/canonical) / 89a1302
-- Archie-babe, Archie-33bf — export ships the read-only embed, not a full Astro viewer; viewer
-  links deliberately don't mirror Studio's hash routes — both closed same day, no work / f1378e1
-- Q-12/Q-13 (`docs/decisions/archie.md`) — desktop GitHub token persists in the OS keyring
-  (ratified in PRFAQ.md interview); deploy upload is single-pack `git2` push, per-blob REST
-  demoted to the browser-PAT fallback only (probe-refuted at ~500 files, secondary rate limit)
+- [[prior-art-citation-discipline]] — verify the cited source before using a product or architecture claim.
 
 ## Evidence
-- DIVERGENCES.md divergence 1 (publish-to-web) — top bet, shipped: `5dc6a93` merges the
-  device-flow GitHub Pages deploy; DIVERGENCES.md's "spec'd" status line predates the merge
-- DIVERGENCES.md divergence 5 (embed-autogrow) — built `e3766bc`; kill-criterion finding
-  recorded: script-stripping hosts strip the parent listener too, fixed-height stays the answer
-  for that class
-- `docs/adr/0003-annotation-spine-append-only-version-dag.md` — append-only version-DAG spine, called "keystone" (Q-3); `docs/adr/0016-narrative-as-emergent-reading-mode.md` —
-  narrative is emergent from content (sections present), never a picked template
-- `docs/adr/0019-embeddable-read-only-archie-viewer.md`/`0021` — embed's public surface is 3 frozen attributes (`src`/`target`/
-  `offline`); Archie-f90d gave it a capability contract enforced by `recipes/smoke.mjs`
 
-## Open & hazards
-- DIVERGENCES.md 2–4 (studio-preview, remix-from-viewer, headless-publish) are still **queued** —
-  read the divergence's kill criterion before building; don't re-probe a killed assumption
-- GOAL.md §6's locked frames (OSD+Annotorious, Studio/Viewer split, WADM, IIIF,
-  static-publishable, no server) are non-negotiable — a cycle that relitigates one is out of
-  scope, not a bug fix. (GOAL.md attributes the list to CONTEXT.md, but CONTEXT.md is a pure
-  glossary and doesn't contain it — §6 itself is the real source.)
-- GOAL.md §4a: after 3 consecutive dry `/goal` cycles the run stops and defers to seeds — a
-  report of "no improvement found" is the loop working as designed, not a failure to diagnose
+- Review 2026-09-05 → Capabilities are documented. Audience fit still needs observed user sessions. Protocol: `ledgers/PRODUCT-validation-2026-09-05.md`.
+- Documentation refresh 2026-09-05 → Short README and task guides replace feature lists and outdated status claims. Evidence: `ledgers/DOCS-refresh-2026-09-05.md`.
 
-- Review 2026-09-05 → Delivery capabilities and a first-use protocol are documented; scholar/curator cohort remains a hypothesis until observed sessions. Evidence: `ledgers/IMPLEMENT-review-2026-09-05.md`; contracts: `ledgers/DESIGN-review-modules-2026-09-05.md`.
+Earlier decisions and measurements: [archived hub](../ledgers/DOCS-hubs-before-2026-09-05.md#product).

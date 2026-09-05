@@ -1,5 +1,5 @@
 ---
-scope:
+paths:
   - "**/*.test.ts"
   - "**/*.spec.ts"
   - "apps/*/e2e/**"

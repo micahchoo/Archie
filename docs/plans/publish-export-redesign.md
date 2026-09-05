@@ -1,5 +1,10 @@
 # Publish/Export redesign — home card + export menu
 
+> **Status review — 2026-09-05: implemented historical design.** The [implementation plan](publish-export-redesign-plan.md) records all seven tasks as complete.
+> Seeds confirms their closure. `Publish.svelte` mounts the three planned surfaces.
+> The original “implementation not started” status below describes the proposal date.
+> Current behavior: [capabilities](../CAPABILITIES.md). Current work: [publishing hub](../../hubs/publishing.md) and [seeds](../agents/issue-tracker.md).
+
 > Design spec (brainstormed 2026-07-28). Successor to the Archie-c367 one-flow surface.
 > Status: approved direction; implementation not started.
 
@@ -41,7 +46,7 @@ focused sheets.
 - `publish-machine.svelte.ts` screens (auth, repo-picker, publishing checklist) are reused, not
   rewritten.
 - Gates: `pnpm --filter @archie/studio run check` (0/0), `pnpm typecheck`, studio vitest, and a
-  real-browser drive for any prop-wiring claim ([[svelte-no-typecheck-net]]).
+  real-browser drive for any prop-wiring claim ([[two-typescript-compilers]]).
 - Copy in sentence case, product-copy voice; no all-caps body text.
 
 ## Locked decisions

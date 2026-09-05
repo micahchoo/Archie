@@ -1,5 +1,7 @@
 ---
-scope: ["apps/viewer/astro.config.mjs", "apps/viewer/package.json"]
+paths:
+  - "apps/viewer/astro.config.mjs"
+  - "apps/viewer/package.json"
 tags: [toolchain, hazard, dev-server]
 priority: high
 source: hand-written

@@ -1,20 +1,23 @@
 # Annotate audio & video
 
-Audio and video objects open a temporal editor instead of the zoom canvas. The
-gesture is the same idea — mark a span, attach a note — but the span is *time*.
+Audio and video objects open an editor for notes about moments or time ranges.
+Audio has a waveform. Video has a player and a timeline for its notes.
 
-![The audio editor: the field-recording waveform with a marked region](../screenshots/auto/studio-editor-av.desktop.png)
+To annotate a time range:
 
-For audio you get a waveform. **Drag across it** to mark a moment or a stretch,
-then write the note. **Play** to listen; click a marked stretch to seek back and
-edit its note. The note list works exactly as it does for images.
+1. Open the recording from the exhibit overview.
+2. Move playback to the start of the range.
+3. Select **Mark start**.
+4. Move playback to the end of the range.
+5. Select **Add note**.
+6. Enter the note text.
 
-A few temporal extras:
+You can also drag across an audio waveform to mark a range. A marked range opens
+its note for editing. **Whole recording** creates a note without a time range.
 
-- **Import captions** brings in a VTT or SRT transcript, so spoken content
-  becomes notes you can refine.
-- For **video**, the same waveform-style timeline applies, and **+ Region on
-  frame** lets you draw a box on a specific frame — combining a time-window with
-  a spatial region.
+For video, a box on the picture adds a spatial region to the time range.
+
+To import a transcript, select **Add captions** and choose a VTT or SRT file.
+Each caption becomes a note at its time.
 
 → Next: [Shape the story](05-shape-the-story.md)

@@ -1,5 +1,9 @@
 ---
-scope: packages/render-core/src/publish/open.ts,packages/archie-viewer/src/load.ts,apps/viewer/src/published.ts,apps/studio/src/ingest-flows.ts
+paths:
+  - "packages/render-core/src/publish/open.ts"
+  - "packages/archie-viewer/src/load.ts"
+  - "apps/viewer/src/published.ts"
+  - "apps/studio/src/ingest-flows.ts"
 tags: [security, canonicalization, zip, untrusted-input]
 priority: high
 source: hand-written

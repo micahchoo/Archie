@@ -1,5 +1,9 @@
 # Architecture Deepening — whole-system phase plan
 
+> **Status review — 2026-09-05: completed historical plan.** The execution record identifies `8341381` as the completed implementation.
+> The commit, branch, and test counts below are historical snapshots.
+> Current guidance: [data hub](../../hubs/data.md) and [verification hub](../../hubs/verification.md).
+
 Date: 2026-08-07. Source: `improve-codebase-architecture` run on every subsystem
 (8 subsystems, 35 candidates, report at `/tmp/architecture-review-20260807-002529.html`).
 

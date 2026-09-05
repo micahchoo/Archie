@@ -1,5 +1,10 @@
 # Studio settings panel — Design
 
+> **Status review — 2026-09-05: implementation present. full design acceptance not verified.** `App.svelte` mounts `Settings.svelte` and supplies diagnostics.
+> The “no settings surface” premise and “Next” instruction below describe the original design stage.
+> This review found no seeds completion record for every design requirement.
+> Current behavior: [capabilities](../../CAPABILITIES.md). Current work: [authoring hub](../../../hubs/authoring.md) and [seeds](../../agents/issue-tracker.md).
+
 **Date** 2026-07-26 · **Cycle 1** · Upstream: `ledgers/EXPLORE-studio-folder-export-settings-2026-07-26.md` §4
 
 ## Intent
@@ -37,7 +42,7 @@ Each states an outcome, not a mechanism.
 ## Constraints
 
 - **C1** Svelte 5 runes; `.svelte` gates are `pnpm --filter @archie/studio run check` at **0/0**,
-  `.ts` strictness is `pnpm typecheck` (`.claude/rules/studio-ts-typecheck-gate.md`).
+  `.ts` strictness is `pnpm typecheck` (`.claude/rules/two-typescript-compilers.md`).
 - **C2** Flags are read **once at boot** and cached by callers (`feature-flags.ts:1-6`). A toggle
   must not flip mid-session — one session must never run half its writes down each code path.
 - **C3** `navigator.storage.estimate()` is already inert on desktop (`storage-quota.svelte.ts`
@@ -125,7 +130,7 @@ that a separate surface would have done structurally, at a fraction of the cost.
 - `ledgers/EXPLORE-studio-folder-export-settings-2026-07-26.md` — §4 is this design's input.
 - `docs/plans/native-canonical-store.md:304` — the "keep until manual clear" answer L3 implements.
 - `.claude/rules/perf-measure-the-flow.md` — why both worker paths degrade silently (C5, L4).
-- `.claude/rules/studio-ts-typecheck-gate.md` — the `.ts` gate (C1).
+- `.claude/rules/two-typescript-compilers.md` — the `.ts` gate (C1).
 - `.claude/rules/metadata-rights-keyed-writebacks.md` — why L7 exists (C4).
 - `docs/research/freecut-lessons.md` + `Prior Art/freecut/src/features/.../use-auto-save.ts` —
   the autosave control L2 deliberately diverges from.

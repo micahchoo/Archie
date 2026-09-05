@@ -1,5 +1,6 @@
 ---
-scope: apps/studio/src/**
+paths:
+  - "apps/studio/src/**"
 tags: [data-integrity, rights, metadata, coupling]
 priority: high
 source: Archie-5a9b audit + Archie-893f scoped rule

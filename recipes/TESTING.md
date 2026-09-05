@@ -1,80 +1,87 @@
-# Testing the `<archie-viewer>` embed locally
+# Test the embed locally
 
-Two ways to exercise the built embed against the baked published tree. Both are
-**same-origin** — the bundle (`/dist/archie-viewer.js`) and the library
-(`/apps/viewer/public/published/`) are served from the same host, so no CORS and
-no internet are required for the gallery/grid (deep-zoom tiles still come from a
-remote IIIF service unless you run `offline`).
+The local recipes exercise the current build against a generated sample library.
+The runtime and library use the same origin.
+External covers, thumbnails, and media can still require network access.
+[EMBED.md](EMBED.md) owns the attribute, target, offline, and iframe reference.
 
-Prereqs: a built bundle at `dist/archie-viewer.js` (+ `chunk-*.js`, `reader-*.js`)
-and the baked tree at `apps/viewer/public/published/` (both already present).
+## Prepare the files
 
----
+Run the generation, build, and sync commands in [the recipe index](README.md#run-the-current-build-locally).
+These steps require the installed workspace dependencies.
+The local pages load root `dist/`, so a package build alone is insufficient.
 
-## 1. Manual flow (open it in a real browser)
+## Open the page
+
+From the repository root, start the local server:
 
 ```bash
-cd <repo root>            # .../Archie
-python3 -m http.server 8000
+python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
 Open <http://localhost:8000/recipes/try.html>.
 
-**What you should see**
+1. Check that the gallery shows exhibit cards.
+2. Open an exhibit card.
+3. Check that its object grid appears.
+4. Open an image object.
+5. Check that its reader opens.
+6. Open a note marker.
+7. Check that its note appears.
 
-- The **gallery**: a grid of exhibit cards — "The Rosettes", "The Whole
-  Manuscript", "Reading the Unreadable", "Where Languages Go Silent", "World map".
-- Click a card → that exhibit's **object grid** (folio thumbnails, each with a
-  note count).
-- Click an object → the **deep-zoom reader**: an OpenSeadragon canvas you can
-  pan/zoom, with annotation markers.
+The available exhibits depend on the generated fixture.
+Remote media failures can prevent a sample image from loading.
+A visible gallery alone does not prove that object or note navigation works.
 
-**Try the variants** (in `recipes/try.html`, swap a commented-out element in for
-the live one):
+## Exercise the variants
 
-- **Deep-link** — `target="#/voynich/o/o1"` opens straight to a real object (folio
-  `o1`). A note deep-link `target="#/voynich/a/0000000001SEBWXFTSHHP00TVY"` opens
-  straight to that note: the baked tree's inline notes carry `archie:logicalId`
-  (see `apps/viewer/public/published/voynich/manifest.json`), and the element
-  matches on it (`target-resolve.ts`'s `logicalIdOf`). A target that genuinely
-  cannot be resolved degrades upward — ADR-0021, never an error.
-- **Offline** — add the boolean `offline` attribute. The gallery/grid still render
-  from the local tree; opening an object whose tiles are remote shows the offline
-  notice instead of fetching.
-- **Drop screen** — remove `src` entirely → the "Open a library" drop/pick zone.
-  Drag a `.archie.zip` onto it, or click **Open a library…**.
-- **Production CDN** — replace the local `<script>` with the jsDelivr line
-  (`https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js`).
+The commented examples in [try.html](try.html) provide object, note, offline, and local-drop variants.
+Replace the active element with one variant at a time.
 
-  For production integrity (optional), add `integrity="sha384-2kT6KuVJkm08Btoug0L+OxGYjUhlH7ro/4VY4nLSB9Ysc0youBLptzrp7A4UevNl" crossorigin="anonymous"` — the SHA-384 of v1.1's `dist/archie-viewer.js` (verified against the `v1.1` tag; a fresh build from HEAD produces a different hash). An SRI hash must be re-computed at each tagged release.
+| Variant | Current expected behavior |
+|---|---|
+| `target="#/voynich/o/o1"` | Opens sample object `o1`. |
+| `target="#/voynich/a/0000000001SEBWXFTSHHP00TVY"` | Opens the matching note in the generated Voynich fixture. |
+| Unknown note identifier | Opens the exhibit grid. This fallback is not a successful note arrival. |
+| `offline` with the local tree URL | Blocks the URL-based library load and shows an error. Same-origin URLs are also subject to the offline policy. |
+| No `src` | Shows the file picker and drop screen. |
+| No `src`, with `offline` | Opens a chosen archive and permits its bundled media. External media remains unavailable. |
 
----
+The generated Voynich manifest carries `archie:logicalId` for the note in this example.
+A different archive or fixture can use different identifiers.
 
-## 2. Automated flow (headless smoke test)
+For the offline variant, choose a `.archie.zip` that includes its media.
+Do not treat a tree served from localhost as an offline archive.
+The runtime and imported chunks also need local availability for disconnected use.
+
+For automatic iframe height changes, open <http://localhost:8000/recipes/09-autogrow.html>.
+Navigate between the gallery and an exhibit grid.
+Check that the iframe height follows the content.
+The reader retains the current iframe height.
+
+## Run the automated browser checks
+
+After the generation, build, and sync steps, run:
 
 ```bash
 node recipes/smoke.mjs
 ```
 
-The script is self-contained:
+The script starts its own server and drives the built embed with Playwright Chromium.
+It requires the workspace dependencies and the Playwright Chromium browser.
+The checks cover gallery navigation, note interaction, narrative navigation, media, and required assertion coverage.
+The script also runs [reader-contracts.mjs](reader-contracts.mjs) for Reading arrival, offline resources, and pending reader navigation.
+Those contract checks serve the package bundle directly.
+Both the root bundle and package bundle must match the current source for the full run.
 
-1. Starts a tiny static server over the **repo root** on an ephemeral port (vanilla
-   Node `http` + `fs`; no external server dep).
-2. Launches **Playwright Chromium** headless (WebGL args: `--use-gl=angle
-   --use-angle=swiftshader --enable-unsafe-swiftshader`, retried without them if
-   unsupported). Playwright is resolved from the repo-root `node_modules`.
-3. Loads `recipes/try.html`, capturing `pageerror` + console-error events.
-4. **Asserts** (hard fails):
-   - `customElements.get('archie-viewer')` is registered;
-   - the element's `shadowRoot` renders gallery cards
-     (`ul.grid li button[data-slug]`) within ~15 s;
-   - no uncaught page error (benign OSD/WebGL/swiftshader warnings are ignored).
-5. **Best-effort** (reported, never a hard fail): clicks into the first exhibit →
-   first object and checks whether an OpenSeadragon `canvas` mounts in the shadow
-   DOM. Headless WebGL is flaky, so a canvas miss is reported, not failed.
+Read the failure details and final result.
+If a run fails, retain its failure details before another run.
+The [smoke script header](smoke.mjs) records a known timing flake and the fixture and root-bundle preconditions.
+A passing local run does not establish cross-browser behavior or CDN release behavior.
 
-It prints a `PASS`/`FAIL` summary (element registered, gallery-card count, object
-count, whether the deep-zoom canvas mounted, console-error count) and exits `0`/`1`.
+## Check a pinned release separately
 
-**If Playwright is missing** (it isn't here — it's a repo dependency with Chromium
-cached): `npm i -D playwright && npx playwright install chromium`, then re-run.
+The CDN examples use `v1.1`, while the local pages use the current build.
+For a CDN comparison, use the release script from [EMBED.md](EMBED.md#install).
+That section owns the optional SRI hash and its verification scope.
+A current build must not reuse the hash for the pinned release.

@@ -1,21 +1,17 @@
 <!doctype html>
 <!--
-  recipes/09-autogrow.html — DEMO: an iframe that sizes itself to <archie-viewer>'s content (DIVERGENCES §5).
-  ================================================================================================
-  iframes don't grow with their content, so a long gallery gets clipped inside a fixed `height`. The
-  embedded <archie-viewer> POSTs its rendered height to this parent page; the ~8-line listener below
-  resizes the matching iframe to fit. Navigate the gallery → the iframe grows/shrinks with the content.
+  Recipe 09 — Resize an iframe from its content height
 
-  Serve from the REPO ROOT (same-origin, no internet needed for the gallery):
-      cd <repo root> && python3 -m http.server 8000
-      open http://localhost:8000/recipes/09-autogrow.html
-  Prereqs: a built bundle at /dist/archie-viewer.js and the baked tree at /apps/viewer/public/published/.
-
-  KILL-CRITERION (honest): a host that strips <script> from your content ALSO strips this listener, so
-  auto-grow can't run there — the fixed-height iframe (recipes/README.md → iframe fallback) stays the
-  answer for script-stripping CMSes. Auto-grow is for self-hosted pages + script-permitting hosts.
-  The deep-zoom READER keeps the iframe's current height (a zoom surface wants a viewport), so a
-  deep-link straight to a reader is best served by the fixed height.
+  The parent listener matches each height message to its iframe window.
+  Gallery and exhibit grids can change the iframe height.
+  The reader keeps the current height to avoid a resize loop.
+  Automatic height changes require scripts on the parent page.
+  For a parent that cannot run scripts, use a fixed iframe height.
+  This recipe loads root dist/ and the generated sample tree from the same server.
+  Sample covers and media can still request external servers.
+  See README.md for the generation, build, sync, and local server procedure.
+  Open http://localhost:8000/recipes/09-autogrow.html.
+  See EMBED.md for the iframe reference.
 -->
 <html lang="en">
 <head>
