@@ -1,0 +1,44 @@
+import { test, expect } from '@playwright/test';
+import { resolve } from 'node:path';
+
+test('STU-ANN-011 conflict Review keeps one head and survives reload', async ({ page }) => {
+  await page.goto('/studio/');
+  await page.getByRole('button', { name: /New exhibit/ }).first().click();
+  await page.getByText('From a media folder', { exact: true }).click();
+  await page.getByLabel('Choose a folder of media').setInputFiles(resolve(process.cwd(), 'public/voynich'));
+  await page.getByRole('button', { name: /Create exhibit/ }).click();
+  await page.getByRole('button', { name: /^1 article$/ }).click();
+  await page.getByRole('button', { name: /Whole image/ }).click();
+  const editor = page.locator('.note-editor-region');
+  await expect(editor).toBeVisible();
+  await editor.getByRole('textbox').first().fill('Conflict base');
+  await editor.getByRole('button', { name: 'Done' }).click();
+  await page.waitForTimeout(1200);
+  const slug = await page.evaluate(() => location.hash.split('/')[1] ?? '');
+  const coreUrl = `/studio/@fs${resolve(process.cwd(), '../../packages/render-core/src/index.ts')}`;
+  await page.evaluate(async ({ slug, coreUrl }) => {
+    const store = await import('/studio/src/store.ts');
+    const core = await import(/* @vite-ignore */ coreUrl);
+    const dir = await store.openExhibitAnnotationsDir(slug);
+    if (!dir) throw new Error('annotation directory unavailable');
+    const session = await core.AnnotationSession.load(dir, 'alice');
+    const v1 = session.notes()[0];
+    if (!v1) throw new Error(`created note head unavailable slug=${slug} hash=${location.hash} entries=${session.entries.length}`);
+    session.editNote(v1.logicalId, { body: { type: 'TextualBody', value: 'mine' } });
+    const remote = { ...v1, rev: core.mintRevId(0, () => 0.9), version: v1.version + 1, parent: v1.rev, modifiedAt: 'remote-time', lastEditor: 'bob', body: { type: 'TextualBody', value: 'theirs' } };
+    session.importChanges([v1, remote]);
+    await session.save(dir);
+  }, { slug, coreUrl });
+  await page.reload();
+  await expect(page.getByRole('button', { name: /Review/ })).toBeVisible({ timeout: 10000 });
+  await page.getByRole('button', { name: /Review/ }).click();
+  const review = page.getByRole('dialog', { name: 'Review conflicting notes' });
+  await expect(review).toContainText('Two people edited this note');
+  await review.getByRole('button', { name: /mine/ }).click();
+  await expect(review).toHaveCount(0);
+  await page.reload();
+  const notes = page.getByRole('list', { name: 'Notes on this object' });
+  await expect(notes.locator('li')).toHaveCount(1);
+  await expect(notes).toContainText('mine');
+  await expect(notes).not.toContainText('theirs');
+});

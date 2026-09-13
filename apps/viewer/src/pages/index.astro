@@ -2,16 +2,15 @@
 // Archie Viewer — the single client-routed shell (CONTEXT §"Local view loop": "one smart hall").
 // Was a hardcoded static gallery + per-sample exhibit pages; now ONE shell that hash-routes the
 // Gallery (from exhibits.json) and any exhibit at runtime — renders an arbitrary published Library
-// with no per-exhibit code. CSS for BOTH surfaces loads here (the shell renders exhibits too).
+// with no per-exhibit code. Only gallery/shell CSS loads here; exhibit styles follow the lazy route.
 import ViewerShell from "../components/ViewerShell.svelte";
 import "@render/core/tokens.css"; // the SHARED token layer (render-core = layer zero; the embed reads the same file)
-import "@annotorious/openseadragon/annotorious-openseadragon.css";
-import "@annotorious/plugin-tools/annotorious-plugin-tools.css";
-import "../markers.css"; // A2 + stroke-over-stroke marker styling — must load AFTER Annotorious CSS
 import "../atmosphere.css"; // Soft Static atmosphere (gradient ground + grain + bloom) — must load LAST (wins source order)
 import { ogImageFor } from "../og-image.js";
+import exhibitsJson from "../../public/published/exhibits.json";
 const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + "/";
 const ogImage = await ogImageFor(null); // the gallery page wears the brand card (ADR-0013) — no probe on the null path
+const listedExhibits = exhibitsJson.exhibits.filter((exhibit) => !exhibit.unlisted);
 // Canonical builds (build-gh-pages.sh sets PUBLIC_CANONICAL_ORIGIN) bake their expected origin
 // into the shell so a drifted deploy SURFACES (ADR-0013 observability rider).
 const expectedBase = process.env.PUBLIC_CANONICAL_ORIGIN; // frontmatter runs in Node at build — process.env is the reliable channel (carries origin+viewerPath, hence "base")
@@ -36,9 +35,41 @@ const expectedBase = process.env.PUBLIC_CANONICAL_ORIGIN; // frontmatter runs in
          machine-readable to search engines — same copy as the og tags. -->
     <script type="application/ld+json" is:inline set:html={JSON.stringify({"@context": "https://schema.org", "@type": "CollectionPage", "name": "The Archie Library", "description": "A contested manuscript read more than one way — Beinecke MS 408, the same undeciphered marks read three ways across three exhibits."})} />
     <link rel="stylesheet" href={base + "fonts/fonts.css"} />
+    <style is:inline>
+      #static-gallery { min-height: 100vh; box-sizing: border-box; padding: clamp(3rem, 9vw, 8rem) clamp(1.5rem, 8vw, 7rem); background: radial-gradient(circle at 35% 20%, #eef1df 0, #dce5d1 48%, #397354 120%); color: #173f31; }
+      #static-gallery > div { max-width: 64rem; margin: 0 auto; }
+      #static-gallery .eyebrow { margin: 0 0 .75rem; font: 500 .75rem/1.4 "LARAZ", system-ui, sans-serif; letter-spacing: .18em; text-transform: uppercase; opacity: .72; }
+      #static-gallery h1 { margin: 0; font: 400 clamp(2.7rem, 7vw, 4.5rem)/1.05 "FOP VHS", system-ui, sans-serif; letter-spacing: .01em; }
+      #static-gallery .summary { max-width: 44rem; margin: 1.25rem 0 2.25rem; font: 400 clamp(1.1rem, 2.2vw, 1.35rem)/1.55 "LARAZ", system-ui, sans-serif; }
+      #static-gallery ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .75rem; max-width: 52rem; margin: 0; padding: 0; list-style: none; }
+      #static-gallery a { display: block; padding: .9rem 1rem; border-radius: .6rem; background: rgba(255, 254, 247, .78); color: inherit; font: 400 1rem/1.35 "LARAZ", system-ui, sans-serif; text-decoration: none; }
+    </style>
   </head>
   <body style="margin: 0">
+    <!-- Build-time gallery shell: the title paints from HTML while the client checks OPFS and loads the
+         published indexes. Its links remain useful with JavaScript disabled. ViewerShell announces only
+         after that boot resolves, so the shell cannot disappear into a blank probing frame. -->
+    <main id="static-gallery">
+      <div>
+        <p class="eyebrow">Gallery · {listedExhibits.length} {listedExhibits.length === 1 ? "exhibit" : "exhibits"}</p>
+        <h1>{exhibitsJson.library.title ?? "The Archie Library"}</h1>
+        {exhibitsJson.library.summary && <p class="summary">{exhibitsJson.library.summary}</p>}
+        <ul>{listedExhibits.map((exhibit) => <li><a href={base + exhibit.slug + "/"}>{exhibit.title}</a></li>)}</ul>
+      </div>
+    </main>
     <!-- client:only — OSD touches `document` at import, so the shell is browser-only (no SSR). -->
     <ViewerShell client:only="svelte" {expectedBase} />
+    <script is:inline>
+      (function () {
+        var fallback = document.getElementById("static-gallery");
+        var island = document.querySelector("astro-island");
+        if (!fallback || !island) return;
+        island.hidden = true;
+        window.addEventListener("archie:viewer-ready", function () {
+          fallback.remove();
+          island.hidden = false;
+        }, { once: true });
+      })();
+    </script>
   </body>
 </html>

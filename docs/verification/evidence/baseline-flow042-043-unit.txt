@@ -1,0 +1,69 @@
+
+ RUN  v3.2.7 /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio
+
+stderr | src/save-queue.svelte.test.ts > save-queue > records a failure (false, error message) and never rejects
+Save failed for "k" (Notes): Error: disk full
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/save-queue.svelte.test.ts:45:68
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/save-queue.svelte.ts:81:31
+
+stderr | src/save-queue.svelte.test.ts > save-queue > continues the chain after a failure and clears the error on the next success
+Save failed for "k" (K): Error: boom
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/save-queue.svelte.test.ts:52:53
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/save-queue.svelte.ts:81:31
+
+stderr | src/save-queue.svelte.test.ts > save-queue > an error on one key survives a success on another (per-destination honesty)
+Save failed for "library" (Library details): Error: quota
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/save-queue.svelte.test.ts:61:73
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/save-queue.svelte.ts:81:31
+
+stderr | src/save-queue.svelte.test.ts > save-queue > clearReadOnlyRefusal drops ONLY the read-only key — a real write failure keeps its error
+Save failed for "k" (K): Error: disk gone
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/save-queue.svelte.test.ts:100:53
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/save-queue.svelte.ts:81:31
+
+ ✓ src/save-queue.svelte.test.ts > save-queue > starts idle, transitions saving → saved 1ms
+ ✓ src/save-queue.svelte.test.ts > save-queue > serializes jobs on the same key in order 2ms
+ ✓ src/save-queue.svelte.test.ts > save-queue > keeps different keys concurrent 0ms
+ ✓ src/save-queue.svelte.test.ts > save-queue > records a failure (false, error message) and never rejects 3ms
+ ✓ src/save-queue.svelte.test.ts > save-queue > continues the chain after a failure and clears the error on the next success 0ms
+ ✓ src/save-queue.svelte.test.ts > save-queue > an error on one key survives a success on another (per-destination honesty) 0ms
+ ✓ src/save-queue.svelte.test.ts > save-queue > single-writer gate: a non-writer tab is refused (read-only) and the job never runs (Issue 22) 0ms
+ ✓ src/save-queue.svelte.test.ts > save-queue > single-writer gate: once this tab is the writer, writes run and the read-only status clears 0ms
+ ✓ src/save-queue.svelte.test.ts > save-queue > single-writer gate: take-over clears the refusal IMMEDIATELY, before any next write (UX-CRITIQUE O2) 0ms
+ ✓ src/save-queue.svelte.test.ts > save-queue > clearReadOnlyRefusal drops ONLY the read-only key — a real write failure keeps its error 0ms
+ ✓ src/save-queue.svelte.test.ts > save-queue > single-writer gate: names the other tab in the refusal message when known (Archie-198c) 0ms
+ ✓ src/save-queue.svelte.test.ts > save-queue > single-writer gate: falls back to the impersonal message when the other tab is anonymous 0ms
+ ✓ src/save-queue.svelte.test.ts > save-queue > single-writer gate: no otherName getter installed behaves exactly as before (impersonal message) 0ms
+ ✓ src/save-queue.svelte.test.ts > save-queue > pending counts across keys while writes are in flight 1ms
+ ✓ src/storage-quota.svelte.test.ts > level > is unknown (chip hidden) when there is no estimate — never a fabricated zero 1ms
+ ✓ src/storage-quota.svelte.test.ts > level > is calm with a reading, regardless of how large usage is — there is no honest percentage 0ms
+ ✓ src/storage-quota.svelte.test.ts > level > goes critical on a witnessed write failure — the only true 'storage full' signal 0ms
+ ✓ src/storage-quota.svelte.test.ts > level > a witnessed failure outranks a missing estimate 0ms
+ ✓ src/storage-quota.svelte.test.ts > recovery > clears on a successful write (persistAsset reports both directions) 0ms
+ ✓ src/storage-quota.svelte.test.ts > recovery > clears when usage drops below the at-failure mark — in-app deletion with no write after it 0ms
+ ✓ src/storage-quota.svelte.test.ts > recovery > stays critical while usage has not dropped — polling alone must not talk the warning down 0ms
+ ✓ src/storage-quota.svelte.test.ts > native (Tauri) inertness (Archie-623e Phase 3) > refreshQuota leaves usage null and a write failure never raises the critical chip 0ms
+ ✓ src/storage-quota.svelte.test.ts > formatBytes > keeps one decimal under 10 units and drops it above 0ms
+ ✓ src/storage-quota.svelte.test.ts > formatBytes > steps down through MB, KB, and B 0ms
+ ✓ src/binding.test.ts > binding seam — capability detection (node = the no-FSA floor) > reports no folder picker / file stream without a window 1ms
+ ✓ src/binding.test.ts > binding seam — capability detection (node = the no-FSA floor) > reports no OPFS staged save without OPFS + FileSystemFileHandle.createWritable 0ms
+ ✓ src/binding.test.ts > binding seam — OPFS-staged streaming zip save > stages a valid archive, delivers it disk-backed under the right name, and cleans up after 2ms
+ ✓ src/binding.test.ts > binding seam — OPFS-staged streaming zip save > abort discards the staged file and never delivers 0ms
+ ✓ src/binding.test.ts > binding seam — OPFS-staged streaming zip save > sweeps STALE leftovers on open but leaves fresh ones (a concurrent export's staging file) 0ms
+ ✓ src/binding.test.ts > binding seam — zipNameFor > derives a filesystem-safe .archie.zip name 0ms
+ ✓ src/binding.test.ts > binding seam — zipNameFor > falls back to 'library' when the title sanitizes to nothing 0ms
+ ✓ src/binding.test.ts > binding seam — active-binding descriptor round-trip > folder binding (with handleKey) survives a reload 0ms
+ ✓ src/binding.test.ts > binding seam — active-binding descriptor round-trip > file binding (no handleKey) survives a reload without growing fields 0ms
+ ✓ src/binding.test.ts > binding seam — active-binding descriptor round-trip > unbound CLEARS the stored descriptor (Close project leaves nothing behind) 0ms
+ ✓ src/binding.test.ts > binding seam — active-binding descriptor round-trip > tolerates corrupt / malformed records (boot must never throw) 0ms
+ ✓ src/binding.test.ts > binding seam — recents round-trip > save → load preserves the list 0ms
+ ✓ src/binding.test.ts > binding seam — recents round-trip > tolerates corrupt storage ([] — recents are hints, never load-bearing) 0ms
+ ✓ src/binding.test.ts > binding seam — recents round-trip > empty storage loads as [] 0ms
+ ✓ src/binding.test.ts > binding seam — cross-tab recents reconcile (Issue 22 / TABS) > adopts another tab's recents write via the storage event (no lost update) 0ms
+ ✓ src/binding.test.ts > binding seam — cross-tab recents reconcile (Issue 22 / TABS) > no-ops without a window (node/SSR floor) 0ms
+
+ Test Files  3 passed (3)
+      Tests  40 passed (40)
+   Start at  21:07:47
+   Duration  966ms (transform 554ms, setup 0ms, collect 1.76s, tests 20ms, environment 0ms, prepare 141ms)
+

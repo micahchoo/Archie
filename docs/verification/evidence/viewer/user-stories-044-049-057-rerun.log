@@ -1,0 +1,39 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 3 tests using 1 worker
+
+[1A[2K(node:4169738) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4169738) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/3] [chromium] › apps/viewer/e2e/user-stories.spec.ts:294:3 › focused user-story baseline › VIEW-044: an embed target opens an object and can return to its exhibit grid
+[1A[2K[2/3] [chromium] › apps/viewer/e2e/user-stories.spec.ts:305:3 › focused user-story baseline › VIEW-049: two embeds keep independent target state
+[1A[2K[3/3] [chromium] › apps/viewer/e2e/user-stories.spec.ts:319:3 › focused user-story baseline › VIEW-057: finder text combines with multiple OR tag facets
+[1A[2K  1) [chromium] › apps/viewer/e2e/user-stories.spec.ts:319:3 › focused user-story baseline › VIEW-057: finder text combines with multiple OR tag facets 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button.finder-trigger')[22m
+
+
+      320 |     await goOffline(page);
+      321 |     await page.goto("./#/voynich");
+    > 322 |     await page.locator("button.finder-trigger").click();
+          |                                                 ^
+      323 |     const finder = page.locator(".finder[role='dialog']");
+      324 |     await expect(finder).toBeVisible();
+      325 |     const facets = finder.locator("button.facet");
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:322:49
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--17e91-with-multiple-OR-tag-facets-chromium/error-context.md
+
+
+[1A[2K  1 failed
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:319:3 › focused user-story baseline › VIEW-057: finder text combines with multiple OR tag facets 
+  2 passed (1.0m)

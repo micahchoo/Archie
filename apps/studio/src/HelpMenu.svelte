@@ -23,19 +23,28 @@
     onsettings?: () => void;
   } = $props();
   let open = $state(false);
+  let helpButton: HTMLButtonElement;
+  function launch(action: () => void): void {
+    // The menu item receives focus before its click handler runs. Return focus to the stable
+    // Help control before opening a scrimmed surface, so Escape can restore focus after the
+    // menu unmounts (the menu item itself is about to disappear).
+    open = false;
+    helpButton?.focus();
+    action();
+  }
 </script>
 
 <div class="help-wrap">
-  <button class="help-btn" onclick={() => (open = !open)} title="Help"
+  <button bind:this={helpButton} class="help-btn" onclick={() => (open = !open)} title="Help"
     aria-label="Help" aria-haspopup="menu" aria-expanded={open}>?</button>
   {#if open}
     <div class="help-backdrop" role="presentation" onclick={() => (open = false)}></div>
     <div class="help-menu" role="menu" use:floating={{ onClose: () => (open = false) }}>
-      <button role="menuitem" onclick={() => { open = false; ontutorial(); }}>Start the tutorial</button>
-      <button role="menuitem" onclick={() => { open = false; onshortcuts(); }}>Keyboard shortcuts <kbd>?</kbd></button>
+      <button role="menuitem" onclick={() => launch(ontutorial)}>Start the tutorial</button>
+      <button role="menuitem" onclick={() => launch(onshortcuts)}>Keyboard shortcuts <kbd>?</kbd></button>
       {#if onsettings}
         {@const openSettings = onsettings}
-        <button role="menuitem" onclick={() => { open = false; openSettings(); }}>Settings</button>
+        <button role="menuitem" onclick={() => launch(openSettings)}>Settings</button>
       {/if}
     </div>
   {/if}

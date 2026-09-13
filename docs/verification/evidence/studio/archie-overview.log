@@ -1,0 +1,39 @@
+
+Running 2 tests using 1 worker
+
+(node:4162405) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:4162405) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › e2e/user-stories-overview.spec.ts:15:1 › STU-VIEW-001/002 grid list density reload (1.2s)
+  ✘  2 [chromium] › e2e/user-stories-overview.spec.ts:28:1 › STU-VIEW-003 search and sort controls (10.6s)
+
+
+  1) [chromium] › e2e/user-stories-overview.spec.ts:28:1 › STU-VIEW-003 search and sort controls ───
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByRole('grid', { name: 'Media items — reading order' }).getByText('article')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByRole('grid', { name: 'Media items — reading order' }).getByText('article')[22m
+
+
+      30 |   const search = page.getByRole('searchbox', { name: 'Search media titles' });
+      31 |   await search.fill('article');
+    > 32 |   await expect(page.getByRole('grid', { name: 'Media items — reading order' }).getByText('article')).toBeVisible();
+         |                                                                                                      ^
+      33 |   const sort = page.getByRole('combobox', { name: 'Sort media items' });
+      34 |   await sort.selectOption('name');
+      35 |   await expect(sort).toHaveValue('name');
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/e2e/user-stories-overview.spec.ts:32:102
+
+    Error Context: test-results/user-stories-overview-STU-VIEW-003-search-and-sort-controls-chromium/error-context.md
+
+  1 failed
+    [chromium] › e2e/user-stories-overview.spec.ts:28:1 › STU-VIEW-003 search and sort controls ────
+  1 passed (12.6s)

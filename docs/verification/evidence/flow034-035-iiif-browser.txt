@@ -1,0 +1,21 @@
+IIIF browser baseline — 2026-09-12
+
+Command:
+  PATH=/usr/local/lib/vicinae/usr/bin:$PATH STUDIO_E2E_PORT=5199 pnpm exec playwright test e2e/flow034-035-iiif-baseline.spec.ts --config e2e/playwright.config.ts --reporter=line
+
+Result: 2 passed (6.4s)
+
+FLOW-034
+- Routed a deterministic local fixture URL to a Presentation 3 manifest labelled “Fixture Manifest One”.
+- Pasted the URL into the real Studio “From a IIIF link” dialog.
+- Verified “Found it.” and the manifest title/canvas preview.
+- Created the exhibit and verified the visible heading “Fixture Manifest One” and media item “Page 1”.
+- Reloaded the exhibit and verified the heading and “Page 1” remained visible.
+
+FLOW-035
+- Routed a deterministic IIIF Collection with “Selected Member” and “Unselected Member”.
+- Verified two picker rows, unchecked the second, and created exactly one exhibit.
+- Verified the library showed “Selected Member 1 media item” and no “Unselected Member” card.
+- Reopened the collection dialog and clicked Cancel; verified no collection was added and the existing library remained visible.
+
+Verification level: browser interaction with deterministic local route fixtures.

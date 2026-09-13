@@ -1,0 +1,2 @@
+Studio focused integration regression (Node22, shared front door, Playwright): 15 passed (22.9s).
+Covered: FLOW-049 caption import/reload; export recommendations/unavailable/deposit/hash/quality/embed surface; FLOW-029 same-origin Studio→Viewer authored note; FLOW-031 drag/drop; FLOW-043 folder Save/reload/Recents reopen/Forget/Close; FLOW-030 PNG import; FLOW-033 unsupported-file preservation; loop autosave/publish ZIP note; metadata mapping preview.

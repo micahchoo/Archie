@@ -228,6 +228,32 @@ describe("loadLibrary — inverse of publishLibrary (publish↔load symmetry)", 
     expect(library.exhibits[0]!.readings).toEqual(libN.exhibits[0]!.readings);
   });
 
+  it("removes the reading projection when the last authored reading is deleted", async () => {
+    const fs = new MemoryFilesystem();
+    const exWithReading: Library = {
+      id: asLibraryId("reading-delete"),
+      exhibits: [{
+        id: asExhibitId("reading-delete-ex"), slug: "reading-delete", title: "Reading delete",
+        objects: [{ id: asObjectId("o1"), source: "https://img/1.jpg", label: "O1", width: 10, height: 10 }],
+        readings: [{ id: "r1", name: "Reading One" }],
+      }],
+    };
+    const exWithoutReading: Library = {
+      ...exWithReading,
+      exhibits: [{ ...exWithReading.exhibits[0]!, readings: [] }],
+    };
+    await publishLibrary(fs, exWithReading, () => [], { baseUrl: base });
+    const before = await loadLibrary(fs);
+    expect(before.library.exhibits[0]!.readings).toEqual([{ id: "r1", name: "Reading One" }]);
+    await publishLibrary(fs, exWithoutReading, () => [], { baseUrl: base });
+    const root = await fs.root();
+    const exDir = await root.getDirectory("reading-delete");
+    await expect(exDir.getFile("readings.json")).rejects.toThrow();
+    await expect(exDir.getDirectory("annotations").then((d) => d.getDirectory("readings"))).rejects.toThrow();
+    const after = await loadLibrary(fs);
+    expect(after.library.exhibits[0]!.readings).toBeUndefined();
+  });
+
   // The publish→import→re-publish asset round trip (2026-07-19): publish bakes `/assets/{name}`
   // sources to `{base}{slug}/assets/{name}`, but loadLibrary handed that ABSOLUTE URL back, so a
   // re-publish saw no ASSET_PREFIX match, copied no bytes, and silently emitted an assetless zip

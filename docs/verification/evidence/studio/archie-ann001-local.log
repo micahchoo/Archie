@@ -1,0 +1,38 @@
+
+Running 1 test using 1 worker
+
+(node:4069470) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:4069470) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"afterDraw":{"url":"http://localhost:5198/studio/#/voynich-2/o/01M2CBN40R8K6HBR77J1DXMS65","noteCount":0,"editorCount":0,"canvas":1,"consoleErrors":[],"pageErrors":[]}}
+  ✘  1 [chromium] › e2e/user-stories-annotations.spec.ts:6:1 › STU-ANN-001 box note: draw, edit, reload (11.8s)
+
+
+  1) [chromium] › e2e/user-stories-annotations.spec.ts:6:1 › STU-ANN-001 box note: draw, edit, reload 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('.note-editor-region')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for locator('.note-editor-region')[22m
+
+
+      35 |   await page.screenshot({ path: '/tmp/archie-ann001-local-after-draw.png', fullPage: true });
+      36 |   console.log(JSON.stringify({ afterDraw: { url: page.url(), noteCount: await page.getByRole('list', { name: 'Notes on this object' }).locator('li').count(), editorCount: await page.locator('.note-editor-region').count(), canvas: await page.locator('.canvas-plate').count(), consoleErrors, pageErrors } }));
+    > 37 |   await expect(page.locator('.note-editor-region')).toBeVisible({ timeout: 10000 });
+         |                                                     ^
+      38 |   const comment = page.locator('.note-editor-region').getByRole('textbox').first();
+      39 |   await comment.fill('Box persistence probe'); await comment.blur();
+      40 |   await page.getByRole('button', { name: 'Overview', exact: true }).click();
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/e2e/user-stories-annotations.spec.ts:37:53
+
+    Error Context: test-results/user-stories-annotations-S-07855-1-box-note-draw-edit-reload-chromium/error-context.md
+
+  1 failed
+    [chromium] › e2e/user-stories-annotations.spec.ts:6:1 › STU-ANN-001 box note: draw, edit, reload 

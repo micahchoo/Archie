@@ -1,0 +1,4 @@
+FLOW-043 Playwright browser result: 1 passed.
+Fixture: isolated OPFS directory handle flow043-fixture; queryPermission/requestPermission mocked granted; confirmation dialogs accepted.
+Journey: Start empty exhibit -> Save to disk -> reload -> expand Recents -> reopen recent -> Forget recent -> Close folder binding.
+Assertions: folder save completed, folder location visible after reopen, recent removal succeeded, and Close returned to “Living in this browser”.

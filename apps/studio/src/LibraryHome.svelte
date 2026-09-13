@@ -22,10 +22,7 @@
   // permanent list; a lost binding is still surfaced on its own line, never silent.
   import type { ExhibitMeta } from "./store.js";
   import type { Binding, MetadataEntry, RecentProject, RightsFields } from "@render/core";
-  import DetailsEditor from "./DetailsEditor.svelte";
-  import PropsDrawer from "./PropsDrawer.svelte";
-  import CreateExhibitDialog from "./CreateExhibitDialog.svelte";
-  import BulkRightsDialog from "./BulkRightsDialog.svelte";
+  import { lazyComponent } from "./lazy.svelte.js";
   import type { RightsFieldsPatch } from "./bulk-rights.js";
   import type { CollectionPreview, CollectionImportOutcome } from "./ingest-flows.js";
   import type { DiscoveredManifest } from "./collection-import.js";
@@ -44,6 +41,13 @@
   import { viewPrefs } from "./view-prefs.svelte.js";
   import { readDroppedFolderFiles } from "./folder-drop.js";
   import { isTauri } from "./tauri-fs.js";
+
+  // Closed drawers and dialogs are not part of the library's first paint. Load each surface only
+  // after its trigger is used so the landing bundle contains the cards and controls it actually shows.
+  const DetailsEditorLazy = lazyComponent(() => import("./DetailsEditor.svelte"));
+  const PropsDrawerLazy = lazyComponent(() => import("./PropsDrawer.svelte"));
+  const CreateExhibitDialogLazy = lazyComponent(() => import("./CreateExhibitDialog.svelte"));
+  const BulkRightsDialogLazy = lazyComponent(() => import("./BulkRightsDialog.svelte"));
 
   let {
     exhibits,
@@ -491,8 +495,9 @@
     </div>
     <p class="lede">An exhibit is a collection of annotated media — images, audio, video, or maps you mark up with notes. Create one any time; your work is kept automatically as you go.</p>
 
-    <PropsDrawer open={rightsOpen} title="Library details" onclose={() => (rightsOpen = false)}>
-      <DetailsEditor title={libTitle ?? ""} summary={librarySummary ?? ""} rights={rights} scope="library" ontitle={ontitle} onsummary={onsummary} onrights={onrights} {onmetadata} />
+    {#if rightsOpen && PropsDrawerLazy.current && DetailsEditorLazy.current}
+    <PropsDrawerLazy.current open={true} title="Library details" onclose={() => (rightsOpen = false)}>
+      <DetailsEditorLazy.current title={libTitle ?? ""} summary={librarySummary ?? ""} rights={rights} scope="library" ontitle={ontitle} onsummary={onsummary} onrights={onrights} {onmetadata} />
       <!-- Your name (Archie-2bf1) — the PERMANENT counterpart to the lazy IdentityPrompt: library-level,
            not per-form, since it names YOU, not the library. Blank = anonymous (same archie.displayName.v1
            semantics as skipping the lazy prompt, but an explicit choice here rather than a re-promptable gap). -->
@@ -502,13 +507,14 @@
           oninput={(e) => onidentity((e.currentTarget as HTMLInputElement).value)} aria-label="Your name" />
         <p class="field-hint">Shown to collaborators next to notes you write, and marks your edits when copies merge. Leave blank to stay anonymous.</p>
       </div>
-    </PropsDrawer>
+    </PropsDrawerLazy.current>
+    {/if}
 
     <!-- Per-card exhibit pencil drawer (Archie-79be): the shared DetailsEditor targeted at the picked card by
          slug. onremove threads removeExhibitById up to App; closing before removing avoids a stale-field flash. -->
-    <PropsDrawer open={!!editingExhibit} title="Exhibit details" onclose={() => (editingSlug = null)}>
-      {#if editingExhibit}
-        <DetailsEditor
+    {#if editingExhibit && PropsDrawerLazy.current && DetailsEditorLazy.current}
+    <PropsDrawerLazy.current open={true} title="Exhibit details" onclose={() => (editingSlug = null)}>
+        <DetailsEditorLazy.current
           title={editingExhibit.title}
           summary={editingExhibit.summary ?? ""}
           rights={rightsOf(editingExhibit)}
@@ -523,14 +529,15 @@
             ? undefined
             : () => { const s = editingExhibit!.slug; editingSlug = null; onremoveexhibit(s); }}
         />
-      {/if}
-    </PropsDrawer>
+    </PropsDrawerLazy.current>
+    {/if}
 
     <!-- The create/import dialog (Archie-51cc) — its own scrimmed surface; see openCreate() above
          for the single-scrim handoff with the two PropsDrawers. Scope is fixed to "new-exhibit" here —
          the "add-to-exhibit" scope (Archie-56cf) is a separate instance, mounted globally by App.svelte. -->
-    <CreateExhibitDialog
-      open={createOpen}
+    {#if createOpen && CreateExhibitDialogLazy.current}
+    <CreateExhibitDialogLazy.current
+      open={true}
       prefillFolderFiles={createPrefillFolder}
       {oncreate}
       {oncreatefromfolder}
@@ -541,6 +548,7 @@
       {onundoimport}
       onclose={() => { createOpen = false; createPrefillFolder = null; }}
     />
+    {/if}
 
     <!-- Project bar (Archie-2308): demoted to ONE quiet line — SafetyState above already carries every
          save-state word, so this only ever answers "where does this library live". -->
@@ -707,12 +715,14 @@
 
   <!-- Bulk rights dialog (Phase 2, §9). Scoped to the current selection; selection persists after apply
        (the modality helper closes/returns focus; onbulkrights → App → lib.patchExhibits does the one write). -->
-  <BulkRightsDialog
-    open={bulkRightsOpen}
-    selected={selectedRights}
-    onapply={applyBulkRights}
-    onclose={() => (bulkRightsOpen = false)}
-  />
+  {#if bulkRightsOpen && BulkRightsDialogLazy.current}
+    <BulkRightsDialogLazy.current
+      open={true}
+      selected={selectedRights}
+      onapply={applyBulkRights}
+      onclose={() => (bulkRightsOpen = false)}
+    />
+  {/if}
 
   {#if hasQuery}
     <!-- Unified search results (Archie-2308): both corpora, always, regardless of lens — the old silent

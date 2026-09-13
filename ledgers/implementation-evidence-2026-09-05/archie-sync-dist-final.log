@@ -1,2 +1,0 @@
-$ node scripts/sync-dist.mjs --check
-[sync-dist] root dist/ matches packages/archie-viewer/dist/

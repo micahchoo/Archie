@@ -204,6 +204,16 @@ test.describe("Studio core loop: create → autosave → publish (Archie-c9ac)",
       entriesWithBody,
       `authored note body was not found in ANY published-zip entry`,
     ).not.toHaveLength(0);
+    // Reopen the captured archive through Studio's real hidden ZIP input, then return to the
+    // copied exhibit and verify the authored note is visible in the reopened library.
+    const zipPath = await download.path();
+    expect(zipPath).toBeTruthy();
+    await download.saveAs("/tmp/archie-flow014-exported.archie.zip");
+    await page.locator('input[type="file"][accept=".zip,application/zip"]').setInputFiles(zipPath!);
+    await expect(page.getByRole("button", { name: /Rosettes/ }).first()).toBeVisible({ timeout: 15_000 });
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: /Rosettes/ }).first().click();
+    await expect(page.getByText(body, { exact: true })).toBeVisible({ timeout: 15_000 });
     // Documented leg: the projection renders static viewer pages (STATIC_PAGE_OPTS). Report whether the
     // body landed in a rendered .html page (the "renders" evidence) vs. only the annotation data — the
     // assertion above already guarantees the note was carried; this log makes the render-leg explicit.

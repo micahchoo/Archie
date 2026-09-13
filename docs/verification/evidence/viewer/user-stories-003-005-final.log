@@ -1,0 +1,16 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 3 tests using 1 worker
+
+[1A[2K(node:4061636) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4061636) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/3] [chromium] › apps/viewer/e2e/user-stories.spec.ts:5:3 › focused user-story baseline › VIEW-003: unlisted exhibits stay out of cards/wall but direct URL remains reachable
+[1A[2K[2/3] [chromium] › apps/viewer/e2e/user-stories.spec.ts:22:3 › focused user-story baseline › VIEW-004: a failed local cover reaches the visible title fallback
+[1A[2K[3/3] [chromium] › apps/viewer/e2e/user-stories.spec.ts:29:3 › focused user-story baseline › VIEW-005: the object reader overview control returns to the exhibit grid
+[1A[2K  3 passed (3.1s)

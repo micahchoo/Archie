@@ -1,4 +1,0 @@
-$ node scripts/bundle-size.mjs --check
-ok    apps/studio dist (js+css gz) [total]     1079.1KB → 1089.5KB (Δ +10.4KB, allowed +107.9KB)
-ok    apps/studio dist (js+css gz) [eager]     468.3KB → 472.5KB (Δ +4.2KB, allowed +46.8KB)
-ok    apps/viewer dist (js+css gz) [total]     407.5KB → 413KB (Δ +5.5KB, allowed +40.8KB)

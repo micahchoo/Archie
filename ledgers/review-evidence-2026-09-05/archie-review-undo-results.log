@@ -1,6 +1,0 @@
-{"probe":"two-separate-creates-no-marks","shown":0,"log":2,"canUndo":false}
-{"probe":"edit-after-undo","shown":{"type":"TextualBody","value":"original"},"stored":{"type":"TextualBody","value":"edit2-after-undo"}}
-{
-  probe: 'edit-restored-delete',
-  error: 'Error: cannot edit a tombstoned note (resurrection undefined in v1): 01M1R7M3AX1K6S4AAS4HAQBD4R'
-}

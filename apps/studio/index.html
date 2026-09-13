@@ -6,9 +6,41 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Archie Studio</title>
     <link rel="stylesheet" href="/fonts/fonts.css" />
+    <style>
+      html, body, #app { min-height: 100%; }
+      body { margin: 0; background: #f4f2e8; color: #163e31; }
+      .archie-boot-shell {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        box-sizing: border-box;
+        padding: 2rem;
+        background: radial-gradient(circle at 50% 35%, #fbfaf4 0, #f4f2e8 62%, #e7eadc 100%);
+        text-align: center;
+      }
+      .archie-boot-wordmark {
+        margin: 0;
+        font: 400 clamp(2.5rem, 8vw, 4.5rem) / 1 "FOP VHS", system-ui, sans-serif;
+        letter-spacing: 0.02em;
+      }
+      .archie-boot-status {
+        margin: 1rem 0 0;
+        font: 400 0.8rem / 1.4 "LARAZ", system-ui, sans-serif;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        opacity: 0.68;
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <main class="archie-boot-shell" data-archie-boot-shell>
+        <div>
+          <h1 class="archie-boot-wordmark">Archie</h1>
+          <p class="archie-boot-status">Opening the library…</p>
+        </div>
+      </main>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

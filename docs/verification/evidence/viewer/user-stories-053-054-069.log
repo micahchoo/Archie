@@ -1,0 +1,16 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 3 tests using 1 worker
+
+[1A[2K(node:4106107) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4106107) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/3] [chromium] › apps/viewer/e2e/user-stories.spec.ts:114:3 › focused user-story baseline › VIEW-053: a long library summary expands and collapses on a small screen
+[1A[2K[2/3] [chromium] › apps/viewer/e2e/user-stories.spec.ts:132:3 › focused user-story baseline › VIEW-054: object-grid density persists after reload
+[1A[2K[3/3] [chromium] › apps/viewer/e2e/user-stories.spec.ts:144:3 › focused user-story baseline › VIEW-069: image-wall density persists and controls disappear during search
+[1A[2K  3 passed (2.9s)

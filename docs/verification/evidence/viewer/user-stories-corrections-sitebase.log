@@ -1,0 +1,37 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:16162) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:16227) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:16763) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:16775) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 4 tests using 1 worker
+
+[1A[2K(node:16874) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:16874) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/4] [chromium] › apps/viewer/e2e/user-stories.spec.ts:119:3 › focused user-story baseline › VIEW-053: a long library summary expands and collapses on a small screen
+[1A[2K[2/4] [chromium] › apps/viewer/e2e/user-stories.spec.ts:140:3 › focused user-story baseline › VIEW-054: object-grid density persists after reload
+[1A[2K[3/4] [chromium] › apps/viewer/e2e/user-stories.spec.ts:157:3 › focused user-story baseline › VIEW-069: image-wall density persists and controls disappear during search
+[1A[2K[4/4] [chromium] › apps/viewer/e2e/user-stories.spec.ts:205:3 › focused user-story baseline › VIEW-075: a long metadata value expands and collapses
+[1A[2K  4 passed (13.3s)

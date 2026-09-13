@@ -1,0 +1,203 @@
+
+Running 162 tests using 1 worker
+
+[1A[2K(node:3986741) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:3986741) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/162] [chromium] › e2e/address.spec.ts:17:3 › the address follows the reader (V101) › opening an object writes /o/ and survives a reload (V24)
+[1A[2K[2/162] [chromium] › e2e/address.spec.ts:32:3 › the address follows the reader (V101) › stepping back to the grid drops the rung — the address never lies about depth
+[1A[2K[3/162] [chromium] › e2e/address.spec.ts:52:3 › the address follows the reader (V101) › selecting a note writes /a/<logicalId>, and it resolves on reload
+[1A[2K[4/162] [chromium] › e2e/address.spec.ts:71:3 › the address follows the reader (V101) › selection uses replaceState — Back leaves the exhibit, it does not walk notes
+[1A[2K[5/162] [chromium] › e2e/address.spec.ts:95:3 › the address follows the reader (V101) › the narrative spine is addressable — /s/ survives a reload (V84)
+[1A[2K[6/162] [chromium] › e2e/arrival.spec.ts:20:3 › arrival is recoverable › the gallery arrives with its exhibits
+[1A[2K[7/162] [chromium] › e2e/arrival.spec.ts:25:3 › arrival is recoverable › opening the chooser offers a way back (V1)
+[1A[2K[8/162] [chromium] › e2e/arrival.spec.ts:41:3 › arrival is recoverable › Escape is the same door as Cancel
+[1A[2K[9/162] [chromium] › e2e/arrival.spec.ts:51:3 › arrival is recoverable › the library's chrome steps aside while choosing (V2)
+[1A[2K[10/162] [chromium] › e2e/arrival.spec.ts:61:3 › arrival is recoverable › a cold arrival has no way back, and offers none
+[1A[2K[11/162] [chromium] › e2e/av-surface.spec.ts:136:3 › V53 · the note surface the AV reader had no way to reach › a real click on a transcript line opens THE NOTE, and the line is genuinely hittable
+[1A[2K[12/162] [chromium] › e2e/av-surface.spec.ts:177:3 › V53 · the note surface the AV reader had no way to reach › the cue's cite is LIVE in the card and LITERAL nowhere
+[1A[2K[13/162] [chromium] › e2e/av-surface.spec.ts:217:3 › V53 · the note surface the AV reader had no way to reach › the card clears the temporal map instead of sitting on it
+[1A[2K[14/162] [chromium] › e2e/av-surface.spec.ts:238:3 › V53 · the note surface the AV reader had no way to reach › one click both TRAVELS the recording and opens the note
+[1A[2K[15/162] [chromium] › e2e/av-surface.spec.ts:252:3 › V53 · the note surface the AV reader had no way to reach › ⤢ expands to the reading sheet, and the note is on screen exactly once
+[1A[2K[16/162] [chromium] › e2e/av-surface.spec.ts:265:3 › V53 · the note surface the AV reader had no way to reach › the whole-track note opens too — the one note with no cue row to reach it by
+[1A[2K[17/162] [chromium] › e2e/av-surface.spec.ts:276:3 › V53 · a note's picture, on a TIME-RANGED note › the tile renders on the card and a real click opens the lightbox
+[1A[2K[18/162] [chromium] › e2e/av-surface.spec.ts:327:3 › V53 · an AV note's tags are a real door into the finder › a tag chip on a time-ranged note opens the finder ALREADY SCOPED to that tag
+[1A[2K[19/162] [chromium] › e2e/av-surface.spec.ts:426:3 › V53 · the Escape ladder this surface did not have › Escape walks out one rung at a time: sheet → card → the exhibit
+[1A[2K[20/162] [chromium] › e2e/av-surface.spec.ts:450:3 › V53 · the transcript aside resizes (and deliberately does not collapse) › dragging the divider narrows the transcript, and it survives a reload
+[1A[2K[21/162] [chromium] › e2e/av-surface.spec.ts:482:3 › V53 · the transcript aside resizes (and deliberately does not collapse) › there is no collapse toggle — collapsing this aside would take the object nav with it
+[1A[2K[22/162] [chromium] › e2e/av-surface.spec.ts:526:3 › V49 · the temporal map clears the item strip (Archie-b135) › the transcript's temporal map is not covered by the filmstrip
+[1A[2K[23/162] [chromium] › e2e/av-surface.spec.ts:564:3 › V49 · the temporal map clears the item strip (Archie-b135) › the map is on screen ON ARRIVAL, not pushed off the bottom INSTEAD of being covered
+[1A[2K[24/162] [chromium] › e2e/av-surface.spec.ts:638:3 › Archie-4524 · the reading legend the AV surface did not have › the legend lists the exhibit's readings, with per-layer counts on THIS recording
+[1A[2K[25/162] [chromium] › e2e/av-surface.spec.ts:657:3 › Archie-4524 · the reading legend the AV surface did not have › the abjad layer adds its line to the transcript, in its own colour
+[1A[2K[26/162] [chromium] › e2e/av-surface.spec.ts:689:3 › Archie-4524 · the reading legend the AV surface did not have › there is no Hide-all on this legend — the notes here ARE the transcript
+[1A[2K[27/162] [chromium] › e2e/av-surface.spec.ts:711:3 › the audio stage draws its recording (V50) › a sound object renders a waveform canvas, and keeps its native controls
+[1A[2K[28/162] [chromium] › e2e/av-surface.spec.ts:727:3 › the audio stage draws its recording (V50) › the waveform is hidden from assistive tech — the <audio> element is the control
+[1A[2K[29/162] [chromium] › e2e/canvas-keyboard.spec.ts:42:3 › nothing in the reader is an anonymous tab stop (V90) › every tab stop announces something
+[1A[2K[30/162] [chromium] › e2e/canvas-keyboard.spec.ts:56:3 › nothing in the reader is an anonymous tab stop (V90) › the whole-object frame is a named stop, and stays one (V46)
+[1A[2K[31/162] [chromium] › e2e/canvas-keyboard.spec.ts:69:3 › Escape is a ladder, not one binding (V26) › Escape with a note open closes the note and stays put
+[1A[2K[32/162] [chromium] › e2e/canvas-keyboard.spec.ts:81:3 › Escape is a ladder, not one binding (V26) › Escape with nothing open goes up a level
+[1A[2K[33/162] [chromium] › e2e/canvas-keyboard.spec.ts:95:3 › Escape is a ladder, not one binding (V26) › the reader has a landing place for focus to return to
+[1A[2K[34/162] [chromium] › e2e/canvas-keyboard.spec.ts:132:3 › the canvas is a named, reachable keyboard stop (V90/V25) › the canvas announces itself and what its keys do
+[1A[2K[35/162] [chromium] › e2e/canvas-keyboard.spec.ts:145:3 › the canvas is a named, reachable keyboard stop (V90/V25) › arrow keys actually move the image
+[1A[2K[36/162] [chromium] › e2e/canvas-keyboard.spec.ts:163:3 › the canvas is a named, reachable keyboard stop (V90/V25) › focus reaches the canvas at all
+[1A[2K[37/162] [chromium] › e2e/canvas-keyboard.spec.ts:172:3 › Escape is a ladder on a live canvas too (V26/V25) › rung two: Escape hands focus back out of the canvas, and not to nothing
+[1A[2K[38/162] [chromium] › e2e/canvas-keyboard.spec.ts:186:3 › Escape is a ladder on a live canvas too (V26/V25) › the whole ladder walks out one rung at a time
+[1A[2K[39/162] [chromium] › e2e/canvas-offline.spec.ts:21:3 › the screenshots exhibit is self-contained (the premise every canvas spec rests on) › it paints a deep-zoom canvas with the network cut
+[1A[2K[40/162] [chromium] › e2e/canvas-offline.spec.ts:36:3 › the screenshots exhibit is self-contained (the premise every canvas spec rests on) › every section's image is served locally, not just the first
+[1A[2K[41/162] [chromium] › e2e/canvas-offline.spec.ts:56:3 › the screenshots exhibit is self-contained (the premise every canvas spec rests on) › it carries both kinds of note the canvas draws differently
+[1A[2K[42/162] [chromium] › e2e/canvas-offline.spec.ts:81:3 › the screenshots exhibit is self-contained (the premise every canvas spec rests on) › OSD stays in the DOM — the failed-mount teardown does not happen here
+[1A[2K[43/162] [chromium] › e2e/cite.spec.ts:32:3 › the cite panel (V102) › the LINK grain copies exactly the current address
+[1A[2K[44/162] [chromium] › e2e/cite.spec.ts:42:3 › the cite panel (V102) › the CITATION grain copies a reference carrying the credit and the licence
+[1A[2K[45/162] [chromium] › e2e/cite.spec.ts:52:3 › the cite panel (V102) › the CONTENT STATE grain round-trips through decodeContentState
+[1A[2K[46/162] [chromium] › e2e/cite.spec.ts:78:3 › the cite panel (V102) › the Content State grain is ABSENT at exhibit grain, not fabricated
+[1A[2K[47/162] [chromium] › e2e/cite.spec.ts:90:3 › the cite panel (V102) › it is a DIALOG: focus moves in, Tab is trapped, Escape returns focus
+[1A[2K[48/162] [chromium] › e2e/cite.spec.ts:115:3 › the cite panel (V102) › the panel does not cover the canvas — it replaces chrome, it does not add it
+[1A[2K[49/162] [chromium] › e2e/exhibit-rights.spec.ts:24:3 › exhibit-level rights reach every reader (Archie-36e6) › a SINGLE-object exhibit shows the exhibit credit, licence and metadata
+[1A[2K[50/162] [chromium] › e2e/exhibit-rights.spec.ts:46:3 › exhibit-level rights reach every reader (Archie-36e6) › both levels are NAMED when both are shown, so two credits can't read as one
+[1A[2K[51/162] [chromium] › e2e/exhibit-rights.spec.ts:63:3 › exhibit-level rights reach every reader (Archie-36e6) › the NARRATIVE reader carries the exhibit metadata run too
+[1A[2K[52/162] [chromium] › e2e/exhibit-rights.spec.ts:75:3 › exhibit-level rights reach every reader (Archie-36e6) › the GRID path is unchanged — one level, unnamed, no regression
+[1A[2K[53/162] [chromium] › e2e/finder-locus.spec.ts:91:3 › a finder result says where it lives (V106) › a hit names the object it sits on, and the section that shows it
+[1A[2K[54/162] [chromium] › e2e/finder-locus.spec.ts:112:3 › a finder result says where it lives (V106) › EVERY result carries a locus — none is left unplaced
+[1A[2K[55/162] [chromium] › e2e/finder-locus.spec.ts:128:3 › a finder result says where it lives (V106) › the locus names are the exhibit's real places, not ids
+[1A[2K[56/162] [chromium] › e2e/finder-locus.spec.ts:144:3 › a finder result says where it lives (V106) › activating a hit lands on that note's own rung, not the object's top
+[1A[2K[57/162] [chromium] › e2e/gallery.spec.ts:14:3 › the gallery › a tree-relative cover resolves against the published tree (V7)
+[1A[2K[58/162] [chromium] › e2e/gallery.spec.ts:42:3 › the gallery › search reaches images as well as exhibits (V6)
+[1A[2K[59/162] [chromium] › e2e/gallery.spec.ts:56:3 › the gallery › the image wall opens compact (V20)
+[1A[2K[60/162] [chromium] › e2e/inert-a11y.spec.ts:64:3 › Archie-9838 · the collapsed notes rail leaves the accessibility tree › EXPANDED: the rail's note list is exposed (the control measurement)
+[1A[2K[61/162] [chromium] › e2e/inert-a11y.spec.ts:78:3 › Archie-9838 · the collapsed notes rail leaves the accessibility tree › COLLAPSED: the rail's note list is gone or ignored in Chromium's own tree
+[1A[2K[62/162] [chromium] › e2e/inert-a11y.spec.ts:100:3 › Archie-9838 · the collapsed notes rail leaves the accessibility tree › ATTRIBUTION: it is `inert` doing the hiding, not the zero-width collapse
+[1A[2K[63/162] [chromium] › e2e/inert-a11y.spec.ts:125:3 › Archie-9838 · the collapsed notes rail leaves the accessibility tree › COLLAPSED: the rail is out of tab order too (the half that always reproduced)
+[1A[2K[64/162] [chromium] › e2e/narrative-coupling.spec.ts:96:3 › scroll → camera: the spine drives the read (V81) › scrolling the spine moves the active beat to whatever crosses the centre line
+[1A[2K[65/162] [chromium] › e2e/narrative-coupling.spec.ts:117:3 › scroll → camera: the spine drives the read (V81) › the camera follows the spine — the section that scrolled under the line is the one on canvas
+[1A[2K[66/162] [chromium] › e2e/narrative-coupling.spec.ts:140:3 › activate → camera AND prose: the same coupling backwards (V82) › stepping the canvas nav brings the prose with it
+[1A[2K[67/162] [chromium] › e2e/narrative-coupling.spec.ts:153:3 › activate → camera AND prose: the same coupling backwards (V82) › clicking a beat centres it
+[1A[2K[68/162] [chromium] › e2e/narrative-coupling.spec.ts:164:3 › the two directions do not fight (the reentrancy guard) › a section cite settles on the CITED beat and stays there
+[1A[2K[69/162] [chromium] › e2e/narrative-coupling.spec.ts:193:3 › the two directions do not fight (the reentrancy guard) › stepping to the last beat lands on the last beat, not its neighbour
+[1A[2K[70/162] [chromium] › e2e/narrative-coupling.spec.ts:205:3 › the two directions do not fight (the reentrancy guard) › a multi-beat activation does not bounce the reader through the beats in between
+[1A[2K[71/162] [chromium] › e2e/narrative-coupling.spec.ts:256:3 › the two directions do not fight (the reentrancy guard) › the suppression lasts exactly as long as the scroll it covers, not a wall-clock window
+[1A[2K[72/162] [chromium] › e2e/narrative-coupling.spec.ts:356:3 › the two directions do not fight (the reentrancy guard) › a pointer press mid-sweep does not bounce the reader through the beats in between
+[1A[2K[73/162] [chromium] › e2e/narrative-coupling.spec.ts:408:3 › the two directions do not fight (the reentrancy guard) › a sub-pixel arrival still ends the intent
+[1A[2K[74/162] [chromium] › e2e/narrative-coupling.spec.ts:464:3 › the two directions do not fight (the reentrancy guard) › an intent that never arrives releases on its own
+[1A[2K[75/162] [chromium] › e2e/narrative-coupling.spec.ts:508:3 › the two directions do not fight (the reentrancy guard) › the column's two ends resolve to the first and last beat
+[1A[2K[76/162] [chromium] › e2e/narrative-coupling.spec.ts:541:3 › reduced motion, and the reader's scroll is never swallowed › a reader scrolling BACK out of a live programmatic scroll wins immediately
+[1A[2K[77/162] [chromium] › e2e/narrative-coupling.spec.ts:577:3 › reduced motion, and the reader's scroll is never swallowed › reduced motion is honoured, and an activation still lands
+[1A[2K[78/162] [chromium] › e2e/narrative-coupling.spec.ts:597:3 › the beats are numbered (V85) › every beat states its own position, in the nav's noun-and-position idiom
+[1A[2K[79/162] [chromium] › e2e/narrative-coupling.spec.ts:605:3 › the beats are numbered (V85) › the active beat is marked to assistive tech, not only by colour
+[1A[2K[80/162] [chromium] › e2e/narrative-coupling.spec.ts:613:3 › hiding the spine is per-exhibit and plainly reversible (Archie-c5cb, V83) › collapsing one narrative's spine leaves the next narrative's spine alone
+[1A[2K[81/162] [chromium] › e2e/narrative-coupling.spec.ts:626:3 › hiding the spine is per-exhibit and plainly reversible (Archie-c5cb, V83) › the choice does hold for the exhibit it was made on
+[1A[2K[82/162] [chromium] › e2e/narrative-coupling.spec.ts:640:3 › hiding the spine is per-exhibit and plainly reversible (Archie-c5cb, V83) › the collapsed state carries a visible, NAMED way back
+[1A[2K[83/162] [chromium] › e2e/narrative-coupling.spec.ts:658:3 › hiding the spine is per-exhibit and plainly reversible (Archie-c5cb, V83) › a fresh session gets its driving surface back
+[1A[2K[84/162] [chromium] › e2e/narrative-coupling.spec.ts:675:3 › V80 re-measure: canvas chrome still clears the spine (Archie-40fe) › the top-right chrome group does not reach into the prose column
+[1A[2K[85/162] [chromium] › e2e/narrative-coupling.spec.ts:693:3 › V80 re-measure: canvas chrome still clears the spine (Archie-40fe) › and still clears it with the extra control the collapsed state adds
+[1A[2K[86/162] [chromium] › e2e/narrative-header.spec.ts:26:3 › the narrative aside's header (Archie-1474) › the pane toggle stays on screen however far the spine is scrolled
+[1A[2K[87/162] [chromium] › e2e/narrative-header.spec.ts:58:3 › the narrative aside's header (Archie-1474) › the credit is always shown; only the metadata folds
+[1A[2K[88/162] [chromium] › e2e/narrative.spec.ts:20:3 › the spine's section labels (V86) › a section never says its own name twice
+[1A[2K[89/162] [chromium] › e2e/narrative.spec.ts:38:3 › the spine's section labels (V86) › when an object label IS shown it adds information, not an echo
+[1A[2K[90/162] [chromium] › e2e/narrative.spec.ts:52:3 › the spine's section labels (V86) › no label collides with its separator
+[1A[2K[91/162] [chromium] › e2e/narrative.spec.ts:71:3 › the door between the reading and the index (V91) › the way out and the place it leads share a word
+[1A[2K[92/162] [chromium] › e2e/narrative.spec.ts:87:3 › the door between the reading and the index (V91) › the way back names the reading, and actually returns to it
+[1A[2K[93/162] [chromium] › e2e/note-address.spec.ts:43:3 › a cited note resolves from its address (V100) › #/<slug>/a/<ULID> opens that exact note
+[1A[2K[94/162] [chromium] › e2e/note-address.spec.ts:56:3 › a cited note resolves from its address (V100) › the address survives a reload — the same note is still open
+[1A[2K[95/162] [chromium] › e2e/note-address.spec.ts:65:3 › a cited note resolves from its address (V100) › an unknown note id degrades honestly instead of throwing (ADR-0003)
+[1A[2K[96/162] [chromium] › e2e/note-address.spec.ts:76:3 › a cited note resolves from its address (V100) › a malformed note id degrades too
+[1A[2K[97/162] [chromium] › e2e/note-surface.spec.ts:38:3 › only ONE note-content element is on screen at a time (V60) › with the sheet open, exactly one element renders the note's body
+[1A[2K[98/162] [chromium] › e2e/note-surface.spec.ts:49:3 › only ONE note-content element is on screen at a time (V60) › closing the sheet brings the card back — hidden is not gone
+[1A[2K[99/162] [chromium] › e2e/note-surface.spec.ts:58:3 › only ONE note-content element is on screen at a time (V60) › the sidebar entry marks position instead of restating the note
+[1A[2K[100/162] [chromium] › e2e/note-surface.spec.ts:94:3 › one modal at a time — the sheet never stacks (Archie-dbbc review) › a tag chip inside the sheet REPLACES it with the finder
+[1A[2K[101/162] [chromium] › e2e/note-surface.spec.ts:136:3 › one modal at a time — the sheet never stacks (Archie-dbbc review) › never two `aria-modal` elements, on any route out of the sheet
+[1A[2K[102/162] [chromium] › e2e/note-surface.spec.ts:226:3 › one modal at a time — the sheet never stacks (Archie-dbbc review) › a media tile inside the sheet REPLACES it with the lightbox — the image reader
+[1A[2K[103/162] [chromium] › e2e/note-surface.spec.ts:236:3 › one modal at a time — the sheet never stacks (Archie-dbbc review) › a media tile inside the sheet REPLACES it with the lightbox — the AV reader
+[1A[2K[104/162] [chromium] › e2e/note-surface.spec.ts:245:3 › one modal at a time — the sheet never stacks (Archie-dbbc review) › a media tile inside the sheet REPLACES it with the lightbox — the narrative reader
+[1A[2K[105/162] [chromium] › e2e/note-surface.spec.ts:289:3 › the sheet is the card at a larger size (V64) › the sheet's accessible name EQUALS the card's, not merely non-empty
+[1A[2K[106/162] [chromium] › e2e/note-surface.spec.ts:297:3 › the sheet is the card at a larger size (V64) › the sheet SHOWS the same identity line the card showed
+[1A[2K[107/162] [chromium] › e2e/note-surface.spec.ts:309:3 › the sheet is the card at a larger size (V64) › expanding does not drop the note's tags
+[1A[2K[108/162] [chromium] › e2e/note.spec.ts:39:3 › opening a note (V61) › the card that appears has a name and a role
+[1A[2K[109/162] [chromium] › e2e/note.spec.ts:49:3 › opening a note (V61) › the card is focusable as a whole, not only through its buttons
+[1A[2K[110/162] [chromium] › e2e/note.spec.ts:55:3 › opening a note (V61) › it is NOT a modal — the canvas beside it stays usable
+[1A[2K[111/162] [chromium] › e2e/note.spec.ts:65:3 › dismissing a note (V62) › Escape closes it and returns focus to the note that opened it
+[1A[2K[112/162] [chromium] › e2e/note.spec.ts:74:3 › dismissing a note (V62) › the card's own × does the same thing
+[1A[2K[113/162] [chromium] › e2e/note.spec.ts:101:3 › dismissing a note (V62) › dismissing also clears the canvas's selection, not just the card
+[1A[2K[114/162] [chromium] › e2e/note.spec.ts:123:3 › expanding a note into the reading sheet (V63) › focus moves INTO the sheet on open
+[1A[2K[115/162] [chromium] › e2e/note.spec.ts:131:3 › expanding a note into the reading sheet (V63) › Tab is trapped inside it
+[1A[2K[116/162] [chromium] › e2e/note.spec.ts:141:3 › expanding a note into the reading sheet (V63) › Escape closes it and returns focus to the ⤢ that opened it
+[1A[2K[117/162] [chromium] › e2e/note.spec.ts:149:3 › expanding a note into the reading sheet (V63) › it really is a dialog, and says so
+[1A[2K[118/162] [chromium] › e2e/object-nav.spec.ts:53:3 › the nav is present in BOTH sidebar states (V65's discoverability half) › grid reader — sidebar open, then collapsed
+[1A[2K[119/162] [chromium] › e2e/object-nav.spec.ts:73:3 › the nav is present in BOTH sidebar states (V65's discoverability half) › narrative — spine open, then collapsed
+[1A[2K[120/162] [chromium] › e2e/object-nav.spec.ts:89:3 › the visible label speaks the noun (V65's label half) › the button's own name and the position agree about the unit
+[1A[2K[121/162] [chromium] › e2e/object-nav.spec.ts:102:3 › the visible label speaks the noun (V65's label half) › the narrative names sections, not objects
+[1A[2K[122/162] [chromium] › e2e/object-nav.spec.ts:110:3 › the nav actually steps the thing it names › grid reader: forward then back returns to the same object
+[1A[2K[123/162] [chromium] › e2e/object-nav.spec.ts:120:3 › the nav actually steps the thing it names › narrative: stepping moves the spine's own position indicator too
+[1A[2K[124/162] [chromium] › e2e/object-nav.spec.ts:136:3 › the nav actually steps the thing it names › stepping objects does NOT carry the open note forward (flip-and-read is gone)
+[1A[2K[125/162] [chromium] › e2e/object-nav.spec.ts:158:3 › the nav actually steps the thing it names › the ends are disabled rather than silently inert
+[1A[2K[126/162] [chromium] › e2e/object-nav.spec.ts:167:5 › the note card carries no stepper, in any of the four states › grid reader, sidebar open
+[1A[2K[127/162] [chromium] › e2e/object-nav.spec.ts:167:5 › the note card carries no stepper, in any of the four states › grid reader, sidebar collapsed
+[1A[2K[128/162] [chromium] › e2e/object-nav.spec.ts:180:5 › the note card carries no stepper, in any of the four states › narrative, spine open
+[1A[2K[129/162] [chromium] › e2e/object-nav.spec.ts:180:5 › the note card carries no stepper, in any of the four states › narrative, spine collapsed
+[1A[2K[130/162] [chromium] › e2e/object-nav.spec.ts:196:3 › one object nav per reader (the half of V23 this ticket can move) › the grid reader's aside offers the way UP, not a second stepper
+[1A[2K[131/162] [chromium] › e2e/object-nav.spec.ts:215:3 › EXACTLY ONE object-nav landmark, on every surface › grid reader: one, and it is the canvas nav — in BOTH sidebar states
+[1A[2K[132/162] [chromium] › e2e/object-nav.spec.ts:236:3 › EXACTLY ONE object-nav landmark, on every surface › narrative: one, and it is the canvas nav
+[1A[2K[133/162] [chromium] › e2e/object-nav.spec.ts:242:3 › EXACTLY ONE object-nav landmark, on every surface › AV: one, and it is the SIDEBAR stepper — the surface with no canvas chrome
+[1A[2K[134/162] [chromium] › e2e/object-nav.spec.ts:263:3 › the AV path keeps its stepper — the opt-in this slice's argument rests on › an AV object in a multi-object exhibit can still reach its siblings
+[1A[2K[135/162] [chromium] › e2e/occlusion.spec.ts:125:3 › the grid reader's chrome docks out of the canvas (ADR-0019 layout row) › no docked chrome overlaps the canvas, with a note open
+[1A[2K[136/162] [chromium] › e2e/occlusion.spec.ts:142:3 › the grid reader's chrome docks out of the canvas (ADR-0019 layout row) › the canvas centre hit-tests to the canvas, not to chrome
+[1A[2K[137/162] [chromium] › e2e/occlusion.spec.ts:168:3 › the narrative reader's chrome docks out of the canvas (ADR-0019 layout row) › no docked chrome overlaps the narrative's canvas
+[1A[2K[138/162] [chromium] › e2e/occlusion.spec.ts:186:3 › the narrative reader's chrome docks out of the canvas (ADR-0019 layout row) › the spine can be read to its end without chrome on the last card
+[1A[2K[139/162] [chromium] › e2e/occlusion.spec.ts:218:3 › a fitted region is not clipped by chrome (V48) › no chrome sits on a fitted region, across every halo note
+[1A[2K[140/162] [chromium] › e2e/read.spec.ts:11:3 › the read surface › the zoom cue is anchored to the canvas it describes (V40)
+[1A[2K[141/162] [chromium] › e2e/read.spec.ts:39:3 › the read surface › the narrative reader's chrome is anchored too (V80)
+[1A[2K[142/162] [chromium] › e2e/read.spec.ts:66:5 › the read surface › the filmstrip is one stop, not N (V27/V28) › exactly one frame is in the tab order
+[1A[2K[143/162] [chromium] › e2e/read.spec.ts:74:5 › the read surface › the filmstrip is one stop, not N (V27/V28) › arrow keys move within the strip
+[1A[2K[144/162] [chromium] › e2e/read.spec.ts:96:5 › the read surface › the filmstrip is one stop, not N (V27/V28) › each frame says which item it is
+[1A[2K[145/162] [chromium] › e2e/review-contrast.spec.ts:7:1 › mobile gallery keeps readable text and its first exhibit above the fold
+[1A[2K[146/162] [chromium] › e2e/selection.spec.ts:23:3 › the selection ring means something (V43) › no halo before anything is selected
+[1A[2K[147/162] [chromium] › e2e/selection.spec.ts:34:3 › the selection ring means something (V43) › selecting a region note draws a ring around it
+[1A[2K[148/162] [chromium] › e2e/selection.spec.ts:54:3 › the selection ring means something (V43) › the ring is decoration, and it does not shield what it points at
+[1A[2K[149/162] [chromium] › e2e/selection.spec.ts:96:3 › the selection ring means something (V43) › a REAL mouse click on a mark opens its note
+[1A[2K[150/162] [chromium] › e2e/selection.spec.ts:196:3 › the selection ring means something (V43) › dismissing a note gives its height back to the image (ADR-0019 layout row)
+[1A[2K[151/162] [chromium] › e2e/selection.spec.ts:324:3 › the whole-object frame is a mark too (V46) › a whole-object note is drawn as a named, focusable frame
+[1A[2K[152/162] [chromium] › e2e/selection.spec.ts:338:3 › the whole-object frame is a mark too (V46) › the frame survives Hide all — it is the way back to the marks
+[1A[2K[153/162] [chromium] › e2e/selection.spec.ts:356:3 › the legend swatch shows what the canvas draws (V47) › the swatch is a miniature mark, not a solid disc
+[1A[2K[154/162] [chromium] › e2e/selection.spec.ts:375:3 › the legend swatch shows what the canvas draws (V47) › every reading's swatch is drawn the same way
+[1A[2K[155/162] [chromium] › e2e/source-address.spec.ts:5:1 › foreign source survives reader address updates, reload, links, and Back
+[1A[2K[156/162] [chromium] › e2e/static-shell.spec.ts:17:7 › the page a crawler gets › with JavaScript off › voynich has a readable body, not an empty island (V107)
+[1A[2K[157/162] [chromium] › e2e/static-shell.spec.ts:17:7 › the page a crawler gets › with JavaScript off › voynich-reading has a readable body, not an empty island (V107)
+[1A[2K[158/162] [chromium] › e2e/static-shell.spec.ts:40:3 › the page a crawler gets › the shell yields to the app once it hydrates
+[1A[2K[159/162] [chromium] › e2e/static-shell.spec.ts:49:3 › the page a crawler gets › the archival page carries the narrative, not just the notes (V110)
+[1A[2K  1) [chromium] › e2e/static-shell.spec.ts:49:3 › the page a crawler gets › the archival page carries the narrative, not just the notes (V110) 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m200[39m
+    Received: [31m404[39m
+
+      55 |     // stale committed output from an older publish — and would prove nothing about current code.
+      56 |     const res = await page.goto("./published/screenshots/");
+    > 57 |     expect(res?.status()).toBe(200);
+         |                           ^
+      58 |
+      59 |     await expect(page.getByRole("heading", { name: "The narrative" })).toBeVisible();
+      60 |
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/static-shell.spec.ts:57:27
+
+    Error Context: test-results/static-shell-the-page-a-cr-5dced-ve-not-just-the-notes-V110--chromium/error-context.md
+
+
+[1A[2K(node:4000266) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4000266) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[160/162] [chromium] › e2e/touch-targets.spec.ts:62:3 › touch targets on a phone viewport (Archie-cf4a, WCAG 2.2 SC 2.5.8) › the gallery's controls are all at least 24x24
+[1A[2K[161/162] [chromium] › e2e/touch-targets.spec.ts:70:3 › touch targets on a phone viewport (Archie-cf4a, WCAG 2.2 SC 2.5.8) › an exhibit grid's controls are all at least 24x24
+[1A[2K[162/162] [chromium] › e2e/touch-targets.spec.ts:78:3 › touch targets on a phone viewport (Archie-cf4a, WCAG 2.2 SC 2.5.8) › the reader's chrome is all at least 24x24
+[1A[2K  1 failed
+    [chromium] › e2e/static-shell.spec.ts:49:3 › the page a crawler gets › the archival page carries the narrative, not just the notes (V110) 
+  161 passed (2.3m)

@@ -1,5 +1,0 @@
-$ svelte-check --tsconfig ./tsconfig.svelte-check.json
-Loading svelte-check in workspace: /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio
-Getting Svelte diagnostics...
-
-svelte-check found 0 errors and 0 warnings

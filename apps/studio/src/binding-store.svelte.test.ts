@@ -55,10 +55,10 @@ function makeStampFs() {
 }
 const flush = () => new Promise<void>((r) => setTimeout(r, 0)); // drain the save-queue microtasks
 
-function makeStore() {
+function makeStore(over: { flushExhibit?: () => Promise<void> } = {}) {
   const writeToFolder = vi.fn(async (_fs: unknown, _plan?: FolderWritePlan) => {});
   const store = createBindingStore({
-    flushExhibit: async () => {},
+    flushExhibit: over.flushExhibit ?? (async () => {}),
     writeToFolder,
     downloadProjectZip: async () => true,
     replaceProjectFrom: async () => {},
@@ -101,6 +101,15 @@ describe("binding store — incremental folder mirror dirty-set (spike-0002)", (
     writeToFolder.mockClear();
     await store.autosaveToFolder();
     expect(writeToFolder).not.toHaveBeenCalled();
+  });
+
+  it("flushes the current exhibit before the Save boundary writes the folder", async () => {
+    let flushed = false;
+    const { store, writeToFolder } = makeStore({ flushExhibit: async () => { flushed = true; } });
+    pickFolderBinding.mockResolvedValueOnce({ fs: fakeFs, name: "Docs", key: "k" });
+    writeToFolder.mockImplementationOnce(async () => { expect(flushed).toBe(true); });
+    await store.saveProject();
+    expect(flushed).toBe(true);
   });
 
   it("RETAINS the scope on a failed write and retries it on the next trigger (never drops a save)", async () => {

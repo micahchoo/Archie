@@ -1,0 +1,139 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 4 tests using 1 worker
+
+[1A[2K(node:4192671) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4192671) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/4] [chromium] › apps/viewer/e2e/user-stories.spec.ts:119:3 › focused user-story baseline › VIEW-053: a long library summary expands and collapses on a small screen
+[1A[2K  1) [chromium] › apps/viewer/e2e/user-stories.spec.ts:119:3 › focused user-story baseline › VIEW-053: a long library summary expands and collapses on a small screen 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('button.summary-toggle')
+    Expected: [32m"Read more"[39m
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toHaveText" with timeout 15000ms[22m
+    [2m  - waiting for locator('button.summary-toggle')[22m
+
+
+      128 |     await page.goto("./");
+      129 |     const toggle = page.locator("button.summary-toggle");
+    > 130 |     await expect(toggle).toHaveText("Read more");
+          |                          ^
+      131 |     await expect(toggle).toHaveAttribute("aria-expanded", "false");
+      132 |     await toggle.click();
+      133 |     await expect(toggle).toHaveText("Show less");
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:130:26
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--dc912-collapses-on-a-small-screen-chromium/error-context.md
+
+
+[1A[2K(node:4193660) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4193660) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[2/4] [chromium] › apps/viewer/e2e/user-stories.spec.ts:140:3 › focused user-story baseline › VIEW-054: object-grid density persists after reload
+[1A[2K  2) [chromium] › apps/viewer/e2e/user-stories.spec.ts:140:3 › focused user-story baseline › VIEW-054: object-grid density persists after reload 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('button.frame').first()
+    Expected: visible
+    Timeout: 30000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 30000ms[22m
+    [2m  - waiting for locator('button.frame').first()[22m
+
+
+      141 |     await goOffline(page);
+      142 |     await page.goto("./#/voynich/o/ex-voynich.o1");
+    > 143 |     await expect(page.locator("button.frame").first()).toBeVisible({ timeout: 30_000 });
+          |                                                        ^
+      144 |     await expect(page.locator("aside button.overview")).toBeVisible();
+      145 |     await page.locator("aside button.overview").click();
+      146 |     await expect(page.locator("button.object").first()).toBeVisible();
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:143:56
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--cd8fc-nsity-persists-after-reload-chromium/error-context.md
+
+
+[1A[2K(node:1965) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:1965) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[3/4] [chromium] › apps/viewer/e2e/user-stories.spec.ts:157:3 › focused user-story baseline › VIEW-069: image-wall density persists and controls disappear during search
+[1A[2K  3) [chromium] › apps/viewer/e2e/user-stories.spec.ts:157:3 › focused user-story baseline › VIEW-069: image-wall density persists and controls disappear during search 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('.views button').filter({ hasText: 'All images' })[22m
+
+
+      159 |     await goOffline(page);
+      160 |     await page.goto("./");
+    > 161 |     await page.locator('.views button', { hasText: "All images" }).click();
+          |                                                                    ^
+      162 |     const compact = page.locator('.density[aria-label="Wall density"] button', { hasText: "Compact" });
+      163 |     await compact.click();
+      164 |     await expect(compact).toHaveAttribute("aria-pressed", "true");
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:161:68
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--36943-ols-disappear-during-search-chromium/error-context.md
+
+
+[1A[2K(node:6245) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:6245) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[4/4] [chromium] › apps/viewer/e2e/user-stories.spec.ts:205:3 › focused user-story baseline › VIEW-075: a long metadata value expands and collapses
+[1A[2K  4) [chromium] › apps/viewer/e2e/user-stories.spec.ts:205:3 › focused user-story baseline › VIEW-075: a long metadata value expands and collapses 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button[role="tab"]').filter({ hasText: 'Details' })[22m
+
+
+      212 |     });
+      213 |     await page.goto("./#/voynich-rosettes");
+    > 214 |     await page.locator('button[role="tab"]', { hasText: "Details" }).click();
+          |                                                                      ^
+      215 |     const more = page.locator("button.more").first();
+      216 |     await expect(more).toHaveText("Show more");
+      217 |     await expect(more).toHaveAttribute("aria-expanded", "false");
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:214:70
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--41c4a-value-expands-and-collapses-chromium/error-context.md
+
+
+[1A[2K  4 failed
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:119:3 › focused user-story baseline › VIEW-053: a long library summary expands and collapses on a small screen 
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:140:3 › focused user-story baseline › VIEW-054: object-grid density persists after reload 
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:157:3 › focused user-story baseline › VIEW-069: image-wall density persists and controls disappear during search 
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:205:3 › focused user-story baseline › VIEW-075: a long metadata value expands and collapses 

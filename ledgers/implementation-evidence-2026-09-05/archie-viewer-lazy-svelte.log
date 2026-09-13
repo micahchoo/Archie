@@ -1,7 +1,0 @@
-$ astro sync
-01:08:05 [types] Generated 56ms
-$ svelte-check --workspace . --fail-on-warnings
-Loading svelte-check in workspace: /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer
-Getting Svelte diagnostics...
-
-svelte-check found 0 errors and 0 warnings

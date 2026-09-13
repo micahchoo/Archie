@@ -1,0 +1,39 @@
+
+Running 1 test using 1 worker
+
+(node:222838) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:222838) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 [chromium] › e2e/library-meta-boot-regression.spec.ts:3:1 › STU-LIB-006 library details survive Studio boot reconciliation (12.4s)
+
+
+  1) [chromium] › e2e/library-meta-boot-regression.spec.ts:3:1 › STU-LIB-006 library details survive Studio boot reconciliation 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator:  locator('h1')
+    Expected: [32m"[7mBoot-preserved l[27mibrary"[39m
+    Received: [31m"[7mL[27mibrary"[39m
+    Timeout:  10000ms
+
+    Call log:
+    [2m  - Expect "toHaveText" with timeout 10000ms[22m
+    [2m  - waiting for locator('h1')[22m
+    [2m    24 × locator resolved to <h1 class="s-8E2AwRWhCN-q">Library</h1>[22m
+    [2m       - unexpected value "Library"[22m
+
+
+      28 |
+      29 |   await page.reload();
+    > 30 |   await expect(page.locator('h1')).toHaveText('Boot-preserved library');
+         |                                    ^
+      31 |   await page.getByRole('button', { name: /Details — Boot-preserved library/ }).click();
+      32 |   const reopened = page.getByRole('dialog', { name: 'Library details' });
+      33 |   await expect(reopened.getByPlaceholder('Name this library')).toHaveValue('Boot-preserved library');
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/e2e/library-meta-boot-regression.spec.ts:30:36
+
+    Error Context: test-results/library-meta-boot-regressi-755ee--Studio-boot-reconciliation-chromium/error-context.md
+
+  1 failed
+    [chromium] › e2e/library-meta-boot-regression.spec.ts:3:1 › STU-LIB-006 library details survive Studio boot reconciliation 

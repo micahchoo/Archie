@@ -1,0 +1,107 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:185017) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:185164) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:185506) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:185518) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 1 test using 1 worker
+
+[1A[2K(node:185632) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:185632) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/1] [chromium] › apps/viewer/e2e/user-stories.spec.ts:465:3 › focused user-story baseline › VIEW-010: a spatial note arrival paints the canvas and its target marker
+[1A[2K(node:187263) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:187263) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[2/1] (retries) [chromium] › apps/viewer/e2e/user-stories.spec.ts:465:3 › focused user-story baseline › VIEW-010: a spatial note arrival paints the canvas and its target marker (retry #1)
+[1A[2K  1) [chromium] › apps/viewer/e2e/user-stories.spec.ts:465:3 › focused user-story baseline › VIEW-010: a spatial note arrival paints the canvas and its target marker 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator:  locator('.a9s-annotationlayer .a9s-selection, .a9s-annotationlayer g').first()
+    Expected: visible
+    Received: hidden
+    Timeout:  20000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 20000ms[22m
+    [2m  - waiting for locator('.a9s-annotationlayer .a9s-selection, .a9s-annotationlayer g').first()[22m
+    [2m    43 × locator resolved to <g class="svelte-g4ws1v" transform="translate(34.85383862350021, 149.70952579160408) scale(1.2785238593598693, 1.2785238593598693) rotate(0)"></g>[22m
+    [2m       - unexpected value "hidden"[22m
+
+
+      470 |     await openPaintedNote(page, note!.ulid);
+      471 |     expect(await canvasInk(page)).toBeGreaterThan(50);
+    > 472 |     await expect(page.locator(".a9s-annotationlayer .a9s-selection, .a9s-annotationlayer g").first()).toBeVisible({ timeout: 20_000 });
+          |                                                                                                       ^
+      473 |     await page.screenshot({ path: "docs/verification/evidence/viewer/spatial-note-arrival.png", fullPage: true });
+      474 |   });
+      475 |
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:472:103
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--86860-anvas-and-its-target-marker-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator:  locator('.a9s-annotationlayer .a9s-selection, .a9s-annotationlayer g').first()
+    Expected: visible
+    Received: hidden
+    Timeout:  20000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 20000ms[22m
+    [2m  - waiting for locator('.a9s-annotationlayer .a9s-selection, .a9s-annotationlayer g').first()[22m
+    [2m    43 × locator resolved to <g class="svelte-g4ws1v" transform="translate(34.85383862350021, 149.70952579160408) scale(1.2785238593598693, 1.2785238593598693) rotate(0)"></g>[22m
+    [2m       - unexpected value "hidden"[22m
+
+
+      470 |     await openPaintedNote(page, note!.ulid);
+      471 |     expect(await canvasInk(page)).toBeGreaterThan(50);
+    > 472 |     await expect(page.locator(".a9s-annotationlayer .a9s-selection, .a9s-annotationlayer g").first()).toBeVisible({ timeout: 20_000 });
+          |                                                                                                       ^
+      473 |     await page.screenshot({ path: "docs/verification/evidence/viewer/spatial-note-arrival.png", fullPage: true });
+      474 |   });
+      475 |
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:472:103
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--86860-anvas-and-its-target-marker-chromium-retry1/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    apps/viewer/test-results/user-stories-focused-user--86860-anvas-and-its-target-marker-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace apps/viewer/test-results/user-stories-focused-user--86860-anvas-and-its-target-marker-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  1 failed
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:465:3 › focused user-story baseline › VIEW-010: a spatial note arrival paints the canvas and its target marker 

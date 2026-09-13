@@ -1,0 +1,10 @@
+
+Running 1 test using 1 worker
+
+(node:4082062) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:4082062) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › e2e/user-stories-annotations.spec.ts:73:1 › STU-ANN-003/004 whole-image note: edit comment/tags and reload (2.9s)
+
+  1 passed (3.7s)

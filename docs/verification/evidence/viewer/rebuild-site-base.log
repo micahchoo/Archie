@@ -1,0 +1,42 @@
+
+> @archie/viewer@1.0.0 prebuild
+> vite-node scripts/gen-published.mts
+
+Source: /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/libraries/archie-library.archie.zip (1 exhibit(s)) + bundled sample-data (6 more) = 7 owned
+Wrote 543 published files → /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/public/published
+
+> @archie/viewer@1.0.0 build
+> astro build
+
+19:57:30 [types] Generated 44ms
+19:57:30 [build] output: "static"
+19:57:30 [build] mode: "static"
+19:57:30 [build] directory: /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/dist/
+19:57:30 [build] Collecting build info...
+19:57:30 [build] ✓ Completed in 64ms.
+19:57:30 [build] Building static entrypoints...
+19:57:31 [vite] ✓ built in 719ms
+19:57:35 [WARN] [vite] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+19:57:35 [vite] ✓ built in 4.14s
+19:57:35 [build] Rearranging server assets...
+
+ generating static routes 
+19:57:35   ├─ /robots.txt (+3ms) 
+19:57:35   ├─ /sitemap.xml (+1ms) 
+19:57:35   ├─ /screenshots/index.html (+4ms) 
+19:57:35   ├─ /voynich-rosettes/index.html (+3.21s) 
+19:57:38   ├─ /voynich/index.html (+331ms) 
+19:57:38   ├─ /voynich-reading/index.html (+1ms) 
+19:57:38   ├─ /language-atlas/index.html (+621ms) 
+19:57:39   ├─ /geo-map/index.html (+1ms) 
+19:57:39   ├─ /sampler/index.html (+1ms) 
+19:57:39   ├─ /index.html (+2ms) 
+19:57:39 ✓ Completed in 4.20s.
+
+19:57:39 [build] ✓ Completed in 9.10s.
+19:57:39 [build] 8 page(s) built in 9.17s
+19:57:39 [build] Complete!

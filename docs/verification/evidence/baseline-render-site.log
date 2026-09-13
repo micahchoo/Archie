@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/render-core
+
+··················································
+
+ Test Files  1 passed (1)
+      Tests  50 passed (50)
+   Start at  19:38:12
+   Duration  471ms (transform 191ms, setup 0ms, collect 240ms, tests 64ms, environment 0ms, prepare 42ms)
+

@@ -1,0 +1,37 @@
+[
+  {
+    "id": "STU-LIB-005",
+    "status": "Pass",
+    "observed_result": "Created title opened an empty overview."
+  },
+  {
+    "id": "STU-LIB-005-reopen",
+    "status": "Pass",
+    "observed_result": "Created exhibit remained on library after returning."
+  },
+  {
+    "id": "STU-LIB-007",
+    "status": "Pass",
+    "observed_result": "Exhibit title remained after reload."
+  },
+  {
+    "id": "STU-LIB-007-unlisted",
+    "status": "Pass",
+    "observed_result": "Unlisted checkbox after reload: true"
+  },
+  {
+    "id": "STU-LIB-009",
+    "status": "Pass",
+    "observed_result": "Selection actions visible: Select all=true, Clear=true"
+  },
+  {
+    "id": "STU-LIB-009-clear",
+    "status": "Fail",
+    "observed_result": "Select-all count shown=true; Clear removed selection=false"
+  },
+  {
+    "id": "STU-LIB-008",
+    "status": "Pass",
+    "observed_result": "Delete armed=true; card absent after reload=true"
+  }
+]

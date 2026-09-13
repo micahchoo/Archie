@@ -1,0 +1,91 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:212612) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:212693) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:213104) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:213136) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 1 test using 1 worker
+
+[1A[2K(node:213202) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:213202) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/1] [chromium] › apps/viewer/e2e/user-stories.spec.ts:476:3 › focused user-story baseline › FLOW-024: a tree embed resolves its relative published media from its own source base
+[1A[2K(node:213371) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:213371) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[2/1] (retries) [chromium] › apps/viewer/e2e/user-stories.spec.ts:476:3 › focused user-story baseline › FLOW-024: a tree embed resolves its relative published media from its own source base (retry #1)
+[1A[2K  1) [chromium] › apps/viewer/e2e/user-stories.spec.ts:476:3 › focused user-story baseline › FLOW-024: a tree embed resolves its relative published media from its own source base 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoHaveLength[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected length: [32m0[39m
+    Received length: [31m1[39m
+    Received array:  [31m["https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o1-e1-embed.png"][39m
+
+      486 |     await expect(viewer.locator(".reader canvas").first()).toBeVisible({ timeout: 30_000 });
+      487 |     await viewer.screenshot({ path: "docs/verification/evidence/viewer/flow024-tree-embed.png" });
+    > 488 |     expect(remote).toHaveLength(0);
+          |                    ^
+      489 |   });
+      490 |
+      491 |   test("VIEW-063: a saved archive keeps bundled media readable offline", async ({ page }) => {
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:488:20
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--66895-ia-from-its-own-source-base-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoHaveLength[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected length: [32m0[39m
+    Received length: [31m1[39m
+    Received array:  [31m["https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o1-e1-embed.png"][39m
+
+      486 |     await expect(viewer.locator(".reader canvas").first()).toBeVisible({ timeout: 30_000 });
+      487 |     await viewer.screenshot({ path: "docs/verification/evidence/viewer/flow024-tree-embed.png" });
+    > 488 |     expect(remote).toHaveLength(0);
+          |                    ^
+      489 |   });
+      490 |
+      491 |   test("VIEW-063: a saved archive keeps bundled media readable offline", async ({ page }) => {
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:488:20
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--66895-ia-from-its-own-source-base-chromium-retry1/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    apps/viewer/test-results/user-stories-focused-user--66895-ia-from-its-own-source-base-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace apps/viewer/test-results/user-stories-focused-user--66895-ia-from-its-own-source-base-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  1 failed
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:476:3 › focused user-story baseline › FLOW-024: a tree embed resolves its relative published media from its own source base 

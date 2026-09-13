@@ -1,0 +1,20 @@
+
+Running 1 test using 1 worker
+
+[1A[2K(node:4144370) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4144370) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/1] [chromium] › e2e/loop.spec.ts:170:3 › Studio core loop: create → autosave → publish (Archie-c9ac) › 2. local publish carries the authored note into the published .archie.zip
+[1A[2K[chromium] › e2e/loop.spec.ts:170:3 › Studio core loop: create → autosave → publish (Archie-c9ac) › 2. local publish carries the authored note into the published .archie.zip
+
+
+[1A[2K[loop-publish] note body present in 4 zip entries: voynich-rosettes-copy/annotations/history/01M2CCTFPXKW74JFJ5VT2GPY0R.json, voynich-rosettes-copy/canvas/ex-voynich.o9/annotations.json, voynich-rosettes-copy/index.html, voynich-rosettes-copy/manifest.json
+
+[1A[2K[loop-publish] rendered HTML page(s) containing the note body: voynich-rosettes-copy/index.html
+
+[1A[2K  1 passed (1.7s)

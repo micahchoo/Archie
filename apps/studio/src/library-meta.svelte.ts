@@ -36,10 +36,11 @@ export function createLibraryStore(initial: LibraryMeta, opts: { onAfterPersist?
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
   // Routed through the save queue (worklist 0.1): writes to library.json serialize, and a failure
   // lands in saveStatus instead of vanishing into the `void persist()` sites below.
-  async function persist(): Promise<void> {
+  async function persist(): Promise<boolean> {
     clearTimeout(saveTimer); // an explicit / awaitable persist supersedes any pending debounced write
-    if (await enqueueSave("library-meta", "Library details", () => saveLibraryMeta(s.meta)))
-      opts.onAfterPersist?.();
+    const stored = await enqueueSave("library-meta", "Library details", () => saveLibraryMeta(s.meta));
+    if (stored) opts.onAfterPersist?.();
+    return stored;
   }
   // PERF: debounce the high-frequency metadata edits. Title/description inputs fire `oninput` → patch*
   // PER KEYSTROKE, and each write serializes the WHOLE library.json — so a 50-char description was ~50

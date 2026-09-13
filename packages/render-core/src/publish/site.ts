@@ -863,6 +863,13 @@ export async function publishLibrary(sink: Filesystem, library: Library, getLog:
       await mapLimit(readings, PUBLISH_CONCURRENCY, async (r) => {
         await writeJson(rdDir, `${r.id}.json`, toReadingCollection(r, collId(r.id)));
       });
+    } else {
+      // A full or incremental rewrite of a surviving exhibit must also remove optional
+      // reading projections that the authored model no longer carries. Leaving the old
+      // registry behind makes readExhibitTree treat deleted readings as current.
+      await removeIfExists(exDir, "readings.json");
+      const annotationsDir = await getDirOptional(exDir, "annotations");
+      if (annotationsDir) await removeIfExists(annotationsDir, "readings");
     }
     // Narrative spine as a WADM AnnotationCollection (ADR-0017): each Section ALSO serialized as a
     // `supplementing` annotation, so pure-WADM/IIIF annotation tools (which read AnnotationPages, NOT IIIF

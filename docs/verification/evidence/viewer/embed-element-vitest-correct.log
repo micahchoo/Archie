@@ -1,0 +1,106 @@
+
+ RUN  v3.2.7 /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/archie-viewer
+
+ ✓ src/narrative.test.ts > the spine renders > one row per section, each carrying its title AND its prose 7ms
+ ✓ src/narrative.test.ts > the spine renders > names the exhibit and counts the spine 1ms
+ ✓ src/narrative.test.ts > the spine renders > a one-section spine says 'section', not 'sections', and offers no stepper 1ms
+ ✓ src/narrative.test.ts > the spine navigates > marks the active section and reports a row click 2ms
+ ✓ src/narrative.test.ts > the spine navigates > the stepper steps, and its ends are disabled rather than absent 1ms
+ ✓ src/narrative.test.ts > the spine navigates > offers the way out to the object grid 1ms
+ ✓ src/narrative.test.ts > the spine navigates > an out-of-range index clamps rather than rendering nothing active 1ms
+ ✓ src/narrative.test.ts > prose goes through the sanitized pipeline > markdown renders as markup 5ms
+ ✓ src/narrative.test.ts > prose goes through the sanitized pipeline > a hostile body is sanitized, not injected (renderMarkdown = snarkdown → DOMPurify) 3ms
+ ✓ src/narrative.test.ts > prose goes through the sanitized pipeline > a section with no prose renders an empty pane, not 'undefined' 0ms
+ ✓ src/narrative.test.ts > sectionsOf / teardown > reads the published spine, tolerating an exhibit with none 0ms
+ ✓ src/narrative.test.ts > sectionsOf / teardown > destroy removes the pane and its stylesheet 1ms
+stderr | src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws on a non-OK response
+open: couldn't fetch the library from https://host/missing.zip — HTTP 404
+
+stderr | src/load.test.ts > load seam — published-tree-base vector > rejects a tree whose exhibits.json is absent/corrupt
+archie-viewer: failed to read exhibits.json — Error: no such file: exhibits.json
+    at HttpFile.fetchBytes (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/render-core/src/fs/http.ts:88:35)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+
+ ✓ src/load.test.ts > load seam — open vectors (no module globals) > openZipBytes opens a published .archie.zip and reads its gallery 9ms
+ ✓ src/load.test.ts > load seam — open vectors (no module globals) > openLibraryFromFile opens a Blob (the drop / file-pick vector) 3ms
+ ✓ src/load.test.ts > load seam — open vectors (no module globals) > rejects a zip that isn't an Archie library (ADR-0020 marker — neither collection.json nor exhibits.json) 1ms
+ ✓ src/load.test.ts > load seam — open vectors (no module globals) > ACCEPTS an UNMARKED real export zip (collection.json + exhibits.json, NO archie.json) — the regression 1ms
+ ✓ src/load.test.ts > load seam — open vectors (no module globals) > two opens produce INDEPENDENT libraries (instance-context seam — no shared global) 39ms
+ ✓ src/load.test.ts > load seam — open vectors (no module globals) > readExhibit returns the exhibit and a library carrying a fresh revoke (revoke lifecycle) 3ms
+ ✓ src/load.test.ts > load seam — open vectors (no module globals) > openFilesystem reads a gallery from an already-opened fs (published-tree-base shape) 1ms
+ ✓ src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc fetches bytes via the injected fetch and opens them 2ms
+ ✓ src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws on a non-OK response 1ms
+ ✓ src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws when the declared size exceeds the cap 0ms
+ ✓ src/load.test.ts > load seam — published-tree-base vector > openLibraryFromTree fetches the gallery from a tree base (exhibits.json) 2ms
+ ✓ src/load.test.ts > load seam — published-tree-base vector > reads a per-exhibit manifest lazily on readExhibit (HTTP source, no blob rewrite) 1ms
+ ✓ src/load.test.ts > load seam — published-tree-base vector > openLibraryFromSrc DISPATCHES a non-zip src to the tree path 1ms
+ ✓ src/load.test.ts > load seam — published-tree-base vector > validates the ADR-0020 marker when archie.json is present (rejects a foreign tree) 0ms
+ ✓ src/load.test.ts > load seam — published-tree-base vector > accepts a tree with NO archie.json when exhibits.json parses (documented fallback) 0ms
+ ✓ src/load.test.ts > load seam — published-tree-base vector > rejects a tree whose exhibits.json is absent/corrupt 2ms
+ ✓ src/load.test.ts > default fetch binding (bound-fetch-defaults.md) > openLibraryFromSrc's DEFAULT fetch survives the tree path's object storage (HttpFilesystem cfg) 0ms
+ ✓ src/load.test.ts > default fetch binding (bound-fetch-defaults.md) > openLibraryFromTree's DEFAULT fetch does too (exported entry point, own default) 0ms
+ ✓ src/element.test.ts > registration > customElements.define registered <archie-viewer> as ArchieViewerElement 1ms
+ ✓ src/element.test.ts > registration > defineArchieViewer is idempotent (a second define is a no-op, not a throw) 1ms
+ ✓ src/element.test.ts > registration > observes src / target / iiif-content / offline / show-unlisted 0ms
+ ✓ src/element.test.ts > attribute ⇄ property reactivity > with no src, connecting renders the drop/open zone 5ms
+ ✓ src/element.test.ts > attribute ⇄ property reactivity > src property reflects to the attribute and back 3ms
+ ✓ src/element.test.ts > attribute ⇄ property reactivity > offline is a boolean attribute (presence = on) 1ms
+ ✓ src/element.test.ts > attribute ⇄ property reactivity > show-unlisted is a boolean attribute (presence = on) 1ms
+ ✓ src/element.test.ts > attribute ⇄ property reactivity > setting src after connect kicks off a load (leaves the empty zone for 'loading') 2ms
+ ✓ src/element.test.ts > openLibraryFs — the in-process door (Studio preview) > opens an ALREADY-BUILT tree without serializing it, and renders the gallery 10ms
+ ✓ src/element.test.ts > openLibraryFs — the in-process door (Studio preview) > still validates the ADR-0020 marker — a forged tree errors instead of showing an empty gallery 2ms
+ ✓ src/element.test.ts > openLibraryFs — the in-process door (Studio preview) > a second openLibraryFs replaces the first library (no stale gallery) 3ms
+ ✓ src/element.test.ts > no-src drop handler calls the load seam > openFile routes a bad blob through the load seam → error surfaces in the drop zone 3ms
+ ✓ src/element.test.ts > no-src drop handler calls the load seam > the file input change handler invokes openFile 1ms
+ ✓ src/element.test.ts > offline propagation reaches the reader options > the element passes its offline property through to the reader open call 1ms
+ ✓ src/element.test.ts > two-instance independence (Phase-4 per-element seam — no module globals) > two <archie-viewer> tags open DIFFERENT libraries without clobbering each other's state 12ms
+ ✓ src/element.test.ts > two-instance independence (Phase-4 per-element seam — no module globals) > two tags can open the SAME library bytes into independent instances (no shared fs) 6ms
+ ✓ src/element.test.ts > target ladder degrade-upward (ADR-0021, integration through a real library) > an unknown slug degrades to the Gallery with the cold notice 6ms
+ ✓ src/element.test.ts > target ladder degrade-upward (ADR-0021, integration through a real library) > an unknown note id degrades to the exhibit grid (note-not-found → its exhibit) 9ms
+ ✓ src/element.test.ts > target ladder degrade-upward (ADR-0021, integration through a real library) > a bare exhibit target lands on that exhibit's grid 8ms
+ ✓ src/element.test.ts > gallery listing honors the UNLISTED lever (Archie-f735) > an unlisted card is hidden from the gallery grid by default 3ms
+ ✓ src/element.test.ts > gallery listing honors the UNLISTED lever (Archie-f735) > absent `unlisted` ≡ listed — the un-flagged card renders exactly as before 2ms
+ ✓ src/element.test.ts > gallery listing honors the UNLISTED lever (Archie-f735) > show-unlisted includes the unlisted card in the gallery grid 2ms
+ ✓ src/element.test.ts > gallery listing honors the UNLISTED lever (Archie-f735) > toggling show-unlisted AFTER the gallery has rendered re-filters in place (no reload) 3ms
+ ✓ src/element.test.ts > gallery listing honors the UNLISTED lever (Archie-f735) > a `target` pointing directly at an unlisted exhibit still opens it — reachability is unaffected 7ms
+ ✓ src/reader-contract.test.ts > published reader arrivals > resolves a Reading-only note with its owning Reading through the published tree 7ms
+ ✓ src/reader-contract.test.ts > published reader arrivals > a copied Reading-only address activates its Reading and opens the whole-recording body paused 42ms
+ ✓ src/reader-contract.test.ts > published reader arrivals > search from audio activates a Reading-only hit and opens its body 16ms
+ ✓ src/reader-contract.test.ts > published reader arrivals > search from other activates a Reading-only hit and opens its body 14ms
+ ✓ src/reader-contract.test.ts > offline resources > omits remote gallery covers, object thumbnails and their error fallbacks 8ms
+ ✓ src/reader-contract.test.ts > offline resources > filters remote resources from an opened note and its expanded sheet 15ms
+ ✓ src/reader-contract.test.ts > offline resources > filters narrative prose before any authored resource is mounted 14ms
+ ✓ src/reader-contract.test.ts > offline resources > changing offline during a read stops existing media and rebuilds with the policy immediately 18ms
+ ✓ src/reader-contract.test.ts > superseding destinations > #/ supersedes an exhibit read already in flight 5ms
+ ✓ src/reader-contract.test.ts > superseding destinations > #/missing supersedes an exhibit read already in flight 4ms
+ ✓ src/reader-contract.test.ts > superseding destinations > null supersedes an exhibit read already in flight 3ms
+ ✓ src/reader-contract.test.ts > superseding destinations > leaving an already-mounted recording stops playback and removes its source 8ms
+ ✓ src/element.test.ts > gallery listing honors the UNLISTED lever (Archie-f735) > navigating back to the gallery from an opened unlisted exhibit still hides its card 10ms
+ ✓ src/element.test.ts > AV medium branch (ADR-0019): a sound/video object mounts the native player, not OSD > opening a sound object mounts a native <audio> (not the OSD reader / not an error notice) 6ms
+ ✓ src/element.test.ts > object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Gallery parity) > a remote-IIIF object with NO baked thumbnail derives a sized Image-API thumb (not a blank label) 9ms
+ ✓ src/element.test.ts > object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Gallery parity) > a plain external raster passes through as its own renderable URL 8ms
+ ✓ src/element.test.ts > object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Gallery parity) > AV objects get a glyph+kind cue, never a fake <img> 7ms
+ ✓ src/element.test.ts > object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Gallery parity) > an xyz map object gets the map cue; a DZI-tiled object stays an IMAGE (no motif conflation) 7ms
+ ✓ src/element.test.ts > object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Gallery parity) > a 404'd IIIF sized thumb STEPS DOWN the candidate chain (level-0 static full) before the label cover 8ms
+ ✓ src/element.test.ts > object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Gallery parity) > a plain raster has a single-candidate chain — one error goes straight to the label cover 7ms
+ ✓ src/element.test.ts > object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Gallery parity) > a 404'd gallery COVER degrades to the title-text cover the no-cover path renders 8ms
+ ✓ src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > reflects the iiif-content attribute to the iiifContent property and back 1ms
+stderr | src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > a Content State referencing a known canvas (+xywh) opens that object's reader (region carried)
+No drawer could be created!
+
+ ✓ src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > a Content State referencing a known canvas (+xywh) opens that object's reader (region carried) 546ms
+stderr | src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > reverse interop: currentContentState() round-trips back to the open object's canvas
+No drawer could be created!
+
+ ✓ src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > a Manifest-only Content State lands on the exhibit grid (slug, no object) 7ms
+ ✓ src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > a FOREIGN Content State degrades upward to the Gallery with the cold notice (never an error) 7ms
+ ✓ src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > a MALFORMED iiif-content degrades to the Gallery gracefully (no uncaught throw) 2ms
+ ✓ src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > PRECEDENCE: a native `target` WINS over iiif-content (interop is the fallback) 7ms
+ ✓ src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > reverse interop: currentContentState() round-trips back to the open object's canvas 10ms
+ ✓ src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > currentContentState() is null when no object is open (gallery view isn't single-canvas addressable) 2ms
+
+ Test Files  4 passed (4)
+      Tests  83 passed (83)
+   Start at  20:13:20
+   Duration  1.83s (transform 953ms, setup 0ms, collect 2.93s, tests 993ms, environment 398ms, prepare 207ms)
+

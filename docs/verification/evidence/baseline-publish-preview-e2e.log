@@ -1,0 +1,22 @@
+
+Running 10 tests using 1 worker
+
+[1A[2K(node:4154160) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4154160) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/10] [chromium] › e2e/preview.spec.ts:33:1 › preview renders the reader inside the Publish surface
+[1A[2K[2/10] [chromium] › e2e/publish-empty.spec.ts:19:1 › a library of only examples refuses to publish, and says why
+[1A[2K[3/10] [chromium] › e2e/publish-empty.spec.ts:43:1 › forking an example clears the refusal — the destinations come back
+[1A[2K[4/10] [chromium] › e2e/publish-entry.spec.ts:26:1 › Export a copy… opens the artifact half directly
+[1A[2K[5/10] [chromium] › e2e/publish-entry.spec.ts:41:1 › Publish opens the site half, not the exports
+[1A[2K[6/10] [chromium] › e2e/publish-entry.spec.ts:50:1 › the two entries are independent — each visit honours the button that opened it
+[1A[2K[7/10] [chromium] › e2e/publish-entry.spec.ts:68:1 › the single-file row and its folder sibling are presented together
+[1A[2K[8/10] [chromium] › e2e/publish-home.spec.ts:54:1 › a library with a home opens on the sheet, not on the destination question
+[1A[2K[9/10] [chromium] › e2e/publish-home.spec.ts:72:1 › a home written before publishedAt existed says nothing, never 'never'
+[1A[2K[10/10] [chromium] › e2e/publish-home.spec.ts:85:1 › Change where this publishes… disowns the home and returns to the destination question
+[1A[2K  10 passed (7.3s)

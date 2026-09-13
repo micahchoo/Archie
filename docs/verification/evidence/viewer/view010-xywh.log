@@ -1,0 +1,86 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:253651) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:253733) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:254130) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:254163) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 1 test using 1 worker
+
+[1A[2K(node:254238) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:254238) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/1] [chromium] › apps/viewer/e2e/user-stories.spec.ts:465:3 › focused user-story baseline › VIEW-010: a spatial note arrival paints the canvas and its target marker
+[1A[2K(node:254801) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:254801) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[2/1] (retries) [chromium] › apps/viewer/e2e/user-stories.spec.ts:465:3 › focused user-story baseline › VIEW-010: a spatial note arrival paints the canvas and its target marker (retry #1)
+[1A[2K  1) [chromium] › apps/viewer/e2e/user-stories.spec.ts:465:3 › focused user-story baseline › VIEW-010: a spatial note arrival paints the canvas and its target marker 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mnot[2m.[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: not [32m0[39m
+
+      483 |       fullPage: true,
+      484 |     });
+    > 485 |     expect(Buffer.compare(wholeObjectArrival, explicitRegionArrival)).not.toBe(0);
+          |                                                                           ^
+      486 |   });
+      487 |
+      488 |   test("FLOW-024: a tree embed resolves its relative published media from its own source base", async ({ page }) => {
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:485:75
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--86860-anvas-and-its-target-marker-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mnot[2m.[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: not [32m0[39m
+
+      483 |       fullPage: true,
+      484 |     });
+    > 485 |     expect(Buffer.compare(wholeObjectArrival, explicitRegionArrival)).not.toBe(0);
+          |                                                                           ^
+      486 |   });
+      487 |
+      488 |   test("FLOW-024: a tree embed resolves its relative published media from its own source base", async ({ page }) => {
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:485:75
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--86860-anvas-and-its-target-marker-chromium-retry1/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    apps/viewer/test-results/user-stories-focused-user--86860-anvas-and-its-target-marker-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace apps/viewer/test-results/user-stories-focused-user--86860-anvas-and-its-target-marker-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  1 failed
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:465:3 › focused user-story baseline › VIEW-010: a spatial note arrival paints the canvas and its target marker 

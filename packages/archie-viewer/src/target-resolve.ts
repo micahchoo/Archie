@@ -23,7 +23,7 @@
 //                            offset past the media duration is a reader-side seek clamp). This resolver
 //                            still RETURNS the fragment; the surface degrades the FIT, not the open.
 
-import { ARCHIE_LOGICAL_ID, parseMediaFragmentHead, type PortableExhibit, type ViewerRoute, type W3CAnnotation, type Section } from "@render/core";
+import { ARCHIE_LOGICAL_ID, parseMediaFragment, parseMediaFragmentHead, mediaFragmentValue, type PortableExhibit, type ViewerRoute, type W3CAnnotation, type Section } from "@render/core";
 
 /** A media fragment to apply to the opened object's surface: a spatial region or a temporal offset. */
 export interface TargetFragment {
@@ -130,7 +130,7 @@ export function resolveExhibitTarget(exhibit: PortableExhibit, route: ViewerRout
     // A section's media fragment is its `start` (ADR-0005): `xywh=...` (image) or `t=...` (AV). The
     // shared render-core head-parser splits the `key=value` head so the surface can route it to a
     // region-fit vs a seek; bare `start` (no `=`) or absent → no fragment (whole object).
-    const fragment = parseMediaFragmentHead(section.start);
+    const fragment = sectionFragmentOf(section.start);
     return fragment ? { kind: "object", objectId: section.objectId, fragment } : { kind: "object", objectId: section.objectId };
   }
 
@@ -142,6 +142,14 @@ export function resolveExhibitTarget(exhibit: PortableExhibit, route: ViewerRout
 
   // ---- EXHIBIT rung (slug only) -----------------------------------------------------------------
   return { kind: "exhibit" };
+}
+
+/** Resolve a narrative section's authored media start to the fragment the surface must apply.
+ * Temporal starts take precedence for video sections that also carry a frame box. */
+export function sectionFragmentOf(start: string | undefined): TargetFragment | undefined {
+  const parsed = parseMediaFragment(start ?? "");
+  if (parsed.time) return { kind: "t", value: mediaFragmentValue({ time: parsed.time }).slice(2) };
+  return parseMediaFragmentHead(start);
 }
 
 /** A recovered `xywh=`-stripped region value → a spatial TargetFragment (or undefined for none). */

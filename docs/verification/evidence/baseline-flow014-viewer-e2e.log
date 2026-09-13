@@ -1,0 +1,13 @@
+
+Running 1 test using 1 worker
+
+[1A[2K(node:4187152) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4187152) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/1] [chromium] › apps/viewer/e2e/flow014-exported.spec.ts:5:1 › FLOW-014 opens the exact ZIP exported by Studio and shows its authored note
+[1A[2K  1 passed (1.8s)

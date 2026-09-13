@@ -1,0 +1,11 @@
+
+Running 1 test using 1 worker
+
+(node:333363) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:333363) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"polygonNotes":1}
+  ✓  1 [chromium] › e2e/user-stories-annotations.spec.ts:58:1 › STU-ANN-002 polygon note: vertices and finish gesture (3.3s)
+
+  1 passed (4.1s)

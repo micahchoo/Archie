@@ -1,0 +1,115 @@
+
+ RUN  v3.2.7 /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio
+
+stderr | src/ingest-flows.test.ts > newExhibitsFromCollection — skip-and-continue (PLAN §6) > skips a failed manifest, records it, and keeps the surviving exhibits in order
+IIIF fetch failed 404 https://x/m2
+
+stderr | src/ingest-flows.test.ts > newExhibitsFromCollection — all slots skipped > returns an empty committed prefix with every manifest recorded as a skip
+IIIF fetch failed 500 https://x/m1
+
+stderr | src/ingest-flows.test.ts > newExhibitsFromCollection — all slots skipped > returns an empty committed prefix with every manifest recorded as a skip
+IIIF fetch failed 500 https://x/m2
+
+···················stderr | src/ingest-flows.test.ts > fetchCollectionPreview (PLAN §5) > maps a manifest-shaped doc that can't be planned to an error (not a payload-less manifest signal) — D2 edge
+IIIF manifest parse failed ManifestImportError: That IIIF link has no images or media Archie can add.
+    at manifestToExhibit (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/iiif-import.ts:196:35)
+    at Object.fetchCollectionPreview (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:967:42)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:483:21
+    at file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20
+
+stderr | src/ingest-flows.test.ts > addFiles — one file rejects mid-batch (code-review defect 1) > skips the undecodable file, keeps + flushes the successes, and reports the tally
+[ingest] could not decode corrupt.png Error: createImageBitmap: undecodable image
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:35:46
+    at mockCall (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+spy@3.2.7/node_modules/@vitest/spy/dist/index.js:96:15)
+    at spy (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/tinyspy@4.0.4/node_modules/tinyspy/dist/index.js:47:80)
+    at downscaleIfNeededAsync (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/bake-async.ts:116:44)
+    at addObjectFromFile (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:585:30)
+    at Object.addFiles (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:665:21)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:617:5
+    at file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20
+
+stderr | src/ingest-flows.test.ts > addFiles — one file rejects mid-batch (code-review defect 1) > folds many failures of one kind into a single clause, not one line per file
+[ingest] could not decode corrupt-1.png Error: createImageBitmap: undecodable image
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:35:46
+    at mockCall (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+spy@3.2.7/node_modules/@vitest/spy/dist/index.js:96:15)
+    at spy (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/tinyspy@4.0.4/node_modules/tinyspy/dist/index.js:47:80)
+    at downscaleIfNeededAsync (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/bake-async.ts:116:44)
+    at addObjectFromFile (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:585:30)
+    at Object.addFiles (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:665:21)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:639:5
+    at file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20
+
+stderr | src/ingest-flows.test.ts > addFiles — one file rejects mid-batch (code-review defect 1) > folds many failures of one kind into a single clause, not one line per file
+[ingest] could not decode corrupt-2.png Error: createImageBitmap: undecodable image
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:35:46
+    at mockCall (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+spy@3.2.7/node_modules/@vitest/spy/dist/index.js:96:15)
+    at spy (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/tinyspy@4.0.4/node_modules/tinyspy/dist/index.js:47:80)
+    at downscaleIfNeededAsync (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/bake-async.ts:116:44)
+    at addObjectFromFile (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:585:30)
+    at Object.addFiles (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:665:21)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:639:5
+    at file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20
+
+stderr | src/ingest-flows.test.ts > addFiles — one file rejects mid-batch (code-review defect 1) > folds many failures of one kind into a single clause, not one line per file
+[ingest] could not decode corrupt-3.png Error: createImageBitmap: undecodable image
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:35:46
+    at mockCall (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+spy@3.2.7/node_modules/@vitest/spy/dist/index.js:96:15)
+    at spy (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/tinyspy@4.0.4/node_modules/tinyspy/dist/index.js:47:80)
+    at downscaleIfNeededAsync (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/bake-async.ts:116:44)
+    at addObjectFromFile (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:585:30)
+    at Object.addFiles (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:665:21)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:639:5
+    at file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20
+
+stderr | src/ingest-flows.test.ts > addFiles — one file rejects mid-batch (code-review defect 1) > folds many failures of one kind into a single clause, not one line per file
+[ingest] could not decode corrupt-4.png Error: createImageBitmap: undecodable image
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:35:46
+    at mockCall (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+spy@3.2.7/node_modules/@vitest/spy/dist/index.js:96:15)
+    at spy (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/tinyspy@4.0.4/node_modules/tinyspy/dist/index.js:47:80)
+    at downscaleIfNeededAsync (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/bake-async.ts:116:44)
+    at addObjectFromFile (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:585:30)
+    at Object.addFiles (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:665:21)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:639:5
+    at file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20
+
+stderr | src/ingest-flows.test.ts > newExhibitFromManifest — failure containment > catches an exhibit-create/append throw, surfaces it via ctx.alert, and does not reject
+IIIF manifest import failed Error: boom
+    at Object.ctx.newExhibit (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:700:42)
+    at createExhibitFromPlan (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:888:17)
+    at Object.newExhibitFromManifest (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:920:13)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:707:5
+    at file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20
+
+stderr | src/ingest-flows.test.ts > storage failure stops the batch early (no-preflight contract, docs/research/browser-storage-quota.md) > addFiles: keeps the pre-failure adds, refuses the failing file as 'storage', never attempts the rest
+Save failed for "assets:drop-target" (Media): Error: QuotaExceededError: device full
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:763:51
+    at mockCall (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+spy@3.2.7/node_modules/@vitest/spy/dist/index.js:96:15)
+    at spy (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/tinyspy@4.0.4/node_modules/tinyspy/dist/index.js:47:80)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:504:44
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/save-queue.svelte.ts:81:31
+
+stderr | src/ingest-flows.test.ts > storage failure stops the batch early (no-preflight contract, docs/research/browser-storage-quota.md) > newExhibitFromFolder: a storage failure in group 1 stops before minting group 2's exhibit
+Save failed for "assets:roll" (Media): Error: QuotaExceededError: device full
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:784:51
+    at mockCall (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+spy@3.2.7/node_modules/@vitest/spy/dist/index.js:96:15)
+    at spy (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/tinyspy@4.0.4/node_modules/tinyspy/dist/index.js:47:80)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:504:44
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/save-queue.svelte.ts:81:31
+
+stderr | src/ingest-flows.test.ts > TIFF ingest routes through the transcode (docs/research/browser-storage-quota.md follow-up 3) > classifies a TIFF the decoder rejects as 'undecodable' — named, not just counted
+[ingest] could not decode damaged.tif Error: UTIF found no IFDs
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:832:72
+    at mockCall (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+spy@3.2.7/node_modules/@vitest/spy/dist/index.js:96:15)
+    at spy (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/tinyspy@4.0.4/node_modules/tinyspy/dist/index.js:47:80)
+    at addObjectFromFile (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:564:23)
+    at Object.addFiles (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.ts:665:21)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/ingest-flows.test.ts:834:5
+    at file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20
+
+····························
+
+ Test Files  1 passed (1)
+      Tests  47 passed (47)
+   Start at  19:37:47
+   Duration  1.19s (transform 461ms, setup 0ms, collect 890ms, tests 123ms, environment 0ms, prepare 45ms)
+

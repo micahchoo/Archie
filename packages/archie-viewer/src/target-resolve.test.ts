@@ -3,7 +3,7 @@
 // only WIRES the returned fragment onto the live surface (that wiring is the PARTIAL bit, not this).
 import { describe, it, expect } from "vitest";
 import type { PortableExhibit, ViewerRoute, W3CAnnotation } from "@render/core";
-import { resolveExhibitTarget } from "./target-resolve.js";
+import { resolveExhibitTarget, sectionFragmentOf } from "./target-resolve.js";
 
 // --- fixtures: a 2-object exhibit with a base note (region selector + a logicalId) and 2 sections ----
 function note(id: string, opts: { logicalId?: string; xywh?: string; t?: string } = {}): W3CAnnotation {
@@ -106,6 +106,10 @@ describe("SECTION rung (/s/<id>)", () => {
   it("opens an AV section's object with a temporal (t) start", () => {
     const r = resolveExhibitTarget(fixture(), route({ sectionId: "sec-2" }));
     expect(r).toEqual({ kind: "object", objectId: "obj-av", fragment: { kind: "t", value: "12.5,30" } });
+  });
+
+  it("prefers the temporal part of a combined video section start", () => {
+    expect(sectionFragmentOf("t=12.5,30&xywh=percent:1,2,3,4")).toEqual({ kind: "t", value: "12.5,30" });
   });
   it("an unknown section id degrades upward to the exhibit", () => {
     expect(resolveExhibitTarget(fixture(), route({ sectionId: "nope" }))).toEqual({ kind: "exhibit", degraded: "section-not-found" });

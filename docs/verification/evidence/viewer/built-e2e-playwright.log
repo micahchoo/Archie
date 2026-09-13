@@ -1,0 +1,239 @@
+
+Running 162 tests using 1 worker
+
+[1A[2K(node:4007096) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4007096) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/162] [chromium] › e2e/address.spec.ts:17:3 › the address follows the reader (V101) › opening an object writes /o/ and survives a reload (V24)
+[1A[2K  1) [chromium] › e2e/address.spec.ts:17:3 › the address follows the reader (V101) › opening an object writes /o/ and survives a reload (V24) 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button.object').first()[22m
+
+
+      18 |     await goOffline(page);
+      19 |     await page.goto("./#/voynich");
+    > 20 |     await page.locator("button.object").first().click();
+         |                                                 ^
+      21 |     await expect(page.locator("button.frame").first()).toBeVisible();
+      22 |
+      23 |     const written = await hash(page);
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/address.spec.ts:20:49
+
+    Error Context: test-results/address-the-address-follow-224c9--and-survives-a-reload-V24--chromium/error-context.md
+
+
+[1A[2K(node:4011005) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4011005) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[2/162] [chromium] › e2e/address.spec.ts:32:3 › the address follows the reader (V101) › stepping back to the grid drops the rung — the address never lies about depth
+[1A[2K  2) [chromium] › e2e/address.spec.ts:32:3 › the address follows the reader (V101) › stepping back to the grid drops the rung — the address never lies about depth 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button.object').first()[22m
+
+
+      33 |     await goOffline(page);
+      34 |     await page.goto("./#/voynich");
+    > 35 |     await page.locator("button.object").first().click();
+         |                                                 ^
+      36 |     await expect(page.locator("button.frame").first()).toBeVisible();
+      37 |     expect(await hash(page)).toMatch(/\/o\//);
+      38 |
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/address.spec.ts:35:49
+
+    Error Context: test-results/address-the-address-follow-22dda-ress-never-lies-about-depth-chromium/error-context.md
+
+
+[1A[2K(node:4014868) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4014868) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[3/162] [chromium] › e2e/address.spec.ts:52:3 › the address follows the reader (V101) › selecting a note writes /a/<logicalId>, and it resolves on reload
+[1A[2K  3) [chromium] › e2e/address.spec.ts:52:3 › the address follows the reader (V101) › selecting a note writes /a/<logicalId>, and it resolves on reload 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button.object').first()[22m
+
+
+      53 |     await goOffline(page);
+      54 |     await page.goto("./#/voynich");
+    > 55 |     await page.locator("button.object").first().click();
+         |                                                 ^
+      56 |     const note = page.locator("aside li button").first();
+      57 |     await expect(note).toBeVisible();
+      58 |     const noteText = ((await note.textContent()) ?? "").trim().slice(0, 30);
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/address.spec.ts:55:49
+
+    Error Context: test-results/address-the-address-follow-f0dcc-d-and-it-resolves-on-reload-chromium/error-context.md
+
+
+[1A[2K(node:4018972) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4018972) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[4/162] [chromium] › e2e/address.spec.ts:71:3 › the address follows the reader (V101) › selection uses replaceState — Back leaves the exhibit, it does not walk notes
+[1A[2K  4) [chromium] › e2e/address.spec.ts:71:3 › the address follows the reader (V101) › selection uses replaceState — Back leaves the exhibit, it does not walk notes 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('a.card[href="#/voynich"]')[22m
+
+
+      78 |     // make the history entry the test needs ambiguous, and the exhibit may re-sync onto a different
+      79 |     // object (measured — the notes list came back empty that way).
+    > 80 |     await page.locator('a.card[href="#/voynich"]').click();
+         |                                                    ^
+      81 |     await page.locator("button.object").first().click();
+      82 |     await expect(page.locator("button.frame").first()).toBeVisible();
+      83 |     const notes = page.locator("aside li button");
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/address.spec.ts:80:52
+
+    Error Context: test-results/address-the-address-follow-33d60-ibit-it-does-not-walk-notes-chromium/error-context.md
+
+
+[1A[2K(node:4023148) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4023148) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[5/162] [chromium] › e2e/address.spec.ts:95:3 › the address follows the reader (V101) › the narrative spine is addressable — /s/ survives a reload (V84)
+[1A[2K  5) [chromium] › e2e/address.spec.ts:95:3 › the address follows the reader (V101) › the narrative spine is addressable — /s/ survives a reload (V84) 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('aside ol.sections > li').first()
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 15000ms[22m
+    [2m  - waiting for locator('aside ol.sections > li').first()[22m
+
+
+       98 |     await page.goto("./#/screenshots");
+       99 |     const items = page.locator("aside ol.sections > li");
+    > 100 |     await expect(items.first()).toBeVisible();
+          |                                 ^
+      101 |     const n = await items.count();
+      102 |     expect(n).toBeGreaterThan(2);
+      103 |
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/address.spec.ts:100:33
+
+    Error Context: test-results/address-the-address-follow-68c9b--—-s-survives-a-reload-V84--chromium/error-context.md
+
+
+[1A[2K(node:4024250) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4024250) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[6/162] [chromium] › e2e/arrival.spec.ts:20:3 › arrival is recoverable › the gallery arrives with its exhibits
+[1A[2K  6) [chromium] › e2e/arrival.spec.ts:20:3 › arrival is recoverable › the gallery arrives with its exhibits 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('a.card').first()
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 15000ms[22m
+    [2m  - waiting for locator('a.card').first()[22m
+
+
+      15 |     await goOffline(page);
+      16 |     await page.goto("./");
+    > 17 |     await expect(page.locator("a.card").first()).toBeVisible();
+         |                                                  ^
+      18 |   });
+      19 |
+      20 |   test("the gallery arrives with its exhibits", async ({ page }) => {
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/arrival.spec.ts:17:50
+
+    Error Context: test-results/arrival-arrival-is-recover-3b7c1-y-arrives-with-its-exhibits-chromium/error-context.md
+
+
+[1A[2K(node:4025255) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4025255) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[7/162] [chromium] › e2e/arrival.spec.ts:25:3 › arrival is recoverable › opening the chooser offers a way back (V1)
+[1A[2K  7) [chromium] › e2e/arrival.spec.ts:25:3 › arrival is recoverable › opening the chooser offers a way back (V1) 
+
+    Test was interrupted.
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('a.card').first()
+    Expected: visible
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 15000ms[22m
+    [2m  - waiting for locator('a.card').first()[22m
+
+
+      15 |     await goOffline(page);
+      16 |     await page.goto("./");
+    > 17 |     await expect(page.locator("a.card").first()).toBeVisible();
+         |                                                  ^
+      18 |   });
+      19 |
+      20 |   test("the gallery arrives with its exhibits", async ({ page }) => {
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/arrival.spec.ts:17:50
+
+    Error Context: test-results/arrival-arrival-is-recover-a1a2c-ooser-offers-a-way-back-V1--chromium/error-context.md
+
+
+[1A[2K  6 failed
+    [chromium] › e2e/address.spec.ts:17:3 › the address follows the reader (V101) › opening an object writes /o/ and survives a reload (V24) 
+    [chromium] › e2e/address.spec.ts:32:3 › the address follows the reader (V101) › stepping back to the grid drops the rung — the address never lies about depth 
+    [chromium] › e2e/address.spec.ts:52:3 › the address follows the reader (V101) › selecting a note writes /a/<logicalId>, and it resolves on reload 
+    [chromium] › e2e/address.spec.ts:71:3 › the address follows the reader (V101) › selection uses replaceState — Back leaves the exhibit, it does not walk notes 
+    [chromium] › e2e/address.spec.ts:95:3 › the address follows the reader (V101) › the narrative spine is addressable — /s/ survives a reload (V84) 
+    [chromium] › e2e/arrival.spec.ts:20:3 › arrival is recoverable › the gallery arrives with its exhibits 
+  1 interrupted
+    [chromium] › e2e/arrival.spec.ts:25:3 › arrival is recoverable › opening the chooser offers a way back (V1) 
+  155 did not run

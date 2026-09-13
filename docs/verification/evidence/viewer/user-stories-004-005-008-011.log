@@ -1,0 +1,53 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 4 tests using 1 worker
+
+[1A[2K(node:4075116) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4075116) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/4] [chromium] › apps/viewer/e2e/user-stories.spec.ts:23:3 › focused user-story baseline › VIEW-004: a failed local cover reaches the visible title fallback
+[1A[2K[2/4] [chromium] › apps/viewer/e2e/user-stories.spec.ts:35:3 › focused user-story baseline › VIEW-005: the object reader overview control returns to the exhibit grid
+[1A[2K[3/4] [chromium] › apps/viewer/e2e/user-stories.spec.ts:49:3 › focused user-story baseline › VIEW-008: an unknown object falls back to the exhibit with an explanatory notice
+[1A[2K  1) [chromium] › apps/viewer/e2e/user-stories.spec.ts:49:3 › focused user-story baseline › VIEW-008: an unknown object falls back to the exhibit with an explanatory notice 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('a.card').first()
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 15000ms[22m
+    [2m  - waiting for locator('a.card').first()[22m
+
+
+      50 |     await goOffline(page);
+      51 |     await page.goto("./#/voynich/o/no-such-object");
+    > 52 |     await expect(page.locator("a.card").first()).toBeVisible();
+         |                                                  ^
+      53 |     await expect(page.locator('[role="status"]')).toContainText(/object|found|exhibit/i);
+      54 |     await expect(page).toHaveURL(/#\/voynich$/);
+      55 |   });
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:52:50
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--fc818--with-an-explanatory-notice-chromium/error-context.md
+
+
+[1A[2K(node:4076132) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4076132) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[4/4] [chromium] › apps/viewer/e2e/user-stories.spec.ts:57:3 › focused user-story baseline › VIEW-011: a temporal note URL seeks the real AV player and stays paused
+[1A[2K  1 failed
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:49:3 › focused user-story baseline › VIEW-008: an unknown object falls back to the exhibit with an explanatory notice 
+  3 passed (18.1s)

@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -183,6 +184,12 @@ test("Deposit a copy produces a real BagIt bag, and says what it is", async ({ p
   const payload = listing.filter((e) => e.startsWith("data/") && !e.endsWith("/"));
   expect([...hashed].sort()).toEqual([...payload].sort());
   expect(manifest.every((l) => /^[0-9a-f]{64}\s/.test(l)), "each line is a SHA-256 then a path").toBe(true);
+  for (const line of manifest) {
+    const [expected, ...parts] = line.trim().split(/\s+/);
+    const path = parts.join(" ");
+    const bytes = execFileSync("unzip", ["-p", zipPath, path]);
+    expect(createHash("sha256").update(bytes).digest("hex"), `checksum for ${path}`).toBe(expected);
+  }
 
   // And the panel names the layout and the checksum, because "a deposit copy" alone does not tell an
   // author what a repository will do with it.

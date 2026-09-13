@@ -1,0 +1,16 @@
+
+ RUN  v3.2.7 /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/archie-viewer
+
+ ✓ src/embed-autogrow.test.ts > embedHeightMessage — the parent-bound payload > is namespaced and carries a non-negative integer height + discriminator 1ms
+ ✓ src/embed-autogrow.test.ts > heightToPost — when (and what) to post > posts the ceil'd height for a grid-family view when it changed 0ms
+ ✓ src/embed-autogrow.test.ts > heightToPost — when (and what) to post > SKIPS the reader view — a 70vh deep-zoom surface would drive a vh feedback loop 0ms
+ ✓ src/embed-autogrow.test.ts > heightToPost — when (and what) to post > SKIPS a non-positive height (pre-layout / detached) 0ms
+ ✓ src/embed-autogrow.test.ts > heightToPost — when (and what) to post > SKIPS an unchanged height — coalesces ResizeObserver no-ops so pan/zoom can't spam 0ms
+ ✓ src/embed-autogrow.test.ts > isFramed — auto-grow only applies inside an iframe > true when parent differs from the window 0ms
+ ✓ src/embed-autogrow.test.ts > isFramed — auto-grow only applies inside an iframe > false for a top-level window (parent === self) 0ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  20:13:37
+   Duration  328ms (transform 22ms, setup 0ms, collect 19ms, tests 2ms, environment 85ms, prepare 44ms)
+

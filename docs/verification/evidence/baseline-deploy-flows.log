@@ -1,0 +1,13 @@
+
+ RUN  v3.2.7 /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio
+
+stderr | src/deploy/deploy-flows.test.ts > deployToPages — orchestration > wraps a GitHub REST failure (repo creation 500) into a typed 'gh' DeployError
+[publish] GitHub 500 during 'repo creation': boom
+
+·································
+
+ Test Files  1 passed (1)
+      Tests  33 passed (33)
+   Start at  20:00:01
+   Duration  1.16s (transform 437ms, setup 0ms, collect 705ms, tests 252ms, environment 0ms, prepare 53ms)
+

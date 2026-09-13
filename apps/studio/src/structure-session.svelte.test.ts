@@ -91,6 +91,36 @@ describe("structure-session — flag ON: load / seed / apply / persist / reload"
     expect(s2.tombstonedKeys("ex").size).toBe(1); // a's tombstone survived the round trip
   });
 
+  it("flush waits for an in-flight structure write before a caller reads the tree", async () => {
+    const { deps, flush } = makeDeps();
+    const s = createStructureSession(deps);
+    await s.ensureLoaded("ex", "ex-id", [sec("a", "A")]);
+    await flush();
+
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    deps.enqueue = async (_key, _label, job) => { await gate; await job(); return true; };
+    s.apply("ex", "ex-id", [sec("a", "A revised")]);
+
+    let settled = false;
+    const waiting = s.flush("ex").then(() => { settled = true; });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    release();
+    await waiting;
+    expect(settled).toBe(true);
+  });
+
+  it("reports a rejected structure write to the Save/Publish boundary", async () => {
+    const { deps, flush } = makeDeps({ enqueue: async () => false });
+    const s = createStructureSession(deps);
+    // No persisted seed is needed for this probe: install a loaded log through the normal path, then
+    // replace the queue seam before the mutation that schedules the failing write.
+    await s.ensureLoaded("ex", "ex-id", [sec("a", "A")]);
+    s.apply("ex", "ex-id", [sec("a", "A revised")]);
+    await expect(s.flush("ex")).rejects.toThrow("could not be stored");
+  });
+
   it("hide-by-ancestry: notes attributed to a tombstoned section are hidden; others are not", async () => {
     const { deps } = makeDeps();
     const s = createStructureSession(deps);

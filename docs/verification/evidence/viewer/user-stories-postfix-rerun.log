@@ -1,0 +1,70 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:373733) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:373888) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:374327) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:374340) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 32 tests using 1 worker
+
+[1A[2K(node:374659) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:374659) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:9:3 › focused user-story baseline › VIEW-003: unlisted exhibits stay out of cards/wall but direct URL remains reachable
+[1A[2K[2/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:26:3 › focused user-story baseline › VIEW-004: a failed local cover reaches the visible title fallback
+[1A[2K[3/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:38:3 › focused user-story baseline › VIEW-005: leaving an exhibit returns to the gallery
+[1A[2K[4/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:52:3 › focused user-story baseline › VIEW-008: an unknown object falls back to the exhibit with an explanatory notice
+[1A[2K[5/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:60:3 › focused user-story baseline › VIEW-011: a temporal note URL seeks the real AV player and stays paused
+[1A[2K[6/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:71:3 › focused user-story baseline › VIEW-050: an embed opens a known Content State and safely degrades malformed state
+[1A[2K[7/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:96:3 › focused user-story baseline › VIEW-012: a visitor can copy a IIIF Content State for an opened note
+[1A[2K[8/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:119:3 › focused user-story baseline › VIEW-053: a long library summary expands and collapses on a small screen
+[1A[2K[9/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:140:3 › focused user-story baseline › VIEW-054: object-grid density persists after reload
+[1A[2K[10/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:157:3 › focused user-story baseline › VIEW-069: image-wall density persists and controls disappear during search
+[1A[2K[11/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:173:3 › focused user-story baseline › VIEW-039: object details expose the exhibit and object credit metadata
+[1A[2K[12/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:181:3 › focused user-story baseline › VIEW-058: keyboard arrows step the active object carousel
+[1A[2K[13/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:193:3 › focused user-story baseline › VIEW-073: an exhibit with no objects gives a readable empty state
+[1A[2K[14/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:205:3 › focused user-story baseline › VIEW-075: a long metadata value expands and collapses
+[1A[2K[15/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:227:3 › focused user-story baseline › VIEW-022: a broken AV source shows a readable error and keeps navigation
+[1A[2K[16/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:239:3 › focused user-story baseline › VIEW-040: delayed published data shows opening state before the gallery
+[1A[2K[17/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:251:3 › focused user-story baseline › VIEW-041: malformed published data shows an actionable error state
+[1A[2K[18/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:259:3 › focused user-story baseline › VIEW-065: an embed opens a saved archive and reports an invalid archive
+[1A[2K[19/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:275:3 › focused user-story baseline › VIEW-025: selecting a second AV narrative section seeks its authored start
+[1A[2K[20/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:304:3 › focused user-story baseline › VIEW-044: an embed target opens an object and can return to its exhibit grid
+[1A[2K[21/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:315:3 › focused user-story baseline › VIEW-049: two embeds keep independent target state
+[1A[2K[22/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:329:3 › focused user-story baseline › VIEW-061: replacing an embed source removes the old library
+[1A[2K[23/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:347:3 › focused user-story baseline › VIEW-062: changing an embed target reuses its loaded tree
+[1A[2K[24/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:364:3 › focused user-story baseline › VIEW-064: an embed can reveal an unlisted exhibit without changing direct reachability
+[1A[2K[25/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:385:3 › focused user-story baseline › VIEW-067: an embed exposes current Content State only for an opened object
+[1A[2K[26/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:402:3 › focused user-story baseline › VIEW-048: offline embed blocks remote media before any remote request
+[1A[2K[27/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:419:3 › focused user-story baseline › VIEW-051: a host iframe receives coalesced embed height messages
+[1A[2K[28/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:442:3 › focused user-story baseline › VIEW-052: an embed exposes keyboard reachable gallery, object, and back controls
+[1A[2K[29/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:466:3 › focused user-story baseline › VIEW-010: a spatial note arrival paints the canvas and its target marker
+[1A[2K[30/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:516:3 › focused user-story baseline › FLOW-024: a tree embed resolves its relative published media from its own source base
+[1A[2K[31/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:543:3 › focused user-story baseline › VIEW-063: a saved archive keeps bundled media readable offline
+[1A[2K[chromium] › apps/viewer/e2e/user-stories.spec.ts:543:3 › focused user-story baseline › VIEW-063: a saved archive keeps bundled media readable offline
+VIEW063_STATE {"text":":host{--blush: #E9EEDF;--rose-fog: #CDD8C2;--lilac-mist: #C8D5C0;--glow-coral: #84B894;--ember: #3A8C5D;--mist-blue: #6B7D6A;--deep-slate: #2D5F3A;--signal-orange: #3A8C5D;--cord-blue: #C9A96E;--clay-line: #2D5F3A;--moss-shadow: #1A3C23;--paper: #F7F4EC;--ink: #1A3C23;--surface-canvas: #F7F4EC;--surface-canvas-raised: #FDFCF5;--surface-canvas-overlay: #ECF0E3;--ink-canvas-primary: #1A3C23;--ink-canvas-secondary: rgba(26, 60, 35, .78);--ink-canvas-muted: rgba(26, 60, 35, .72);--border-canvas: rgba(26, 60, 35, .1);--border-canvas-emphasis: rgba(26, 60, 35, .18);--surface-paper: #F7F4EC;--surface-paper-card: #FDFCF5;--surface-paper-hover: #ECF0E3;--ink-paper-primary: #1A3C23;--ink-paper-secondary: rgba(26, 60, 35, .78);--ink-paper-muted: rgba(26, 60, 35, .72);--border-paper: rgba(26, 60, 35, .1);--border-paper-emphasis: rgba(26, 60, 35, .18);--surface-gallery: #E9EEDF;--accent: #2D754C;--accent-hover: #286943;--accent-muted: rgba(58, 140, 93, .14);--ink-on-accent: #F7F4EC;--accent-2: #836425;--accent-2-hover: #72571F;--accent-2-muted: rgba(154, 123, 57, .14);--accent-2-paper: #836425;--accent-2-paper-hover: #72571F;--accent-2-paper-muted: rgba(154, 123, 57, .12);--accent-3: #2D5F3A;--","html":"<style>:host{--blush: #E9EEDF;--rose-fog: #CDD8C2;--lilac-mist: #C8D5C0;--glow-coral: #84B894;--ember: #3A8C5D;--mist-blue: #6B7D6A;--deep-slate: #2D5F3A;--signal-orange: #3A8C5D;--cord-blue: #C9A96E;--clay-line: #2D5F3A;--moss-shadow: #1A3C23;--paper: #F7F4EC;--ink: #1A3C23;--surface-canvas: #F7F4EC;--surface-canvas-raised: #FDFCF5;--surface-canvas-overlay: #ECF0E3;--ink-canvas-primary: #1A3C23;--ink-canvas-secondary: rgba(26, 60, 35, .78);--ink-canvas-muted: rgba(26, 60, 35, .72);--border-canvas: rgba(26, 60, 35, .1);--border-canvas-emphasis: rgba(26, 60, 35, .18);--surface-paper: #F7F4EC;--surface-paper-card: #FDFCF5;--surface-paper-hover: #ECF0E3;--ink-paper-primary: #1A3C23;--ink-paper-secondary: rgba(26, 60, 35, .78);--ink-paper-muted: rgba(26, 60, 35, .72);--border-paper: rgba(26, 60, 35, .1);--border-paper-emphasis: rgba(26, 60, 35, .18);--surface-gallery: #E9EEDF;--accent: #2D754C;--accent-hover: #286943;--accent-muted: rgba(58, 140, 93, .14);--ink-on-accent: #F7F4EC;--accent-2: #836425;--accent-2-hover: #72571F;--accent-2-muted: rgba(154, 123, 57, .14);--accent-2-paper: #836425;--accent-2-paper-hover: #72571F;--accent-2-paper-muted: rgba(154, 123, 57, .12);--accent-3: #2D5F3A;--accent-3-hover: #366E45;--accent-3-muted: rgba(45, 95, 58, .12);--semantic-success: #467331;--semantic-warning: #895B1D;--semantic-error: #BC4A36;--font-marquee: \"FOP VHS\", \"Arial Black\", sans-serif;--font-display: \"FOP VHS\", \"Arial Black\", sans-serif;--font-display-2: \"Vinque Antique\", Georgia, serif;--font-body: \"LARAZ\", system-ui, sans-serif;--font-ui: \"LARAZ\", system-ui, sans-serif;--fo"} ERRORS ["Failed to load resource: the server responded with a status of 404 (Not Found)"] REMOTE []
+
+[1A[2KVIEW063_404S ["http://localhost:4330/viewer/screenshots/assets/o1-e1-embed.png"]
+
+[1A[2K[32/32] [chromium] › apps/viewer/e2e/user-stories.spec.ts:576:3 › focused user-story baseline › VIEW-057: finder text combines with multiple OR tag facets
+[1A[2K  32 passed (2.1m)

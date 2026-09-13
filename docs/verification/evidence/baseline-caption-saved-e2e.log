@@ -1,0 +1,13 @@
+
+Running 1 test using 1 worker
+
+[1A[2K(node:4138402) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4138402) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/1] [chromium] › e2e/caption-baseline.spec.ts:36:1 › FLOW-049 imports a VTT cue as a timed note and preserves it after reload
+[1A[2K  1 passed (1.6s)

@@ -1,0 +1,4 @@
+FLOW-042 post-fix browser regression: Playwright passed (1 test, 4.7s).
+The isolated OPFS fixture injected exactly one DOMException(QuotaExceededError) during library metadata autosave. Studio surfaced Retry save; retry completed; after reload, Library Details contained “FLOW042 recovered title”.
+Focused Vitest: library-meta + authoring-flush, 13 tests passed. Studio svelte-check: 0 errors, 0 warnings.
+Final rerun also asserted the browser emitted no pageerror/unhandled rejection; passed in 4.3s.

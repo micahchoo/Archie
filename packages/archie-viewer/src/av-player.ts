@@ -24,7 +24,7 @@
 
 import { ResourcePolicy, releaseMedia } from "./resource-policy.js";
 import {
-  parseMediaFragment,
+  mediaFragmentOfAnnotation,
   activeNoteIndex,
   transcriptTextOf,
   parseTimeFragment,
@@ -113,8 +113,7 @@ export function cuesOf(annotations: readonly W3CAnnotation[]): AvCue[] {
   const out: AvCue[] = [];
   for (const a of annotations) {
     if (!a.id) continue;
-    const v = (a.target as { selector?: { value?: string } } | undefined)?.selector?.value;
-    const f = v ? parseMediaFragment(v) : {};
+    const f = mediaFragmentOfAnnotation(a);
     if (f.time) out.push({ id: String(a.id), text: transcriptTextOf(a), range: f.time });
   }
   return out.sort((x, y) => x.range.start - y.range.start);
@@ -128,8 +127,7 @@ export function wholeTrackNotesOf(annotations: readonly W3CAnnotation[]): WholeT
   const out: WholeTrackNote[] = [];
   for (const a of annotations) {
     if (!a.id) continue;
-    const v = (a.target as { selector?: { value?: string } } | undefined)?.selector?.value;
-    const f = v ? parseMediaFragment(v) : {};
+    const f = mediaFragmentOfAnnotation(a);
     if (!f.time) {
       const text = transcriptTextOf(a);
       if (text) out.push({ id: String(a.id), text });

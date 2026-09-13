@@ -1,0 +1,1624 @@
+{
+  "config": {
+    "configFile": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/e2e/playwright.config.ts",
+    "rootDir": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/e2e",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.60.0",
+    "workers": 1,
+    "webServer": {
+      "command": "pnpm exec vite --port 5198 --strictPort",
+      "cwd": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/",
+      "url": "http://localhost:5198/studio/",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "library-meta-boot-regression.spec.ts",
+      "file": "library-meta-boot-regression.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "STU-LIB-006 library details survive Studio boot reconciliation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2921,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:19.081Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "75c7d0e92a7639b6c1ad-03ac51cdbaf3c79a9789",
+          "file": "library-meta-boot-regression.spec.ts",
+          "line": 3,
+          "column": 1
+        },
+        {
+          "title": "STU-LIB-006 preserves library details when saved exhibits are empty",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1562,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:22.056Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "75c7d0e92a7639b6c1ad-a8f6e388f27415343c38",
+          "file": "library-meta-boot-regression.spec.ts",
+          "line": 44,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "user-stories-annotations.spec.ts",
+      "file": "user-stories-annotations.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "STU-ANN-001 box note: draw, edit, reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3430,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"afterDraw\":{\"url\":\"http://localhost:5198/studio/#/voynich-2/o/01M2CGYBR9YEBMEWPFMG6H8VVP\",\"noteCount\":1,\"editorCount\":1,\"canvas\":1,\"consoleErrors\":[],\"pageErrors\":[]}}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:23.635Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f70f1bad1b96c9c0a7ef-0a5a7b8ad786cba76aff",
+          "file": "user-stories-annotations.spec.ts",
+          "line": 19,
+          "column": 1
+        },
+        {
+          "title": "STU-ANN-002 polygon note: vertices and finish gesture",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1349,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"polygonNotes\":1}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:27.070Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f70f1bad1b96c9c0a7ef-485a183c18b1950dd518",
+          "file": "user-stories-annotations.spec.ts",
+          "line": 58,
+          "column": 1
+        },
+        {
+          "title": "STU-ANN-003/004 whole-image note: edit comment/tags and reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2772,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:28.424Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f70f1bad1b96c9c0a7ef-327e56a3b61c6980739d",
+          "file": "user-stories-annotations.spec.ts",
+          "line": 71,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "user-stories-authoring-batch.spec.ts",
+      "file": "user-stories-authoring-batch.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "STU-ANN-006 convert whole note to region mode",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1596,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"ann006AfterDraw\":{\"noteCount\":1,\"editors\":0,\"url\":\"http://localhost:5198/studio/#/voynich-2/o/01M2CGYJZ2GA09WYNCB1ZB83RJ\"}}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:31.208Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c8b1b2e31023bff3c233-ce3a8dd91b159e2fe25d",
+          "file": "user-stories-authoring-batch.spec.ts",
+          "line": 26,
+          "column": 1
+        },
+        {
+          "title": "STU-ANN-007 delete note",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1139,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:32.808Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c8b1b2e31023bff3c233-a6593a936047984e3a1c",
+          "file": "user-stories-authoring-batch.spec.ts",
+          "line": 49,
+          "column": 1
+        },
+        {
+          "title": "STU-ANN-008 stacked note navigation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3117,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"storedTargets\":[{\"id\":\"01M2CGYP9FSTC4RX0JBFJ6651W\",\"target\":{\"source\":\"https://archie.demo/voynich-2/canvas/01M2CGYNMYKQR8CRTFHQG6PYJM\",\"type\":\"SpecificResource\",\"selector\":{\"type\":\"FragmentSelector\",\"conformsTo\":\"http://www.w3.org/TR/media-frags/\",\"value\":\"xywh=pixel:417.94345953525635,232.11972489316253,441.4421407585471,448.4036959134615\"}}},{\"id\":\"01M2CGYQNZXGA56HT2K4G2Y2K8\",\"target\":{\"source\":\"https://archie.demo/voynich-2/canvas/01M2CGYNMYKQR8CRTFHQG6PYJM\",\"type\":\"SpecificResource\",\"selector\":{\"type\":\"FragmentSelector\",\"conformsTo\":\"http://www.w3.org/TR/media-frags/\",\"value\":\"xywh=pixel:417.94345953525635,232.11972489316253,441.4421407585471,448.4036959134615\"}}}]}\n"
+                    },
+                    {
+                      "text": "{\"stackAfterCreate\":{\"notes\":\"Stack first\\nYou · just now\\nStack second\\nfixture · just now\",\"editors\":0}}\n"
+                    },
+                    {
+                      "text": "{\"stackAfterSelect\":{\"editors\":1,\"groups\":1}}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:33.951Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c8b1b2e31023bff3c233-1c3d5075ee4443ac6b7c",
+          "file": "user-stories-authoring-batch.spec.ts",
+          "line": 57,
+          "column": 1
+        },
+        {
+          "title": "STU-ANN-010 cite an exhibit into note comment",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1180,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:37.073Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c8b1b2e31023bff3c233-a5bc4c0d90ef347a5687",
+          "file": "user-stories-authoring-batch.spec.ts",
+          "line": 107,
+          "column": 1
+        },
+        {
+          "title": "STU-NAR-002 add a narrative section from a note",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1159,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:38.354Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c8b1b2e31023bff3c233-7ced3c7656a51c5c5310",
+          "file": "user-stories-authoring-batch.spec.ts",
+          "line": 119,
+          "column": 1
+        },
+        {
+          "title": "STU-NAR-004 camera frame cancel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1368,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:39.518Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c8b1b2e31023bff3c233-3175356285495a6dea7c",
+          "file": "user-stories-authoring-batch.spec.ts",
+          "line": 127,
+          "column": 1
+        },
+        {
+          "title": "STU-NAR-005 section navigation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1118,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:40.891Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c8b1b2e31023bff3c233-ebdcf4782b78980bd3b3",
+          "file": "user-stories-authoring-batch.spec.ts",
+          "line": 144,
+          "column": 1
+        },
+        {
+          "title": "STU-VIEW-004 reading filter changes visible notes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1430,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:42.014Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c8b1b2e31023bff3c233-d659764a4a59660287ea",
+          "file": "user-stories-authoring-batch.spec.ts",
+          "line": 154,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "user-stories-av.spec.ts",
+      "file": "user-stories-av.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "STU-ANN-013A audio playback and seek",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 703,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:43.454Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f59d8b6869cbb88f9c1d-40ae6791f4be6c970c40",
+          "file": "user-stories-av.spec.ts",
+          "line": 36,
+          "column": 1
+        },
+        {
+          "title": "STU-ANN-013B audio range note saves and reopens",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2146,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:44.161Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f59d8b6869cbb88f9c1d-f41571ebb7a4dbe9a50f",
+          "file": "user-stories-av.spec.ts",
+          "line": 45,
+          "column": 1
+        },
+        {
+          "title": "STU-ANN-013C audio immediate interval remains valid",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 604,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:46.312Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f59d8b6869cbb88f9c1d-0582a2f2464f71431bee",
+          "file": "user-stories-av.spec.ts",
+          "line": 60,
+          "column": 1
+        },
+        {
+          "title": "STU-ANN-013D whole audio note",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 572,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:46.921Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f59d8b6869cbb88f9c1d-661f0bcb6dfbcbb6b01e",
+          "file": "user-stories-av.spec.ts",
+          "line": 70,
+          "column": 1
+        },
+        {
+          "title": "STU-ANN-014A video playback and frame box",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 773,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [
+                    {
+                      "buffer": "ZmZtcGVnIHZlcnNpb24gNy4xLjEtMXVidW50dTQuMiBDb3B5cmlnaHQgKGMpIDIwMDAtMjAyNSB0aGUgRkZtcGVnIGRldmVsb3BlcnMKICBidWlsdCB3aXRoIGdjYyAxNSAoVWJ1bnR1IDE1LjIuMC00dWJ1bnR1NCkKICBjb25maWd1cmF0aW9uOiAtLXByZWZpeD0vdXNyIC0tZXh0cmEtdmVyc2lvbj0xdWJ1bnR1NC4yIC0tdG9vbGNoYWluPWhhcmRlbmVkIC0tbGliZGlyPS91c3IvbGliL3g4Nl82NC1saW51eC1nbnUgLS1pbmNkaXI9L3Vzci9pbmNsdWRlL3g4Nl82NC1saW51eC1nbnUgLS1hcmNoPWFtZDY0IC0tZW5hYmxlLWdwbCAtLWRpc2FibGUtc3RyaXBwaW5nIC0tZGlzYWJsZS1saWJtZnggLS1kaXNhYmxlLW9teCAtLWVuYWJsZS1nbnV0bHMgLS1lbmFibGUtbGliYW9tIC0tZW5hYmxlLWxpYmFzcyAtLWVuYWJsZS1saWJiczJiIC0tZW5hYmxlLWxpYmNkaW8gLS1lbmFibGUtbGliY29kZWMyIC0tZW5hYmxlLWxpYmRhdjFkIC0tZW5hYmxlLWxpYmZsaXRlIC0tZW5hYmxlLWxpYmZvbnRjb25maWcgLS1lbmFibGUtbGliZnJlZXR5cGUgLS1lbmFibGUtbGliZnJpYmlkaSAtLWVuYWJsZS1saWJnbHNsYW5nIC0tZW5hYmxlLWxpYmdtZSAtLWVuYWJsZS1saWJnc20gLS1lbmFibGUtbGliaGFyZmJ1enogLS1lbmFibGUtbGlibXAzbGFtZSAtLWVuYWJsZS1saWJteXNvZmEgLS1lbmFibGUtbGlib3BlbmpwZWcgLS1lbmFibGUtbGlib3Blbm1wdCAtLWVuYWJsZS1saWJvcHVzIC0tZW5hYmxlLWxpYnJ1YmJlcmJhbmQgLS1lbmFibGUtbGlic2hpbmUgLS1lbmFibGUtbGlic25hcHB5IC0tZW5hYmxlLWxpYnNveHIgLS1lbmFibGUtbGlic3BlZXggLS1lbmFibGUtbGlidGhlb3JhIC0tZW5hYmxlLWxpYnR3b2xhbWUgLS1lbmFibGUtbGlidmlkc3RhYiAtLWVuYWJsZS1saWJ2b3JiaXMgLS1lbmFibGUtbGlidnB4IC0tZW5hYmxlLWxpYndlYnAgLS1lbmFibGUtbGlieDI2NSAtLWVuYWJsZS1saWJ4bWwyIC0tZW5hYmxlLWxpYnh2aWQgLS1lbmFibGUtbGliemltZyAtLWVuYWJsZS1vcGVuYWwgLS1lbmFibGUtb3BlbmNsIC0tZW5hYmxlLW9wZW5nbCAtLWRpc2FibGUtc25kaW8gLS1lbmFibGUtbGlidnBsIC0tZW5hYmxlLWxpYmRjMTM5NCAtLWVuYWJsZS1saWJkcm0gLS1lbmFibGUtbGliaWVjNjE4ODMgLS1lbmFibGUtY2hyb21hcHJpbnQgLS1lbmFibGUtZnJlaTByIC0tZW5hYmxlLWxhZHNwYSAtLWVuYWJsZS1saWJibHVyYXkgLS1lbmFibGUtbGliY2FjYSAtLWVuYWJsZS1saWJkdmRuYXYgLS1lbmFibGUtbGliZHZkcmVhZCAtLWVuYWJsZS1saWJqYWNrIC0tZW5hYmxlLWxpYnB1bHNlIC0tZW5hYmxlLWxpYnJhYmJpdG1xIC0tZW5hYmxlLWxpYnJpc3QgLS1lbmFibGUtbGlic3J0IC0tZW5hYmxlLWxpYnNzaCAtLWVuYWJsZS1saWJzdnRhdjEgLS1lbmFibGUtbGlieDI2NCAtLWVuYWJsZS1saWJ6bXEgLS1lbmFibGUtbGlienZiaSAtLWVuYWJsZS1sdjIgLS1lbmFibGUtc2RsMiAtLWVuYWJsZS1saWJwbGFjZWJvIC0tZW5hYmxlLWxpYnJhdjFlIC0tZW5hYmxlLXBvY2tldHNwaGlueCAtLWVuYWJsZS1saWJyc3ZnIC0tZW5hYmxlLWxpYmp4bCAtLWVuYWJsZS1zaGFyZWQKICBsaWJhdnV0aWwgICAgICA1OS4gMzkuMTAwIC8gNTkuIDM5LjEwMAogIGxpYmF2Y29kZWMgICAgIDYxLiAxOS4xMDEgLyA2MS4gMTkuMTAxCiAgbGliYXZmb3JtYXQgICAgNjEuICA3LjEwMCAvIDYxLiAgNy4xMDAKICBsaWJhdmRldmljZSAgICA2MS4gIDMuMTAwIC8gNjEuICAzLjEwMAogIGxpYmF2ZmlsdGVyICAgIDEwLiAgNC4xMDAgLyAxMC4gIDQuMTAwCiAgbGlic3dzY2FsZSAgICAgIDguICAzLjEwMCAvICA4LiAgMy4xMDAKICBsaWJzd3Jlc2FtcGxlICAgNS4gIDMuMTAwIC8gIDUuICAzLjEwMAogIGxpYnBvc3Rwcm9jICAgIDU4LiAgMy4xMDAgLyA1OC4gIDMuMTAwCklucHV0ICMwLCBsYXZmaSwgZnJvbSAnY29sb3I9Yz1ibGFjazpzPTMyMHgyNDA6ZD0yJzoKICBEdXJhdGlvbjogTi9BLCBzdGFydDogMC4wMDAwMDAsIGJpdHJhdGU6IE4vQQogIFN0cmVhbSAjMDowOiBWaWRlbzogd3JhcHBlZF9hdmZyYW1lLCB5dXY0MjBwLCAzMjB4MjQwIFtTQVIgMToxIERBUiA0OjNdLCAyNSBmcHMsIDI1IHRiciwgMjUgdGJuCklucHV0ICMxLCBsYXZmaSwgZnJvbSAnYW51bGxzcmM9cj04MDAwOmNsPW1vbm8nOgogIER1cmF0aW9uOiBOL0EsIHN0YXJ0OiAwLjAwMDAwMCwgYml0cmF0ZTogNjQga2IvcwogIFN0cmVhbSAjMTowOiBBdWRpbzogcGNtX3U4LCA4MDAwIEh6LCBtb25vLCB1OCwgNjQga2IvcwpTdHJlYW0gbWFwcGluZzoKICBTdHJlYW0gIzA6MCAtPiAjMDowICh3cmFwcGVkX2F2ZnJhbWUgKG5hdGl2ZSkgLT4gaDI2NCAobGlieDI2NCkpCiAgU3RyZWFtICMxOjAgLT4gIzA6MSAocGNtX3U4IChuYXRpdmUpIC0+IGFhYyAobmF0aXZlKSkKUHJlc3MgW3FdIHRvIHN0b3AsIFs/XSBmb3IgaGVscApbYWFjIEAgMHg2M2ZlMjU3NTUzODBdIFRvbyBtYW55IGJpdHMgODgzMi4wMDAwMDAgPiA2MTQ0IHBlciBmcmFtZSByZXF1ZXN0ZWQsIGNsYW1waW5nIHRvIG1heApbbGlieDI2NCBAIDB4NjNmZTI1NzJhN2MwXSB1c2luZyBTQVI9MS8xCltsaWJ4MjY0IEAgMHg2M2ZlMjU3MmE3YzBdIHVzaW5nIGNwdSBjYXBhYmlsaXRpZXM6IE1NWDIgU1NFMkZhc3QgU1NTRTMgU1NFNC4yIEFWWCBGTUEzIEJNSTIgQVZYMiBBVlg1MTIKW2xpYngyNjQgQCAweDYzZmUyNTcyYTdjMF0gcHJvZmlsZSBIaWdoLCBsZXZlbCAxLjMsIDQ6MjowLCA4LWJpdApbbGlieDI2NCBAIDB4NjNmZTI1NzJhN2MwXSAyNjQgLSBjb3JlIDE2NCByMzEwOCAzMWUxOWY5IC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyMyAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTMgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MzoweDExMyBtZT1oZXggc3VibWU9NyBwc3k9MSBwc3lfcmQ9MS4wMDowLjAwIG1peGVkX3JlZj0xIG1lX3JhbmdlPTE2IGNocm9tYV9tZT0xIHRyZWxsaXM9MSA4eDhkY3Q9MSBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0tMiB0aHJlYWRzPTcgbG9va2FoZWFkX3RocmVhZHM9MSBzbGljZWRfdGhyZWFkcz0wIG5yPTAgZGVjaW1hdGU9MSBpbnRlcmxhY2VkPTAgYmx1cmF5X2NvbXBhdD0wIGNvbnN0cmFpbmVkX2ludHJhPTAgYmZyYW1lcz0zIGJfcHlyYW1pZD0yIGJfYWRhcHQ9MSBiX2JpYXM9MCBkaXJlY3Q9MSB3ZWlnaHRiPTEgb3Blbl9nb3A9MCB3ZWlnaHRwPTIga2V5aW50PTI1MCBrZXlpbnRfbWluPTI1IHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj0yMy4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4wMApPdXRwdXQgIzAsIG1wNCwgdG8gJy90bXAvYXJjaGllLWF2LXZpZGVvLTJEclJ6Qi9jbGlwLm1wNCc6CiAgTWV0YWRhdGE6CiAgICBlbmNvZGVyICAgICAgICAgOiBMYXZmNjEuNy4xMDAKICBTdHJlYW0gIzA6MDogVmlkZW86IGgyNjQgKGF2YzEgLyAweDMxNjM3NjYxKSwgeXV2NDIwcCh0diwgcHJvZ3Jlc3NpdmUpLCAzMjB4MjQwIFtTQVIgMToxIERBUiA0OjNdLCBxPTItMzEsIDI1IGZwcywgMTI4MDAgdGJuCiAgICAgIE1ldGFkYXRhOgogICAgICAgIGVuY29kZXIgICAgICAgICA6IExhdmM2MS4xOS4xMDEgbGlieDI2NAogICAgICBTaWRlIGRhdGE6CiAgICAgICAgY3BiOiBiaXRyYXRlIG1heC9taW4vYXZnOiAwLzAvMCBidWZmZXIgc2l6ZTogMCB2YnZfZGVsYXk6IE4vQQogIFN0cmVhbSAjMDoxOiBBdWRpbzogYWFjIChMQykgKG1wNGEgLyAweDYxMzQ3MDZEKSwgODAwMCBIeiwgbW9ubywgZmx0cCwgNDgga2IvcwogICAgICBNZXRhZGF0YToKICAgICAgICBlbmNvZGVyICAgICAgICAgOiBMYXZjNjEuMTkuMTAxIGFhYwpbb3V0IzAvbXA0IEAgMHg2M2ZlMjU3NTEwYzBdIHZpZGVvOjJLaUIgYXVkaW86MEtpQiBzdWJ0aXRsZTowS2lCIG90aGVyIHN0cmVhbXM6MEtpQiBnbG9iYWwgaGVhZGVyczowS2lCIG11eGluZyBvdmVyaGVhZDogMTM3LjQyNjIxMCUKZnJhbWU9ICAgNTAgZnBzPTAuMCBxPS0xLjAgTHNpemU9ICAgICAgIDRLaUIgdGltZT0wMDowMDowMS45MiBiaXRyYXRlPSAgMTYuOGtiaXRzL3Mgc3BlZWQ9IDE3OXggICAgCltsaWJ4MjY0IEAgMHg2M2ZlMjU3MmE3YzBdIGZyYW1lIEk6MSAgICAgQXZnIFFQOiA5LjAwICBzaXplOiAgICA2MwpbbGlieDI2NCBAIDB4NjNmZTI1NzJhN2MwXSBmcmFtZSBQOjEzICAgIEF2ZyBRUDogOS42OSAgc2l6ZTogICAgMjIKW2xpYngyNjQgQCAweDYzZmUyNTcyYTdjMF0gZnJhbWUgQjozNiAgICBBdmcgUVA6MTIuNjcgIHNpemU6ICAgIDE1CltsaWJ4MjY0IEAgMHg2M2ZlMjU3MmE3YzBdIGNvbnNlY3V0aXZlIEItZnJhbWVzOiAgNC4wJSAgMC4wJSAgMC4wJSA5Ni4wJQpbbGlieDI2NCBAIDB4NjNmZTI1NzJhN2MwXSBtYiBJICBJMTYuLjQ6IDEwMC4wJSAgMC4wJSAgMC4wJQpbbGlieDI2NCBAIDB4NjNmZTI1NzJhN2MwXSBtYiBQICBJMTYuLjQ6ICAwLjAlICAwLjAlICAwLjAlICBQMTYuLjQ6ICAwLjAlICAwLjAlICAwLjAlICAwLjAlICAwLjAlICAgIHNraXA6MTAwLjAlCltsaWJ4MjY0IEAgMHg2M2ZlMjU3MmE3YzBdIG1iIEIgIEkxNi4uNDogIDAuMCUgIDAuMCUgIDAuMCUgIEIxNi4uODogIDAuMCUgIDAuMCUgIDAuMCUgIGRpcmVjdDogMC4wJSAgc2tpcDoxMDAuMCUKW2xpYngyNjQgQCAweDYzZmUyNTcyYTdjMF0gOHg4IHRyYW5zZm9ybSBpbnRyYTowLjAlCltsaWJ4MjY0IEAgMHg2M2ZlMjU3MmE3YzBdIGNvZGVkIHksdXZEQyx1dkFDIGludHJhOiAwLjAlIDAuMCUgMC4wJSBpbnRlcjogMC4wJSAwLjAlIDAuMCUKW2xpYngyNjQgQCAweDYzZmUyNTcyYTdjMF0gaTE2IHYsaCxkYyxwOiA5MyUgIDAlICA3JSAgMCUKW2xpYngyNjQgQCAweDYzZmUyNTcyYTdjMF0gaThjIGRjLGgsdixwOiAxMDAlICAwJSAgMCUgIDAlCltsaWJ4MjY0IEAgMHg2M2ZlMjU3MmE3YzBdIFdlaWdodGVkIFAtRnJhbWVzOiBZOjAuMCUgVVY6MC4wJQpbbGlieDI2NCBAIDB4NjNmZTI1NzJhN2MwXSBrYi9zOjMuNTIKW2FhYyBAIDB4NjNmZTI1NzU1MzgwXSBRYXZnOiA2NTUzNi4wMDAK"
+                    }
+                  ],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:47.499Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f59d8b6869cbb88f9c1d-543cc8fddc37415fe600",
+          "file": "user-stories-av.spec.ts",
+          "line": 76,
+          "column": 1
+        },
+        {
+          "title": "STU-ANN-014B video timeline exists and seeks",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 609,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [
+                    {
+                      "buffer": "ZmZtcGVnIHZlcnNpb24gNy4xLjEtMXVidW50dTQuMiBDb3B5cmlnaHQgKGMpIDIwMDAtMjAyNSB0aGUgRkZtcGVnIGRldmVsb3BlcnMKICBidWlsdCB3aXRoIGdjYyAxNSAoVWJ1bnR1IDE1LjIuMC00dWJ1bnR1NCkKICBjb25maWd1cmF0aW9uOiAtLXByZWZpeD0vdXNyIC0tZXh0cmEtdmVyc2lvbj0xdWJ1bnR1NC4yIC0tdG9vbGNoYWluPWhhcmRlbmVkIC0tbGliZGlyPS91c3IvbGliL3g4Nl82NC1saW51eC1nbnUgLS1pbmNkaXI9L3Vzci9pbmNsdWRlL3g4Nl82NC1saW51eC1nbnUgLS1hcmNoPWFtZDY0IC0tZW5hYmxlLWdwbCAtLWRpc2FibGUtc3RyaXBwaW5nIC0tZGlzYWJsZS1saWJtZnggLS1kaXNhYmxlLW9teCAtLWVuYWJsZS1nbnV0bHMgLS1lbmFibGUtbGliYW9tIC0tZW5hYmxlLWxpYmFzcyAtLWVuYWJsZS1saWJiczJiIC0tZW5hYmxlLWxpYmNkaW8gLS1lbmFibGUtbGliY29kZWMyIC0tZW5hYmxlLWxpYmRhdjFkIC0tZW5hYmxlLWxpYmZsaXRlIC0tZW5hYmxlLWxpYmZvbnRjb25maWcgLS1lbmFibGUtbGliZnJlZXR5cGUgLS1lbmFibGUtbGliZnJpYmlkaSAtLWVuYWJsZS1saWJnbHNsYW5nIC0tZW5hYmxlLWxpYmdtZSAtLWVuYWJsZS1saWJnc20gLS1lbmFibGUtbGliaGFyZmJ1enogLS1lbmFibGUtbGlibXAzbGFtZSAtLWVuYWJsZS1saWJteXNvZmEgLS1lbmFibGUtbGlib3BlbmpwZWcgLS1lbmFibGUtbGlib3Blbm1wdCAtLWVuYWJsZS1saWJvcHVzIC0tZW5hYmxlLWxpYnJ1YmJlcmJhbmQgLS1lbmFibGUtbGlic2hpbmUgLS1lbmFibGUtbGlic25hcHB5IC0tZW5hYmxlLWxpYnNveHIgLS1lbmFibGUtbGlic3BlZXggLS1lbmFibGUtbGlidGhlb3JhIC0tZW5hYmxlLWxpYnR3b2xhbWUgLS1lbmFibGUtbGlidmlkc3RhYiAtLWVuYWJsZS1saWJ2b3JiaXMgLS1lbmFibGUtbGlidnB4IC0tZW5hYmxlLWxpYndlYnAgLS1lbmFibGUtbGlieDI2NSAtLWVuYWJsZS1saWJ4bWwyIC0tZW5hYmxlLWxpYnh2aWQgLS1lbmFibGUtbGliemltZyAtLWVuYWJsZS1vcGVuYWwgLS1lbmFibGUtb3BlbmNsIC0tZW5hYmxlLW9wZW5nbCAtLWRpc2FibGUtc25kaW8gLS1lbmFibGUtbGlidnBsIC0tZW5hYmxlLWxpYmRjMTM5NCAtLWVuYWJsZS1saWJkcm0gLS1lbmFibGUtbGliaWVjNjE4ODMgLS1lbmFibGUtY2hyb21hcHJpbnQgLS1lbmFibGUtZnJlaTByIC0tZW5hYmxlLWxhZHNwYSAtLWVuYWJsZS1saWJibHVyYXkgLS1lbmFibGUtbGliY2FjYSAtLWVuYWJsZS1saWJkdmRuYXYgLS1lbmFibGUtbGliZHZkcmVhZCAtLWVuYWJsZS1saWJqYWNrIC0tZW5hYmxlLWxpYnB1bHNlIC0tZW5hYmxlLWxpYnJhYmJpdG1xIC0tZW5hYmxlLWxpYnJpc3QgLS1lbmFibGUtbGlic3J0IC0tZW5hYmxlLWxpYnNzaCAtLWVuYWJsZS1saWJzdnRhdjEgLS1lbmFibGUtbGlieDI2NCAtLWVuYWJsZS1saWJ6bXEgLS1lbmFibGUtbGlienZiaSAtLWVuYWJsZS1sdjIgLS1lbmFibGUtc2RsMiAtLWVuYWJsZS1saWJwbGFjZWJvIC0tZW5hYmxlLWxpYnJhdjFlIC0tZW5hYmxlLXBvY2tldHNwaGlueCAtLWVuYWJsZS1saWJyc3ZnIC0tZW5hYmxlLWxpYmp4bCAtLWVuYWJsZS1zaGFyZWQKICBsaWJhdnV0aWwgICAgICA1OS4gMzkuMTAwIC8gNTkuIDM5LjEwMAogIGxpYmF2Y29kZWMgICAgIDYxLiAxOS4xMDEgLyA2MS4gMTkuMTAxCiAgbGliYXZmb3JtYXQgICAgNjEuICA3LjEwMCAvIDYxLiAgNy4xMDAKICBsaWJhdmRldmljZSAgICA2MS4gIDMuMTAwIC8gNjEuICAzLjEwMAogIGxpYmF2ZmlsdGVyICAgIDEwLiAgNC4xMDAgLyAxMC4gIDQuMTAwCiAgbGlic3dzY2FsZSAgICAgIDguICAzLjEwMCAvICA4LiAgMy4xMDAKICBsaWJzd3Jlc2FtcGxlICAgNS4gIDMuMTAwIC8gIDUuICAzLjEwMAogIGxpYnBvc3Rwcm9jICAgIDU4LiAgMy4xMDAgLyA1OC4gIDMuMTAwCklucHV0ICMwLCBsYXZmaSwgZnJvbSAnY29sb3I9Yz1ibGFjazpzPTMyMHgyNDA6ZD0yJzoKICBEdXJhdGlvbjogTi9BLCBzdGFydDogMC4wMDAwMDAsIGJpdHJhdGU6IE4vQQogIFN0cmVhbSAjMDowOiBWaWRlbzogd3JhcHBlZF9hdmZyYW1lLCB5dXY0MjBwLCAzMjB4MjQwIFtTQVIgMToxIERBUiA0OjNdLCAyNSBmcHMsIDI1IHRiciwgMjUgdGJuCklucHV0ICMxLCBsYXZmaSwgZnJvbSAnYW51bGxzcmM9cj04MDAwOmNsPW1vbm8nOgogIER1cmF0aW9uOiBOL0EsIHN0YXJ0OiAwLjAwMDAwMCwgYml0cmF0ZTogNjQga2IvcwogIFN0cmVhbSAjMTowOiBBdWRpbzogcGNtX3U4LCA4MDAwIEh6LCBtb25vLCB1OCwgNjQga2IvcwpTdHJlYW0gbWFwcGluZzoKICBTdHJlYW0gIzA6MCAtPiAjMDowICh3cmFwcGVkX2F2ZnJhbWUgKG5hdGl2ZSkgLT4gaDI2NCAobGlieDI2NCkpCiAgU3RyZWFtICMxOjAgLT4gIzA6MSAocGNtX3U4IChuYXRpdmUpIC0+IGFhYyAobmF0aXZlKSkKUHJlc3MgW3FdIHRvIHN0b3AsIFs/XSBmb3IgaGVscApbYWFjIEAgMHg1NmM5NWVjZmQzODBdIFRvbyBtYW55IGJpdHMgODgzMi4wMDAwMDAgPiA2MTQ0IHBlciBmcmFtZSByZXF1ZXN0ZWQsIGNsYW1waW5nIHRvIG1heApbbGlieDI2NCBAIDB4NTZjOTVlY2QyN2MwXSB1c2luZyBTQVI9MS8xCltsaWJ4MjY0IEAgMHg1NmM5NWVjZDI3YzBdIHVzaW5nIGNwdSBjYXBhYmlsaXRpZXM6IE1NWDIgU1NFMkZhc3QgU1NTRTMgU1NFNC4yIEFWWCBGTUEzIEJNSTIgQVZYMiBBVlg1MTIKW2xpYngyNjQgQCAweDU2Yzk1ZWNkMjdjMF0gcHJvZmlsZSBIaWdoLCBsZXZlbCAxLjMsIDQ6MjowLCA4LWJpdApbbGlieDI2NCBAIDB4NTZjOTVlY2QyN2MwXSAyNjQgLSBjb3JlIDE2NCByMzEwOCAzMWUxOWY5IC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyMyAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTMgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MzoweDExMyBtZT1oZXggc3VibWU9NyBwc3k9MSBwc3lfcmQ9MS4wMDowLjAwIG1peGVkX3JlZj0xIG1lX3JhbmdlPTE2IGNocm9tYV9tZT0xIHRyZWxsaXM9MSA4eDhkY3Q9MSBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0tMiB0aHJlYWRzPTcgbG9va2FoZWFkX3RocmVhZHM9MSBzbGljZWRfdGhyZWFkcz0wIG5yPTAgZGVjaW1hdGU9MSBpbnRlcmxhY2VkPTAgYmx1cmF5X2NvbXBhdD0wIGNvbnN0cmFpbmVkX2ludHJhPTAgYmZyYW1lcz0zIGJfcHlyYW1pZD0yIGJfYWRhcHQ9MSBiX2JpYXM9MCBkaXJlY3Q9MSB3ZWlnaHRiPTEgb3Blbl9nb3A9MCB3ZWlnaHRwPTIga2V5aW50PTI1MCBrZXlpbnRfbWluPTI1IHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj0yMy4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4wMApPdXRwdXQgIzAsIG1wNCwgdG8gJy90bXAvYXJjaGllLWF2LXZpZGVvLTdXNk40cS9jbGlwLm1wNCc6CiAgTWV0YWRhdGE6CiAgICBlbmNvZGVyICAgICAgICAgOiBMYXZmNjEuNy4xMDAKICBTdHJlYW0gIzA6MDogVmlkZW86IGgyNjQgKGF2YzEgLyAweDMxNjM3NjYxKSwgeXV2NDIwcCh0diwgcHJvZ3Jlc3NpdmUpLCAzMjB4MjQwIFtTQVIgMToxIERBUiA0OjNdLCBxPTItMzEsIDI1IGZwcywgMTI4MDAgdGJuCiAgICAgIE1ldGFkYXRhOgogICAgICAgIGVuY29kZXIgICAgICAgICA6IExhdmM2MS4xOS4xMDEgbGlieDI2NAogICAgICBTaWRlIGRhdGE6CiAgICAgICAgY3BiOiBiaXRyYXRlIG1heC9taW4vYXZnOiAwLzAvMCBidWZmZXIgc2l6ZTogMCB2YnZfZGVsYXk6IE4vQQogIFN0cmVhbSAjMDoxOiBBdWRpbzogYWFjIChMQykgKG1wNGEgLyAweDYxMzQ3MDZEKSwgODAwMCBIeiwgbW9ubywgZmx0cCwgNDgga2IvcwogICAgICBNZXRhZGF0YToKICAgICAgICBlbmNvZGVyICAgICAgICAgOiBMYXZjNjEuMTkuMTAxIGFhYwpbb3V0IzAvbXA0IEAgMHg1NmM5NWVjZjkwYzBdIHZpZGVvOjJLaUIgYXVkaW86MEtpQiBzdWJ0aXRsZTowS2lCIG90aGVyIHN0cmVhbXM6MEtpQiBnbG9iYWwgaGVhZGVyczowS2lCIG11eGluZyBvdmVyaGVhZDogMTM2Ljk4OTQ5OCUKZnJhbWU9ICAgNTAgZnBzPTAuMCBxPS0xLjAgTHNpemU9ICAgICAgIDRLaUIgdGltZT0wMDowMDowMS45MiBiaXRyYXRlPSAgMTYuOWtiaXRzL3Mgc3BlZWQ9IDE3OXggICAgCltsaWJ4MjY0IEAgMHg1NmM5NWVjZDI3YzBdIGZyYW1lIEk6MSAgICAgQXZnIFFQOiA5LjAwICBzaXplOiAgICA2MwpbbGlieDI2NCBAIDB4NTZjOTVlY2QyN2MwXSBmcmFtZSBQOjEzICAgIEF2ZyBRUDogOS42OSAgc2l6ZTogICAgMjIKW2xpYngyNjQgQCAweDU2Yzk1ZWNkMjdjMF0gZnJhbWUgQjozNiAgICBBdmcgUVA6MTIuNjcgIHNpemU6ICAgIDE1CltsaWJ4MjY0IEAgMHg1NmM5NWVjZDI3YzBdIGNvbnNlY3V0aXZlIEItZnJhbWVzOiAgNC4wJSAgMC4wJSAgMC4wJSA5Ni4wJQpbbGlieDI2NCBAIDB4NTZjOTVlY2QyN2MwXSBtYiBJICBJMTYuLjQ6IDEwMC4wJSAgMC4wJSAgMC4wJQpbbGlieDI2NCBAIDB4NTZjOTVlY2QyN2MwXSBtYiBQICBJMTYuLjQ6ICAwLjAlICAwLjAlICAwLjAlICBQMTYuLjQ6ICAwLjAlICAwLjAlICAwLjAlICAwLjAlICAwLjAlICAgIHNraXA6MTAwLjAlCltsaWJ4MjY0IEAgMHg1NmM5NWVjZDI3YzBdIG1iIEIgIEkxNi4uNDogIDAuMCUgIDAuMCUgIDAuMCUgIEIxNi4uODogIDAuMCUgIDAuMCUgIDAuMCUgIGRpcmVjdDogMC4wJSAgc2tpcDoxMDAuMCUKW2xpYngyNjQgQCAweDU2Yzk1ZWNkMjdjMF0gOHg4IHRyYW5zZm9ybSBpbnRyYTowLjAlCltsaWJ4MjY0IEAgMHg1NmM5NWVjZDI3YzBdIGNvZGVkIHksdXZEQyx1dkFDIGludHJhOiAwLjAlIDAuMCUgMC4wJSBpbnRlcjogMC4wJSAwLjAlIDAuMCUKW2xpYngyNjQgQCAweDU2Yzk1ZWNkMjdjMF0gaTE2IHYsaCxkYyxwOiA5MyUgIDAlICA3JSAgMCUKW2xpYngyNjQgQCAweDU2Yzk1ZWNkMjdjMF0gaThjIGRjLGgsdixwOiAxMDAlICAwJSAgMCUgIDAlCltsaWJ4MjY0IEAgMHg1NmM5NWVjZDI3YzBdIFdlaWdodGVkIFAtRnJhbWVzOiBZOjAuMCUgVVY6MC4wJQpbbGlieDI2NCBAIDB4NTZjOTVlY2QyN2MwXSBrYi9zOjMuNTIKW2FhYyBAIDB4NTZjOTVlY2ZkMzgwXSBRYXZnOiA2NTUzNi4wMDAK"
+                    }
+                  ],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:48.277Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f59d8b6869cbb88f9c1d-f249c94be9284e4f5d43",
+          "file": "user-stories-av.spec.ts",
+          "line": 90,
+          "column": 1
+        },
+        {
+          "title": "STU-ANN-014C video interval and frame note",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 755,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [
+                    {
+                      "buffer": "ZmZtcGVnIHZlcnNpb24gNy4xLjEtMXVidW50dTQuMiBDb3B5cmlnaHQgKGMpIDIwMDAtMjAyNSB0aGUgRkZtcGVnIGRldmVsb3BlcnMKICBidWlsdCB3aXRoIGdjYyAxNSAoVWJ1bnR1IDE1LjIuMC00dWJ1bnR1NCkKICBjb25maWd1cmF0aW9uOiAtLXByZWZpeD0vdXNyIC0tZXh0cmEtdmVyc2lvbj0xdWJ1bnR1NC4yIC0tdG9vbGNoYWluPWhhcmRlbmVkIC0tbGliZGlyPS91c3IvbGliL3g4Nl82NC1saW51eC1nbnUgLS1pbmNkaXI9L3Vzci9pbmNsdWRlL3g4Nl82NC1saW51eC1nbnUgLS1hcmNoPWFtZDY0IC0tZW5hYmxlLWdwbCAtLWRpc2FibGUtc3RyaXBwaW5nIC0tZGlzYWJsZS1saWJtZnggLS1kaXNhYmxlLW9teCAtLWVuYWJsZS1nbnV0bHMgLS1lbmFibGUtbGliYW9tIC0tZW5hYmxlLWxpYmFzcyAtLWVuYWJsZS1saWJiczJiIC0tZW5hYmxlLWxpYmNkaW8gLS1lbmFibGUtbGliY29kZWMyIC0tZW5hYmxlLWxpYmRhdjFkIC0tZW5hYmxlLWxpYmZsaXRlIC0tZW5hYmxlLWxpYmZvbnRjb25maWcgLS1lbmFibGUtbGliZnJlZXR5cGUgLS1lbmFibGUtbGliZnJpYmlkaSAtLWVuYWJsZS1saWJnbHNsYW5nIC0tZW5hYmxlLWxpYmdtZSAtLWVuYWJsZS1saWJnc20gLS1lbmFibGUtbGliaGFyZmJ1enogLS1lbmFibGUtbGlibXAzbGFtZSAtLWVuYWJsZS1saWJteXNvZmEgLS1lbmFibGUtbGlib3BlbmpwZWcgLS1lbmFibGUtbGlib3Blbm1wdCAtLWVuYWJsZS1saWJvcHVzIC0tZW5hYmxlLWxpYnJ1YmJlcmJhbmQgLS1lbmFibGUtbGlic2hpbmUgLS1lbmFibGUtbGlic25hcHB5IC0tZW5hYmxlLWxpYnNveHIgLS1lbmFibGUtbGlic3BlZXggLS1lbmFibGUtbGlidGhlb3JhIC0tZW5hYmxlLWxpYnR3b2xhbWUgLS1lbmFibGUtbGlidmlkc3RhYiAtLWVuYWJsZS1saWJ2b3JiaXMgLS1lbmFibGUtbGlidnB4IC0tZW5hYmxlLWxpYndlYnAgLS1lbmFibGUtbGlieDI2NSAtLWVuYWJsZS1saWJ4bWwyIC0tZW5hYmxlLWxpYnh2aWQgLS1lbmFibGUtbGliemltZyAtLWVuYWJsZS1vcGVuYWwgLS1lbmFibGUtb3BlbmNsIC0tZW5hYmxlLW9wZW5nbCAtLWRpc2FibGUtc25kaW8gLS1lbmFibGUtbGlidnBsIC0tZW5hYmxlLWxpYmRjMTM5NCAtLWVuYWJsZS1saWJkcm0gLS1lbmFibGUtbGliaWVjNjE4ODMgLS1lbmFibGUtY2hyb21hcHJpbnQgLS1lbmFibGUtZnJlaTByIC0tZW5hYmxlLWxhZHNwYSAtLWVuYWJsZS1saWJibHVyYXkgLS1lbmFibGUtbGliY2FjYSAtLWVuYWJsZS1saWJkdmRuYXYgLS1lbmFibGUtbGliZHZkcmVhZCAtLWVuYWJsZS1saWJqYWNrIC0tZW5hYmxlLWxpYnB1bHNlIC0tZW5hYmxlLWxpYnJhYmJpdG1xIC0tZW5hYmxlLWxpYnJpc3QgLS1lbmFibGUtbGlic3J0IC0tZW5hYmxlLWxpYnNzaCAtLWVuYWJsZS1saWJzdnRhdjEgLS1lbmFibGUtbGlieDI2NCAtLWVuYWJsZS1saWJ6bXEgLS1lbmFibGUtbGlienZiaSAtLWVuYWJsZS1sdjIgLS1lbmFibGUtc2RsMiAtLWVuYWJsZS1saWJwbGFjZWJvIC0tZW5hYmxlLWxpYnJhdjFlIC0tZW5hYmxlLXBvY2tldHNwaGlueCAtLWVuYWJsZS1saWJyc3ZnIC0tZW5hYmxlLWxpYmp4bCAtLWVuYWJsZS1zaGFyZWQKICBsaWJhdnV0aWwgICAgICA1OS4gMzkuMTAwIC8gNTkuIDM5LjEwMAogIGxpYmF2Y29kZWMgICAgIDYxLiAxOS4xMDEgLyA2MS4gMTkuMTAxCiAgbGliYXZmb3JtYXQgICAgNjEuICA3LjEwMCAvIDYxLiAgNy4xMDAKICBsaWJhdmRldmljZSAgICA2MS4gIDMuMTAwIC8gNjEuICAzLjEwMAogIGxpYmF2ZmlsdGVyICAgIDEwLiAgNC4xMDAgLyAxMC4gIDQuMTAwCiAgbGlic3dzY2FsZSAgICAgIDguICAzLjEwMCAvICA4LiAgMy4xMDAKICBsaWJzd3Jlc2FtcGxlICAgNS4gIDMuMTAwIC8gIDUuICAzLjEwMAogIGxpYnBvc3Rwcm9jICAgIDU4LiAgMy4xMDAgLyA1OC4gIDMuMTAwCklucHV0ICMwLCBsYXZmaSwgZnJvbSAnY29sb3I9Yz1ibGFjazpzPTMyMHgyNDA6ZD0yJzoKICBEdXJhdGlvbjogTi9BLCBzdGFydDogMC4wMDAwMDAsIGJpdHJhdGU6IE4vQQogIFN0cmVhbSAjMDowOiBWaWRlbzogd3JhcHBlZF9hdmZyYW1lLCB5dXY0MjBwLCAzMjB4MjQwIFtTQVIgMToxIERBUiA0OjNdLCAyNSBmcHMsIDI1IHRiciwgMjUgdGJuCklucHV0ICMxLCBsYXZmaSwgZnJvbSAnYW51bGxzcmM9cj04MDAwOmNsPW1vbm8nOgogIER1cmF0aW9uOiBOL0EsIHN0YXJ0OiAwLjAwMDAwMCwgYml0cmF0ZTogNjQga2IvcwogIFN0cmVhbSAjMTowOiBBdWRpbzogcGNtX3U4LCA4MDAwIEh6LCBtb25vLCB1OCwgNjQga2IvcwpTdHJlYW0gbWFwcGluZzoKICBTdHJlYW0gIzA6MCAtPiAjMDowICh3cmFwcGVkX2F2ZnJhbWUgKG5hdGl2ZSkgLT4gaDI2NCAobGlieDI2NCkpCiAgU3RyZWFtICMxOjAgLT4gIzA6MSAocGNtX3U4IChuYXRpdmUpIC0+IGFhYyAobmF0aXZlKSkKUHJlc3MgW3FdIHRvIHN0b3AsIFs/XSBmb3IgaGVscApbYWFjIEAgMHg1OGUxYzcwZDUzODBdIFRvbyBtYW55IGJpdHMgODgzMi4wMDAwMDAgPiA2MTQ0IHBlciBmcmFtZSByZXF1ZXN0ZWQsIGNsYW1waW5nIHRvIG1heApbbGlieDI2NCBAIDB4NThlMWM3MGFhN2MwXSB1c2luZyBTQVI9MS8xCltsaWJ4MjY0IEAgMHg1OGUxYzcwYWE3YzBdIHVzaW5nIGNwdSBjYXBhYmlsaXRpZXM6IE1NWDIgU1NFMkZhc3QgU1NTRTMgU1NFNC4yIEFWWCBGTUEzIEJNSTIgQVZYMiBBVlg1MTIKW2xpYngyNjQgQCAweDU4ZTFjNzBhYTdjMF0gcHJvZmlsZSBIaWdoLCBsZXZlbCAxLjMsIDQ6MjowLCA4LWJpdApbbGlieDI2NCBAIDB4NThlMWM3MGFhN2MwXSAyNjQgLSBjb3JlIDE2NCByMzEwOCAzMWUxOWY5IC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyMyAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTMgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MzoweDExMyBtZT1oZXggc3VibWU9NyBwc3k9MSBwc3lfcmQ9MS4wMDowLjAwIG1peGVkX3JlZj0xIG1lX3JhbmdlPTE2IGNocm9tYV9tZT0xIHRyZWxsaXM9MSA4eDhkY3Q9MSBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0tMiB0aHJlYWRzPTcgbG9va2FoZWFkX3RocmVhZHM9MSBzbGljZWRfdGhyZWFkcz0wIG5yPTAgZGVjaW1hdGU9MSBpbnRlcmxhY2VkPTAgYmx1cmF5X2NvbXBhdD0wIGNvbnN0cmFpbmVkX2ludHJhPTAgYmZyYW1lcz0zIGJfcHlyYW1pZD0yIGJfYWRhcHQ9MSBiX2JpYXM9MCBkaXJlY3Q9MSB3ZWlnaHRiPTEgb3Blbl9nb3A9MCB3ZWlnaHRwPTIga2V5aW50PTI1MCBrZXlpbnRfbWluPTI1IHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj0yMy4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4wMApPdXRwdXQgIzAsIG1wNCwgdG8gJy90bXAvYXJjaGllLWF2LXZpZGVvLUhPOHFmcy9jbGlwLm1wNCc6CiAgTWV0YWRhdGE6CiAgICBlbmNvZGVyICAgICAgICAgOiBMYXZmNjEuNy4xMDAKICBTdHJlYW0gIzA6MDogVmlkZW86IGgyNjQgKGF2YzEgLyAweDMxNjM3NjYxKSwgeXV2NDIwcCh0diwgcHJvZ3Jlc3NpdmUpLCAzMjB4MjQwIFtTQVIgMToxIERBUiA0OjNdLCBxPTItMzEsIDI1IGZwcywgMTI4MDAgdGJuCiAgICAgIE1ldGFkYXRhOgogICAgICAgIGVuY29kZXIgICAgICAgICA6IExhdmM2MS4xOS4xMDEgbGlieDI2NAogICAgICBTaWRlIGRhdGE6CiAgICAgICAgY3BiOiBiaXRyYXRlIG1heC9taW4vYXZnOiAwLzAvMCBidWZmZXIgc2l6ZTogMCB2YnZfZGVsYXk6IE4vQQogIFN0cmVhbSAjMDoxOiBBdWRpbzogYWFjIChMQykgKG1wNGEgLyAweDYxMzQ3MDZEKSwgODAwMCBIeiwgbW9ubywgZmx0cCwgNDgga2IvcwogICAgICBNZXRhZGF0YToKICAgICAgICBlbmNvZGVyICAgICAgICAgOiBMYXZjNjEuMTkuMTAxIGFhYwpbb3V0IzAvbXA0IEAgMHg1OGUxYzcwZDEwYzBdIHZpZGVvOjJLaUIgYXVkaW86MEtpQiBzdWJ0aXRsZTowS2lCIG90aGVyIHN0cmVhbXM6MEtpQiBnbG9iYWwgaGVhZGVyczowS2lCIG11eGluZyBvdmVyaGVhZDogMTM3LjQyNjIxMCUKZnJhbWU9ICAgNTAgZnBzPTAuMCBxPS0xLjAgTHNpemU9ICAgICAgIDRLaUIgdGltZT0wMDowMDowMS45MiBiaXRyYXRlPSAgMTYuOGtiaXRzL3Mgc3BlZWQ9IDE3NXggICAgCltsaWJ4MjY0IEAgMHg1OGUxYzcwYWE3YzBdIGZyYW1lIEk6MSAgICAgQXZnIFFQOiA5LjAwICBzaXplOiAgICA2MwpbbGlieDI2NCBAIDB4NThlMWM3MGFhN2MwXSBmcmFtZSBQOjEzICAgIEF2ZyBRUDogOS42OSAgc2l6ZTogICAgMjIKW2xpYngyNjQgQCAweDU4ZTFjNzBhYTdjMF0gZnJhbWUgQjozNiAgICBBdmcgUVA6MTIuNjcgIHNpemU6ICAgIDE1CltsaWJ4MjY0IEAgMHg1OGUxYzcwYWE3YzBdIGNvbnNlY3V0aXZlIEItZnJhbWVzOiAgNC4wJSAgMC4wJSAgMC4wJSA5Ni4wJQpbbGlieDI2NCBAIDB4NThlMWM3MGFhN2MwXSBtYiBJICBJMTYuLjQ6IDEwMC4wJSAgMC4wJSAgMC4wJQpbbGlieDI2NCBAIDB4NThlMWM3MGFhN2MwXSBtYiBQICBJMTYuLjQ6ICAwLjAlICAwLjAlICAwLjAlICBQMTYuLjQ6ICAwLjAlICAwLjAlICAwLjAlICAwLjAlICAwLjAlICAgIHNraXA6MTAwLjAlCltsaWJ4MjY0IEAgMHg1OGUxYzcwYWE3YzBdIG1iIEIgIEkxNi4uNDogIDAuMCUgIDAuMCUgIDAuMCUgIEIxNi4uODogIDAuMCUgIDAuMCUgIDAuMCUgIGRpcmVjdDogMC4wJSAgc2tpcDoxMDAuMCUKW2xpYngyNjQgQCAweDU4ZTFjNzBhYTdjMF0gOHg4IHRyYW5zZm9ybSBpbnRyYTowLjAlCltsaWJ4MjY0IEAgMHg1OGUxYzcwYWE3YzBdIGNvZGVkIHksdXZEQyx1dkFDIGludHJhOiAwLjAlIDAuMCUgMC4wJSBpbnRlcjogMC4wJSAwLjAlIDAuMCUKW2xpYngyNjQgQCAweDU4ZTFjNzBhYTdjMF0gaTE2IHYsaCxkYyxwOiA5MyUgIDAlICA3JSAgMCUKW2xpYngyNjQgQCAweDU4ZTFjNzBhYTdjMF0gaThjIGRjLGgsdixwOiAxMDAlICAwJSAgMCUgIDAlCltsaWJ4MjY0IEAgMHg1OGUxYzcwYWE3YzBdIFdlaWdodGVkIFAtRnJhbWVzOiBZOjAuMCUgVVY6MC4wJQpbbGlieDI2NCBAIDB4NThlMWM3MGFhN2MwXSBrYi9zOjMuNTIKW2FhYyBAIDB4NThlMWM3MGQ1MzgwXSBRYXZnOiA2NTUzNi4wMDAK"
+                    }
+                  ],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:48.890Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f59d8b6869cbb88f9c1d-b8b701302264fd84d478",
+          "file": "user-stories-av.spec.ts",
+          "line": 101,
+          "column": 1
+        },
+        {
+          "title": "STU-ANN-014D whole video note",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 649,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [
+                    {
+                      "buffer": "ZmZtcGVnIHZlcnNpb24gNy4xLjEtMXVidW50dTQuMiBDb3B5cmlnaHQgKGMpIDIwMDAtMjAyNSB0aGUgRkZtcGVnIGRldmVsb3BlcnMKICBidWlsdCB3aXRoIGdjYyAxNSAoVWJ1bnR1IDE1LjIuMC00dWJ1bnR1NCkKICBjb25maWd1cmF0aW9uOiAtLXByZWZpeD0vdXNyIC0tZXh0cmEtdmVyc2lvbj0xdWJ1bnR1NC4yIC0tdG9vbGNoYWluPWhhcmRlbmVkIC0tbGliZGlyPS91c3IvbGliL3g4Nl82NC1saW51eC1nbnUgLS1pbmNkaXI9L3Vzci9pbmNsdWRlL3g4Nl82NC1saW51eC1nbnUgLS1hcmNoPWFtZDY0IC0tZW5hYmxlLWdwbCAtLWRpc2FibGUtc3RyaXBwaW5nIC0tZGlzYWJsZS1saWJtZnggLS1kaXNhYmxlLW9teCAtLWVuYWJsZS1nbnV0bHMgLS1lbmFibGUtbGliYW9tIC0tZW5hYmxlLWxpYmFzcyAtLWVuYWJsZS1saWJiczJiIC0tZW5hYmxlLWxpYmNkaW8gLS1lbmFibGUtbGliY29kZWMyIC0tZW5hYmxlLWxpYmRhdjFkIC0tZW5hYmxlLWxpYmZsaXRlIC0tZW5hYmxlLWxpYmZvbnRjb25maWcgLS1lbmFibGUtbGliZnJlZXR5cGUgLS1lbmFibGUtbGliZnJpYmlkaSAtLWVuYWJsZS1saWJnbHNsYW5nIC0tZW5hYmxlLWxpYmdtZSAtLWVuYWJsZS1saWJnc20gLS1lbmFibGUtbGliaGFyZmJ1enogLS1lbmFibGUtbGlibXAzbGFtZSAtLWVuYWJsZS1saWJteXNvZmEgLS1lbmFibGUtbGlib3BlbmpwZWcgLS1lbmFibGUtbGlib3Blbm1wdCAtLWVuYWJsZS1saWJvcHVzIC0tZW5hYmxlLWxpYnJ1YmJlcmJhbmQgLS1lbmFibGUtbGlic2hpbmUgLS1lbmFibGUtbGlic25hcHB5IC0tZW5hYmxlLWxpYnNveHIgLS1lbmFibGUtbGlic3BlZXggLS1lbmFibGUtbGlidGhlb3JhIC0tZW5hYmxlLWxpYnR3b2xhbWUgLS1lbmFibGUtbGlidmlkc3RhYiAtLWVuYWJsZS1saWJ2b3JiaXMgLS1lbmFibGUtbGlidnB4IC0tZW5hYmxlLWxpYndlYnAgLS1lbmFibGUtbGlieDI2NSAtLWVuYWJsZS1saWJ4bWwyIC0tZW5hYmxlLWxpYnh2aWQgLS1lbmFibGUtbGliemltZyAtLWVuYWJsZS1vcGVuYWwgLS1lbmFibGUtb3BlbmNsIC0tZW5hYmxlLW9wZW5nbCAtLWRpc2FibGUtc25kaW8gLS1lbmFibGUtbGlidnBsIC0tZW5hYmxlLWxpYmRjMTM5NCAtLWVuYWJsZS1saWJkcm0gLS1lbmFibGUtbGliaWVjNjE4ODMgLS1lbmFibGUtY2hyb21hcHJpbnQgLS1lbmFibGUtZnJlaTByIC0tZW5hYmxlLWxhZHNwYSAtLWVuYWJsZS1saWJibHVyYXkgLS1lbmFibGUtbGliY2FjYSAtLWVuYWJsZS1saWJkdmRuYXYgLS1lbmFibGUtbGliZHZkcmVhZCAtLWVuYWJsZS1saWJqYWNrIC0tZW5hYmxlLWxpYnB1bHNlIC0tZW5hYmxlLWxpYnJhYmJpdG1xIC0tZW5hYmxlLWxpYnJpc3QgLS1lbmFibGUtbGlic3J0IC0tZW5hYmxlLWxpYnNzaCAtLWVuYWJsZS1saWJzdnRhdjEgLS1lbmFibGUtbGlieDI2NCAtLWVuYWJsZS1saWJ6bXEgLS1lbmFibGUtbGlienZiaSAtLWVuYWJsZS1sdjIgLS1lbmFibGUtc2RsMiAtLWVuYWJsZS1saWJwbGFjZWJvIC0tZW5hYmxlLWxpYnJhdjFlIC0tZW5hYmxlLXBvY2tldHNwaGlueCAtLWVuYWJsZS1saWJyc3ZnIC0tZW5hYmxlLWxpYmp4bCAtLWVuYWJsZS1zaGFyZWQKICBsaWJhdnV0aWwgICAgICA1OS4gMzkuMTAwIC8gNTkuIDM5LjEwMAogIGxpYmF2Y29kZWMgICAgIDYxLiAxOS4xMDEgLyA2MS4gMTkuMTAxCiAgbGliYXZmb3JtYXQgICAgNjEuICA3LjEwMCAvIDYxLiAgNy4xMDAKICBsaWJhdmRldmljZSAgICA2MS4gIDMuMTAwIC8gNjEuICAzLjEwMAogIGxpYmF2ZmlsdGVyICAgIDEwLiAgNC4xMDAgLyAxMC4gIDQuMTAwCiAgbGlic3dzY2FsZSAgICAgIDguICAzLjEwMCAvICA4LiAgMy4xMDAKICBsaWJzd3Jlc2FtcGxlICAgNS4gIDMuMTAwIC8gIDUuICAzLjEwMAogIGxpYnBvc3Rwcm9jICAgIDU4LiAgMy4xMDAgLyA1OC4gIDMuMTAwCklucHV0ICMwLCBsYXZmaSwgZnJvbSAnY29sb3I9Yz1ibGFjazpzPTMyMHgyNDA6ZD0yJzoKICBEdXJhdGlvbjogTi9BLCBzdGFydDogMC4wMDAwMDAsIGJpdHJhdGU6IE4vQQogIFN0cmVhbSAjMDowOiBWaWRlbzogd3JhcHBlZF9hdmZyYW1lLCB5dXY0MjBwLCAzMjB4MjQwIFtTQVIgMToxIERBUiA0OjNdLCAyNSBmcHMsIDI1IHRiciwgMjUgdGJuCklucHV0ICMxLCBsYXZmaSwgZnJvbSAnYW51bGxzcmM9cj04MDAwOmNsPW1vbm8nOgogIER1cmF0aW9uOiBOL0EsIHN0YXJ0OiAwLjAwMDAwMCwgYml0cmF0ZTogNjQga2IvcwogIFN0cmVhbSAjMTowOiBBdWRpbzogcGNtX3U4LCA4MDAwIEh6LCBtb25vLCB1OCwgNjQga2IvcwpTdHJlYW0gbWFwcGluZzoKICBTdHJlYW0gIzA6MCAtPiAjMDowICh3cmFwcGVkX2F2ZnJhbWUgKG5hdGl2ZSkgLT4gaDI2NCAobGlieDI2NCkpCiAgU3RyZWFtICMxOjAgLT4gIzA6MSAocGNtX3U4IChuYXRpdmUpIC0+IGFhYyAobmF0aXZlKSkKUHJlc3MgW3FdIHRvIHN0b3AsIFs/XSBmb3IgaGVscApbYWFjIEAgMHg1Y2RkNGU4ZDEzODBdIFRvbyBtYW55IGJpdHMgODgzMi4wMDAwMDAgPiA2MTQ0IHBlciBmcmFtZSByZXF1ZXN0ZWQsIGNsYW1waW5nIHRvIG1heApbbGlieDI2NCBAIDB4NWNkZDRlOGE2N2MwXSB1c2luZyBTQVI9MS8xCltsaWJ4MjY0IEAgMHg1Y2RkNGU4YTY3YzBdIHVzaW5nIGNwdSBjYXBhYmlsaXRpZXM6IE1NWDIgU1NFMkZhc3QgU1NTRTMgU1NFNC4yIEFWWCBGTUEzIEJNSTIgQVZYMiBBVlg1MTIKW2xpYngyNjQgQCAweDVjZGQ0ZThhNjdjMF0gcHJvZmlsZSBIaWdoLCBsZXZlbCAxLjMsIDQ6MjowLCA4LWJpdApbbGlieDI2NCBAIDB4NWNkZDRlOGE2N2MwXSAyNjQgLSBjb3JlIDE2NCByMzEwOCAzMWUxOWY5IC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyMyAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTMgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MzoweDExMyBtZT1oZXggc3VibWU9NyBwc3k9MSBwc3lfcmQ9MS4wMDowLjAwIG1peGVkX3JlZj0xIG1lX3JhbmdlPTE2IGNocm9tYV9tZT0xIHRyZWxsaXM9MSA4eDhkY3Q9MSBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0tMiB0aHJlYWRzPTcgbG9va2FoZWFkX3RocmVhZHM9MSBzbGljZWRfdGhyZWFkcz0wIG5yPTAgZGVjaW1hdGU9MSBpbnRlcmxhY2VkPTAgYmx1cmF5X2NvbXBhdD0wIGNvbnN0cmFpbmVkX2ludHJhPTAgYmZyYW1lcz0zIGJfcHlyYW1pZD0yIGJfYWRhcHQ9MSBiX2JpYXM9MCBkaXJlY3Q9MSB3ZWlnaHRiPTEgb3Blbl9nb3A9MCB3ZWlnaHRwPTIga2V5aW50PTI1MCBrZXlpbnRfbWluPTI1IHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj0yMy4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4wMApPdXRwdXQgIzAsIG1wNCwgdG8gJy90bXAvYXJjaGllLWF2LXZpZGVvLWJaVGRqYS9jbGlwLm1wNCc6CiAgTWV0YWRhdGE6CiAgICBlbmNvZGVyICAgICAgICAgOiBMYXZmNjEuNy4xMDAKICBTdHJlYW0gIzA6MDogVmlkZW86IGgyNjQgKGF2YzEgLyAweDMxNjM3NjYxKSwgeXV2NDIwcCh0diwgcHJvZ3Jlc3NpdmUpLCAzMjB4MjQwIFtTQVIgMToxIERBUiA0OjNdLCBxPTItMzEsIDI1IGZwcywgMTI4MDAgdGJuCiAgICAgIE1ldGFkYXRhOgogICAgICAgIGVuY29kZXIgICAgICAgICA6IExhdmM2MS4xOS4xMDEgbGlieDI2NAogICAgICBTaWRlIGRhdGE6CiAgICAgICAgY3BiOiBiaXRyYXRlIG1heC9taW4vYXZnOiAwLzAvMCBidWZmZXIgc2l6ZTogMCB2YnZfZGVsYXk6IE4vQQogIFN0cmVhbSAjMDoxOiBBdWRpbzogYWFjIChMQykgKG1wNGEgLyAweDYxMzQ3MDZEKSwgODAwMCBIeiwgbW9ubywgZmx0cCwgNDgga2IvcwogICAgICBNZXRhZGF0YToKICAgICAgICBlbmNvZGVyICAgICAgICAgOiBMYXZjNjEuMTkuMTAxIGFhYwpbb3V0IzAvbXA0IEAgMHg1Y2RkNGU4Y2QwYzBdIHZpZGVvOjJLaUIgYXVkaW86MEtpQiBzdWJ0aXRsZTowS2lCIG90aGVyIHN0cmVhbXM6MEtpQiBnbG9iYWwgaGVhZGVyczowS2lCIG11eGluZyBvdmVyaGVhZDogMTM3LjQyNjIxMCUKZnJhbWU9ICAgNTAgZnBzPTAuMCBxPS0xLjAgTHNpemU9ICAgICAgIDRLaUIgdGltZT0wMDowMDowMS45MiBiaXRyYXRlPSAgMTYuOGtiaXRzL3Mgc3BlZWQ9IDE2NHggICAgCltsaWJ4MjY0IEAgMHg1Y2RkNGU4YTY3YzBdIGZyYW1lIEk6MSAgICAgQXZnIFFQOiA5LjAwICBzaXplOiAgICA2MwpbbGlieDI2NCBAIDB4NWNkZDRlOGE2N2MwXSBmcmFtZSBQOjEzICAgIEF2ZyBRUDogOS42OSAgc2l6ZTogICAgMjIKW2xpYngyNjQgQCAweDVjZGQ0ZThhNjdjMF0gZnJhbWUgQjozNiAgICBBdmcgUVA6MTIuNjcgIHNpemU6ICAgIDE1CltsaWJ4MjY0IEAgMHg1Y2RkNGU4YTY3YzBdIGNvbnNlY3V0aXZlIEItZnJhbWVzOiAgNC4wJSAgMC4wJSAgMC4wJSA5Ni4wJQpbbGlieDI2NCBAIDB4NWNkZDRlOGE2N2MwXSBtYiBJICBJMTYuLjQ6IDEwMC4wJSAgMC4wJSAgMC4wJQpbbGlieDI2NCBAIDB4NWNkZDRlOGE2N2MwXSBtYiBQICBJMTYuLjQ6ICAwLjAlICAwLjAlICAwLjAlICBQMTYuLjQ6ICAwLjAlICAwLjAlICAwLjAlICAwLjAlICAwLjAlICAgIHNraXA6MTAwLjAlCltsaWJ4MjY0IEAgMHg1Y2RkNGU4YTY3YzBdIG1iIEIgIEkxNi4uNDogIDAuMCUgIDAuMCUgIDAuMCUgIEIxNi4uODogIDAuMCUgIDAuMCUgIDAuMCUgIGRpcmVjdDogMC4wJSAgc2tpcDoxMDAuMCUKW2xpYngyNjQgQCAweDVjZGQ0ZThhNjdjMF0gOHg4IHRyYW5zZm9ybSBpbnRyYTowLjAlCltsaWJ4MjY0IEAgMHg1Y2RkNGU4YTY3YzBdIGNvZGVkIHksdXZEQyx1dkFDIGludHJhOiAwLjAlIDAuMCUgMC4wJSBpbnRlcjogMC4wJSAwLjAlIDAuMCUKW2xpYngyNjQgQCAweDVjZGQ0ZThhNjdjMF0gaTE2IHYsaCxkYyxwOiA5MyUgIDAlICA3JSAgMCUKW2xpYngyNjQgQCAweDVjZGQ0ZThhNjdjMF0gaThjIGRjLGgsdixwOiAxMDAlICAwJSAgMCUgIDAlCltsaWJ4MjY0IEAgMHg1Y2RkNGU4YTY3YzBdIFdlaWdodGVkIFAtRnJhbWVzOiBZOjAuMCUgVVY6MC4wJQpbbGlieDI2NCBAIDB4NWNkZDRlOGE2N2MwXSBrYi9zOjMuNTIKW2FhYyBAIDB4NWNkZDRlOGQxMzgwXSBRYXZnOiA2NTUzNi4wMDAK"
+                    }
+                  ],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:49.649Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f59d8b6869cbb88f9c1d-cf053bc43694c9bbbcd3",
+          "file": "user-stories-av.spec.ts",
+          "line": 115,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "user-stories-conflict.spec.ts",
+      "file": "user-stories-conflict.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "STU-ANN-011 conflict Review keeps one head and survives reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3171,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:50.309Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "01e3c19b8abf6ce7e195-513b3ee085a5b933ce74",
+          "file": "user-stories-conflict.spec.ts",
+          "line": 4,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "user-stories-library-batch.spec.ts",
+      "file": "user-stories-library-batch.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "STU-LIB-002 search and clear restore all owned exhibits",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1048,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:53.492Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c0dd645eae0d25ba3581-75c2dc0434bd91dc8fdd",
+          "file": "user-stories-library-batch.spec.ts",
+          "line": 24,
+          "column": 1
+        },
+        {
+          "title": "STU-LIB-003 gallery lens persists after reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1139,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:54.544Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c0dd645eae0d25ba3581-9d65b30f82c901a47620",
+          "file": "user-stories-library-batch.spec.ts",
+          "line": 37,
+          "column": 1
+        },
+        {
+          "title": "STU-LIB-009 modifiers and filtered Select all exclude other exhibits",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1219,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:55.688Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c0dd645eae0d25ba3581-bccd47cea241aa8655c1",
+          "file": "user-stories-library-batch.spec.ts",
+          "line": 49,
+          "column": 1
+        },
+        {
+          "title": "STU-LIB-010A bulk rights apply to selected exhibits and persist",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3252,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:38:56.912Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c0dd645eae0d25ba3581-3b3c4f27c84d8364f949",
+          "file": "user-stories-library-batch.spec.ts",
+          "line": 66,
+          "column": 1
+        },
+        {
+          "title": "STU-LIB-010B bulk delete confirms two and retains third",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2496,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:39:00.168Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c0dd645eae0d25ba3581-d7de5cdd1696e92cd186",
+          "file": "user-stories-library-batch.spec.ts",
+          "line": 94,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "user-stories-map-notes.spec.ts",
+      "file": "user-stories-map-notes.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "STU-ANN-015A map Box note persists with geo region",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2713,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:39:02.675Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "3a180f0bf36af82bad40-7c06b863a1705d044d29",
+          "file": "user-stories-map-notes.spec.ts",
+          "line": 25,
+          "column": 1
+        },
+        {
+          "title": "STU-ANN-015B map Outline note persists with geo region",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2716,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:39:05.393Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "3a180f0bf36af82bad40-0816aa11758c04dbb836",
+          "file": "user-stories-map-notes.spec.ts",
+          "line": 43,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "user-stories-narrative.spec.ts",
+      "file": "user-stories-narrative.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "STU-NAR-001/003A/003B/003C narrative add edit reorder remove",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1238,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:39:08.120Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a342c04caf7a4bf40025-11d3d4187d046f29fc66",
+          "file": "user-stories-narrative.spec.ts",
+          "line": 10,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "user-stories-overview.spec.ts",
+      "file": "user-stories-overview.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "STU-OBJ-002 details and STU-OBJ-003 rename",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2391,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:39:09.367Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7aa6e87760c3d15244c-850d5e263a516591cede",
+          "file": "user-stories-overview.spec.ts",
+          "line": 15,
+          "column": 1
+        },
+        {
+          "title": "STU-VIEW-001/002 grid list density reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1124,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:39:11.762Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7aa6e87760c3d15244c-ae31e8024b9dc4456f6c",
+          "file": "user-stories-overview.spec.ts",
+          "line": 26,
+          "column": 1
+        },
+        {
+          "title": "STU-VIEW-003 search and sort controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 623,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:39:12.890Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7aa6e87760c3d15244c-fa539f8663c4335e7857",
+          "file": "user-stories-overview.spec.ts",
+          "line": 39,
+          "column": 1
+        },
+        {
+          "title": "STU-OBJ-002 details fields persist after reopen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2903,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:39:13.517Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7aa6e87760c3d15244c-018e7b08768981472516",
+          "file": "user-stories-overview.spec.ts",
+          "line": 52,
+          "column": 1
+        },
+        {
+          "title": "STU-OBJ-005 bulk remove selected media keeps unselected media",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2754,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:39:16.425Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7aa6e87760c3d15244c-a8aebea43a599db2bd17",
+          "file": "user-stories-overview.spec.ts",
+          "line": 77,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "user-stories-readings.spec.ts",
+      "file": "user-stories-readings.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "STU-ANN-005A/B and STU-ANN-012A-F reading management",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1573,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:39:19.188Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6e9e6d0c4a67b478235e-3aac4548a4e219018bb7",
+          "file": "user-stories-readings.spec.ts",
+          "line": 14,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "user-stories-ux.spec.ts",
+      "file": "user-stories-ux.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "STU-UX-001 modal Escape closes and restores focus",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 356,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:39:20.773Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5f2e5cee213b65cd6d8c-5cce5a8fff9ebfcc15f2",
+          "file": "user-stories-ux.spec.ts",
+          "line": 3,
+          "column": 1
+        },
+        {
+          "title": "STU-UX-002 shortcuts help lists real keyboard actions",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 363,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:39:21.133Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5f2e5cee213b65cd6d8c-6bafa7e5202446693e53",
+          "file": "user-stories-ux.spec.ts",
+          "line": 14,
+          "column": 1
+        },
+        {
+          "title": "STU-UX-007 tutorial opens, advances, and dismisses",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 371,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:39:21.500Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5f2e5cee213b65cd6d8c-ce16fcf33c455ea3f97f",
+          "file": "user-stories-ux.spec.ts",
+          "line": 24,
+          "column": 1
+        },
+        {
+          "title": "STU-UX-010 citation picker supports keyboard and Browse view",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1118,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:39:21.875Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5f2e5cee213b65cd6d8c-90a0dc4d630c56c1ab0e",
+          "file": "user-stories-ux.spec.ts",
+          "line": 35,
+          "column": 1
+        },
+        {
+          "title": "STU-UX-003 rail keyboard activates a media item",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 679,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:39:22.998Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5f2e5cee213b65cd6d8c-d937c4316f4e49beea13",
+          "file": "user-stories-ux.spec.ts",
+          "line": 61,
+          "column": 1
+        },
+        {
+          "title": "STU-UX-005 second tab is read-only, then promotes after writer closes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 852,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-13T04:39:23.681Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "5f2e5cee213b65cd6d8c-cd3f84b75685d4f6e736",
+          "file": "user-stories-ux.spec.ts",
+          "line": 76,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-13T04:38:18.448Z",
+    "duration": 66127.05500000001,
+    "expected": 42,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

@@ -1,0 +1,22 @@
+
+Running 7 tests using 1 worker
+
+[1A[2K(node:4149937) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4149937) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/7] [chromium] › e2e/export-surface.spec.ts:60:1 › the probe's recommendation arrives pre-selected, on a destination that fits
+[1A[2K[2/7] [chromium] › e2e/export-surface.spec.ts:86:1 › an unavailable destination is greyed WITH ITS REASON, and nothing is swapped in for it
+[1A[2K[3/7] [chromium] › e2e/export-surface.spec.ts:136:1 › Deposit a copy produces a real BagIt bag, and says what it is
+[1A[2K[chromium] › e2e/export-surface.spec.ts:136:1 › Deposit a copy produces a real BagIt bag, and says what it is
+
+
+[1A[2K[4/7] [chromium] › e2e/export-surface.spec.ts:194:1 › the quality question is not asked when its answer changes nothing
+[1A[2K[5/7] [chromium] › e2e/export-surface.spec.ts:222:1 › the embed snippet is on the success panel, not on the chooser
+[1A[2K[6/7] [chromium] › e2e/metadata-import.spec.ts:27:3 › bulk metadata import › the overview toolbar carries the control, and it opens the dialog
+[1A[2K[7/7] [chromium] › e2e/metadata-import.spec.ts:45:3 › bulk metadata import › a spreadsheet drives the mapping step and the preview
+[1A[2K  7 passed (5.4s)

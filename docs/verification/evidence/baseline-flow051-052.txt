@@ -1,0 +1,14 @@
+
+Running 2 tests using 1 worker
+
+[1A[2K(node:55656) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:55656) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/2] [chromium] › e2e/flow-link-map-baseline.spec.ts:16:1 › FLOW-051 adds a direct remote media link to the selected exhibit
+[1A[2K[2/2] [chromium] › e2e/flow-link-map-baseline.spec.ts:36:1 › FLOW-052 creates a named map with a selected region
+[1A[2K  2 passed (4.8s)

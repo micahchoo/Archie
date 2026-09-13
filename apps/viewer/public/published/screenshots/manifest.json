@@ -43,6 +43,12 @@
           ]
         }
       ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o1-e1-embed.png",
+          "type": "Image"
+        }
+      ],
       "annotations": [
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1/annotations.json",
@@ -353,6 +359,12 @@
           ]
         }
       ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o2-s1-library.png",
+          "type": "Image"
+        }
+      ],
       "annotations": [
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2/annotations.json",
@@ -641,6 +653,12 @@
           ]
         }
       ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o3-s2-overview.png",
+          "type": "Image"
+        }
+      ],
       "annotations": [
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3/annotations.json",
@@ -901,6 +919,12 @@
               "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4"
             }
           ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o4-s3-canvas.png",
+          "type": "Image"
         }
       ],
       "annotations": [
@@ -1279,6 +1303,12 @@
           ]
         }
       ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o5-s4-readings.png",
+          "type": "Image"
+        }
+      ],
       "annotations": [
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5/annotations.json",
@@ -1583,6 +1613,12 @@
           ]
         }
       ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o6-s5-narrative.png",
+          "type": "Image"
+        }
+      ],
       "annotations": [
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6/annotations.json",
@@ -1843,6 +1879,12 @@
               "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7"
             }
           ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o7-s6a-audio.png",
+          "type": "Image"
         }
       ],
       "annotations": [
@@ -2112,6 +2154,12 @@
           ]
         }
       ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o8-s6b-video.png",
+          "type": "Image"
+        }
+      ],
       "annotations": [
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8/annotations.json",
@@ -2337,6 +2385,12 @@
               "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9"
             }
           ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o9-s7-map.png",
+          "type": "Image"
         }
       ],
       "annotations": [
@@ -2574,6 +2628,12 @@
               "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10"
             }
           ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o10-s8-cite.png",
+          "type": "Image"
         }
       ],
       "annotations": [
@@ -2845,6 +2905,12 @@
           ]
         }
       ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o11-s9-meta.png",
+          "type": "Image"
+        }
+      ],
       "annotations": [
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11/annotations.json",
@@ -3069,6 +3135,12 @@
               "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12"
             }
           ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o12-s10-ingest.png",
+          "type": "Image"
         }
       ],
       "annotations": [
@@ -3306,6 +3378,12 @@
               "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13"
             }
           ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o13-s11-publish.png",
+          "type": "Image"
         }
       ],
       "annotations": [
@@ -3592,6 +3670,12 @@
           ]
         }
       ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o14-s12-shortcuts.png",
+          "type": "Image"
+        }
+      ],
       "annotations": [
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14/annotations.json",
@@ -3833,6 +3917,12 @@
           ]
         }
       ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o15-v1-gallery.png",
+          "type": "Image"
+        }
+      ],
       "annotations": [
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15/annotations.json",
@@ -4062,6 +4152,12 @@
               "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16"
             }
           ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o16-v2-reader.png",
+          "type": "Image"
         }
       ],
       "annotations": [
@@ -4399,6 +4495,12 @@
           ]
         }
       ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o18-v4-av.png",
+          "type": "Image"
+        }
+      ],
       "annotations": [
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18/annotations.json",
@@ -4708,6 +4810,12 @@
           ]
         }
       ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o19-v5-search.png",
+          "type": "Image"
+        }
+      ],
       "annotations": [
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19/annotations.json",
@@ -4932,6 +5040,12 @@
               "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20"
             }
           ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o20-v6-lightbox.png",
+          "type": "Image"
         }
       ],
       "annotations": [
@@ -5175,6 +5289,12 @@
           ]
         }
       ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o21-v7-sheet.png",
+          "type": "Image"
+        }
+      ],
       "annotations": [
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21/annotations.json",
@@ -5406,6 +5526,12 @@
               "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17"
             }
           ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o17-v3-narrative.png",
+          "type": "Image"
         }
       ],
       "annotations": [

@@ -1,0 +1,41 @@
+
+Running 1 test using 1 worker
+
+[1A[2K(node:4055682) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4055682) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/1] [chromium] › e2e/caption-baseline.spec.ts:36:1 › FLOW-049 imports a VTT cue as a timed note and preserves it after reload
+[1A[2K  1) [chromium] › e2e/caption-baseline.spec.ts:36:1 › FLOW-049 imports a VTT cue as a timed note and preserves it after reload 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveCount[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator:  getByRole('list', { name: 'Notes on this object' }).getByRole('listitem')
+    Expected: [32m1[39m
+    Received: [31m0[39m
+    Timeout:  15000ms
+
+    Call log:
+    [2m  - Expect "toHaveCount" with timeout 15000ms[22m
+    [2m  - waiting for getByRole('list', { name: 'Notes on this object' }).getByRole('listitem')[22m
+    [2m    34 × locator resolved to 0 elements[22m
+    [2m       - unexpected value "0"[22m
+
+
+      41 |   await expect(notes.getByRole("listitem")).toHaveCount(1);
+      42 |   await page.reload();
+    > 43 |   await expect(page.getByRole("list", { name: "Notes on this object" }).getByRole("listitem")).toHaveCount(1, { timeout: 15_000 });
+         |                                                                                                ^
+      44 | });
+      45 |
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/e2e/caption-baseline.spec.ts:43:96
+
+    Error Context: test-results/caption-baseline-FLOW-049--8d0ef-d-preserves-it-after-reload-chromium/error-context.md
+
+
+[1A[2K  1 failed
+    [chromium] › e2e/caption-baseline.spec.ts:36:1 › FLOW-049 imports a VTT cue as a timed note and preserves it after reload 

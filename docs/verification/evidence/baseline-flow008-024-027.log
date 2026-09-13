@@ -1,0 +1,32 @@
+
+Running 2 tests using 1 worker
+
+[1A[2K(node:4160262) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4160262) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/2] [chromium] › e2e/source-address.spec.ts:5:1 › foreign source survives reader address updates, reload, links, and Back
+[1A[2K[2/2] [chromium] › e2e/user-stories.spec.ts:249:3 › focused user-story baseline › VIEW-065: an embed opens a saved archive and reports an invalid archive
+[1A[2K  1) [chromium] › e2e/user-stories.spec.ts:249:3 › focused user-story baseline › VIEW-065: an embed opens a saved archive and reports an invalid archive 
+
+    Error: ENOENT: no such file or directory, open 'packages/archie-viewer/dist-single/archie-viewer.single.js'
+
+      250 |     await page.goto("./");
+      251 |     await page.evaluate(() => { document.body.innerHTML = "<archie-viewer></archie-viewer>"; });
+    > 252 |     await page.addScriptTag({ path: "packages/archie-viewer/dist-single/archie-viewer.single.js" });
+          |     ^
+      253 |     const viewer = page.locator("archie-viewer");
+      254 |     const bytes = Array.from(readFileSync("apps/viewer/libraries/archie-library.archie.zip"));
+      255 |     await viewer.evaluate(async (el, data) => {
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:252:5
+
+    Error Context: test-results/user-stories-focused-user--b0ee5--reports-an-invalid-archive-chromium/error-context.md
+
+
+[1A[2K  1 failed
+    [chromium] › e2e/user-stories.spec.ts:249:3 › focused user-story baseline › VIEW-065: an embed opens a saved archive and reports an invalid archive 
+  1 passed (2.9s)

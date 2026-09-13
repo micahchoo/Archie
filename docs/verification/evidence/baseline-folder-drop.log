@@ -1,0 +1,81 @@
+
+ RUN  v3.2.7 /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio
+
+stderr | src/folder-drop.test.ts > readDroppedFolderFiles — skip-and-tally (Archie-bf5b) > tallies an unreadable top-level file entry instead of just dropping it
+[folder-drop] skipped unreadable file "bad.png" Error: permission denied: bad.png
+    at Object.file (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.test.ts:18:29)
+    at file (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:38:92)
+    at new Promise (<anonymous>)
+    at walk (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:38:22)
+    at readDroppedFolderFiles (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:70:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.test.ts:62:32
+    at file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20
+
+stderr | src/folder-drop.test.ts > readDroppedFolderFiles — skip-and-tally (Archie-bf5b) > tallies a directory whose readEntries() batch fails, keeping siblings already walked
+[folder-drop] stopped reading "locked" early Error: can't enumerate: locked
+    at Object.readEntries (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.test.ts:34:20)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:51:90
+    at new Promise (<anonymous>)
+    at readBatch (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:51:31)
+    at walk (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:55:25)
+    at readDroppedFolderFiles (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:70:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.test.ts:71:32
+    at file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20
+
+stderr | src/folder-drop.test.ts > readDroppedFolderFiles — skip-and-tally (Archie-bf5b) > tallies a file unreadable INSIDE a directory without losing its readable siblings
+[folder-drop] skipped unreadable file "mixed/denied.png" Error: permission denied: denied.png
+    at Object.file (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.test.ts:18:29)
+    at file (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:38:92)
+    at new Promise (<anonymous>)
+    at walk (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:38:22)
+    at walk (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:63:42)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at readDroppedFolderFiles (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:70:7)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.test.ts:78:32
+    at file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20
+
+stderr | src/folder-drop.test.ts > readDroppedFolderFiles — skip-and-tally (Archie-bf5b) > tallies a top-level entry whose walk throws outside the two guarded branches, continuing the rest of the drop
+[folder-drop] skipped unreadable entry "boom" Error: entry became unreadable mid-drop
+    at Object.get isFile [as isFile] (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.test.ts:91:37)
+    at walk (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:35:15)
+    at readDroppedFolderFiles (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:70:13)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.test.ts:95:38
+    at file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+    at file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+    at file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)
+    at runTest (file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)
+
+stderr | src/folder-drop.test.ts > readDroppedFolderFiles — skip-and-tally (Archie-bf5b) > sums multiple independent skips across a mixed drop
+[folder-drop] skipped unreadable file "bad1.png" Error: permission denied: bad1.png
+    at Object.file (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.test.ts:18:29)
+    at file (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:38:92)
+    at new Promise (<anonymous>)
+    at walk (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:38:22)
+    at readDroppedFolderFiles (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:70:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.test.ts:107:32
+    at file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20
+
+stderr | src/folder-drop.test.ts > readDroppedFolderFiles — skip-and-tally (Archie-bf5b) > sums multiple independent skips across a mixed drop
+[folder-drop] stopped reading "locked" early Error: can't enumerate: locked
+    at Object.readEntries (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.test.ts:34:20)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:51:90
+    at new Promise (<anonymous>)
+    at readBatch (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:51:31)
+    at walk (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:55:25)
+    at readDroppedFolderFiles (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.ts:70:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/src/folder-drop.test.ts:107:32
+    at file:///mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/node_modules/.pnpm/@vitest+runner@3.2.7/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20
+
+······
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  19:37:53
+   Duration  197ms (transform 30ms, setup 0ms, collect 26ms, tests 7ms, environment 0ms, prepare 43ms)
+

@@ -585,6 +585,7 @@
           styleFor={reading.readingStyleOf}
           frameFor={(objectId) => { const o = data?.objects.find((x) => x.id === objectId); return reading.frameFor(objectId, o?.width, o?.height); }}
           initialSelected={arrivedNote}
+          initialRegion={arrivedRegion}
           initialSection={arrivedSection}
           onlocus={(l) => { locusSection = l.sectionId; locusNote = l.noteId; }}
           notesHidden={reading.notesHidden}

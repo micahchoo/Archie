@@ -1,0 +1,1530 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+ RUN  v3.2.7 /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie
+
+ × packages/archie-viewer/src/narrative.test.ts > the spine renders > one row per section, each carrying its title AND its prose 4ms
+   → document is not defined
+ × packages/archie-viewer/src/narrative.test.ts > the spine renders > names the exhibit and counts the spine 0ms
+   → document is not defined
+ × packages/archie-viewer/src/narrative.test.ts > the spine renders > a one-section spine says 'section', not 'sections', and offers no stepper 0ms
+   → document is not defined
+ × packages/archie-viewer/src/narrative.test.ts > the spine navigates > marks the active section and reports a row click 0ms
+   → document is not defined
+ × packages/archie-viewer/src/narrative.test.ts > the spine navigates > the stepper steps, and its ends are disabled rather than absent 0ms
+   → document is not defined
+ × packages/archie-viewer/src/narrative.test.ts > the spine navigates > offers the way out to the object grid 0ms
+   → document is not defined
+ × packages/archie-viewer/src/narrative.test.ts > the spine navigates > an out-of-range index clamps rather than rendering nothing active 0ms
+   → document is not defined
+ × packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > markdown renders as markup 0ms
+   → document is not defined
+ × packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a hostile body is sanitized, not injected (renderMarkdown = snarkdown → DOMPurify) 0ms
+   → document is not defined
+ × packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a section with no prose renders an empty pane, not 'undefined' 0ms
+   → document is not defined
+ ✓ packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > reads the published spine, tolerating an exhibit with none 1ms
+ × packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > destroy removes the pane and its stylesheet 0ms
+   → document is not defined
+stderr | packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws on a non-OK response
+open: couldn't fetch the library from https://host/missing.zip — HTTP 404
+
+stderr | packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > rejects a tree whose exhibits.json is absent/corrupt
+archie-viewer: failed to read exhibits.json — Error: no such file: exhibits.json
+    at HttpFile.fetchBytes (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/render-core/src/fs/http.ts:88:35)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+
+ ✓ packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openZipBytes opens a published .archie.zip and reads its gallery 14ms
+ ✓ packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openLibraryFromFile opens a Blob (the drop / file-pick vector) 3ms
+ ✓ packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > rejects a zip that isn't an Archie library (ADR-0020 marker — neither collection.json nor exhibits.json) 1ms
+ ✓ packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > ACCEPTS an UNMARKED real export zip (collection.json + exhibits.json, NO archie.json) — the regression 1ms
+ ✓ packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > two opens produce INDEPENDENT libraries (instance-context seam — no shared global) 32ms
+ ✓ packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > readExhibit returns the exhibit and a library carrying a fresh revoke (revoke lifecycle) 4ms
+ ✓ packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openFilesystem reads a gallery from an already-opened fs (published-tree-base shape) 2ms
+ ✓ packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc fetches bytes via the injected fetch and opens them 5ms
+ ✓ packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws on a non-OK response 1ms
+ ✓ packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws when the declared size exceeds the cap 0ms
+ ✓ packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > openLibraryFromTree fetches the gallery from a tree base (exhibits.json) 2ms
+ ✓ packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > reads a per-exhibit manifest lazily on readExhibit (HTTP source, no blob rewrite) 2ms
+ ✓ packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > openLibraryFromSrc DISPATCHES a non-zip src to the tree path 1ms
+ ✓ packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > validates the ADR-0020 marker when archie.json is present (rejects a foreign tree) 1ms
+ ✓ packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > accepts a tree with NO archie.json when exhibits.json parses (documented fallback) 0ms
+ ✓ packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > rejects a tree whose exhibits.json is absent/corrupt 2ms
+ ✓ packages/archie-viewer/src/load.test.ts > default fetch binding (bound-fetch-defaults.md) > openLibraryFromSrc's DEFAULT fetch survives the tree path's object storage (HttpFilesystem cfg) 1ms
+ ✓ packages/archie-viewer/src/load.test.ts > default fetch binding (bound-fetch-defaults.md) > openLibraryFromTree's DEFAULT fetch does too (exported entry point, own default) 0ms
+ × .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > the spine renders > one row per section, each carrying its title AND its prose 3ms
+   → document is not defined
+ × .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > the spine renders > names the exhibit and counts the spine 0ms
+   → document is not defined
+ × .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > the spine renders > a one-section spine says 'section', not 'sections', and offers no stepper 0ms
+   → document is not defined
+ × .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > the spine navigates > marks the active section and reports a row click 0ms
+   → document is not defined
+ × .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > the spine navigates > the stepper steps, and its ends are disabled rather than absent 0ms
+   → document is not defined
+ × .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > the spine navigates > offers the way out to the object grid 0ms
+   → document is not defined
+ × .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > the spine navigates > an out-of-range index clamps rather than rendering nothing active 0ms
+   → document is not defined
+ × .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > markdown renders as markup 0ms
+   → document is not defined
+ × .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a hostile body is sanitized, not injected (renderMarkdown = snarkdown → DOMPurify) 0ms
+   → document is not defined
+ × .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a section with no prose renders an empty pane, not 'undefined' 0ms
+   → document is not defined
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > reads the published spine, tolerating an exhibit with none 1ms
+ × .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > destroy removes the pane and its stylesheet 0ms
+   → document is not defined
+stderr | .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws on a non-OK response
+open: couldn't fetch the library from https://host/missing.zip — HTTP 404
+
+stderr | .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > rejects a tree whose exhibits.json is absent/corrupt
+archie-viewer: failed to read exhibits.json — Error: no such file: exhibits.json
+    at HttpFile.fetchBytes (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-a064d247c90c0c246/packages/render-core/src/fs/http.ts:88:35)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openZipBytes opens a published .archie.zip and reads its gallery 13ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openLibraryFromFile opens a Blob (the drop / file-pick vector) 4ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > rejects a zip that isn't an Archie library (ADR-0020 marker — neither collection.json nor exhibits.json) 1ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > ACCEPTS an UNMARKED real export zip (collection.json + exhibits.json, NO archie.json) — the regression 1ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > two opens produce INDEPENDENT libraries (instance-context seam — no shared global) 44ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > readExhibit returns the exhibit and a library carrying a fresh revoke (revoke lifecycle) 5ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openFilesystem reads a gallery from an already-opened fs (published-tree-base shape) 2ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — gallery cover blob lifecycle (Archie-9c00) > a zip-backed gallery card's cover resolves to a blob: URL carrying the embedded asset's bytes 3ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — gallery cover blob lifecycle (Archie-9c00) > revokeGallery() frees the cover blob URL 3ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — gallery cover blob lifecycle (Archie-9c00) > switching exhibits (readExhibit) does NOT revoke the gallery's cover blobs — a reader can still go back 3ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — gallery cover blob lifecycle (Archie-9c00) > the published-tree-base path's revokeGallery is a documented no-op (hosted covers are rebased URLs, not blobs) 5ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc fetches bytes via the injected fetch and opens them 3ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws on a non-OK response 1ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws when the declared size exceeds the cap 0ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > openLibraryFromTree fetches the gallery from a tree base (exhibits.json) 1ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > reads a per-exhibit manifest lazily on readExhibit (HTTP source, no blob rewrite) 2ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > openLibraryFromSrc DISPATCHES a non-zip src to the tree path 1ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > validates the ADR-0020 marker when archie.json is present (rejects a foreign tree) 0ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > accepts a tree with NO archie.json when exhibits.json parses (documented fallback) 0ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > rejects a tree whose exhibits.json is absent/corrupt 2ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > default fetch binding (bound-fetch-defaults.md) > openLibraryFromSrc's DEFAULT fetch survives the tree path's object storage (HttpFilesystem cfg) 1ms
+ ✓ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/load.test.ts > default fetch binding (bound-fetch-defaults.md) > openLibraryFromTree's DEFAULT fetch does too (exported entry point, own default) 0ms
+ × .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > the spine renders > one row per section, each carrying its title AND its prose 3ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > the spine renders > names the exhibit and counts the spine 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > the spine renders > a one-section spine says 'section', not 'sections', and offers no stepper 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > the spine navigates > marks the active section and reports a row click 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > the spine navigates > the stepper steps, and its ends are disabled rather than absent 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > the spine navigates > offers the way out to the object grid 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > the spine navigates > an out-of-range index clamps rather than rendering nothing active 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > markdown renders as markup 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a hostile body is sanitized, not injected (renderMarkdown = snarkdown → DOMPurify) 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a section with no prose renders an empty pane, not 'undefined' 0ms
+   → document is not defined
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > reads the published spine, tolerating an exhibit with none 1ms
+ × .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > destroy removes the pane and its stylesheet 0ms
+   → document is not defined
+stderr | .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws on a non-OK response
+open: couldn't fetch the library from https://host/missing.zip — HTTP 404
+
+stderr | .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > rejects a tree whose exhibits.json is absent/corrupt
+archie-viewer: failed to read exhibits.json — Error: no such file: exhibits.json
+    at HttpFile.fetchBytes (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-ad2bd3d0b6e7be251/packages/render-core/src/fs/http.ts:88:35)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openZipBytes opens a published .archie.zip and reads its gallery 15ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openLibraryFromFile opens a Blob (the drop / file-pick vector) 3ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > rejects a zip that isn't an Archie library (ADR-0020 marker — neither collection.json nor exhibits.json) 1ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > ACCEPTS an UNMARKED real export zip (collection.json + exhibits.json, NO archie.json) — the regression 1ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > two opens produce INDEPENDENT libraries (instance-context seam — no shared global) 33ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > readExhibit returns the exhibit and a library carrying a fresh revoke (revoke lifecycle) 3ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openFilesystem reads a gallery from an already-opened fs (published-tree-base shape) 1ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc fetches bytes via the injected fetch and opens them 4ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws on a non-OK response 1ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws when the declared size exceeds the cap 1ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > openLibraryFromTree fetches the gallery from a tree base (exhibits.json) 2ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > reads a per-exhibit manifest lazily on readExhibit (HTTP source, no blob rewrite) 2ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > openLibraryFromSrc DISPATCHES a non-zip src to the tree path 1ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > validates the ADR-0020 marker when archie.json is present (rejects a foreign tree) 1ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > accepts a tree with NO archie.json when exhibits.json parses (documented fallback) 0ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > rejects a tree whose exhibits.json is absent/corrupt 2ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > default fetch binding (bound-fetch-defaults.md) > openLibraryFromSrc's DEFAULT fetch survives the tree path's object storage (HttpFilesystem cfg) 1ms
+ ✓ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/load.test.ts > default fetch binding (bound-fetch-defaults.md) > openLibraryFromTree's DEFAULT fetch does too (exported entry point, own default) 0ms
+ × .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > the spine renders > one row per section, each carrying its title AND its prose 3ms
+   → document is not defined
+ × .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > the spine renders > names the exhibit and counts the spine 0ms
+   → document is not defined
+ × .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > the spine renders > a one-section spine says 'section', not 'sections', and offers no stepper 0ms
+   → document is not defined
+ × .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > the spine navigates > marks the active section and reports a row click 0ms
+   → document is not defined
+ × .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > the spine navigates > the stepper steps, and its ends are disabled rather than absent 0ms
+   → document is not defined
+ × .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > the spine navigates > offers the way out to the object grid 0ms
+   → document is not defined
+ × .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > the spine navigates > an out-of-range index clamps rather than rendering nothing active 0ms
+   → document is not defined
+ × .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > markdown renders as markup 0ms
+   → document is not defined
+ × .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a hostile body is sanitized, not injected (renderMarkdown = snarkdown → DOMPurify) 0ms
+   → document is not defined
+ × .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a section with no prose renders an empty pane, not 'undefined' 0ms
+   → document is not defined
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > reads the published spine, tolerating an exhibit with none 1ms
+ × .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > destroy removes the pane and its stylesheet 0ms
+   → document is not defined
+stderr | .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws on a non-OK response
+open: couldn't fetch the library from https://host/missing.zip — HTTP 404
+
+stderr | .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > rejects a tree whose exhibits.json is absent/corrupt
+archie-viewer: failed to read exhibits.json — Error: no such file: exhibits.json
+    at HttpFile.fetchBytes (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-afc034761bf2a593c/packages/render-core/src/fs/http.ts:88:35)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openZipBytes opens a published .archie.zip and reads its gallery 15ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openLibraryFromFile opens a Blob (the drop / file-pick vector) 3ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > rejects a zip that isn't an Archie library (ADR-0020 marker — neither collection.json nor exhibits.json) 1ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > ACCEPTS an UNMARKED real export zip (collection.json + exhibits.json, NO archie.json) — the regression 1ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > two opens produce INDEPENDENT libraries (instance-context seam — no shared global) 39ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > readExhibit returns the exhibit and a library carrying a fresh revoke (revoke lifecycle) 3ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openFilesystem reads a gallery from an already-opened fs (published-tree-base shape) 1ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc fetches bytes via the injected fetch and opens them 4ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws on a non-OK response 1ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws when the declared size exceeds the cap 0ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > openLibraryFromTree fetches the gallery from a tree base (exhibits.json) 2ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > reads a per-exhibit manifest lazily on readExhibit (HTTP source, no blob rewrite) 2ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > openLibraryFromSrc DISPATCHES a non-zip src to the tree path 1ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > validates the ADR-0020 marker when archie.json is present (rejects a foreign tree) 1ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > accepts a tree with NO archie.json when exhibits.json parses (documented fallback) 0ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > rejects a tree whose exhibits.json is absent/corrupt 2ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > default fetch binding (bound-fetch-defaults.md) > openLibraryFromSrc's DEFAULT fetch survives the tree path's object storage (HttpFilesystem cfg) 0ms
+ ✓ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/load.test.ts > default fetch binding (bound-fetch-defaults.md) > openLibraryFromTree's DEFAULT fetch does too (exported entry point, own default) 0ms
+ × .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > the spine renders > one row per section, each carrying its title AND its prose 3ms
+   → document is not defined
+ × .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > the spine renders > names the exhibit and counts the spine 0ms
+   → document is not defined
+ × .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > the spine renders > a one-section spine says 'section', not 'sections', and offers no stepper 0ms
+   → document is not defined
+ × .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > the spine navigates > marks the active section and reports a row click 0ms
+   → document is not defined
+ × .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > the spine navigates > the stepper steps, and its ends are disabled rather than absent 0ms
+   → document is not defined
+ × .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > the spine navigates > offers the way out to the object grid 0ms
+   → document is not defined
+ × .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > the spine navigates > an out-of-range index clamps rather than rendering nothing active 0ms
+   → document is not defined
+ × .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > markdown renders as markup 0ms
+   → document is not defined
+ × .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a hostile body is sanitized, not injected (renderMarkdown = snarkdown → DOMPurify) 0ms
+   → document is not defined
+ × .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a section with no prose renders an empty pane, not 'undefined' 0ms
+   → document is not defined
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > reads the published spine, tolerating an exhibit with none 1ms
+ × .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > destroy removes the pane and its stylesheet 0ms
+   → document is not defined
+stderr | .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws on a non-OK response
+open: couldn't fetch the library from https://host/missing.zip — HTTP 404
+
+stderr | .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > rejects a tree whose exhibits.json is absent/corrupt
+archie-viewer: failed to read exhibits.json — Error: no such file: exhibits.json
+    at HttpFile.fetchBytes (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-a1e5a46eac4a26ae7/packages/render-core/src/fs/http.ts:88:35)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openZipBytes opens a published .archie.zip and reads its gallery 10ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openLibraryFromFile opens a Blob (the drop / file-pick vector) 3ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > rejects a zip that isn't an Archie library (ADR-0020 marker — neither collection.json nor exhibits.json) 1ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > ACCEPTS an UNMARKED real export zip (collection.json + exhibits.json, NO archie.json) — the regression 1ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > two opens produce INDEPENDENT libraries (instance-context seam — no shared global) 23ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > readExhibit returns the exhibit and a library carrying a fresh revoke (revoke lifecycle) 3ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openFilesystem reads a gallery from an already-opened fs (published-tree-base shape) 1ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc fetches bytes via the injected fetch and opens them 3ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws on a non-OK response 1ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws when the declared size exceeds the cap 0ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > openLibraryFromTree fetches the gallery from a tree base (exhibits.json) 2ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > reads a per-exhibit manifest lazily on readExhibit (HTTP source, no blob rewrite) 2ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > openLibraryFromSrc DISPATCHES a non-zip src to the tree path 1ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > validates the ADR-0020 marker when archie.json is present (rejects a foreign tree) 1ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > accepts a tree with NO archie.json when exhibits.json parses (documented fallback) 0ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > rejects a tree whose exhibits.json is absent/corrupt 3ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > default fetch binding (bound-fetch-defaults.md) > openLibraryFromSrc's DEFAULT fetch survives the tree path's object storage (HttpFilesystem cfg) 1ms
+ ✓ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/load.test.ts > default fetch binding (bound-fetch-defaults.md) > openLibraryFromTree's DEFAULT fetch does too (exported entry point, own default) 0ms
+ × .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > the spine renders > one row per section, each carrying its title AND its prose 3ms
+   → document is not defined
+ × .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > the spine renders > names the exhibit and counts the spine 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > the spine renders > a one-section spine says 'section', not 'sections', and offers no stepper 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > the spine navigates > marks the active section and reports a row click 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > the spine navigates > the stepper steps, and its ends are disabled rather than absent 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > the spine navigates > offers the way out to the object grid 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > the spine navigates > an out-of-range index clamps rather than rendering nothing active 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > markdown renders as markup 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a hostile body is sanitized, not injected (renderMarkdown = snarkdown → DOMPurify) 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a section with no prose renders an empty pane, not 'undefined' 0ms
+   → document is not defined
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > reads the published spine, tolerating an exhibit with none 1ms
+ × .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > destroy removes the pane and its stylesheet 0ms
+   → document is not defined
+stderr | .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws on a non-OK response
+open: couldn't fetch the library from https://host/missing.zip — HTTP 404
+
+stderr | .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > rejects a tree whose exhibits.json is absent/corrupt
+archie-viewer: failed to read exhibits.json — Error: no such file: exhibits.json
+    at HttpFile.fetchBytes (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-ab77d953f9948e0bf/packages/render-core/src/fs/http.ts:88:35)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openZipBytes opens a published .archie.zip and reads its gallery 10ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openLibraryFromFile opens a Blob (the drop / file-pick vector) 3ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > rejects a zip that isn't an Archie library (ADR-0020 marker — neither collection.json nor exhibits.json) 1ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > ACCEPTS an UNMARKED real export zip (collection.json + exhibits.json, NO archie.json) — the regression 1ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > two opens produce INDEPENDENT libraries (instance-context seam — no shared global) 25ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > readExhibit returns the exhibit and a library carrying a fresh revoke (revoke lifecycle) 3ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openFilesystem reads a gallery from an already-opened fs (published-tree-base shape) 1ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc fetches bytes via the injected fetch and opens them 3ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws on a non-OK response 1ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws when the declared size exceeds the cap 0ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > openLibraryFromTree fetches the gallery from a tree base (exhibits.json) 2ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > reads a per-exhibit manifest lazily on readExhibit (HTTP source, no blob rewrite) 2ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > openLibraryFromSrc DISPATCHES a non-zip src to the tree path 1ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > validates the ADR-0020 marker when archie.json is present (rejects a foreign tree) 1ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > accepts a tree with NO archie.json when exhibits.json parses (documented fallback) 0ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > rejects a tree whose exhibits.json is absent/corrupt 3ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > default fetch binding (bound-fetch-defaults.md) > openLibraryFromSrc's DEFAULT fetch survives the tree path's object storage (HttpFilesystem cfg) 0ms
+ ✓ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/load.test.ts > default fetch binding (bound-fetch-defaults.md) > openLibraryFromTree's DEFAULT fetch does too (exported entry point, own default) 0ms
+ × .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > the spine renders > one row per section, each carrying its title AND its prose 2ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > the spine renders > names the exhibit and counts the spine 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > the spine renders > a one-section spine says 'section', not 'sections', and offers no stepper 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > the spine navigates > marks the active section and reports a row click 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > the spine navigates > the stepper steps, and its ends are disabled rather than absent 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > the spine navigates > offers the way out to the object grid 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > the spine navigates > an out-of-range index clamps rather than rendering nothing active 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > markdown renders as markup 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a hostile body is sanitized, not injected (renderMarkdown = snarkdown → DOMPurify) 0ms
+   → document is not defined
+ × .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a section with no prose renders an empty pane, not 'undefined' 0ms
+   → document is not defined
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > reads the published spine, tolerating an exhibit with none 1ms
+ × .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > destroy removes the pane and its stylesheet 0ms
+   → document is not defined
+stderr | .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws on a non-OK response
+open: couldn't fetch the library from https://host/missing.zip — HTTP 404
+
+stderr | .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > rejects a tree whose exhibits.json is absent/corrupt
+archie-viewer: failed to read exhibits.json — Error: no such file: exhibits.json
+    at HttpFile.fetchBytes (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-ad2464084c7c14c1e/packages/render-core/src/fs/http.ts:88:35)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openZipBytes opens a published .archie.zip and reads its gallery 9ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openLibraryFromFile opens a Blob (the drop / file-pick vector) 3ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > rejects a zip that isn't an Archie library (ADR-0020 marker — neither collection.json nor exhibits.json) 1ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > ACCEPTS an UNMARKED real export zip (collection.json + exhibits.json, NO archie.json) — the regression 1ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > two opens produce INDEPENDENT libraries (instance-context seam — no shared global) 28ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > readExhibit returns the exhibit and a library carrying a fresh revoke (revoke lifecycle) 3ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — open vectors (no module globals) > openFilesystem reads a gallery from an already-opened fs (published-tree-base shape) 1ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc fetches bytes via the injected fetch and opens them 3ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws on a non-OK response 1ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — src= fetch vector > openLibraryFromSrc throws when the declared size exceeds the cap 0ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > openLibraryFromTree fetches the gallery from a tree base (exhibits.json) 2ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > reads a per-exhibit manifest lazily on readExhibit (HTTP source, no blob rewrite) 1ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > openLibraryFromSrc DISPATCHES a non-zip src to the tree path 1ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > validates the ADR-0020 marker when archie.json is present (rejects a foreign tree) 1ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > accepts a tree with NO archie.json when exhibits.json parses (documented fallback) 0ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > load seam — published-tree-base vector > rejects a tree whose exhibits.json is absent/corrupt 2ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > default fetch binding (bound-fetch-defaults.md) > openLibraryFromSrc's DEFAULT fetch survives the tree path's object storage (HttpFilesystem cfg) 1ms
+ ✓ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/load.test.ts > default fetch binding (bound-fetch-defaults.md) > openLibraryFromTree's DEFAULT fetch does too (exported entry point, own default) 0ms
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 11 ⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/archie-viewer/src/element.test.ts [ packages/archie-viewer/src/element.test.ts ]
+ FAIL  packages/archie-viewer/src/reader-contract.test.ts [ packages/archie-viewer/src/reader-contract.test.ts ]
+Error: Cannot find package 'virtual:archie-tokens' imported from '/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/archie-viewer/src/tokens.ts'
+ ❯ packages/archie-viewer/src/tokens.ts:43:1
+     41| // The specifier is a VIRTUAL module (`tokens-source.mjs` explains why…
+     42| // of which file it resolves to — repointing the token layer is a one-…
+     43| import tokensCss from "virtual:archie-tokens";
+       | ^
+     44| 
+     45| /** The shell's token layer, scoped for a shadow root. Injected as the…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
+Caused by: Error: Failed to load url virtual:archie-tokens (resolved id: virtual:archie-tokens) in /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/archie-viewer/src/tokens.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@7.3.6_@types+node@25.9.1_lightningcss@1.32.0_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/88]⎯
+
+ FAIL  .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/element.test.ts [ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/element.test.ts ]
+Error: Cannot find package 'virtual:archie-tokens' imported from '/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/tokens.ts'
+ ❯ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/tokens.ts:43:1
+     41| // The specifier is a VIRTUAL module (`tokens-source.mjs` explains why…
+     42| // of which file it resolves to — repointing the token layer is a one-…
+     43| import tokensCss from "virtual:archie-tokens";
+       | ^
+     44| 
+     45| /** The shell's token layer, scoped for a shadow root. Injected as the…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
+Caused by: Error: Failed to load url virtual:archie-tokens (resolved id: virtual:archie-tokens) in /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/archie-viewer/src/tokens.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@7.3.6_@types+node@25.9.1_lightningcss@1.32.0_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/88]⎯
+
+ FAIL  .claude/worktrees/agent-a625ea0201d2bd01a/packages/archie-viewer/src/element.test.ts [ .claude/worktrees/agent-a625ea0201d2bd01a/packages/archie-viewer/src/element.test.ts ]
+Error: Cannot find package '@render/core' imported from '/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-a625ea0201d2bd01a/packages/archie-viewer/src/element.ts'
+ ❯ .claude/worktrees/agent-a625ea0201d2bd01a/packages/archie-viewer/src/element.ts:35:1
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
+Caused by: Error: Failed to load url @render/core (resolved id: @render/core) in /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-a625ea0201d2bd01a/packages/archie-viewer/src/load.test.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@7.3.6_@types+node@25.9.1_lightningcss@1.32.0_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/88]⎯
+
+ FAIL  .claude/worktrees/agent-a625ea0201d2bd01a/packages/archie-viewer/src/load.test.ts [ .claude/worktrees/agent-a625ea0201d2bd01a/packages/archie-viewer/src/load.test.ts ]
+Error: Cannot find package '@render/core' imported from '/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-a625ea0201d2bd01a/packages/archie-viewer/src/load.ts'
+ ❯ .claude/worktrees/agent-a625ea0201d2bd01a/packages/archie-viewer/src/load.ts:17:1
+     15| // canonicalization) — both files compose it instead of redefining it.
+     16| 
+     17| import {
+       | ^
+     18|   loadPortableExhibit,
+     19|   loadPortableGallery,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
+Caused by: Error: Failed to load url @render/core (resolved id: @render/core) in /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-a625ea0201d2bd01a/packages/archie-viewer/src/load.test.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@7.3.6_@types+node@25.9.1_lightningcss@1.32.0_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/88]⎯
+
+ FAIL  .claude/worktrees/agent-a625ea0201d2bd01a/packages/archie-viewer/src/narrative.test.ts [ .claude/worktrees/agent-a625ea0201d2bd01a/packages/archie-viewer/src/narrative.test.ts ]
+Error: Cannot find package '@render/core' imported from '/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-a625ea0201d2bd01a/packages/archie-viewer/src/narrative.ts'
+ ❯ .claude/worktrees/agent-a625ea0201d2bd01a/packages/archie-viewer/src/narrative.ts:17:1
+     15| // not the component (ADR-0019: framework-free by design).
+     16| 
+     17| import { renderMarkdown, type PortableExhibit, type Section } from "@r…
+       | ^
+     18| import { injectStyle, positionLabel } from "./reader-chrome.js";
+     19| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
+Caused by: Error: Failed to load url @render/core (resolved id: @render/core) in /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-a625ea0201d2bd01a/packages/archie-viewer/src/load.test.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@7.3.6_@types+node@25.9.1_lightningcss@1.32.0_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/element.test.ts [ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/element.test.ts ]
+Error: Cannot find package 'virtual:archie-tokens' imported from '/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/tokens.ts'
+ ❯ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/tokens.ts:43:1
+     41| // The specifier is a VIRTUAL module (`tokens-source.mjs` explains why…
+     42| // of which file it resolves to — repointing the token layer is a one-…
+     43| import tokensCss from "virtual:archie-tokens";
+       | ^
+     44| 
+     45| /** The shell's token layer, scoped for a shadow root. Injected as the…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
+Caused by: Error: Failed to load url virtual:archie-tokens (resolved id: virtual:archie-tokens) in /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/archie-viewer/src/tokens.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@7.3.6_@types+node@25.9.1_lightningcss@1.32.0_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/element.test.ts [ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/element.test.ts ]
+Error: Cannot find package 'virtual:archie-tokens' imported from '/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/tokens.ts'
+ ❯ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/tokens.ts:43:1
+     41| // The specifier is a VIRTUAL module (`tokens-source.mjs` explains why…
+     42| // of which file it resolves to — repointing the token layer is a one-…
+     43| import tokensCss from "virtual:archie-tokens";
+       | ^
+     44| 
+     45| /** The shell's token layer, scoped for a shadow root. Injected as the…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
+Caused by: Error: Failed to load url virtual:archie-tokens (resolved id: virtual:archie-tokens) in /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/archie-viewer/src/tokens.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@7.3.6_@types+node@25.9.1_lightningcss@1.32.0_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/88]⎯
+
+ FAIL  .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/element.test.ts [ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/element.test.ts ]
+Error: Cannot find package 'virtual:archie-tokens' imported from '/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/tokens.ts'
+ ❯ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/tokens.ts:43:1
+     41| // The specifier is a VIRTUAL module (`tokens-source.mjs` explains why…
+     42| // of which file it resolves to — repointing the token layer is a one-…
+     43| import tokensCss from "virtual:archie-tokens";
+       | ^
+     44| 
+     45| /** The shell's token layer, scoped for a shadow root. Injected as the…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
+Caused by: Error: Failed to load url virtual:archie-tokens (resolved id: virtual:archie-tokens) in /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/archie-viewer/src/tokens.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@7.3.6_@types+node@25.9.1_lightningcss@1.32.0_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/88]⎯
+
+ FAIL  .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/element.test.ts [ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/element.test.ts ]
+Error: Cannot find package 'virtual:archie-tokens' imported from '/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/tokens.ts'
+ ❯ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/tokens.ts:43:1
+     41| // The specifier is a VIRTUAL module (`tokens-source.mjs` explains why…
+     42| // of which file it resolves to — repointing the token layer is a one-…
+     43| import tokensCss from "virtual:archie-tokens";
+       | ^
+     44| 
+     45| /** The shell's token layer, scoped for a shadow root. Injected as the…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
+Caused by: Error: Failed to load url virtual:archie-tokens (resolved id: virtual:archie-tokens) in /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/archie-viewer/src/tokens.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@7.3.6_@types+node@25.9.1_lightningcss@1.32.0_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/88]⎯
+
+ FAIL  .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/element.test.ts [ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/element.test.ts ]
+Error: Cannot find package 'virtual:archie-tokens' imported from '/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/.claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/tokens.ts'
+ ❯ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/tokens.ts:43:1
+     41| // The specifier is a VIRTUAL module (`tokens-source.mjs` explains why…
+     42| // of which file it resolves to — repointing the token layer is a one-…
+     43| import tokensCss from "virtual:archie-tokens";
+       | ^
+     44| 
+     45| /** The shell's token layer, scoped for a shadow root. Injected as the…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
+Caused by: Error: Failed to load url virtual:archie-tokens (resolved id: virtual:archie-tokens) in /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/archie-viewer/src/tokens.ts. Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@7.3.6_@types+node@25.9.1_lightningcss@1.32.0_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/88]⎯
+
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 77 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/archie-viewer/src/narrative.test.ts > the spine renders > one row per section, each carrying its title AND its prose
+ReferenceError: document is not defined
+ ❯ mount packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ packages/archie-viewer/src/narrative.test.ts:35:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/88]⎯
+
+ FAIL  packages/archie-viewer/src/narrative.test.ts > the spine renders > names the exhibit and counts the spine
+ReferenceError: document is not defined
+ ❯ mount packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ packages/archie-viewer/src/narrative.test.ts:44:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/88]⎯
+
+ FAIL  packages/archie-viewer/src/narrative.test.ts > the spine renders > a one-section spine says 'section', not 'sections', and offers no stepper
+ReferenceError: document is not defined
+ ❯ mount packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ packages/archie-viewer/src/narrative.test.ts:50:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/88]⎯
+
+ FAIL  packages/archie-viewer/src/narrative.test.ts > the spine navigates > marks the active section and reports a row click
+ReferenceError: document is not defined
+ ❯ mount packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ packages/archie-viewer/src/narrative.test.ts:58:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/88]⎯
+
+ FAIL  packages/archie-viewer/src/narrative.test.ts > the spine navigates > the stepper steps, and its ends are disabled rather than absent
+ReferenceError: document is not defined
+ ❯ mount packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ packages/archie-viewer/src/narrative.test.ts:66:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/88]⎯
+
+ FAIL  packages/archie-viewer/src/narrative.test.ts > the spine navigates > offers the way out to the object grid
+ReferenceError: document is not defined
+ ❯ mount packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ packages/archie-viewer/src/narrative.test.ts:77:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/88]⎯
+
+ FAIL  packages/archie-viewer/src/narrative.test.ts > the spine navigates > an out-of-range index clamps rather than rendering nothing active
+ReferenceError: document is not defined
+ ❯ mount packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ packages/archie-viewer/src/narrative.test.ts:83:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/88]⎯
+
+ FAIL  packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > markdown renders as markup
+ReferenceError: document is not defined
+ ❯ mount packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ packages/archie-viewer/src/narrative.test.ts:91:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/88]⎯
+
+ FAIL  packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a hostile body is sanitized, not injected (renderMarkdown = snarkdown → DOMPurify)
+ReferenceError: document is not defined
+ ❯ mount packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ packages/archie-viewer/src/narrative.test.ts:96:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/88]⎯
+
+ FAIL  packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a section with no prose renders an empty pane, not 'undefined'
+ReferenceError: document is not defined
+ ❯ mount packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ packages/archie-viewer/src/narrative.test.ts:107:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/88]⎯
+
+ FAIL  packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > destroy removes the pane and its stylesheet
+ReferenceError: document is not defined
+ ❯ mount packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ packages/archie-viewer/src/narrative.test.ts:119:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/88]⎯
+
+ FAIL  .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > the spine renders > one row per section, each carrying its title AND its prose
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:35:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/88]⎯
+
+ FAIL  .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > the spine renders > names the exhibit and counts the spine
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:44:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/88]⎯
+
+ FAIL  .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > the spine renders > a one-section spine says 'section', not 'sections', and offers no stepper
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:50:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/88]⎯
+
+ FAIL  .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > the spine navigates > marks the active section and reports a row click
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:58:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/88]⎯
+
+ FAIL  .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > the spine navigates > the stepper steps, and its ends are disabled rather than absent
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:66:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/88]⎯
+
+ FAIL  .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > the spine navigates > offers the way out to the object grid
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:77:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/88]⎯
+
+ FAIL  .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > the spine navigates > an out-of-range index clamps rather than rendering nothing active
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:83:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/88]⎯
+
+ FAIL  .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > markdown renders as markup
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:91:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/88]⎯
+
+ FAIL  .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a hostile body is sanitized, not injected (renderMarkdown = snarkdown → DOMPurify)
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:96:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/88]⎯
+
+ FAIL  .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a section with no prose renders an empty pane, not 'undefined'
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:107:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/88]⎯
+
+ FAIL  .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > destroy removes the pane and its stylesheet
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a064d247c90c0c246/packages/archie-viewer/src/narrative.test.ts:119:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > the spine renders > one row per section, each carrying its title AND its prose
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:35:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > the spine renders > names the exhibit and counts the spine
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:44:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > the spine renders > a one-section spine says 'section', not 'sections', and offers no stepper
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:50:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > the spine navigates > marks the active section and reports a row click
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:58:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > the spine navigates > the stepper steps, and its ends are disabled rather than absent
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:66:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > the spine navigates > offers the way out to the object grid
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:77:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > the spine navigates > an out-of-range index clamps rather than rendering nothing active
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:83:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > markdown renders as markup
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:91:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[40/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a hostile body is sanitized, not injected (renderMarkdown = snarkdown → DOMPurify)
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:96:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[41/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a section with no prose renders an empty pane, not 'undefined'
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:107:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[42/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > destroy removes the pane and its stylesheet
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2464084c7c14c1e/packages/archie-viewer/src/narrative.test.ts:119:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[43/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > the spine renders > one row per section, each carrying its title AND its prose
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:35:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[44/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > the spine renders > names the exhibit and counts the spine
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:44:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[45/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > the spine renders > a one-section spine says 'section', not 'sections', and offers no stepper
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:50:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[46/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > the spine navigates > marks the active section and reports a row click
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:58:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[47/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > the spine navigates > the stepper steps, and its ends are disabled rather than absent
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:66:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[48/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > the spine navigates > offers the way out to the object grid
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:77:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[49/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > the spine navigates > an out-of-range index clamps rather than rendering nothing active
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:83:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[50/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > markdown renders as markup
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:91:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[51/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a hostile body is sanitized, not injected (renderMarkdown = snarkdown → DOMPurify)
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:96:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[52/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a section with no prose renders an empty pane, not 'undefined'
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:107:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[53/88]⎯
+
+ FAIL  .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > destroy removes the pane and its stylesheet
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ad2bd3d0b6e7be251/packages/archie-viewer/src/narrative.test.ts:119:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[54/88]⎯
+
+ FAIL  .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > the spine renders > one row per section, each carrying its title AND its prose
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:35:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[55/88]⎯
+
+ FAIL  .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > the spine renders > names the exhibit and counts the spine
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:44:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[56/88]⎯
+
+ FAIL  .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > the spine renders > a one-section spine says 'section', not 'sections', and offers no stepper
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:50:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[57/88]⎯
+
+ FAIL  .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > the spine navigates > marks the active section and reports a row click
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:58:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[58/88]⎯
+
+ FAIL  .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > the spine navigates > the stepper steps, and its ends are disabled rather than absent
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:66:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[59/88]⎯
+
+ FAIL  .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > the spine navigates > offers the way out to the object grid
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:77:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[60/88]⎯
+
+ FAIL  .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > the spine navigates > an out-of-range index clamps rather than rendering nothing active
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:83:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[61/88]⎯
+
+ FAIL  .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > markdown renders as markup
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:91:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[62/88]⎯
+
+ FAIL  .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a hostile body is sanitized, not injected (renderMarkdown = snarkdown → DOMPurify)
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:96:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[63/88]⎯
+
+ FAIL  .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a section with no prose renders an empty pane, not 'undefined'
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:107:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[64/88]⎯
+
+ FAIL  .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > destroy removes the pane and its stylesheet
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-a1e5a46eac4a26ae7/packages/archie-viewer/src/narrative.test.ts:119:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[65/88]⎯
+
+ FAIL  .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > the spine renders > one row per section, each carrying its title AND its prose
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:35:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[66/88]⎯
+
+ FAIL  .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > the spine renders > names the exhibit and counts the spine
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:44:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[67/88]⎯
+
+ FAIL  .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > the spine renders > a one-section spine says 'section', not 'sections', and offers no stepper
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:50:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[68/88]⎯
+
+ FAIL  .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > the spine navigates > marks the active section and reports a row click
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:58:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[69/88]⎯
+
+ FAIL  .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > the spine navigates > the stepper steps, and its ends are disabled rather than absent
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:66:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[70/88]⎯
+
+ FAIL  .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > the spine navigates > offers the way out to the object grid
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:77:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[71/88]⎯
+
+ FAIL  .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > the spine navigates > an out-of-range index clamps rather than rendering nothing active
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:83:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[72/88]⎯
+
+ FAIL  .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > markdown renders as markup
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:91:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[73/88]⎯
+
+ FAIL  .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a hostile body is sanitized, not injected (renderMarkdown = snarkdown → DOMPurify)
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:96:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[74/88]⎯
+
+ FAIL  .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a section with no prose renders an empty pane, not 'undefined'
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:107:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[75/88]⎯
+
+ FAIL  .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > destroy removes the pane and its stylesheet
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-ab77d953f9948e0bf/packages/archie-viewer/src/narrative.test.ts:119:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[76/88]⎯
+
+ FAIL  .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > the spine renders > one row per section, each carrying its title AND its prose
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:35:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[77/88]⎯
+
+ FAIL  .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > the spine renders > names the exhibit and counts the spine
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:44:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[78/88]⎯
+
+ FAIL  .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > the spine renders > a one-section spine says 'section', not 'sections', and offers no stepper
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:50:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[79/88]⎯
+
+ FAIL  .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > the spine navigates > marks the active section and reports a row click
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:58:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[80/88]⎯
+
+ FAIL  .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > the spine navigates > the stepper steps, and its ends are disabled rather than absent
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:66:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[81/88]⎯
+
+ FAIL  .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > the spine navigates > offers the way out to the object grid
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:77:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[82/88]⎯
+
+ FAIL  .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > the spine navigates > an out-of-range index clamps rather than rendering nothing active
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:83:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[83/88]⎯
+
+ FAIL  .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > markdown renders as markup
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:91:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[84/88]⎯
+
+ FAIL  .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a hostile body is sanitized, not injected (renderMarkdown = snarkdown → DOMPurify)
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:96:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[85/88]⎯
+
+ FAIL  .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > prose goes through the sanitized pipeline > a section with no prose renders an empty pane, not 'undefined'
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:107:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[86/88]⎯
+
+ FAIL  .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts > sectionsOf / teardown > destroy removes the pane and its stylesheet
+ReferenceError: document is not defined
+ ❯ mount .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:21:17
+     19| 
+     20| function mount(sections: Section[], index = 0) {
+     21|   const aside = document.createElement("div");
+       |                 ^
+     22|   document.body.append(aside);
+     23|   const calls = { activate: [] as number[], index: 0 };
+ ❯ .claude/worktrees/agent-afc034761bf2a593c/packages/archie-viewer/src/narrative.test.ts:119:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[87/88]⎯
+
+
+ Test Files  18 failed | 7 passed (25)
+      Tests  77 failed | 137 passed (214)
+   Start at  20:12:59
+   Duration  7.50s (transform 14.79s, setup 0ms, collect 32.33s, tests 542ms, environment 3ms, prepare 1.97s)
+

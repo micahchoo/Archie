@@ -1,0 +1,50 @@
+
+ RUN  v3.2.7 /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/archie-viewer
+
+ ↓ src/element.test.ts > registration > customElements.define registered <archie-viewer> as ArchieViewerElement
+ ↓ src/element.test.ts > registration > defineArchieViewer is idempotent (a second define is a no-op, not a throw)
+ ↓ src/element.test.ts > registration > observes src / target / iiif-content / offline / show-unlisted
+ ↓ src/element.test.ts > attribute ⇄ property reactivity > with no src, connecting renders the drop/open zone
+ ↓ src/element.test.ts > attribute ⇄ property reactivity > src property reflects to the attribute and back
+ ↓ src/element.test.ts > attribute ⇄ property reactivity > offline is a boolean attribute (presence = on)
+ ↓ src/element.test.ts > attribute ⇄ property reactivity > show-unlisted is a boolean attribute (presence = on)
+ ↓ src/element.test.ts > attribute ⇄ property reactivity > setting src after connect kicks off a load (leaves the empty zone for 'loading')
+ ↓ src/element.test.ts > openLibraryFs — the in-process door (Studio preview) > opens an ALREADY-BUILT tree without serializing it, and renders the gallery
+ ↓ src/element.test.ts > openLibraryFs — the in-process door (Studio preview) > still validates the ADR-0020 marker — a forged tree errors instead of showing an empty gallery
+ ✓ src/element.test.ts > openLibraryFs — the in-process door (Studio preview) > a second openLibraryFs replaces the first library (no stale gallery) 13ms
+ ↓ src/element.test.ts > no-src drop handler calls the load seam > openFile routes a bad blob through the load seam → error surfaces in the drop zone
+ ↓ src/element.test.ts > no-src drop handler calls the load seam > the file input change handler invokes openFile
+ ↓ src/element.test.ts > offline propagation reaches the reader options > the element passes its offline property through to the reader open call
+ ↓ src/element.test.ts > two-instance independence (Phase-4 per-element seam — no module globals) > two <archie-viewer> tags open DIFFERENT libraries without clobbering each other's state
+ ↓ src/element.test.ts > two-instance independence (Phase-4 per-element seam — no module globals) > two tags can open the SAME library bytes into independent instances (no shared fs)
+ ✓ src/element.test.ts > target ladder degrade-upward (ADR-0021, integration through a real library) > an unknown slug degrades to the Gallery with the cold notice 7ms
+ ✓ src/element.test.ts > target ladder degrade-upward (ADR-0021, integration through a real library) > an unknown note id degrades to the exhibit grid (note-not-found → its exhibit) 15ms
+ ✓ src/element.test.ts > target ladder degrade-upward (ADR-0021, integration through a real library) > a bare exhibit target lands on that exhibit's grid 8ms
+ ↓ src/element.test.ts > gallery listing honors the UNLISTED lever (Archie-f735) > an unlisted card is hidden from the gallery grid by default
+ ↓ src/element.test.ts > gallery listing honors the UNLISTED lever (Archie-f735) > absent `unlisted` ≡ listed — the un-flagged card renders exactly as before
+ ✓ src/element.test.ts > gallery listing honors the UNLISTED lever (Archie-f735) > show-unlisted includes the unlisted card in the gallery grid 4ms
+ ✓ src/element.test.ts > gallery listing honors the UNLISTED lever (Archie-f735) > toggling show-unlisted AFTER the gallery has rendered re-filters in place (no reload) 4ms
+ ↓ src/element.test.ts > gallery listing honors the UNLISTED lever (Archie-f735) > a `target` pointing directly at an unlisted exhibit still opens it — reachability is unaffected
+ ↓ src/element.test.ts > gallery listing honors the UNLISTED lever (Archie-f735) > navigating back to the gallery from an opened unlisted exhibit still hides its card
+ ↓ src/element.test.ts > AV medium branch (ADR-0019): a sound/video object mounts the native player, not OSD > opening a sound object mounts a native <audio> (not the OSD reader / not an error notice)
+ ↓ src/element.test.ts > object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Gallery parity) > a remote-IIIF object with NO baked thumbnail derives a sized Image-API thumb (not a blank label)
+ ↓ src/element.test.ts > object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Gallery parity) > a plain external raster passes through as its own renderable URL
+ ↓ src/element.test.ts > object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Gallery parity) > AV objects get a glyph+kind cue, never a fake <img>
+ ↓ src/element.test.ts > object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Gallery parity) > an xyz map object gets the map cue; a DZI-tiled object stays an IMAGE (no motif conflation)
+ ↓ src/element.test.ts > object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Gallery parity) > a 404'd IIIF sized thumb STEPS DOWN the candidate chain (level-0 static full) before the label cover
+ ↓ src/element.test.ts > object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Gallery parity) > a plain raster has a single-candidate chain — one error goes straight to the label cover
+ ↓ src/element.test.ts > object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Gallery parity) > a 404'd gallery COVER degrades to the title-text cover the no-cover path renders
+ ↓ src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > reflects the iiif-content attribute to the iiifContent property and back
+ ↓ src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > a Content State referencing a known canvas (+xywh) opens that object's reader (region carried)
+ ↓ src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > a Manifest-only Content State lands on the exhibit grid (slug, no object)
+ ↓ src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > a FOREIGN Content State degrades upward to the Gallery with the cold notice (never an error)
+ ↓ src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > a MALFORMED iiif-content degrades to the Gallery gracefully (no uncaught throw)
+ ↓ src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > PRECEDENCE: a native `target` WINS over iiif-content (interop is the fallback)
+ ↓ src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > reverse interop: currentContentState() round-trips back to the open object's canvas
+ ↓ src/element.test.ts > iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library) > currentContentState() is null when no object is open (gallery view isn't single-canvas addressable)
+
+ Test Files  1 passed (1)
+      Tests  6 passed | 35 skipped (41)
+   Start at  20:47:56
+   Duration  1.10s (transform 369ms, setup 0ms, collect 732ms, tests 52ms, environment 94ms, prepare 51ms)
+

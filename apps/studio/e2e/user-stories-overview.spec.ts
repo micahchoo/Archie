@@ -1,0 +1,103 @@
+import { test, expect } from '@playwright/test';
+import { resolve } from 'node:path';
+async function local(page: import('@playwright/test').Page) {
+  await page.goto('/studio/');
+  await page.getByRole('button', { name: /New exhibit/ }).first().click();
+  await page.getByText('From a media folder', { exact: true }).click();
+  await page.getByLabel('Choose a folder of media').setInputFiles(resolve(process.cwd(), 'public/voynich'));
+  await expect(page.getByText(/\d+ image/).first()).toBeVisible({ timeout: 15000 });
+  const create = page.getByRole('button', { name: /Create exhibit/ });
+  await expect(create).toBeEnabled();
+  await create.click();
+  await expect(page.getByRole('group', { name: 'Media items — reading order' })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('button', { name: /^1 article$/ })).toBeVisible({ timeout: 15000 });
+}
+test('STU-OBJ-002 details and STU-OBJ-003 rename', async ({ page }) => {
+  await local(page);
+  await page.getByRole('button', { name: /^1 article$/ }).click();
+  const label = page.getByLabel('Object label');
+  await expect(label).toBeVisible();
+  await label.fill('Renamed article');
+  await label.press('Tab');
+  await page.waitForTimeout(1200);
+  await label.fill('');
+  await label.press('Tab');
+  await expect(label).toHaveAttribute('title', 'Renamed article');
+  await page.reload();
+  await expect(page.getByLabel('Object label')).toHaveValue('Renamed article');
+});
+test('STU-VIEW-001/002 grid list density reload', async ({ page }) => {
+  await local(page);
+  await page.getByRole('button', { name: 'List', exact: true }).click();
+  await expect(page.locator('.list')).toBeVisible();
+  await page.reload();
+  await expect(page.locator('.list')).toBeVisible();
+  await page.getByRole('button', { name: 'Grid', exact: true }).click();
+  const compact = page.getByRole('button', { name: 'Compact', exact: true });
+  await compact.click();
+  await expect(compact).toHaveAttribute('aria-pressed', 'true');
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Compact', exact: true })).toHaveAttribute('aria-pressed', 'true');
+});
+test('STU-VIEW-003 search and sort controls', async ({ page }) => {
+  await local(page);
+  const search = page.getByRole('searchbox', { name: 'Search media titles' });
+  await search.fill('article');
+  const filteredMedia = page.getByRole('group', { name: 'Media items — reading order' });
+  await expect(filteredMedia.getByRole('button', { name: /^1 article$/ })).toBeVisible();
+  const sort = page.getByRole('combobox', { name: 'Sort media items' });
+  await sort.selectOption('name');
+  await expect(sort).toHaveValue('name');
+  await sort.selectOption('recent');
+  await expect(sort).toHaveValue('recent');
+});
+
+test('STU-OBJ-002 details fields persist after reopen', async ({ page }) => {
+  await local(page);
+  await page.getByRole('button', { name: 'Details — article' }).click();
+  const drawer = page.getByRole('dialog', { name: 'Media details' });
+  await expect(drawer).toBeVisible();
+  await drawer.getByPlaceholder('A short description of this object').fill('A local article description');
+  await drawer.getByPlaceholder('Who to credit when this object is shown or shared').fill('Test curator');
+  await drawer.getByRole('combobox', { name: 'License' }).selectOption({ label: 'CC BY 4.0' });
+  await drawer.getByRole('tab', { name: 'Metadata' }).click();
+  const metadata = drawer.getByRole('tabpanel', { name: 'Metadata' });
+  await metadata.getByRole('button', { name: /Add a field|Add field/ }).click();
+  await metadata.getByRole('option').first().click();
+  await metadata.locator('input.value').first().fill('Metadata probe');
+  await page.getByRole('button', { name: 'Close' }).click();
+  await page.waitForTimeout(1200);
+  await page.reload();
+  await page.getByRole('button', { name: 'Details — article' }).click();
+  const reopened = page.getByRole('dialog', { name: 'Media details' });
+  await expect(reopened.getByPlaceholder('A short description of this object')).toHaveValue('A local article description');
+  await expect(reopened.getByPlaceholder('Who to credit when this object is shown or shared')).toHaveValue('Test curator');
+  await expect(reopened.getByRole('combobox', { name: 'License' })).toHaveValue(/by/i);
+  await reopened.getByRole('tab', { name: 'Metadata' }).click();
+  await expect(reopened.locator('input.value')).toHaveValue('Metadata probe');
+});
+
+test('STU-OBJ-005 bulk remove selected media keeps unselected media', async ({ page }) => {
+  await local(page);
+  await page.getByRole('button', { name: /^1 article$/ }).click();
+  await page.getByRole('button', { name: 'Overview', exact: true }).click();
+  await page.getByRole('button', { name: 'Select', exact: true }).click();
+  const first = page.getByRole('button', { name: /^1 article$/ });
+  const second = page.getByRole('button', { name: /2 balneo logical/ });
+  await expect(first).toBeVisible();
+  await expect(second).toBeVisible();
+  await first.click();
+  await page.keyboard.down('Control');
+  await second.click();
+  await page.keyboard.up('Control');
+  await expect(page.getByText('2 selected', { exact: true })).toBeVisible();
+  const remove = page.getByRole('button', { name: 'Remove 2' });
+  await remove.click();
+  await expect(page.getByRole('button', { name: /Confirm — remove 2 items/ })).toBeVisible();
+  await page.getByRole('button', { name: /Confirm — remove 2 items/ }).click();
+  await page.waitForTimeout(1200);
+  await page.reload();
+  await expect(page.getByRole('button', { name: /1 cosmo logical/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^1 article$/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /2 balneo logical/ })).toHaveCount(0);
+});

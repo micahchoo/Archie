@@ -1,0 +1,70 @@
+
+ RUN  v3.2.7 /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio
+
+xx·x········
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/writer-lock.svelte.test.ts > writer-lock — Web Locks path (real navigator.locks) > first tab is the writer, a second tab is read-only
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/writer-lock.svelte.test.ts:43:26
+     41|     try {
+     42|       a.claim(); await settle();
+     43|       expect(a.canWrite).toBe(true);
+       |                          ^
+     44|       expect(a.otherTabActive).toBe(false);
+     45| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  src/writer-lock.svelte.test.ts > writer-lock — Web Locks path (real navigator.locks) > take-over steals the lock: the taker writes, the former writer flips to read-only
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/writer-lock.svelte.test.ts:59:26
+     57|       a.claim(); await settle();
+     58|       b.claim(); await settle();
+     59|       expect(a.canWrite).toBe(true);
+       |                          ^
+     60|       expect(b.canWrite).toBe(false);
+     61| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/writer-lock.svelte.test.ts > writer-lock — Web Locks path (real navigator.locks) > a reader auto-promotes to writer when the writer releases (tab close)
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/writer-lock.svelte.test.ts:97:26
+     95| 
+     96|       a.release(); await settle(); // the writer tab closes
+     97|       expect(b.canWrite).toBe(true); // the survivor is promoted — a s…
+       |                          ^
+     98|     } finally { a.release(); b.release(); await settle(); }
+     99|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 9 passed (12)
+   Start at  19:47:36
+   Duration  1.49s (transform 172ms, setup 0ms, collect 229ms, tests 1.06s, environment 0ms, prepare 52ms)
+

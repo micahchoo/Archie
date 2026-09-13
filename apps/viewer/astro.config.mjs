@@ -4,11 +4,20 @@ import svelte from "@astrojs/svelte";
 // Viewer = Astro + Svelte islands (ADR-0002 / Q-2). Static output -> GitHub Pages.
 // SITE_BASE env var overrides base for deploy contexts (e.g. "/Archie/viewer/").
 const base = process.env.SITE_BASE ?? "/";
+const externalStyleComponents = new Set(["ViewerShell.svelte", "Gallery.svelte", "EmptyHall.svelte", "Credit.svelte"]);
 
 export default defineConfig({
   output: "static",
   base,
-  integrations: [svelte()],
+  integrations: [svelte({
+    // Astro follows dynamic imports while collecting page CSS, which otherwise makes the gallery
+    // fetch every reader/exhibit stylesheet up front. Lazy components inject their scoped styles
+    // when their JavaScript chunk mounts; the four entry-shell components stay in external CSS.
+    dynamicCompileOptions: ({ filename }) => {
+      const component = filename.split(/[\\/]/).pop();
+      if (component && !externalStyleComponents.has(component)) return { css: "injected" };
+    },
+  })],
   // SINGLE-ORIGIN DEV (Q-3): in dev this server sits BEHIND the front-door proxy
   // (scripts/dev-proxy.mjs on :5173) which routes /studio → Vite :5174 and everything else here.
   // Do NOT try to make this server front via vite.server.proxy: Astro routes HTML NAVIGATIONS

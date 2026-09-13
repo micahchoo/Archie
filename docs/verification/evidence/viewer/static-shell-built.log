@@ -1,0 +1,52 @@
+
+Running 4 tests using 1 worker
+
+[1A[2K(node:4028426) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4028426) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/4] [chromium] › e2e/static-shell.spec.ts:17:7 › the page a crawler gets › with JavaScript off › voynich has a readable body, not an empty island (V107)
+[1A[2K[2/4] [chromium] › e2e/static-shell.spec.ts:17:7 › the page a crawler gets › with JavaScript off › voynich-reading has a readable body, not an empty island (V107)
+[1A[2K[3/4] [chromium] › e2e/static-shell.spec.ts:40:3 › the page a crawler gets › the shell yields to the app once it hydrates
+[1A[2K  1) [chromium] › e2e/static-shell.spec.ts:40:3 › the page a crawler gets › the shell yields to the app once it hydrates 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('button.object').first()
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 15000ms[22m
+    [2m  - waiting for locator('button.object').first()[22m
+
+
+      43 |     await goOffline(page);
+      44 |     await page.goto("./voynich/");
+    > 45 |     await expect(page.locator("button.object").first()).toBeVisible();
+         |                                                         ^
+      46 |     await expect(page.locator("#static-exhibit")).toHaveCount(0);
+      47 |   });
+      48 |
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/static-shell.spec.ts:45:57
+
+    Error Context: test-results/static-shell-the-page-a-cr-5b0ee-to-the-app-once-it-hydrates-chromium/error-context.md
+
+
+[1A[2K(node:4029732) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4029732) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[4/4] [chromium] › e2e/static-shell.spec.ts:49:3 › the page a crawler gets › the archival page carries the narrative, not just the notes (V110)
+[1A[2K  1 failed
+    [chromium] › e2e/static-shell.spec.ts:40:3 › the page a crawler gets › the shell yields to the app once it hydrates 
+  3 passed (17.4s)

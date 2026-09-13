@@ -9,7 +9,7 @@
   // tested @render/core AnnotationSession: draw on the canvas → create note → edit body/tags/
   // layers in the WADM form → publish to .archie.zip. Logic lives in core; this is the thin shell.
   import { onMount, tick } from "svelte";
-  import ReadingsModal from "./ReadingsModal.svelte";
+  import { lazyComponent } from "./lazy.svelte.js";
   // The readings RAIL that floated over the canvas is RETIRED from the editor (Archie-b671): its controls
   // live as the Readings panel in the navigator's "This object" zone (Archie-d48e — see the body markup).
   import SafetyState from "./SafetyState.svelte";
@@ -23,21 +23,12 @@
   // CmdK is lazy-loaded on first open (see CmdKComp below). Cite-by-image is CmdK's internal Browse tab
   // now (Archie-5968) — the old standalone MediaPicker surface was already orphaned and is deleted.
   // AvEditor (AV objects) is lazy-loaded — see AvEditorComp below (kept out of the startup bundle).
-  import ExhibitOverview from "./ExhibitOverview.svelte";
   // The scoped add-media chooser (Archie-56cf): the SAME dialog LibraryHome uses to mint exhibits,
   // opened here in "add-to-exhibit" scope so the overview Add-media plate + the editor "+ Add media"
   // button funnel every "bring something in" through one surface (folder / IIIF / Map). It absorbed the
   // retired AddMapModal's Map path, so there is no longer a standalone map modal to lazy-load.
-  import CreateExhibitDialog from "./CreateExhibitDialog.svelte";
-  import SaveZipDialog from "./SaveZipDialog.svelte";
   // NarrativeEditor (narrative panel) is lazy-loaded — see NarrativeEditorComp below.
-  import DetailsEditor from "./DetailsEditor.svelte";
-  import PropsDrawer from "./PropsDrawer.svelte";
-  import ShortcutsHelp from "./ShortcutsHelp.svelte";
-  import IdentityPrompt from "./IdentityPrompt.svelte";
-  import TutorialModal from "./TutorialModal.svelte";
   import HelpMenu from "./HelpMenu.svelte";
-  import Settings from "./Settings.svelte";
   // Settings' diagnostics readouts (L4) — the pool width and fallback counter come from the modules
   // that own them, never from a copied constant, so the panel cannot report a stale ceiling.
   import { bakePoolSize, bakeFallbackCount } from "./bake-async.js";
@@ -78,7 +69,6 @@
   import { readingBadge, readingNumber } from "./reading-index.js";
   import { editorLabel, attributionChip } from "./collab-attribution.js";
   import { loadImportFreshness, freshnessBadgeText } from "./import-freshness.js";
-  import MergeReview from "./MergeReview.svelte";
   import { roveIndex } from "./roving.js";
   // The editor view-model (Archie P8): the notes/annotations derivation cluster + marginalia rail + LOD
   // dots + co-located-note stack — ONE factory over App's reactive primitives (constructed below, after
@@ -114,10 +104,10 @@
     type CsvColumnMapping,
     type CsvPendingNote,
   } from "./csv-import.js";
-  import MetadataImport from "./MetadataImport.svelte";
-  import AnnotationCsvImport from "./AnnotationCsvImport.svelte";
   // The per-exhibit session state machine (session lifecycle + atomic open) — the DOMINO cut.
   import { createExhibitSession } from "./exhibit-session.svelte.js";
+  import { persistPendingNotes } from "./pending-notes-persist.js";
+  import { createAuthoringFlush } from "./authoring-flush.js";
   // Structure rev-log (Archie-42f3; DEFAULT ON since Archie-b0b1). archie.structureRevlog survives as
   // an emergency kill-switch ("0" → OFF), which makes the session module inert (no reads, no writes,
   // no structure/ dir).
@@ -127,6 +117,22 @@
   // Place-addressable navigation (ADR-0024): the pure place model (parse/serialize/resolve) + Tauri detection.
   import { parsePlace, serializePlace, resolvePlace, librarySnapshot, LIBRARY, type Place, type Missing } from "./place.js";
   import { isTauri, fetchRemoteAsBlobUrl, fetchRemoteJson } from "./tauri-fs.js";
+
+  // The library is Studio's entry surface. Keep overview-only UI and closed dialogs out of its
+  // critical path; each loader starts once, at the first render that can actually show the component.
+  const ExhibitOverviewLazy = lazyComponent(() => import("./ExhibitOverview.svelte"));
+  const PropsDrawerLazy = lazyComponent(() => import("./PropsDrawer.svelte"));
+  const DetailsEditorLazy = lazyComponent(() => import("./DetailsEditor.svelte"));
+  const MetadataImportLazy = lazyComponent(() => import("./MetadataImport.svelte"));
+  const AnnotationCsvImportLazy = lazyComponent(() => import("./AnnotationCsvImport.svelte"));
+  const ReadingsModalLazy = lazyComponent(() => import("./ReadingsModal.svelte"));
+  const SettingsLazy = lazyComponent(() => import("./Settings.svelte"));
+  const SaveZipDialogLazy = lazyComponent(() => import("./SaveZipDialog.svelte"));
+  const CreateExhibitDialogLazy = lazyComponent(() => import("./CreateExhibitDialog.svelte"));
+  const ShortcutsHelpLazy = lazyComponent(() => import("./ShortcutsHelp.svelte"));
+  const IdentityPromptLazy = lazyComponent(() => import("./IdentityPrompt.svelte"));
+  const MergeReviewLazy = lazyComponent(() => import("./MergeReview.svelte"));
+  const TutorialModalLazy = lazyComponent(() => import("./TutorialModal.svelte"));
   // Native-fetch escape hatch for the packaged desktop app (Archie-fada): the webview's own fetch fails
   // on CORS-restricted / cross-origin-redirecting hosts, so on Tauri we route remote image bytes + IIIF
   // info.json through Tauri's native http. Set ONLY under isTauri() — undefined on web, where the mount /
@@ -341,6 +347,7 @@
     enqueue: enqueueSave,
     isTemplate,
   });
+  const flushAuthoring = createAuthoringFlush(save, (slug) => structure.flush(slug), () => vs.currentSlug, () => lib.persist());
   // Load the entered exhibit's structure log (once per slug; seeds from a pre-revlog `sections` array
   // on the first flag-on run). Reruns on meta changes but ensureLoaded no-ops once loaded.
   $effect(() => {
@@ -405,7 +412,7 @@
       return; // abort boot: no loadLibraryMeta, no session — nothing writes over a partially-migrated store
     }
     const meta = await loadLibraryMeta();
-    if (meta && meta.exhibits.length > 0) {
+    if (meta) {
       const isStale = (d: ExhibitMeta, p: ExhibitMeta | undefined): boolean =>
         !p || p.objects.length !== d.objects.length || p.objects[0]?.source !== d.objects[0]?.source
         || (p.seedVersion ?? 0) !== (d.seedVersion ?? 0); // seed content bumped → reseed
@@ -427,7 +434,10 @@
         reconciled.push(d);
       }
       const userExhibits = meta.exhibits.filter((e) => !templateSlugs.has(e.slug) && !reconciled.some((r) => r.slug === e.slug));
-      lib.setMeta({ ...lib.meta, exhibits: [...reconciled, ...userExhibits] }); // set-only: persist stays conditional
+      // Reconcile only the exhibit collection. The loaded record is authoritative for library-level
+      // title/summary/rights/metadata; spreading lib.meta here used startup defaults and erased those
+      // fields on every boot, including a saved library with zero exhibits.
+      lib.setMeta({ ...meta, exhibits: [...reconciled, ...userExhibits] }); // set-only: persist stays conditional
       for (const slug of stale) await clearExhibitAnnotations(slug); // discard stale seed notes → reseed
       if (stale.length) await lib.persist();
     } else {
@@ -477,7 +487,13 @@
     vs.creating = null;
     placingPendingId = null; // drop any armed placement from the outgoing exhibit
     clearSel(); selectMode = false; // selection is exhibit-scoped (Phase 2) — the incoming exhibit starts clean
-    void loadPendingNotes().then((m) => { pendingNotes = m[slug] ?? []; }); // this exhibit's coordinate-free imports awaiting a box
+    const pendingLoadGeneration = ++pendingNotesLoadGeneration;
+    void loadPendingNotes().then((m) => {
+      // The load belongs to the exhibit that started it. A slower read from the outgoing exhibit must
+      // never install its list after navigation has already moved the cursor elsewhere. The generation
+      // also distinguishes A→B→A: the first A read is stale even though its slug matches again.
+      if (vs.currentSlug === slug && pendingLoadGeneration === pendingNotesLoadGeneration) pendingNotes = m[slug] ?? [];
+    }); // this exhibit's coordinate-free imports awaiting a box
     rdg.resetForExhibit(); // fresh exhibit = everything visible, pen on base (fixes the cross-exhibit leak)
     model.editorFilter = "all"; // the editor lens is exhibit-scoped too — a filter from the outgoing exhibit must not silently hide notes here
     firstAddCueSlug = null; pendingClear = null; clearedSlug = null; // drop any narrative-staging cue from the outgoing exhibit
@@ -1173,6 +1189,7 @@
   // staged exhibit-scoped (persisted via the pending-notes sidecar) until the author draws each box.
   // `placingPendingId` arms that draw — geometry comes from onCreate, exactly like narrative framing.
   let pendingNotes = $state<PendingNote[]>([]);
+  let pendingNotesLoadGeneration = 0;
   let placingPendingId = $state<string | null>(null);
   const drawArmed = $derived(vs.creating !== null || framingSectionId !== null || placingPendingId !== null); // canvas in draw mode while any gesture is live
   const drawShape = $derived<DrawTool>(vs.creating ?? "rectangle"); // framing always frames a box
@@ -1253,10 +1270,8 @@
   // Persist the current exhibit's pending list into the slug-keyed sidecar (whole-map I/O; single writer).
   // Routed through the save queue (SILENCE row 1, tend Issue 4): a direct OPFS write here had no catch
   // anywhere in its call chain, so a quota/permission failure was an unhandled rejection — invisible.
-  async function persistPending() {
-    const map = await loadPendingNotes();
-    if (pendingNotes.length) map[vs.currentSlug] = [...pendingNotes]; else delete map[vs.currentSlug];
-    await enqueueSave("pending-notes", "Pending notes", () => savePendingNotes(map));
+  async function persistPending(slug: string, notes: PendingNote[]) {
+    await persistPendingNotes({ load: loadPendingNotes, save: savePendingNotes, enqueue: enqueueSave }, slug, notes);
   }
   // IngestContext hook: stage coordinate-free CSV rows, deduped by (object, comment). Returns the NEW count.
   function addPendingNotes(incoming: CsvPendingNote[]): number {
@@ -1269,13 +1284,13 @@
       pendingNotes.push({ id: newPendingId(), ...n });
       added++;
     }
-    if (added > 0) void persistPending();
+    if (added > 0) void persistPending(vs.currentSlug, [...pendingNotes]);
     return added;
   }
   function removePending(id: string) {
     pendingNotes = pendingNotes.filter((p) => p.id !== id);
     // The "To place" group lives inside the always-visible Notes zone now; it simply disappears at 0.
-    void persistPending();
+    void persistPending(vs.currentSlug, [...pendingNotes]);
   }
   // "Set area" on a pending note: jump to its bound object, arm the draw; onCreate consumes the next box.
   function startPlacing(id: string) {
@@ -1909,7 +1924,7 @@
       // canvas ids on a domain nobody owns. Resolved per publish instead: the library's live URL if it
       // has deployed, else relative ids. See deploy/remembered.ts.
       publishBase: () => publishBaseFor(DEPLOY_LIBRARY_ID),
-      flushExhibit: () => save(),
+      flushExhibit: flushAuthoring,
       loadAllLogs: () => loadAllLogs(true), // publish path — torn-store warns ON (Archie-a690)
       annotationCorruption: () => publishAnnotationCorruption, // findings from that same loadAllLogs pass → dialog advisory
       buildFullLibrary: () => buildFullLibrary(),
@@ -1931,7 +1946,7 @@
   // The binding store (worklist 0.3 cut 1): the three-configs state machine + its Save/Open/Close/
   // autosave flows live in binding-store.svelte.ts; its disk sinks lazy-load the publish flows on first use.
   const bnd = createBindingStore({
-    flushExhibit: () => save(),
+    flushExhibit: flushAuthoring,
     writeToFolder: async (fs) => (await ensurePub()).writeToFolder(fs),
     downloadProjectZip: async (opts) => (await ensurePub()).downloadProjectZip(opts),
     replaceProjectFrom: (loaded, srcFs) => flows.replaceProjectFrom(loaded, srcFs),
@@ -2050,7 +2065,8 @@
         bindingKind={bnd.binding.kind} bindingDirty={bnd.dirty} bindingBusy={bnd.busy} bindingError={bnd.error}
         hasRealWork={safetyHasRealWork} onflush={requestSave} />
     {/snippet}
-    <ExhibitOverview
+    {#if ExhibitOverviewLazy.current}
+    <ExhibitOverviewLazy.current
       safety={overviewSafety}
       title={vs.currentExhibit.title}
       layout={currentLayout}
@@ -2092,14 +2108,17 @@
       onsummary={setExhibitSummary}
       onremove={removeCurrentExhibit}
     />
+    {:else}
+      <div class="no-canvas">Loading…</div>
+    {/if}
     <!-- Object pencil-CRUD drawer (Archie-79be): edit ANY plate's details (title/description/rights) +
          remove, without descending into the object. App-owned because it holds the full ObjectMeta + the
          object mutation wrappers; the overview only signals which object via oneditobject. -->
-    <PropsDrawer open={!!editingObject} title="Media details" onclose={() => (editingObjectId = null)}>
-      {#if editingObject}
+    {#if editingObject && PropsDrawerLazy.current && DetailsEditorLazy.current}
+    <PropsDrawerLazy.current open={true} title="Media details" onclose={() => (editingObjectId = null)}>
         <!-- Read-only (UX-CRITIQUE O1/B3), same treatment as the exhibit drawer: fields disabled with a
              reason line, remove withheld — viewing stays legitimate. -->
-        <DetailsEditor
+        <DetailsEditorLazy.current
           title={editingObject.label}
           summary={editingObject.summary ?? ""}
           rights={{ ...(editingObject.rights ? { rights: editingObject.rights } : {}), ...(editingObject.requiredStatement ? { requiredStatement: editingObject.requiredStatement } : {}), ...(editingObject.metadata ? { metadata: editingObject.metadata } : {}) }}
@@ -2111,22 +2130,24 @@
           onremove={canWriteNow ? () => { const id = editingObject!.id; editingObjectId = null; void removeObjectById(id); } : undefined}
           readonly={!canWriteNow}
         />
-      {/if}
-    </PropsDrawer>
+    </PropsDrawerLazy.current>
+    {/if}
     <!-- Bulk metadata import (Archie-3754) — the catalogue-spreadsheet door, at the EXHIBIT level because
          one sheet describes many media items. Its trigger is the overview toolbar's "Import metadata…"
          (onimportmetadata above); the notes CSV on-ramp stays in the inspector beside the notes it makes. -->
-    <MetadataImport
+    {#if metadataImportOpen && MetadataImportLazy.current}
+    <MetadataImportLazy.current
       open={metadataImportOpen}
       exhibitName={vs.currentExhibit.title}
       objects={vs.OBJECTS}
       onapply={applyMetadataImport}
       onclose={() => (metadataImportOpen = false)}
     />
+    {/if}
     <!-- The annotation CSV door's mapping step (Archie-96e6) — opens ONLY for a header that failed
          csvHeaderConforms (see pickNotesCsv); a conforming sheet never sees it. -->
-    {#if csvMappingSheet}
-      <AnnotationCsvImport
+    {#if csvMappingSheet && AnnotationCsvImportLazy.current}
+      <AnnotationCsvImportLazy.current
         open={true}
         file={csvMappingSheet.file}
         header={csvMappingSheet.header}
@@ -2171,10 +2192,14 @@
       onsettings={() => (settingsOpen = true)} />
   </header>
 
-  <ReadingsModal open={readingsOpen} readings={currentReadings} palette={READING_PALETTE} onchange={setReadings} onadd={(id) => rdg.setActive(id)} onclose={() => (readingsOpen = false)} />
+  {#if readingsOpen && ReadingsModalLazy.current}
+    <ReadingsModalLazy.current open={true} readings={currentReadings} palette={READING_PALETTE} onchange={setReadings} onadd={(id) => rdg.setActive(id)} onclose={() => (readingsOpen = false)} />
+  {/if}
 
-  <Settings open={settingsOpen} onclose={() => (settingsOpen = false)}
-    libraryName={lib.meta.title || PROJECT_TITLE} diagnostics={settingsDiagnostics} />
+  {#if settingsOpen && SettingsLazy.current}
+    <SettingsLazy.current open={true} onclose={() => (settingsOpen = false)}
+      libraryName={lib.meta.title || PROJECT_TITLE} diagnostics={settingsDiagnostics} />
+  {/if}
 
   {#if isTemplate(vs.currentSlug)}
     <!-- Per-exhibit playground banner (§115): an EXAMPLE is a template — exploring it is honest play,
@@ -2436,12 +2461,12 @@
                visible in the object zone now (was a separate accordion panel). Label unified to "Details"
                (decision Archie-3e0a, ticket Archie-ebf4) — same word the library/exhibit chips and the
                card/plate/row pencils use for this same surface. -->
-          {#if vs.current}
+          {#if vs.current && DetailsEditorLazy.current}
             <div class="panel-title-row">
               <h3 class="panel-title">Details</h3>
               {#if vs.current.summary || vs.current.rights || vs.current.requiredStatement || vs.current.metadata?.length}<span class="panel-note" title="Description, credit, or metadata set for this item">Set</span>{/if}
             </div>
-            <DetailsEditor
+            <DetailsEditorLazy.current
               showTitle={false}
               summary={vs.current.summary ?? ""}
               rights={{ ...(vs.current.rights ? { rights: vs.current.rights } : {}), ...(vs.current.requiredStatement ? { requiredStatement: vs.current.requiredStatement } : {}), ...(vs.current.metadata ? { metadata: vs.current.metadata } : {}) }}
@@ -2724,13 +2749,15 @@
 {/if}
 <!-- The Save dialog for zip-sink saves (file binding / no folder picker): name the file, pick the
      exhibits. Folder-bound saves and the automatic safety flushes bypass it entirely. -->
-<SaveZipDialog
-  open={saveZipOpen}
-  exhibits={exportableExhibits}
-  suggestedName={suggestedZipName}
-  busy={bnd.busy}
-  onsave={(opts) => { saveZipOpen = false; void bnd.saveProject(opts); }}
-  oncancel={() => (saveZipOpen = false)} />
+{#if saveZipOpen && SaveZipDialogLazy.current}
+  <SaveZipDialogLazy.current
+    open={true}
+    exhibits={exportableExhibits}
+    suggestedName={suggestedZipName}
+    busy={bnd.busy}
+    onsave={(opts) => { saveZipOpen = false; void bnd.saveProject(opts); }}
+    oncancel={() => (saveZipOpen = false)} />
+{/if}
 <!-- GLOBAL: the scoped add-media chooser (Archie-56cf). ONE instance, opened in add-to-exhibit scope by
      BOTH the overview Add-media plate (onaddobject) and the editor "+ Add media" button. Its paths route
      to the into-exhibit ingest flows: folder → addFiles (straight into this exhibit), IIIF →
@@ -2738,9 +2765,9 @@
      (Archie-32e8 — restores the pre-Archie-56cf URL-add UI onto the ingest flow, which survived that cut
      ready-made but UI-less). Start-empty/oncreate never fire in this scope. Mounted only with a current
      exhibit so the scope's slug/title are real. -->
-{#if vs.currentExhibit}
-  <CreateExhibitDialog
-    open={addMediaOpen}
+{#if vs.currentExhibit && addMediaOpen && CreateExhibitDialogLazy.current}
+  <CreateExhibitDialogLazy.current
+    open={true}
     scope={{ kind: "add-to-exhibit", slug: vs.currentSlug, title: vs.currentExhibit.title }}
     oncreate={() => {}}
     oncreatefromfolder={(files) => runIngest("Folder add failed", () => flows.addFiles(files), "Couldn't finish adding those files — the import stopped part-way. Anything already added is in the grid; try the rest again.")}
@@ -2752,14 +2779,22 @@
   />
 {/if}
 <!-- GLOBAL: the ? shortcuts cheat-sheet (generated from the registry) — reachable from any view. -->
-<ShortcutsHelp open={helpOpen} onclose={() => (helpOpen = false)} />
+{#if helpOpen && ShortcutsHelpLazy.current}
+  <ShortcutsHelpLazy.current open={true} onclose={() => (helpOpen = false)} />
+{/if}
 <!-- GLOBAL: the lazy identity prompt (Archie-2bf1) — opened by maybePromptIdentity, never at boot. -->
-<IdentityPrompt open={identityPromptOpen} onsave={onIdentitySave} onskip={onIdentitySkip} />
+{#if identityPromptOpen && IdentityPromptLazy.current}
+  <IdentityPromptLazy.current open={true} onsave={onIdentitySave} onskip={onIdentitySkip} />
+{/if}
 <!-- GLOBAL: MergeReview (Archie-90f1) — opened by the status strip's "Review", source-agnostic over
      however sess.session got its plural heads (a merged zip today; live sync later). -->
-<MergeReview open={mergeReviewOpen} onclose={() => (mergeReviewOpen = false)} session={undoWire} conflicts={model.noteConflicts} onchange={resync} />
+{#if mergeReviewOpen && MergeReviewLazy.current}
+  <MergeReviewLazy.current open={true} onclose={() => (mergeReviewOpen = false)} session={undoWire} conflicts={model.noteConflicts} onchange={resync} />
+{/if}
 <!-- GLOBAL: the onboarding tutorial (embeds docs/learn decks from public/learn). -->
-<TutorialModal open={tutorialOpen} onclose={() => (tutorialOpen = false)} />
+{#if tutorialOpen && TutorialModalLazy.current}
+  <TutorialModalLazy.current open={true} onclose={() => (tutorialOpen = false)} />
+{/if}
 <!-- GLOBAL: the storage chip — fixed bottom-right corner, under every view (library / overview /
      editor). Shows absolute origin usage and goes critical on a WITNESSED write failure (reported by
      ingest-flows' persistAsset seam) — never a fraction of estimate().quota, which is a privacy

@@ -1,0 +1,62 @@
+import { test, expect } from '@playwright/test';
+import { resolve } from 'node:path';
+
+async function localArticle(page: import('@playwright/test').Page) {
+  await page.goto('/studio/'); await page.getByRole('button', { name: /New exhibit/ }).first().click();
+  await page.getByText('From a media folder', { exact: true }).click();
+  await page.getByLabel('Choose a folder of media').setInputFiles(resolve(process.cwd(), 'public/voynich'));
+  await expect(page.getByText(/image/).first()).toBeVisible(); await page.getByRole('button', { name: /Create exhibit/ }).click();
+  await expect(page.getByRole('group', { name: 'Media items — reading order' })).toBeVisible({ timeout: 15000 });
+  await page.getByRole('button', { name: /^1 article$/ }).click(); await expect(page.getByRole('navigation', { name: 'Exhibit objects' })).toBeVisible();
+  await expect(page.locator('.canvas-plate').first()).toBeVisible({ timeout: 15000 });
+}
+
+test('STU-ANN-005A/B and STU-ANN-012A-F reading management', async ({ page }) => {
+  await localArticle(page);
+  await page.getByRole('button', { name: /Whole image/ }).click();
+  const editor = page.locator('.note-editor-region'); await expect(editor).toBeVisible();
+  await editor.getByRole('combobox', { name: 'Reading' }).selectOption('');
+  await editor.getByRole('combobox', { name: 'Emphasis' }).selectOption('strong');
+  await page.getByRole('button', { name: /NEW READING/i }).click();
+  const modal = page.getByRole('dialog'); await expect(modal).toBeVisible();
+  const add = modal.getByRole('button', { name: /Add/i });
+  const newName = modal.getByRole('textbox', { name: 'New reading name' }); await expect(add).toBeDisabled(); await newName.fill('Conservation'); await expect(add).toBeEnabled(); await add.click();
+  const readingName = modal.getByRole('textbox', { name: 'Reading name', exact: true }); await expect(readingName).toHaveValue('Conservation');
+  await readingName.fill('Preservation'); await readingName.press('Tab');
+  await modal.getByRole('textbox', { name: /Description for/ }).fill('A careful description.');
+  await modal.getByRole('textbox', { name: /Wall text for/ }).fill('Visitors read this wall text.');
+  await modal.getByTitle('Use this colour').last().click();
+  const chosenColour = await modal.locator('section.reading').locator('button.swatch.on').getAttribute('style');
+  await modal.getByRole('button', { name: 'Done' }).click();
+  await page.getByRole('button', { name: /Manage readings|NEW READING/i }).click();
+  const reopened = page.getByRole('dialog');
+  await expect(reopened.getByRole('textbox', { name: 'Reading name', exact: true })).toHaveValue('Preservation');
+  await expect(reopened.getByRole('textbox', { name: /Description for/ })).toHaveValue('A careful description.');
+  await expect(reopened.getByRole('textbox', { name: /Wall text for/ })).toHaveValue('Visitors read this wall text.');
+  await expect(reopened.locator('section.reading button.swatch.on')).toHaveAttribute('style', chosenColour);
+  const reopenedName = reopened.getByRole('textbox', { name: 'Reading name', exact: true });
+  await reopenedName.fill('   '); await reopenedName.press('Tab');
+  await expect(reopenedName).toHaveValue('Preservation');
+  const description = reopened.getByRole('textbox', { name: /Description for/ });
+  const wallText = reopened.getByRole('textbox', { name: /Wall text for/ });
+  await description.fill('   '); await description.press('Tab');
+  await wallText.fill('   '); await wallText.press('Tab');
+  await expect(description).toHaveValue('');
+  await expect(wallText).toHaveValue('');
+  const emptyNew = reopened.getByRole('textbox', { name: 'New reading name' });
+  await emptyNew.fill('   ');
+  await expect(reopened.getByRole('button', { name: /Add/i })).toBeDisabled();
+  const readingId = await reopened.getByRole('textbox', { name: 'Reading name', exact: true }).getAttribute('data-reading-id').catch(() => null);
+  await reopened.getByRole('button', { name: 'Done' }).click();
+  const note = page.locator('.note-editor-region'); await expect(note).toBeVisible();
+  const readingSelect = note.getByRole('combobox', { name: 'Reading' });
+  const named = readingSelect.locator('option').filter({ hasText: 'Preservation' }); await readingSelect.selectOption(await named.getAttribute('value'));
+  await expect(readingSelect).toHaveValue(await named.getAttribute('value'));
+  await expect(note.getByRole('combobox', { name: 'Emphasis' })).toHaveValue('strong');
+  const beforeRemove = await page.getByRole('list', { name: 'Notes on this object' }).innerText();
+  await page.getByRole('button', { name: /Manage readings|NEW READING/i }).click();
+  const manage = page.getByRole('dialog'); await manage.getByRole('button', { name: /Remove Preservation/ }).click(); await manage.getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByRole('list', { name: 'Notes on this object' })).toContainText(beforeRemove.split('\n')[0] ?? '');
+  await expect(note.getByRole('combobox', { name: 'Reading' })).toHaveValue('');
+  await page.screenshot({ path: '/tmp/archie-readings-management.png', fullPage: true });
+});

@@ -54,7 +54,7 @@ import {
 // and undo the lazy `await import("./reader.js")` below.
 import { OfflineRemoteBlockedError } from "./reader-guards.js";
 import type { AvPlayerSurface } from "./av-player.js";
-import { resolveExhibitTarget, type ResolvedTarget } from "./target-resolve.js";
+import { resolveExhibitTarget, sectionFragmentOf, type ResolvedTarget } from "./target-resolve.js";
 import { resolveContentState } from "./content-state.js";
 import { embedHeightMessage, heightToPost, isFramed } from "./embed-autogrow.js";
 import { encodeContentState } from "@render/core";
@@ -726,7 +726,11 @@ export class ArchieViewerElement extends HTMLElement {
     if (!s) return;
     const object = exhibit.objects.find((o) => o.id === s.objectId);
     const v = this.#view;
-    if (object && v.kind === "reader" && v.object.id === object.id && this.#surface) {
+    // The same-object camera fast path only applies to OSD image readers. AV section changes must
+    // remount the native player so its new `t=` start reaches mountAvPlayer as initialSeek; otherwise
+    // moving between two sections of one recording leaves the old playhead in place.
+    const isAv = object?.mediaType === "sound" || object?.mediaType === "video";
+    if (object && !isAv && v.kind === "reader" && v.object.id === object.id && this.#surface) {
       this.#view = { kind: "reader", exhibit, object, section: index };
       if (s.start) this.#surface.fitRegion(s.start.startsWith("xywh=") ? s.start : `xywh=${s.start}`);
       this.#narrative?.destroy();
@@ -740,8 +744,9 @@ export class ArchieViewerElement extends HTMLElement {
       this.#leaveReader({ kind: "exhibit", exhibit, error: "This section points to an item that's no longer in the exhibit." });
       return;
     }
-    const resolved: ResolvedTarget = s.start
-      ? { kind: "object", objectId: object.id, fragment: { kind: "xywh", value: s.start.replace(/^xywh=/, "") } }
+    const fragment = sectionFragmentOf(s.start);
+    const resolved: ResolvedTarget = fragment
+      ? { kind: "object", objectId: object.id, fragment }
       : { kind: "object", objectId: object.id };
     await this.#openObject(exhibit, object, resolved, index);
   }

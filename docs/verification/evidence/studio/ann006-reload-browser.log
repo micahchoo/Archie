@@ -1,0 +1,11 @@
+
+Running 1 test using 1 worker
+
+(node:295962) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:295962) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ann006AfterDraw":{"noteCount":1,"editors":0,"url":"http://localhost:5198/studio/#/voynich-2/o/01M2CHKVDM8DQDQXCWDP9GH4G8"}}
+  ✓  1 [chromium] › e2e/user-stories-authoring-batch.spec.ts:26:1 › STU-ANN-006 convert whole note to region mode (3.4s)
+
+  1 passed (4.2s)

@@ -1,0 +1,22 @@
+
+ RUN  v3.2.7 /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/render-core
+
+stderr | src/publish/open.test.ts > open seam — fetchArchieLibraryBytes (capped fetch, no decode/validate) > throws on a non-OK response
+open: couldn't fetch the library from https://host/missing.zip — HTTP 404
+
+stderr | src/publish/open.test.ts > open seam — fetchArchieLibraryBytes (capped fetch, no decode/validate) > classifies a torn body (arrayBuffer() rejects mid-transfer) as the friendly couldn't-open error
+open: the transfer from https://host/cut.zip was cut short — Error: aborted mid-transfer
+    at Object.arrayBuffer (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/render-core/src/publish/open.test.ts:137:15)
+    at fetchArchieLibraryBytes (/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/render-core/src/publish/open.ts:118:38)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+
+stderr | src/publish/open.test.ts > open seam — openArchieLibraryFromUrl (fetch → openArchieLibrary composition) > never attempts to decode when the fetch step itself fails (fetch-fully-before-decode ordering)
+open: couldn't fetch the library from https://host/broken.zip — HTTP 500
+
+························
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  19:38:12
+   Duration  433ms (transform 163ms, setup 0ms, collect 208ms, tests 32ms, environment 0ms, prepare 44ms)
+

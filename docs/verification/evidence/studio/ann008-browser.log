@@ -1,0 +1,13 @@
+
+Running 1 test using 1 worker
+
+(node:200759) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:200759) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"storedTargets":[{"id":"01M2CGD8J1RBM9F86KJH024SX9","target":{"source":"https://archie.demo/voynich-2/canvas/01M2CGD7XR72997XPPNBNMF8A8","type":"SpecificResource","selector":{"type":"FragmentSelector","conformsTo":"http://www.w3.org/TR/media-frags/","value":"xywh=pixel:417.94345953525635,232.11972489316253,441.4421407585471,448.4036959134615"}}},{"id":"01M2CGD9ZCWYB5TMTNAMW81DH9","target":{"source":"https://archie.demo/voynich-2/canvas/01M2CGD7XR72997XPPNBNMF8A8","type":"SpecificResource","selector":{"type":"FragmentSelector","conformsTo":"http://www.w3.org/TR/media-frags/","value":"xywh=pixel:417.94345953525635,232.11972489316253,441.4421407585471,448.4036959134615"}}}]}
+{"stackAfterCreate":{"notes":"Stack first\nYou · just now\nStack second\nfixture · just now","editors":0}}
+{"stackAfterSelect":{"editors":1,"groups":1}}
+  ✓  1 [chromium] › e2e/user-stories-authoring-batch.spec.ts:57:1 › STU-ANN-008 stacked note navigation (3.2s)
+
+  1 passed (4.0s)

@@ -1,0 +1,185 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:18028) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:18089) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:18439) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:18451) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 5 tests using 1 worker
+
+[1A[2K(node:18512) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:18512) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/5] [chromium] › apps/viewer/e2e/user-stories.spec.ts:227:3 › focused user-story baseline › VIEW-022: a broken AV source shows a readable error and keeps navigation
+[1A[2K(node:19704) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:19704) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[2/5] (retries) [chromium] › apps/viewer/e2e/user-stories.spec.ts:227:3 › focused user-story baseline › VIEW-022: a broken AV source shows a readable error and keeps navigation (retry #1)
+[1A[2K  1) [chromium] › apps/viewer/e2e/user-stories.spec.ts:227:3 › focused user-story baseline › VIEW-022: a broken AV source shows a readable error and keeps navigation 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('.gallery, .state').first()
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 15000ms[22m
+    [2m  - waiting for locator('.gallery, .state').first()[22m
+
+
+      232 |     await expect(page.locator("button.open-another")).toBeVisible();
+      233 |     await page.locator("button.open-another").click();
+    > 234 |     await expect(page.locator(".gallery, .state").first()).toBeVisible();
+          |                                                            ^
+      235 |   });
+      236 |
+      237 |   test("VIEW-040: delayed published data shows opening state before the gallery", async ({ page }) => {
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:234:60
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--3064f--error-and-keeps-navigation-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('.gallery, .state').first()
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 15000ms[22m
+    [2m  - waiting for locator('.gallery, .state').first()[22m
+
+
+      232 |     await expect(page.locator("button.open-another")).toBeVisible();
+      233 |     await page.locator("button.open-another").click();
+    > 234 |     await expect(page.locator(".gallery, .state").first()).toBeVisible();
+          |                                                            ^
+      235 |   });
+      236 |
+      237 |   test("VIEW-040: delayed published data shows opening state before the gallery", async ({ page }) => {
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:234:60
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--3064f--error-and-keeps-navigation-chromium-retry1/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    apps/viewer/test-results/user-stories-focused-user--3064f--error-and-keeps-navigation-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace apps/viewer/test-results/user-stories-focused-user--3064f--error-and-keeps-navigation-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K(node:20851) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:20851) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[3/5] [chromium] › apps/viewer/e2e/user-stories.spec.ts:249:3 › focused user-story baseline › VIEW-041: malformed published data shows an actionable error state
+[1A[2K[4/5] [chromium] › apps/viewer/e2e/user-stories.spec.ts:302:3 › focused user-story baseline › VIEW-044: an embed target opens an object and can return to its exhibit grid
+[1A[2K[5/5] [chromium] › apps/viewer/e2e/user-stories.spec.ts:313:3 › focused user-story baseline › VIEW-049: two embeds keep independent target state
+[1A[2K[6/5] [chromium] › apps/viewer/e2e/user-stories.spec.ts:327:3 › focused user-story baseline › VIEW-057: finder text combines with multiple OR tag facets
+[1A[2K(node:21814) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:21814) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[7/5] (retries) [chromium] › apps/viewer/e2e/user-stories.spec.ts:327:3 › focused user-story baseline › VIEW-057: finder text combines with multiple OR tag facets (retry #1)
+[1A[2K  2) [chromium] › apps/viewer/e2e/user-stories.spec.ts:327:3 › focused user-story baseline › VIEW-057: finder text combines with multiple OR tag facets 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('.finder[role=\'dialog\']').locator('.finder-results .result').first()
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 15000ms[22m
+    [2m  - waiting for locator('.finder[role=\'dialog\']').locator('.finder-results .result').first()[22m
+
+
+      338 |     await expect(facets.nth(1)).toHaveAttribute("aria-pressed", "true");
+      339 |     await finder.locator("input.finder-input").fill("herbal");
+    > 340 |     await expect(finder.locator(".finder-results .result").first()).toBeVisible();
+          |                                                                     ^
+      341 |     await expect(finder.locator(".finder-results .result-tags").first()).toContainText("#");
+      342 |   });
+      343 | });
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:340:69
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--17e91-with-multiple-OR-tag-facets-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('.finder[role=\'dialog\']').locator('.finder-results .result').first()
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 15000ms[22m
+    [2m  - waiting for locator('.finder[role=\'dialog\']').locator('.finder-results .result').first()[22m
+
+
+      338 |     await expect(facets.nth(1)).toHaveAttribute("aria-pressed", "true");
+      339 |     await finder.locator("input.finder-input").fill("herbal");
+    > 340 |     await expect(finder.locator(".finder-results .result").first()).toBeVisible();
+          |                                                                     ^
+      341 |     await expect(finder.locator(".finder-results .result-tags").first()).toContainText("#");
+      342 |   });
+      343 | });
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:340:69
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--17e91-with-multiple-OR-tag-facets-chromium-retry1/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    apps/viewer/test-results/user-stories-focused-user--17e91-with-multiple-OR-tag-facets-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace apps/viewer/test-results/user-stories-focused-user--17e91-with-multiple-OR-tag-facets-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  2 failed
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:227:3 › focused user-story baseline › VIEW-022: a broken AV source shows a readable error and keeps navigation 
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:327:3 › focused user-story baseline › VIEW-057: finder text combines with multiple OR tag facets 
+  3 passed (1.2m)

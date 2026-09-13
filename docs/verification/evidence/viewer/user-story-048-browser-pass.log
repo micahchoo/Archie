@@ -1,0 +1,64 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:102112) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:102204) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:102558) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:102570) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 1 test using 1 worker
+
+[1A[2K(node:102687) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:102687) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/1] [chromium] › apps/viewer/e2e/user-stories.spec.ts:402:3 › focused user-story baseline › VIEW-048: offline embed blocks remote media before any remote request
+[1A[2K(node:102822) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:102822) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[2/1] (retries) [chromium] › apps/viewer/e2e/user-stories.spec.ts:402:3 › focused user-story baseline › VIEW-048: offline embed blocks remote media before any remote request (retry #1)
+[1A[2K  1) [chromium] › apps/viewer/e2e/user-stories.spec.ts:402:3 › focused user-story baseline › VIEW-048: offline embed blocks remote media before any remote request 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoHaveLength[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected length: [32m0[39m
+    Received length: [31m1[39m
+    Received array:  [31m["https://collections.library.yale.edu/iiif/2/1006076/info.json"][39m
+
+      412 |     await viewer.evaluate((el) => el.setAttribute("offline", ""));
+      413 |     await expect(viewer.locator(".notice")).toContainText(/hosted online|offline/i, { timeout: 30_000 });
+    > 414 |     expect(remote).toHaveLength(beforeOffline);
+          |                    ^
+      415 |   });
+      416 |
+      417 |   test("VIEW-057: finder text combines with multiple OR tag facets", async ({ page }) => {
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:414:20
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--b4bef-a-before-any-remote-request-chromium/error-context.md
+
+
+[1A[2K  1 flaky
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:402:3 › focused user-story baseline › VIEW-048: offline embed blocks remote media before any remote request 

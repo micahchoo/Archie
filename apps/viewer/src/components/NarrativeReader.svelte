@@ -19,6 +19,7 @@
   import { untrack } from "svelte";
   import { commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, readingIdOf, stripMarkdown, metadataRows, withZoomBand, type MarkerStyleSpec, type AObject, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
   import { ownerObjectOf, arrivalSectionIndex } from "../narrative-landing.js";
+  import { narrativeSeekOf } from "../narrative-av.js";
   import { navPosition, navRegionName, navStepName, noteIndexOpenMark } from "../product-copy.js";
   import { createScrollIntent } from "../scroll-intent.js";
   import { createNoteSurface } from "../note-surface.svelte.js";
@@ -52,6 +53,7 @@
     styleFor,
     frameFor,
     initialSelected = null,
+    initialRegion = null,
     onlocus,
     initialSection = null,
     notesHidden = false,
@@ -85,6 +87,8 @@
      *  the narrative (its sidebar is the section spine, not a note list), making it unreachable. */
     frameFor?: (objectId: string) => { markId: string; colour: string } | null;
     initialSelected?: string | null; // deep-link arrival: land on the section whose object owns this note
+    /** Explicit xywh on a note deep-link; it overrides the owning section's start for the cold arrival only. */
+    initialRegion?: string | null;
     /** V101/V84 (Archie-99b1): report the deepest rung — the active SECTION, plus a selected note if
      *  one is open. V84 is exactly this: the spine had no address, so stepping out and back lost
      *  your place. Raw published note id; the caller owns the address grammar. */
@@ -132,6 +136,12 @@
   })();
 
   let activeIndex = $state(arrivalSection);
+  // svelte-ignore state_referenced_locally -- this is a one-shot cold-arrival seed; later route changes
+  // are handled by ExhibitView remounting the narrative reader.
+  let arrivalRegionActive = $state(Boolean(initialRegion));
+  const arrivalFocus = $derived(initialRegion
+    ? (initialRegion.startsWith("xywh=") ? initialRegion : `xywh=${initialRegion}`)
+    : null);
   // Selection lives on the shared note surface (`surface.selected`, seeded from `initialSelected` by
   // the factory — same initial-capture contract as the old `$state(initialSelected)`; later changes
   // are adopted by the re-selection seam (A0) $effect below via prevInitialSelected). A clicked marker
@@ -301,7 +311,7 @@
       // Both halves, as everywhere else now: the camera follows `activeSection.start`, and the prose
       // comes with it. Without the scroll the reader landed on the right image beside the wrong beat.
       // NOT via `goToSection` — that clears `selected`, and this seam has just set it.
-      if (idx >= 0) { activeIndex = idx; scrollToBeat(idx, "auto"); }
+      if (idx >= 0) { arrivalRegionActive = false; activeIndex = idx; scrollToBeat(idx, "auto"); }
     }
     prevInitialSelected = next;
   });
@@ -324,6 +334,7 @@
     return objects.find((o) => o.id === activeSection.objectId);
   });
   const isAV = $derived(activeObject?.mediaType === "sound" || activeObject?.mediaType === "video");
+  const activeSeek = $derived(narrativeSeekOf(activeSection?.start));
   // Base notes are always visible (Q16); an active Reading overlays its notes on top (ADR-0007) —
   // mirrors ExhibitView.annotationsOf / Reader semantics so the narrative spine carries Readings too.
   const activeNotes = $derived.by(() => {
@@ -382,6 +393,7 @@
   // to prevent — and the intent guard would not even catch it, because the intent would be honest.
   function goToSection(i: number, opts: { scroll?: boolean } = {}) {
     if (i < 0 || i >= sections.length) return;
+    arrivalRegionActive = false;
     activeIndex = i;
     surface.reset();
     if (opts.scroll !== false) scrollToBeat(i, reducedMotion() ? "auto" : "smooth");
@@ -613,7 +625,7 @@
         <!-- Keyed so an AV→AV section step remounts the player (its media/error state has no per-object
              reset); mirrors the Canvas branch's {#key activeObject.id} below. -->
         {#key activeObject.id}
-          <MediaPlayer object={activeObject} annotations={activeNotes} />
+          <MediaPlayer object={activeObject} annotations={activeNotes} initialSeek={activeSeek} />
         {/key}
       {:else}
         {#key activeObject.id}
@@ -624,7 +636,7 @@
             annotations={canvasNotes}
             styleOf={activeStyleOf}
             frame={canvasFrame}
-            focus={activeSection?.start ?? null}
+            focus={arrivalRegionActive && arrivalFocus ? arrivalFocus : (activeSection?.start ?? null)}
             bind:selected={surface.selected}
             onzoom={(r) => (zoomRatio = r)}
           />

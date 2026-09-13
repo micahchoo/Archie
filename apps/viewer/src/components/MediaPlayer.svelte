@@ -23,7 +23,7 @@
   //     `PrimaryWindow.jsx:46-70`, on the canvas alone.
   // So the note surface, the sheet, the lightbox and the rich prose renderer are shared components
   // here, not re-implementations: ONE note renderer (Archie-c982/dbbc), reached from a temporal spine.
-  import { parseMediaFragment, activeNoteIndex, transcriptTextOf, metadataRows, stripMarkdown, tagsOfAnnotation as tagsOf, readingIdOf, type Reading, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
+  import { mediaFragmentOfAnnotation, activeNoteIndex, transcriptTextOf, metadataRows, stripMarkdown, tagsOfAnnotation as tagsOf, readingIdOf, type Reading, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
   import ResizeDivider from "@render/svelte/ResizeDivider.svelte";
   import { clampSeekStart } from "../av-landing.js";
   import { loadAsideWidth, saveAside, type AsideState } from "../aside-persistence.js";
@@ -156,8 +156,7 @@
   const cues = $derived.by<Cue[]>(() => {
     const out: Cue[] = [];
     for (const a of annotations) {
-      const v = (a.target as { selector?: { value?: string } } | undefined)?.selector?.value;
-      const f = v ? parseMediaFragment(v) : {};
+      const f = mediaFragmentOfAnnotation(a);
       if (f.time) {
         const text = transcriptTextOf(a);
         const colour = readingColourOf(a);
@@ -188,8 +187,7 @@
     const out: { id: string; text: string }[] = [];
     for (const a of annotations) {
       if (!a.id) continue;
-      const v = (a.target as { selector?: { value?: string } } | undefined)?.selector?.value;
-      const f = v ? parseMediaFragment(v) : {};
+      const f = mediaFragmentOfAnnotation(a);
       if (!f.time) {
         const text = transcriptTextOf(a);
         if (text) out.push({ id: a.id, text });
@@ -357,13 +355,24 @@
   // for an ordinary (no-`t=`) landing. The remount-on-step `{#key}` (ExhibitView) gives each AV sibling a
   // fresh mount, so this can't replay a stale offset onto the wrong recording.
   let didLandSeek = false;
+  let appliedInitialSeek: string | undefined;
   function landSeek() {
     if (didLandSeek || !mediaEl) return;
     didLandSeek = true;
     if (!initialSeek) return; // ordinary landing — leave the playhead at 0, paused
     const at = clampSeekStart(initialSeek, mediaDuration);
     if (at > 0) { mediaEl.currentTime = at; currentTime = at; } // paused — no play() (section-142)
+    appliedInitialSeek = initialSeek;
   }
+  // Narrative sections can change while the same AV object stays keyed and mounted. Reapply a new
+  // temporal section start after metadata instead of relying on the one-shot landing handler.
+  $effect(() => {
+    if (!mediaEl || !mediaReady || !initialSeek || initialSeek === appliedInitialSeek) return;
+    const at = clampSeekStart(initialSeek, mediaDuration);
+    mediaEl.currentTime = at;
+    currentTime = at;
+    appliedInitialSeek = initialSeek;
+  });
   // V29 — a video that loads fine and shows nothing.
   //
   // `<video onerror>` is the only guard this plate had, and for this failure it CANNOT fire: the

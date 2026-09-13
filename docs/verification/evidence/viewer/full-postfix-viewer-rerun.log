@@ -1,0 +1,433 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:343655) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:343790) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:344369) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:344397) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 195 tests using 1 worker
+
+[1A[2K(node:344514) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:344514) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/195] [chromium] › apps/viewer/e2e/address.spec.ts:17:3 › the address follows the reader (V101) › opening an object writes /o/ and survives a reload (V24)
+[1A[2K[2/195] [chromium] › apps/viewer/e2e/address.spec.ts:32:3 › the address follows the reader (V101) › stepping back to the grid drops the rung — the address never lies about depth
+[1A[2K[3/195] [chromium] › apps/viewer/e2e/address.spec.ts:52:3 › the address follows the reader (V101) › selecting a note writes /a/<logicalId>, and it resolves on reload
+[1A[2K[4/195] [chromium] › apps/viewer/e2e/address.spec.ts:71:3 › the address follows the reader (V101) › selection uses replaceState — Back leaves the exhibit, it does not walk notes
+[1A[2K[5/195] [chromium] › apps/viewer/e2e/address.spec.ts:95:3 › the address follows the reader (V101) › the narrative spine is addressable — /s/ survives a reload (V84)
+[1A[2K[6/195] [chromium] › apps/viewer/e2e/arrival.spec.ts:20:3 › arrival is recoverable › the gallery arrives with its exhibits
+[1A[2K[7/195] [chromium] › apps/viewer/e2e/arrival.spec.ts:25:3 › arrival is recoverable › opening the chooser offers a way back (V1)
+[1A[2K[8/195] [chromium] › apps/viewer/e2e/arrival.spec.ts:41:3 › arrival is recoverable › Escape is the same door as Cancel
+[1A[2K[9/195] [chromium] › apps/viewer/e2e/arrival.spec.ts:51:3 › arrival is recoverable › the library's chrome steps aside while choosing (V2)
+[1A[2K[10/195] [chromium] › apps/viewer/e2e/arrival.spec.ts:61:3 › arrival is recoverable › a cold arrival has no way back, and offers none
+[1A[2K[11/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:72:3 › V53 · the note surface the AV reader had no way to reach › a real click on a transcript line opens THE NOTE, and the line is genuinely hittable
+[1A[2K[12/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:113:3 › V53 · the note surface the AV reader had no way to reach › the cue's cite is LIVE in the card and LITERAL nowhere
+[1A[2K[13/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:153:3 › V53 · the note surface the AV reader had no way to reach › the card clears the temporal map instead of sitting on it
+[1A[2K[14/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:174:3 › V53 · the note surface the AV reader had no way to reach › one click both TRAVELS the recording and opens the note
+[1A[2K[15/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:188:3 › V53 · the note surface the AV reader had no way to reach › ⤢ expands to the reading sheet, and the note is on screen exactly once
+[1A[2K[16/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:201:3 › V53 · the note surface the AV reader had no way to reach › the whole-track note opens too — the one note with no cue row to reach it by
+[1A[2K[17/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:212:3 › V53 · a note's picture, on a TIME-RANGED note › the tile renders on the card and a real click opens the lightbox
+[1A[2K[18/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:263:3 › V53 · an AV note's tags are a real door into the finder › a tag chip on a time-ranged note opens the finder ALREADY SCOPED to that tag
+[1A[2K[19/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:362:3 › V53 · the Escape ladder this surface did not have › Escape walks out one rung at a time: sheet → card → the exhibit
+[1A[2K[20/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:386:3 › V53 · the transcript aside resizes (and deliberately does not collapse) › dragging the divider narrows the transcript, and it survives a reload
+[1A[2K[21/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:418:3 › V53 · the transcript aside resizes (and deliberately does not collapse) › there is no collapse toggle — collapsing this aside would take the object nav with it
+[1A[2K[22/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:462:3 › V49 · the temporal map clears the item strip (Archie-b135) › the transcript's temporal map is not covered by the filmstrip
+[1A[2K[23/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:500:3 › V49 · the temporal map clears the item strip (Archie-b135) › the map is on screen ON ARRIVAL, not pushed off the bottom INSTEAD of being covered
+[1A[2K[24/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:574:3 › Archie-4524 · the reading legend the AV surface did not have › the legend lists the exhibit's readings, with per-layer counts on THIS recording
+[1A[2K[25/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:593:3 › Archie-4524 · the reading legend the AV surface did not have › the abjad layer adds its line to the transcript, in its own colour
+[1A[2K[26/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:625:3 › Archie-4524 · the reading legend the AV surface did not have › there is no Hide-all on this legend — the notes here ARE the transcript
+[1A[2K[27/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:647:3 › the audio stage draws its recording (V50) › a sound object renders a waveform canvas, and keeps its native controls
+[1A[2K[28/195] [chromium] › apps/viewer/e2e/av-surface.spec.ts:663:3 › the audio stage draws its recording (V50) › the waveform is hidden from assistive tech — the <audio> element is the control
+[1A[2K[29/195] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:42:3 › nothing in the reader is an anonymous tab stop (V90) › every tab stop announces something
+[1A[2K[30/195] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:56:3 › nothing in the reader is an anonymous tab stop (V90) › the whole-object frame is a named stop, and stays one (V46)
+[1A[2K[31/195] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:69:3 › Escape is a ladder, not one binding (V26) › Escape with a note open closes the note and stays put
+[1A[2K[32/195] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:81:3 › Escape is a ladder, not one binding (V26) › Escape with nothing open goes up a level
+[1A[2K[33/195] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:95:3 › Escape is a ladder, not one binding (V26) › the reader has a landing place for focus to return to
+[1A[2K[34/195] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:132:3 › the canvas is a named, reachable keyboard stop (V90/V25) › the canvas announces itself and what its keys do
+[1A[2K[35/195] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:145:3 › the canvas is a named, reachable keyboard stop (V90/V25) › arrow keys actually move the image
+[1A[2K[36/195] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:163:3 › the canvas is a named, reachable keyboard stop (V90/V25) › focus reaches the canvas at all
+[1A[2K[37/195] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:172:3 › Escape is a ladder on a live canvas too (V26/V25) › rung two: Escape hands focus back out of the canvas, and not to nothing
+[1A[2K[38/195] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:186:3 › Escape is a ladder on a live canvas too (V26/V25) › the whole ladder walks out one rung at a time
+[1A[2K[39/195] [chromium] › apps/viewer/e2e/canvas-offline.spec.ts:21:3 › the screenshots exhibit is self-contained (the premise every canvas spec rests on) › it paints a deep-zoom canvas with the network cut
+[1A[2K[40/195] [chromium] › apps/viewer/e2e/canvas-offline.spec.ts:36:3 › the screenshots exhibit is self-contained (the premise every canvas spec rests on) › every section's image is served locally, not just the first
+[1A[2K[41/195] [chromium] › apps/viewer/e2e/canvas-offline.spec.ts:56:3 › the screenshots exhibit is self-contained (the premise every canvas spec rests on) › it carries both kinds of note the canvas draws differently
+[1A[2K[42/195] [chromium] › apps/viewer/e2e/canvas-offline.spec.ts:81:3 › the screenshots exhibit is self-contained (the premise every canvas spec rests on) › OSD stays in the DOM — the failed-mount teardown does not happen here
+[1A[2K[43/195] [chromium] › apps/viewer/e2e/cite.spec.ts:32:3 › the cite panel (V102) › the LINK grain copies exactly the current address
+[1A[2K[44/195] [chromium] › apps/viewer/e2e/cite.spec.ts:42:3 › the cite panel (V102) › the CITATION grain copies a reference carrying the credit and the licence
+[1A[2K[45/195] [chromium] › apps/viewer/e2e/cite.spec.ts:52:3 › the cite panel (V102) › the CONTENT STATE grain round-trips through decodeContentState
+[1A[2K[46/195] [chromium] › apps/viewer/e2e/cite.spec.ts:78:3 › the cite panel (V102) › the Content State grain is ABSENT at exhibit grain, not fabricated
+[1A[2K[47/195] [chromium] › apps/viewer/e2e/cite.spec.ts:90:3 › the cite panel (V102) › it is a DIALOG: focus moves in, Tab is trapped, Escape returns focus
+[1A[2K[48/195] [chromium] › apps/viewer/e2e/cite.spec.ts:115:3 › the cite panel (V102) › the panel does not cover the canvas — it replaces chrome, it does not add it
+[1A[2K[49/195] [chromium] › apps/viewer/e2e/exhibit-rights.spec.ts:24:3 › exhibit-level rights reach every reader (Archie-36e6) › a SINGLE-object exhibit shows the exhibit credit, licence and metadata
+[1A[2K[50/195] [chromium] › apps/viewer/e2e/exhibit-rights.spec.ts:46:3 › exhibit-level rights reach every reader (Archie-36e6) › both levels are NAMED when both are shown, so two credits can't read as one
+[1A[2K[51/195] [chromium] › apps/viewer/e2e/exhibit-rights.spec.ts:63:3 › exhibit-level rights reach every reader (Archie-36e6) › the NARRATIVE reader carries the exhibit metadata run too
+[1A[2K[52/195] [chromium] › apps/viewer/e2e/exhibit-rights.spec.ts:75:3 › exhibit-level rights reach every reader (Archie-36e6) › the GRID path is unchanged — one level, unnamed, no regression
+[1A[2K[53/195] [chromium] › apps/viewer/e2e/finder-locus.spec.ts:91:3 › a finder result says where it lives (V106) › a hit names the object it sits on, and the section that shows it
+[1A[2K[54/195] [chromium] › apps/viewer/e2e/finder-locus.spec.ts:112:3 › a finder result says where it lives (V106) › EVERY result carries a locus — none is left unplaced
+[1A[2K[55/195] [chromium] › apps/viewer/e2e/finder-locus.spec.ts:128:3 › a finder result says where it lives (V106) › the locus names are the exhibit's real places, not ids
+[1A[2K[56/195] [chromium] › apps/viewer/e2e/finder-locus.spec.ts:144:3 › a finder result says where it lives (V106) › activating a hit lands on that note's own rung, not the object's top
+[1A[2K[57/195] [chromium] › apps/viewer/e2e/flow014-exported.spec.ts:5:1 › FLOW-014 opens the exact ZIP exported by Studio and shows its authored note
+[1A[2K[58/195] [chromium] › apps/viewer/e2e/gallery.spec.ts:14:3 › the gallery › a tree-relative cover resolves against the published tree (V7)
+[1A[2K[59/195] [chromium] › apps/viewer/e2e/gallery.spec.ts:42:3 › the gallery › search reaches images as well as exhibits (V6)
+[1A[2K[60/195] [chromium] › apps/viewer/e2e/gallery.spec.ts:56:3 › the gallery › the image wall opens compact (V20)
+[1A[2K[61/195] [chromium] › apps/viewer/e2e/inert-a11y.spec.ts:64:3 › Archie-9838 · the collapsed notes rail leaves the accessibility tree › EXPANDED: the rail's note list is exposed (the control measurement)
+[1A[2K[62/195] [chromium] › apps/viewer/e2e/inert-a11y.spec.ts:78:3 › Archie-9838 · the collapsed notes rail leaves the accessibility tree › COLLAPSED: the rail's note list is gone or ignored in Chromium's own tree
+[1A[2K[63/195] [chromium] › apps/viewer/e2e/inert-a11y.spec.ts:100:3 › Archie-9838 · the collapsed notes rail leaves the accessibility tree › ATTRIBUTION: it is `inert` doing the hiding, not the zero-width collapse
+[1A[2K[64/195] [chromium] › apps/viewer/e2e/inert-a11y.spec.ts:125:3 › Archie-9838 · the collapsed notes rail leaves the accessibility tree › COLLAPSED: the rail is out of tab order too (the half that always reproduced)
+[1A[2K[65/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:96:3 › scroll → camera: the spine drives the read (V81) › scrolling the spine moves the active beat to whatever crosses the centre line
+[1A[2K[66/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:117:3 › scroll → camera: the spine drives the read (V81) › the camera follows the spine — the section that scrolled under the line is the one on canvas
+[1A[2K[67/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:140:3 › activate → camera AND prose: the same coupling backwards (V82) › stepping the canvas nav brings the prose with it
+[1A[2K[68/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:153:3 › activate → camera AND prose: the same coupling backwards (V82) › clicking a beat centres it
+[1A[2K[69/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:164:3 › the two directions do not fight (the reentrancy guard) › a section cite settles on the CITED beat and stays there
+[1A[2K[70/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:193:3 › the two directions do not fight (the reentrancy guard) › stepping to the last beat lands on the last beat, not its neighbour
+[1A[2K[71/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:205:3 › the two directions do not fight (the reentrancy guard) › a multi-beat activation does not bounce the reader through the beats in between
+[1A[2K[72/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:256:3 › the two directions do not fight (the reentrancy guard) › the suppression lasts exactly as long as the scroll it covers, not a wall-clock window
+[1A[2K[73/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:356:3 › the two directions do not fight (the reentrancy guard) › a pointer press mid-sweep does not bounce the reader through the beats in between
+[1A[2K[74/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:408:3 › the two directions do not fight (the reentrancy guard) › a sub-pixel arrival still ends the intent
+[1A[2K[75/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:464:3 › the two directions do not fight (the reentrancy guard) › an intent that never arrives releases on its own
+[1A[2K[76/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:508:3 › the two directions do not fight (the reentrancy guard) › the column's two ends resolve to the first and last beat
+[1A[2K[77/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:541:3 › reduced motion, and the reader's scroll is never swallowed › a reader scrolling BACK out of a live programmatic scroll wins immediately
+[1A[2K[78/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:577:3 › reduced motion, and the reader's scroll is never swallowed › reduced motion is honoured, and an activation still lands
+[1A[2K[79/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:597:3 › the beats are numbered (V85) › every beat states its own position, in the nav's noun-and-position idiom
+[1A[2K[80/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:605:3 › the beats are numbered (V85) › the active beat is marked to assistive tech, not only by colour
+[1A[2K[81/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:613:3 › hiding the spine is per-exhibit and plainly reversible (Archie-c5cb, V83) › collapsing one narrative's spine leaves the next narrative's spine alone
+[1A[2K[82/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:626:3 › hiding the spine is per-exhibit and plainly reversible (Archie-c5cb, V83) › the choice does hold for the exhibit it was made on
+[1A[2K[83/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:640:3 › hiding the spine is per-exhibit and plainly reversible (Archie-c5cb, V83) › the collapsed state carries a visible, NAMED way back
+[1A[2K[84/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:658:3 › hiding the spine is per-exhibit and plainly reversible (Archie-c5cb, V83) › a fresh session gets its driving surface back
+[1A[2K[85/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:675:3 › V80 re-measure: canvas chrome still clears the spine (Archie-40fe) › the top-right chrome group does not reach into the prose column
+[1A[2K[86/195] [chromium] › apps/viewer/e2e/narrative-coupling.spec.ts:693:3 › V80 re-measure: canvas chrome still clears the spine (Archie-40fe) › and still clears it with the extra control the collapsed state adds
+[1A[2K[87/195] [chromium] › apps/viewer/e2e/narrative-header.spec.ts:26:3 › the narrative aside's header (Archie-1474) › the pane toggle stays on screen however far the spine is scrolled
+[1A[2K[88/195] [chromium] › apps/viewer/e2e/narrative-header.spec.ts:58:3 › the narrative aside's header (Archie-1474) › the credit is always shown; only the metadata folds
+[1A[2K[89/195] [chromium] › apps/viewer/e2e/narrative.spec.ts:20:3 › the spine's section labels (V86) › a section never says its own name twice
+[1A[2K[90/195] [chromium] › apps/viewer/e2e/narrative.spec.ts:38:3 › the spine's section labels (V86) › when an object label IS shown it adds information, not an echo
+[1A[2K[91/195] [chromium] › apps/viewer/e2e/narrative.spec.ts:52:3 › the spine's section labels (V86) › no label collides with its separator
+[1A[2K[92/195] [chromium] › apps/viewer/e2e/narrative.spec.ts:71:3 › the door between the reading and the index (V91) › the way out and the place it leads share a word
+[1A[2K[93/195] [chromium] › apps/viewer/e2e/narrative.spec.ts:87:3 › the door between the reading and the index (V91) › the way back names the reading, and actually returns to it
+[1A[2K[94/195] [chromium] › apps/viewer/e2e/note-address.spec.ts:43:3 › a cited note resolves from its address (V100) › #/<slug>/a/<ULID> opens that exact note
+[1A[2K[95/195] [chromium] › apps/viewer/e2e/note-address.spec.ts:56:3 › a cited note resolves from its address (V100) › the address survives a reload — the same note is still open
+[1A[2K[96/195] [chromium] › apps/viewer/e2e/note-address.spec.ts:65:3 › a cited note resolves from its address (V100) › an unknown note id degrades honestly instead of throwing (ADR-0003)
+[1A[2K[97/195] [chromium] › apps/viewer/e2e/note-address.spec.ts:76:3 › a cited note resolves from its address (V100) › a malformed note id degrades too
+[1A[2K[98/195] [chromium] › apps/viewer/e2e/note-surface.spec.ts:38:3 › only ONE note-content element is on screen at a time (V60) › with the sheet open, exactly one element renders the note's body
+[1A[2K[99/195] [chromium] › apps/viewer/e2e/note-surface.spec.ts:49:3 › only ONE note-content element is on screen at a time (V60) › closing the sheet brings the card back — hidden is not gone
+[1A[2K[100/195] [chromium] › apps/viewer/e2e/note-surface.spec.ts:58:3 › only ONE note-content element is on screen at a time (V60) › the sidebar entry marks position instead of restating the note
+[1A[2K[101/195] [chromium] › apps/viewer/e2e/note-surface.spec.ts:94:3 › one modal at a time — the sheet never stacks (Archie-dbbc review) › a tag chip inside the sheet REPLACES it with the finder
+[1A[2K[102/195] [chromium] › apps/viewer/e2e/note-surface.spec.ts:136:3 › one modal at a time — the sheet never stacks (Archie-dbbc review) › never two `aria-modal` elements, on any route out of the sheet
+[1A[2K[103/195] [chromium] › apps/viewer/e2e/note-surface.spec.ts:226:3 › one modal at a time — the sheet never stacks (Archie-dbbc review) › a media tile inside the sheet REPLACES it with the lightbox — the image reader
+[1A[2K[104/195] [chromium] › apps/viewer/e2e/note-surface.spec.ts:236:3 › one modal at a time — the sheet never stacks (Archie-dbbc review) › a media tile inside the sheet REPLACES it with the lightbox — the AV reader
+[1A[2K[105/195] [chromium] › apps/viewer/e2e/note-surface.spec.ts:245:3 › one modal at a time — the sheet never stacks (Archie-dbbc review) › a media tile inside the sheet REPLACES it with the lightbox — the narrative reader
+[1A[2K[106/195] [chromium] › apps/viewer/e2e/note-surface.spec.ts:289:3 › the sheet is the card at a larger size (V64) › the sheet's accessible name EQUALS the card's, not merely non-empty
+[1A[2K[107/195] [chromium] › apps/viewer/e2e/note-surface.spec.ts:297:3 › the sheet is the card at a larger size (V64) › the sheet SHOWS the same identity line the card showed
+[1A[2K[108/195] [chromium] › apps/viewer/e2e/note-surface.spec.ts:309:3 › the sheet is the card at a larger size (V64) › expanding does not drop the note's tags
+[1A[2K[109/195] [chromium] › apps/viewer/e2e/note.spec.ts:39:3 › opening a note (V61) › the card that appears has a name and a role
+[1A[2K[110/195] [chromium] › apps/viewer/e2e/note.spec.ts:49:3 › opening a note (V61) › the card is focusable as a whole, not only through its buttons
+[1A[2K[111/195] [chromium] › apps/viewer/e2e/note.spec.ts:55:3 › opening a note (V61) › it is NOT a modal — the canvas beside it stays usable
+[1A[2K[112/195] [chromium] › apps/viewer/e2e/note.spec.ts:65:3 › dismissing a note (V62) › Escape closes it and returns focus to the note that opened it
+[1A[2K[113/195] [chromium] › apps/viewer/e2e/note.spec.ts:74:3 › dismissing a note (V62) › the card's own × does the same thing
+[1A[2K[114/195] [chromium] › apps/viewer/e2e/note.spec.ts:101:3 › dismissing a note (V62) › dismissing also clears the canvas's selection, not just the card
+[1A[2K[115/195] [chromium] › apps/viewer/e2e/note.spec.ts:123:3 › expanding a note into the reading sheet (V63) › focus moves INTO the sheet on open
+[1A[2K[116/195] [chromium] › apps/viewer/e2e/note.spec.ts:131:3 › expanding a note into the reading sheet (V63) › Tab is trapped inside it
+[1A[2K[117/195] [chromium] › apps/viewer/e2e/note.spec.ts:141:3 › expanding a note into the reading sheet (V63) › Escape closes it and returns focus to the ⤢ that opened it
+[1A[2K[118/195] [chromium] › apps/viewer/e2e/note.spec.ts:149:3 › expanding a note into the reading sheet (V63) › it really is a dialog, and says so
+[1A[2K[119/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:53:3 › the nav is present in BOTH sidebar states (V65's discoverability half) › grid reader — sidebar open, then collapsed
+[1A[2K[120/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:73:3 › the nav is present in BOTH sidebar states (V65's discoverability half) › narrative — spine open, then collapsed
+[1A[2K[121/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:89:3 › the visible label speaks the noun (V65's label half) › the button's own name and the position agree about the unit
+[1A[2K[122/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:102:3 › the visible label speaks the noun (V65's label half) › the narrative names sections, not objects
+[1A[2K[123/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:110:3 › the nav actually steps the thing it names › grid reader: forward then back returns to the same object
+[1A[2K[124/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:120:3 › the nav actually steps the thing it names › narrative: stepping moves the spine's own position indicator too
+[1A[2K[125/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:136:3 › the nav actually steps the thing it names › stepping objects does NOT carry the open note forward (flip-and-read is gone)
+[1A[2K[126/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:158:3 › the nav actually steps the thing it names › the ends are disabled rather than silently inert
+[1A[2K[127/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:167:5 › the note card carries no stepper, in any of the four states › grid reader, sidebar open
+[1A[2K[128/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:167:5 › the note card carries no stepper, in any of the four states › grid reader, sidebar collapsed
+[1A[2K[129/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:180:5 › the note card carries no stepper, in any of the four states › narrative, spine open
+[1A[2K[130/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:180:5 › the note card carries no stepper, in any of the four states › narrative, spine collapsed
+[1A[2K[131/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:196:3 › one object nav per reader (the half of V23 this ticket can move) › the grid reader's aside offers the way UP, not a second stepper
+[1A[2K[132/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:215:3 › EXACTLY ONE object-nav landmark, on every surface › grid reader: one, and it is the canvas nav — in BOTH sidebar states
+[1A[2K[133/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:236:3 › EXACTLY ONE object-nav landmark, on every surface › narrative: one, and it is the canvas nav
+[1A[2K[134/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:242:3 › EXACTLY ONE object-nav landmark, on every surface › AV: one, and it is the SIDEBAR stepper — the surface with no canvas chrome
+[1A[2K[135/195] [chromium] › apps/viewer/e2e/object-nav.spec.ts:263:3 › the AV path keeps its stepper — the opt-in this slice's argument rests on › an AV object in a multi-object exhibit can still reach its siblings
+[1A[2K[136/195] [chromium] › apps/viewer/e2e/occlusion.spec.ts:125:3 › the grid reader's chrome docks out of the canvas (ADR-0019 layout row) › no docked chrome overlaps the canvas, with a note open
+[1A[2K[137/195] [chromium] › apps/viewer/e2e/occlusion.spec.ts:142:3 › the grid reader's chrome docks out of the canvas (ADR-0019 layout row) › the canvas centre hit-tests to the canvas, not to chrome
+[1A[2K[138/195] [chromium] › apps/viewer/e2e/occlusion.spec.ts:168:3 › the narrative reader's chrome docks out of the canvas (ADR-0019 layout row) › no docked chrome overlaps the narrative's canvas
+[1A[2K[139/195] [chromium] › apps/viewer/e2e/occlusion.spec.ts:186:3 › the narrative reader's chrome docks out of the canvas (ADR-0019 layout row) › the spine can be read to its end without chrome on the last card
+[1A[2K[140/195] [chromium] › apps/viewer/e2e/occlusion.spec.ts:218:3 › a fitted region is not clipped by chrome (V48) › no chrome sits on a fitted region, across every halo note
+[1A[2K[141/195] [chromium] › apps/viewer/e2e/read.spec.ts:11:3 › the read surface › the zoom cue is anchored to the canvas it describes (V40)
+[1A[2K[142/195] [chromium] › apps/viewer/e2e/read.spec.ts:39:3 › the read surface › the narrative reader's chrome is anchored too (V80)
+[1A[2K[143/195] [chromium] › apps/viewer/e2e/read.spec.ts:66:5 › the read surface › the filmstrip is one stop, not N (V27/V28) › exactly one frame is in the tab order
+[1A[2K[144/195] [chromium] › apps/viewer/e2e/read.spec.ts:74:5 › the read surface › the filmstrip is one stop, not N (V27/V28) › arrow keys move within the strip
+[1A[2K[145/195] [chromium] › apps/viewer/e2e/read.spec.ts:96:5 › the read surface › the filmstrip is one stop, not N (V27/V28) › each frame says which item it is
+[1A[2K[146/195] [chromium] › apps/viewer/e2e/review-contrast.spec.ts:7:1 › mobile gallery keeps readable text and its first exhibit above the fold
+[1A[2K[147/195] [chromium] › apps/viewer/e2e/selection.spec.ts:23:3 › the selection ring means something (V43) › no halo before anything is selected
+[1A[2K[148/195] [chromium] › apps/viewer/e2e/selection.spec.ts:34:3 › the selection ring means something (V43) › selecting a region note draws a ring around it
+[1A[2K[149/195] [chromium] › apps/viewer/e2e/selection.spec.ts:54:3 › the selection ring means something (V43) › the ring is decoration, and it does not shield what it points at
+[1A[2K[150/195] [chromium] › apps/viewer/e2e/selection.spec.ts:96:3 › the selection ring means something (V43) › a REAL mouse click on a mark opens its note
+[1A[2K[151/195] [chromium] › apps/viewer/e2e/selection.spec.ts:196:3 › the selection ring means something (V43) › dismissing a note gives its height back to the image (ADR-0019 layout row)
+[1A[2K[152/195] [chromium] › apps/viewer/e2e/selection.spec.ts:324:3 › the whole-object frame is a mark too (V46) › a whole-object note is drawn as a named, focusable frame
+[1A[2K[153/195] [chromium] › apps/viewer/e2e/selection.spec.ts:338:3 › the whole-object frame is a mark too (V46) › the frame survives Hide all — it is the way back to the marks
+[1A[2K[154/195] [chromium] › apps/viewer/e2e/selection.spec.ts:356:3 › the legend swatch shows what the canvas draws (V47) › the swatch is a miniature mark, not a solid disc
+[1A[2K[155/195] [chromium] › apps/viewer/e2e/selection.spec.ts:375:3 › the legend swatch shows what the canvas draws (V47) › every reading's swatch is drawn the same way
+[1A[2K[156/195] [chromium] › apps/viewer/e2e/source-address.spec.ts:5:1 › foreign source survives reader address updates, reload, links, and Back
+[1A[2K[157/195] [chromium] › apps/viewer/e2e/static-shell.spec.ts:17:7 › the page a crawler gets › with JavaScript off › voynich has a readable body, not an empty island (V107)
+[1A[2K[158/195] [chromium] › apps/viewer/e2e/static-shell.spec.ts:17:7 › the page a crawler gets › with JavaScript off › voynich-reading has a readable body, not an empty island (V107)
+[1A[2K[159/195] [chromium] › apps/viewer/e2e/static-shell.spec.ts:40:3 › the page a crawler gets › the shell yields to the app once it hydrates
+[1A[2K[160/195] [chromium] › apps/viewer/e2e/static-shell.spec.ts:49:3 › the page a crawler gets › the archival page carries the narrative, not just the notes (V110)
+[1A[2K[161/195] [chromium] › apps/viewer/e2e/touch-targets.spec.ts:62:3 › touch targets on a phone viewport (Archie-cf4a, WCAG 2.2 SC 2.5.8) › the gallery's controls are all at least 24x24
+[1A[2K[162/195] [chromium] › apps/viewer/e2e/touch-targets.spec.ts:70:3 › touch targets on a phone viewport (Archie-cf4a, WCAG 2.2 SC 2.5.8) › an exhibit grid's controls are all at least 24x24
+[1A[2K[163/195] [chromium] › apps/viewer/e2e/touch-targets.spec.ts:78:3 › touch targets on a phone viewport (Archie-cf4a, WCAG 2.2 SC 2.5.8) › the reader's chrome is all at least 24x24
+[1A[2K[164/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:9:3 › focused user-story baseline › VIEW-003: unlisted exhibits stay out of cards/wall but direct URL remains reachable
+[1A[2K[165/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:26:3 › focused user-story baseline › VIEW-004: a failed local cover reaches the visible title fallback
+[1A[2K[166/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:38:3 › focused user-story baseline › VIEW-005: leaving an exhibit returns to the gallery
+[1A[2K[167/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:52:3 › focused user-story baseline › VIEW-008: an unknown object falls back to the exhibit with an explanatory notice
+[1A[2K[168/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:60:3 › focused user-story baseline › VIEW-011: a temporal note URL seeks the real AV player and stays paused
+[1A[2K[169/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:71:3 › focused user-story baseline › VIEW-050: an embed opens a known Content State and safely degrades malformed state
+[1A[2K[170/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:96:3 › focused user-story baseline › VIEW-012: a visitor can copy a IIIF Content State for an opened note
+[1A[2K[171/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:119:3 › focused user-story baseline › VIEW-053: a long library summary expands and collapses on a small screen
+[1A[2K[172/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:140:3 › focused user-story baseline › VIEW-054: object-grid density persists after reload
+[1A[2K[173/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:157:3 › focused user-story baseline › VIEW-069: image-wall density persists and controls disappear during search
+[1A[2K[174/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:173:3 › focused user-story baseline › VIEW-039: object details expose the exhibit and object credit metadata
+[1A[2K[175/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:181:3 › focused user-story baseline › VIEW-058: keyboard arrows step the active object carousel
+[1A[2K[176/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:193:3 › focused user-story baseline › VIEW-073: an exhibit with no objects gives a readable empty state
+[1A[2K[177/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:205:3 › focused user-story baseline › VIEW-075: a long metadata value expands and collapses
+[1A[2K[178/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:227:3 › focused user-story baseline › VIEW-022: a broken AV source shows a readable error and keeps navigation
+[1A[2K[179/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:239:3 › focused user-story baseline › VIEW-040: delayed published data shows opening state before the gallery
+[1A[2K[180/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:251:3 › focused user-story baseline › VIEW-041: malformed published data shows an actionable error state
+[1A[2K[181/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:259:3 › focused user-story baseline › VIEW-065: an embed opens a saved archive and reports an invalid archive
+[1A[2K[chromium] › apps/viewer/e2e/user-stories.spec.ts:259:3 › focused user-story baseline › VIEW-065: an embed opens a saved archive and reports an invalid archive
+
+<--- Last few GCs --->
+
+[344514:0x261b9000]   148649 ms: Mark-Compact 4052.2 (4128.9) -> 4036.9 (4128.1) MB, pooled: 6 MB, 841.30 / 0.00 ms  (average mu = 0.125, current mu = 0.006) allocation failure; scavenge might not succeed
+[344514:0x261b9000]   149422 ms: Mark-Compact 4052.7 (4128.1) -> 4037.4 (4128.6) MB, pooled: 6 MB, 768.22 / 0.00 ms  (average mu = 0.071, current mu = 0.006) allocation failure; scavenge might not succeed
+
+
+<--- JS stacktrace --->
+
+FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory
+----- Native stack trace -----
+
+
+
+[1A[2K 1: 0xe1803a node::OOMErrorHandler(char const*, v8::OOMDetails const&) [/usr/local/lib/vicinae/usr/bin/node]
+
+
+[1A[2K 2: 0x11ec9c0 v8::Utils::ReportOOMFailure(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [/usr/local/lib/vicinae/usr/bin/node]
+
+
+[1A[2K 3: 0x11ecc97 v8::internal::V8::FatalProcessOutOfMemory(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [/usr/local/lib/vicinae/usr/bin/node]
+
+
+[1A[2K 4: 0x141a575  [/usr/local/lib/vicinae/usr/bin/node]
+
+
+[1A[2K 5: 0x141a5a3  [/usr/local/lib/vicinae/usr/bin/node]
+
+
+[1A[2K 6: 0x143367a  [/usr/local/lib/vicinae/usr/bin/node]
+
+
+[1A[2K 7: 0x1436848  [/usr/local/lib/vicinae/usr/bin/node]
+
+
+[1A[2K 8: 0x1c9c351  [/usr/local/lib/vicinae/usr/bin/node]
+
+
+[1A[2K(node:355954) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:355954) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[182/195] (retries) [chromium] › apps/viewer/e2e/user-stories.spec.ts:259:3 › focused user-story baseline › VIEW-065: an embed opens a saved archive and reports an invalid archive (retry #1)
+[1A[2K  1) [chromium] › apps/viewer/e2e/user-stories.spec.ts:259:3 › focused user-story baseline › VIEW-065: an embed opens a saved archive and reports an invalid archive 
+
+    Error: worker process exited unexpectedly (code=null, signal=SIGABRT)
+
+
+[1A[2K[183/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:275:3 › focused user-story baseline › VIEW-025: selecting a second AV narrative section seeks its authored start
+[1A[2K[184/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:304:3 › focused user-story baseline › VIEW-044: an embed target opens an object and can return to its exhibit grid
+[1A[2K[185/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:315:3 › focused user-story baseline › VIEW-049: two embeds keep independent target state
+[1A[2K[186/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:329:3 › focused user-story baseline › VIEW-061: replacing an embed source removes the old library
+[1A[2K[187/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:347:3 › focused user-story baseline › VIEW-062: changing an embed target reuses its loaded tree
+[1A[2K[188/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:364:3 › focused user-story baseline › VIEW-064: an embed can reveal an unlisted exhibit without changing direct reachability
+[1A[2K[189/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:385:3 › focused user-story baseline › VIEW-067: an embed exposes current Content State only for an opened object
+[1A[2K[190/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:402:3 › focused user-story baseline › VIEW-048: offline embed blocks remote media before any remote request
+[1A[2K[191/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:419:3 › focused user-story baseline › VIEW-051: a host iframe receives coalesced embed height messages
+[1A[2K(node:361603) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:361603) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[192/195] (retries) [chromium] › apps/viewer/e2e/user-stories.spec.ts:419:3 › focused user-story baseline › VIEW-051: a host iframe receives coalesced embed height messages (retry #1)
+[1A[2K  2) [chromium] › apps/viewer/e2e/user-stories.spec.ts:419:3 › focused user-story baseline › VIEW-051: a host iframe receives coalesced embed height messages 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeGreaterThan[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected: > [32m0[39m
+    Received:   [31m0[39m
+
+    Call Log:
+    - Timeout 30000ms exceeded while waiting on the predicate
+
+      430 |     const frame = page.locator("iframe#host");
+      431 |     await expect(frame).toBeVisible();
+    > 432 |     await expect.poll(() => page.evaluate(() => (window as Window & { heights?: unknown[] }).heights?.length ?? 0), { timeout: 30_000 }).toBeGreaterThan(0);
+          |                                                                                                                                          ^
+      433 |     const first = await page.evaluate(() => (window as unknown as Window & { heights?: { height: number }[] }).heights?.[0]?.height ?? 0);
+      434 |     expect(first).toBeGreaterThan(0);
+      435 |     await page.evaluate(() => { const frame = document.querySelector<HTMLIFrameElement>("#host"); if (frame) frame.remove(); });
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:432:138
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--73270-esced-embed-height-messages-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeGreaterThan[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected: > [32m0[39m
+    Received:   [31m0[39m
+
+    Call Log:
+    - Timeout 30000ms exceeded while waiting on the predicate
+
+      430 |     const frame = page.locator("iframe#host");
+      431 |     await expect(frame).toBeVisible();
+    > 432 |     await expect.poll(() => page.evaluate(() => (window as Window & { heights?: unknown[] }).heights?.length ?? 0), { timeout: 30_000 }).toBeGreaterThan(0);
+          |                                                                                                                                          ^
+      433 |     const first = await page.evaluate(() => (window as unknown as Window & { heights?: { height: number }[] }).heights?.[0]?.height ?? 0);
+      434 |     expect(first).toBeGreaterThan(0);
+      435 |     await page.evaluate(() => { const frame = document.querySelector<HTMLIFrameElement>("#host"); if (frame) frame.remove(); });
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:432:138
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--73270-esced-embed-height-messages-chromium-retry1/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    apps/viewer/test-results/user-stories-focused-user--73270-esced-embed-height-messages-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace apps/viewer/test-results/user-stories-focused-user--73270-esced-embed-height-messages-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K(node:363397) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:363397) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[193/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:441:3 › focused user-story baseline › VIEW-052: an embed exposes keyboard reachable gallery, object, and back controls
+[1A[2K[194/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:465:3 › focused user-story baseline › VIEW-010: a spatial note arrival paints the canvas and its target marker
+[1A[2K[195/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:515:3 › focused user-story baseline › FLOW-024: a tree embed resolves its relative published media from its own source base
+[1A[2K(node:364424) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:364424) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[196/195] (retries) [chromium] › apps/viewer/e2e/user-stories.spec.ts:515:3 › focused user-story baseline › FLOW-024: a tree embed resolves its relative published media from its own source base (retry #1)
+[1A[2K  3) [chromium] › apps/viewer/e2e/user-stories.spec.ts:515:3 › focused user-story baseline › FLOW-024: a tree embed resolves its relative published media from its own source base 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoEqual[2m([22m[32mexpected[39m[2m) // deep equality[22m
+
+    [32m- Expected  - 1[39m
+    [31m+ Received  + 1[39m
+
+    [2m  Object {[22m
+    [2m    "status": 200,[22m
+    [32m-   "url": "http://localhost:4326/viewer/published/screenshots/assets/o1-e1-embed.png",[39m
+    [31m+   "url": "http://localhost:4328/viewer/published/screenshots/assets/o1-e1-embed.png",[39m
+    [2m  }[22m
+
+      535 |     await expect(viewer.locator(".reader canvas").first()).toBeVisible({ timeout: 30_000 });
+      536 |     await viewer.screenshot({ path: "docs/verification/evidence/viewer/flow024-tree-embed.png" });
+    > 537 |     expect(assetResponse).toEqual({
+          |                           ^
+      538 |       url: "http://localhost:4326/viewer/published/screenshots/assets/o1-e1-embed.png",
+      539 |       status: 200,
+      540 |     });
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:537:27
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--66895-ia-from-its-own-source-base-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoEqual[2m([22m[32mexpected[39m[2m) // deep equality[22m
+
+    [32m- Expected  - 1[39m
+    [31m+ Received  + 1[39m
+
+    [2m  Object {[22m
+    [2m    "status": 200,[22m
+    [32m-   "url": "http://localhost:4326/viewer/published/screenshots/assets/o1-e1-embed.png",[39m
+    [31m+   "url": "http://localhost:4328/viewer/published/screenshots/assets/o1-e1-embed.png",[39m
+    [2m  }[22m
+
+      535 |     await expect(viewer.locator(".reader canvas").first()).toBeVisible({ timeout: 30_000 });
+      536 |     await viewer.screenshot({ path: "docs/verification/evidence/viewer/flow024-tree-embed.png" });
+    > 537 |     expect(assetResponse).toEqual({
+          |                           ^
+      538 |       url: "http://localhost:4326/viewer/published/screenshots/assets/o1-e1-embed.png",
+      539 |       status: 200,
+      540 |     });
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:537:27
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--66895-ia-from-its-own-source-base-chromium-retry1/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    apps/viewer/test-results/user-stories-focused-user--66895-ia-from-its-own-source-base-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace apps/viewer/test-results/user-stories-focused-user--66895-ia-from-its-own-source-base-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K(node:364598) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:364598) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[197/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:543:3 › focused user-story baseline › VIEW-063: a saved archive keeps bundled media readable offline
+[1A[2K[chromium] › apps/viewer/e2e/user-stories.spec.ts:543:3 › focused user-story baseline › VIEW-063: a saved archive keeps bundled media readable offline
+VIEW063_STATE {"text":":host{--blush: #E9EEDF;--rose-fog: #CDD8C2;--lilac-mist: #C8D5C0;--glow-coral: #84B894;--ember: #3A8C5D;--mist-blue: #6B7D6A;--deep-slate: #2D5F3A;--signal-orange: #3A8C5D;--cord-blue: #C9A96E;--clay-line: #2D5F3A;--moss-shadow: #1A3C23;--paper: #F7F4EC;--ink: #1A3C23;--surface-canvas: #F7F4EC;--surface-canvas-raised: #FDFCF5;--surface-canvas-overlay: #ECF0E3;--ink-canvas-primary: #1A3C23;--ink-canvas-secondary: rgba(26, 60, 35, .78);--ink-canvas-muted: rgba(26, 60, 35, .72);--border-canvas: rgba(26, 60, 35, .1);--border-canvas-emphasis: rgba(26, 60, 35, .18);--surface-paper: #F7F4EC;--surface-paper-card: #FDFCF5;--surface-paper-hover: #ECF0E3;--ink-paper-primary: #1A3C23;--ink-paper-secondary: rgba(26, 60, 35, .78);--ink-paper-muted: rgba(26, 60, 35, .72);--border-paper: rgba(26, 60, 35, .1);--border-paper-emphasis: rgba(26, 60, 35, .18);--surface-gallery: #E9EEDF;--accent: #2D754C;--accent-hover: #286943;--accent-muted: rgba(58, 140, 93, .14);--ink-on-accent: #F7F4EC;--accent-2: #836425;--accent-2-hover: #72571F;--accent-2-muted: rgba(154, 123, 57, .14);--accent-2-paper: #836425;--accent-2-paper-hover: #72571F;--accent-2-paper-muted: rgba(154, 123, 57, .12);--accent-3: #2D5F3A;--","html":"<style>:host{--blush: #E9EEDF;--rose-fog: #CDD8C2;--lilac-mist: #C8D5C0;--glow-coral: #84B894;--ember: #3A8C5D;--mist-blue: #6B7D6A;--deep-slate: #2D5F3A;--signal-orange: #3A8C5D;--cord-blue: #C9A96E;--clay-line: #2D5F3A;--moss-shadow: #1A3C23;--paper: #F7F4EC;--ink: #1A3C23;--surface-canvas: #F7F4EC;--surface-canvas-raised: #FDFCF5;--surface-canvas-overlay: #ECF0E3;--ink-canvas-primary: #1A3C23;--ink-canvas-secondary: rgba(26, 60, 35, .78);--ink-canvas-muted: rgba(26, 60, 35, .72);--border-canvas: rgba(26, 60, 35, .1);--border-canvas-emphasis: rgba(26, 60, 35, .18);--surface-paper: #F7F4EC;--surface-paper-card: #FDFCF5;--surface-paper-hover: #ECF0E3;--ink-paper-primary: #1A3C23;--ink-paper-secondary: rgba(26, 60, 35, .78);--ink-paper-muted: rgba(26, 60, 35, .72);--border-paper: rgba(26, 60, 35, .1);--border-paper-emphasis: rgba(26, 60, 35, .18);--surface-gallery: #E9EEDF;--accent: #2D754C;--accent-hover: #286943;--accent-muted: rgba(58, 140, 93, .14);--ink-on-accent: #F7F4EC;--accent-2: #836425;--accent-2-hover: #72571F;--accent-2-muted: rgba(154, 123, 57, .14);--accent-2-paper: #836425;--accent-2-paper-hover: #72571F;--accent-2-paper-muted: rgba(154, 123, 57, .12);--accent-3: #2D5F3A;--accent-3-hover: #366E45;--accent-3-muted: rgba(45, 95, 58, .12);--semantic-success: #467331;--semantic-warning: #895B1D;--semantic-error: #BC4A36;--font-marquee: \"FOP VHS\", \"Arial Black\", sans-serif;--font-display: \"FOP VHS\", \"Arial Black\", sans-serif;--font-display-2: \"Vinque Antique\", Georgia, serif;--font-body: \"LARAZ\", system-ui, sans-serif;--font-ui: \"LARAZ\", system-ui, sans-serif;--fo"} ERRORS ["Failed to load resource: the server responded with a status of 404 (Not Found)"] REMOTE []
+
+[1A[2KVIEW063_404S ["http://localhost:4328/viewer/screenshots/assets/o1-e1-embed.png"]
+
+[1A[2K[198/195] [chromium] › apps/viewer/e2e/user-stories.spec.ts:576:3 › focused user-story baseline › VIEW-057: finder text combines with multiple OR tag facets
+[1A[2K  2 failed
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:419:3 › focused user-story baseline › VIEW-051: a host iframe receives coalesced embed height messages 
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:515:3 › focused user-story baseline › FLOW-024: a tree embed resolves its relative published media from its own source base 
+  1 flaky
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:259:3 › focused user-story baseline › VIEW-065: an embed opens a saved archive and reports an invalid archive 
+  192 passed (5.8m)

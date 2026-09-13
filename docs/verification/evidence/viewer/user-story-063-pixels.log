@@ -1,0 +1,94 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:167378) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:167443) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:167799) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:167829) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 1 test using 1 worker
+
+[1A[2K(node:167987) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:167987) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/1] [chromium] › apps/viewer/e2e/user-stories.spec.ts:441:3 › focused user-story baseline › VIEW-063: a saved archive keeps bundled media readable offline
+[1A[2K[chromium] › apps/viewer/e2e/user-stories.spec.ts:441:3 › focused user-story baseline › VIEW-063: a saved archive keeps bundled media readable offline
+VIEW063_STATE {"text":":host{--blush: #E9EEDF;--rose-fog: #CDD8C2;--lilac-mist: #C8D5C0;--glow-coral: #84B894;--ember: #3A8C5D;--mist-blue: #6B7D6A;--deep-slate: #2D5F3A;--signal-orange: #3A8C5D;--cord-blue: #C9A96E;--clay-line: #2D5F3A;--moss-shadow: #1A3C23;--paper: #F7F4EC;--ink: #1A3C23;--surface-canvas: #F7F4EC;--surface-canvas-raised: #FDFCF5;--surface-canvas-overlay: #ECF0E3;--ink-canvas-primary: #1A3C23;--ink-canvas-secondary: rgba(26, 60, 35, .78);--ink-canvas-muted: rgba(26, 60, 35, .72);--border-canvas: rgba(26, 60, 35, .1);--border-canvas-emphasis: rgba(26, 60, 35, .18);--surface-paper: #F7F4EC;--surface-paper-card: #FDFCF5;--surface-paper-hover: #ECF0E3;--ink-paper-primary: #1A3C23;--ink-paper-secondary: rgba(26, 60, 35, .78);--ink-paper-muted: rgba(26, 60, 35, .72);--border-paper: rgba(26, 60, 35, .1);--border-paper-emphasis: rgba(26, 60, 35, .18);--surface-gallery: #E9EEDF;--accent: #2D754C;--accent-hover: #286943;--accent-muted: rgba(58, 140, 93, .14);--ink-on-accent: #F7F4EC;--accent-2: #836425;--accent-2-hover: #72571F;--accent-2-muted: rgba(154, 123, 57, .14);--accent-2-paper: #836425;--accent-2-paper-hover: #72571F;--accent-2-paper-muted: rgba(154, 123, 57, .12);--accent-3: #2D5F3A;--","html":"<style>:host{--blush: #E9EEDF;--rose-fog: #CDD8C2;--lilac-mist: #C8D5C0;--glow-coral: #84B894;--ember: #3A8C5D;--mist-blue: #6B7D6A;--deep-slate: #2D5F3A;--signal-orange: #3A8C5D;--cord-blue: #C9A96E;--clay-line: #2D5F3A;--moss-shadow: #1A3C23;--paper: #F7F4EC;--ink: #1A3C23;--surface-canvas: #F7F4EC;--surface-canvas-raised: #FDFCF5;--surface-canvas-overlay: #ECF0E3;--ink-canvas-primary: #1A3C23;--ink-canvas-secondary: rgba(26, 60, 35, .78);--ink-canvas-muted: rgba(26, 60, 35, .72);--border-canvas: rgba(26, 60, 35, .1);--border-canvas-emphasis: rgba(26, 60, 35, .18);--surface-paper: #F7F4EC;--surface-paper-card: #FDFCF5;--surface-paper-hover: #ECF0E3;--ink-paper-primary: #1A3C23;--ink-paper-secondary: rgba(26, 60, 35, .78);--ink-paper-muted: rgba(26, 60, 35, .72);--border-paper: rgba(26, 60, 35, .1);--border-paper-emphasis: rgba(26, 60, 35, .18);--surface-gallery: #E9EEDF;--accent: #2D754C;--accent-hover: #286943;--accent-muted: rgba(58, 140, 93, .14);--ink-on-accent: #F7F4EC;--accent-2: #836425;--accent-2-hover: #72571F;--accent-2-muted: rgba(154, 123, 57, .14);--accent-2-paper: #836425;--accent-2-paper-hover: #72571F;--accent-2-paper-muted: rgba(154, 123, 57, .12);--accent-3: #2D5F3A;--accent-3-hover: #366E45;--accent-3-muted: rgba(45, 95, 58, .12);--semantic-success: #467331;--semantic-warning: #895B1D;--semantic-error: #BC4A36;--font-marquee: \"FOP VHS\", \"Arial Black\", sans-serif;--font-display: \"FOP VHS\", \"Arial Black\", sans-serif;--font-display-2: \"Vinque Antique\", Georgia, serif;--font-body: \"LARAZ\", system-ui, sans-serif;--font-ui: \"LARAZ\", system-ui, sans-serif;--fo"} ERRORS ["Failed to load resource: the server responded with a status of 404 (Not Found)"] REMOTE []
+
+[1A[2K(node:171079) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:171079) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[2/1] (retries) [chromium] › apps/viewer/e2e/user-stories.spec.ts:441:3 › focused user-story baseline › VIEW-063: a saved archive keeps bundled media readable offline (retry #1)
+[1A[2KVIEW063_STATE {"text":":host{--blush: #E9EEDF;--rose-fog: #CDD8C2;--lilac-mist: #C8D5C0;--glow-coral: #84B894;--ember: #3A8C5D;--mist-blue: #6B7D6A;--deep-slate: #2D5F3A;--signal-orange: #3A8C5D;--cord-blue: #C9A96E;--clay-line: #2D5F3A;--moss-shadow: #1A3C23;--paper: #F7F4EC;--ink: #1A3C23;--surface-canvas: #F7F4EC;--surface-canvas-raised: #FDFCF5;--surface-canvas-overlay: #ECF0E3;--ink-canvas-primary: #1A3C23;--ink-canvas-secondary: rgba(26, 60, 35, .78);--ink-canvas-muted: rgba(26, 60, 35, .72);--border-canvas: rgba(26, 60, 35, .1);--border-canvas-emphasis: rgba(26, 60, 35, .18);--surface-paper: #F7F4EC;--surface-paper-card: #FDFCF5;--surface-paper-hover: #ECF0E3;--ink-paper-primary: #1A3C23;--ink-paper-secondary: rgba(26, 60, 35, .78);--ink-paper-muted: rgba(26, 60, 35, .72);--border-paper: rgba(26, 60, 35, .1);--border-paper-emphasis: rgba(26, 60, 35, .18);--surface-gallery: #E9EEDF;--accent: #2D754C;--accent-hover: #286943;--accent-muted: rgba(58, 140, 93, .14);--ink-on-accent: #F7F4EC;--accent-2: #836425;--accent-2-hover: #72571F;--accent-2-muted: rgba(154, 123, 57, .14);--accent-2-paper: #836425;--accent-2-paper-hover: #72571F;--accent-2-paper-muted: rgba(154, 123, 57, .12);--accent-3: #2D5F3A;--","html":"<style>:host{--blush: #E9EEDF;--rose-fog: #CDD8C2;--lilac-mist: #C8D5C0;--glow-coral: #84B894;--ember: #3A8C5D;--mist-blue: #6B7D6A;--deep-slate: #2D5F3A;--signal-orange: #3A8C5D;--cord-blue: #C9A96E;--clay-line: #2D5F3A;--moss-shadow: #1A3C23;--paper: #F7F4EC;--ink: #1A3C23;--surface-canvas: #F7F4EC;--surface-canvas-raised: #FDFCF5;--surface-canvas-overlay: #ECF0E3;--ink-canvas-primary: #1A3C23;--ink-canvas-secondary: rgba(26, 60, 35, .78);--ink-canvas-muted: rgba(26, 60, 35, .72);--border-canvas: rgba(26, 60, 35, .1);--border-canvas-emphasis: rgba(26, 60, 35, .18);--surface-paper: #F7F4EC;--surface-paper-card: #FDFCF5;--surface-paper-hover: #ECF0E3;--ink-paper-primary: #1A3C23;--ink-paper-secondary: rgba(26, 60, 35, .78);--ink-paper-muted: rgba(26, 60, 35, .72);--border-paper: rgba(26, 60, 35, .1);--border-paper-emphasis: rgba(26, 60, 35, .18);--surface-gallery: #E9EEDF;--accent: #2D754C;--accent-hover: #286943;--accent-muted: rgba(58, 140, 93, .14);--ink-on-accent: #F7F4EC;--accent-2: #836425;--accent-2-hover: #72571F;--accent-2-muted: rgba(154, 123, 57, .14);--accent-2-paper: #836425;--accent-2-paper-hover: #72571F;--accent-2-paper-muted: rgba(154, 123, 57, .12);--accent-3: #2D5F3A;--accent-3-hover: #366E45;--accent-3-muted: rgba(45, 95, 58, .12);--semantic-success: #467331;--semantic-warning: #895B1D;--semantic-error: #BC4A36;--font-marquee: \"FOP VHS\", \"Arial Black\", sans-serif;--font-display: \"FOP VHS\", \"Arial Black\", sans-serif;--font-display-2: \"Vinque Antique\", Georgia, serif;--font-body: \"LARAZ\", system-ui, sans-serif;--font-ui: \"LARAZ\", system-ui, sans-serif;--fo"} ERRORS ["Failed to load resource: the server responded with a status of 404 (Not Found)"] REMOTE []
+
+[1A[2K  1) [chromium] › apps/viewer/e2e/user-stories.spec.ts:441:3 › focused user-story baseline › VIEW-063: a saved archive keeps bundled media readable offline 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32mtrue[39m
+    Received: [31mfalse[39m
+
+      474 |       return Array.from(data).some((value, index) => index % 4 === 3 && value > 0);
+      475 |     });
+    > 476 |     if (pixels !== null) expect(pixels).toBe(true);
+          |                                         ^
+      477 |     console.log("VIEW063_404S", JSON.stringify(notFound));
+      478 |     expect(remote).toHaveLength(0);
+      479 |   });
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:476:41
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--e5464-dled-media-readable-offline-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32mtrue[39m
+    Received: [31mfalse[39m
+
+      474 |   test("VIEW-057: finder text combines with multiple OR tag facets", async ({ page }) => {
+      475 |     await goOffline(page);
+    > 476 |     await page.route(/\/published\/voynich\/manifest\.json(?:\?.*)?$/, async (route) => {
+          |                                         ^
+      477 |       const response = await route.fetch();
+      478 |       const json = await response.json();
+      479 |       let changed = 0;
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:476:41
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--e5464-dled-media-readable-offline-chromium-retry1/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    apps/viewer/test-results/user-stories-focused-user--e5464-dled-media-readable-offline-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace apps/viewer/test-results/user-stories-focused-user--e5464-dled-media-readable-offline-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  1 failed
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:441:3 › focused user-story baseline › VIEW-063: a saved archive keeps bundled media readable offline 

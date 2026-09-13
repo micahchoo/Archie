@@ -1,0 +1,8 @@
+Launcher lifecycle verification — 2026-09-12
+
+- `bash -n scripts/dev.sh`: passed.
+- Node prerequisite: with a controlled fake `node` reporting v20.11.0, `bash scripts/dev.sh` exited 1 before spawning any backend and printed `Archie dev requires Node >=22.12.0 (found v20.11.0).`
+- Current runtime: Node v22.19.0 accepted by the same prerequisite expression.
+- No-pnpm branch: this environment has npm but no pnpm; the script selects `PKG_RUNNER=(npm run)` for backend commands. Viewer has the required `gen` script and Studio has the required `dev` script.
+- Port ownership: the launcher checks 5173, 5174, and 4321 before spawning, so a pre-existing service causes a clear nonzero exit instead of borrowing it.
+- Failure cleanup: cleanup trap is installed before either backend starts; owned process trees are recursively terminated, and the proxy is only started after both backend readiness checks pass.

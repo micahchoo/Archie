@@ -1,0 +1,229 @@
+
+Running 8 tests using 1 worker
+
+(node:287337) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:287337) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › e2e/user-stories-av.spec.ts:56:1 › STU-ANN-013A audio playback and seek (735ms)
+  ✓  2 [chromium] › e2e/user-stories-av.spec.ts:70:1 › STU-ANN-013B audio range note saves and reopens (2.2s)
+  ✓  3 [chromium] › e2e/user-stories-av.spec.ts:99:1 › STU-ANN-013C audio immediate interval remains valid (701ms)
+  ✓  4 [chromium] › e2e/user-stories-av.spec.ts:119:1 › STU-ANN-013D whole audio note (2.0s)
+ffmpeg version 7.1.1-1ubuntu4.2 Copyright (c) 2000-2025 the FFmpeg developers
+  built with gcc 15 (Ubuntu 15.2.0-4ubuntu4)
+  configuration: --prefix=/usr --extra-version=1ubuntu4.2 --toolchain=hardened --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --arch=amd64 --enable-gpl --disable-stripping --disable-libmfx --disable-omx --enable-gnutls --enable-libaom --enable-libass --enable-libbs2b --enable-libcdio --enable-libcodec2 --enable-libdav1d --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libglslang --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libmp3lame --enable-libmysofa --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-librubberband --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libtheora --enable-libtwolame --enable-libvidstab --enable-libvorbis --enable-libvpx --enable-libwebp --enable-libx265 --enable-libxml2 --enable-libxvid --enable-libzimg --enable-openal --enable-opencl --enable-opengl --disable-sndio --enable-libvpl --enable-libdc1394 --enable-libdrm --enable-libiec61883 --enable-chromaprint --enable-frei0r --enable-ladspa --enable-libbluray --enable-libcaca --enable-libdvdnav --enable-libdvdread --enable-libjack --enable-libpulse --enable-librabbitmq --enable-librist --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libx264 --enable-libzmq --enable-libzvbi --enable-lv2 --enable-sdl2 --enable-libplacebo --enable-librav1e --enable-pocketsphinx --enable-librsvg --enable-libjxl --enable-shared
+  libavutil      59. 39.100 / 59. 39.100
+  libavcodec     61. 19.101 / 61. 19.101
+  libavformat    61.  7.100 / 61.  7.100
+  libavdevice    61.  3.100 / 61.  3.100
+  libavfilter    10.  4.100 / 10.  4.100
+  libswscale      8.  3.100 /  8.  3.100
+  libswresample   5.  3.100 /  5.  3.100
+  libpostproc    58.  3.100 / 58.  3.100
+Input #0, lavfi, from 'color=c=black:s=320x240:d=2':
+  Duration: N/A, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: wrapped_avframe, yuv420p, 320x240 [SAR 1:1 DAR 4:3], 25 fps, 25 tbr, 25 tbn
+Input #1, lavfi, from 'anullsrc=r=8000:cl=mono':
+  Duration: N/A, start: 0.000000, bitrate: 64 kb/s
+  Stream #1:0: Audio: pcm_u8, 8000 Hz, mono, u8, 64 kb/s
+Stream mapping:
+  Stream #0:0 -> #0:0 (wrapped_avframe (native) -> h264 (libx264))
+  Stream #1:0 -> #0:1 (pcm_u8 (native) -> aac (native))
+Press [q] to stop, [?] for help
+[libx264 @ 0x5667ce1be7c0] using SAR=1/1
+[aac @ 0x5667ce1e9380] Too many bits 8832.000000 > 6144 per frame requested, clamping to max
+[libx264 @ 0x5667ce1be7c0] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[libx264 @ 0x5667ce1be7c0] profile High, level 1.3, 4:2:0, 8-bit
+[libx264 @ 0x5667ce1be7c0] 264 - core 164 r3108 31e19f9 - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=7 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to '/tmp/archie-av-video-5vJyov/clip.mp4':
+  Metadata:
+    encoder         : Lavf61.7.100
+  Stream #0:0: Video: h264 (avc1 / 0x31637661), yuv420p(tv, progressive), 320x240 [SAR 1:1 DAR 4:3], q=2-31, 25 fps, 12800 tbn
+      Metadata:
+        encoder         : Lavc61.19.101 libx264
+      Side data:
+        cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+  Stream #0:1: Audio: aac (LC) (mp4a / 0x6134706D), 8000 Hz, mono, fltp, 48 kb/s
+      Metadata:
+        encoder         : Lavc61.19.101 aac
+[out#0/mp4 @ 0x5667ce1e50c0] video:2KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 136.989498%
+frame=   50 fps=0.0 q=-1.0 Lsize=       4KiB time=00:00:01.92 bitrate=  16.9kbits/s speed= 175x    
+[libx264 @ 0x5667ce1be7c0] frame I:1     Avg QP: 9.00  size:    63
+[libx264 @ 0x5667ce1be7c0] frame P:13    Avg QP: 9.69  size:    22
+[libx264 @ 0x5667ce1be7c0] frame B:36    Avg QP:12.67  size:    15
+[libx264 @ 0x5667ce1be7c0] consecutive B-frames:  4.0%  0.0%  0.0% 96.0%
+[libx264 @ 0x5667ce1be7c0] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x5667ce1be7c0] mb P  I16..4:  0.0%  0.0%  0.0%  P16..4:  0.0%  0.0%  0.0%  0.0%  0.0%    skip:100.0%
+[libx264 @ 0x5667ce1be7c0] mb B  I16..4:  0.0%  0.0%  0.0%  B16..8:  0.0%  0.0%  0.0%  direct: 0.0%  skip:100.0%
+[libx264 @ 0x5667ce1be7c0] 8x8 transform intra:0.0%
+[libx264 @ 0x5667ce1be7c0] coded y,uvDC,uvAC intra: 0.0% 0.0% 0.0% inter: 0.0% 0.0% 0.0%
+[libx264 @ 0x5667ce1be7c0] i16 v,h,dc,p: 93%  0%  7%  0%
+[libx264 @ 0x5667ce1be7c0] i8c dc,h,v,p: 100%  0%  0%  0%
+[libx264 @ 0x5667ce1be7c0] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 0x5667ce1be7c0] kb/s:3.52
+[aac @ 0x5667ce1e9380] Qavg: 65536.000
+  ✓  5 [chromium] › e2e/user-stories-av.spec.ts:132:1 › STU-ANN-014A video playback and frame box (779ms)
+ffmpeg version 7.1.1-1ubuntu4.2 Copyright (c) 2000-2025 the FFmpeg developers
+  built with gcc 15 (Ubuntu 15.2.0-4ubuntu4)
+  configuration: --prefix=/usr --extra-version=1ubuntu4.2 --toolchain=hardened --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --arch=amd64 --enable-gpl --disable-stripping --disable-libmfx --disable-omx --enable-gnutls --enable-libaom --enable-libass --enable-libbs2b --enable-libcdio --enable-libcodec2 --enable-libdav1d --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libglslang --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libmp3lame --enable-libmysofa --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-librubberband --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libtheora --enable-libtwolame --enable-libvidstab --enable-libvorbis --enable-libvpx --enable-libwebp --enable-libx265 --enable-libxml2 --enable-libxvid --enable-libzimg --enable-openal --enable-opencl --enable-opengl --disable-sndio --enable-libvpl --enable-libdc1394 --enable-libdrm --enable-libiec61883 --enable-chromaprint --enable-frei0r --enable-ladspa --enable-libbluray --enable-libcaca --enable-libdvdnav --enable-libdvdread --enable-libjack --enable-libpulse --enable-librabbitmq --enable-librist --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libx264 --enable-libzmq --enable-libzvbi --enable-lv2 --enable-sdl2 --enable-libplacebo --enable-librav1e --enable-pocketsphinx --enable-librsvg --enable-libjxl --enable-shared
+  libavutil      59. 39.100 / 59. 39.100
+  libavcodec     61. 19.101 / 61. 19.101
+  libavformat    61.  7.100 / 61.  7.100
+  libavdevice    61.  3.100 / 61.  3.100
+  libavfilter    10.  4.100 / 10.  4.100
+  libswscale      8.  3.100 /  8.  3.100
+  libswresample   5.  3.100 /  5.  3.100
+  libpostproc    58.  3.100 / 58.  3.100
+Input #0, lavfi, from 'color=c=black:s=320x240:d=2':
+  Duration: N/A, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: wrapped_avframe, yuv420p, 320x240 [SAR 1:1 DAR 4:3], 25 fps, 25 tbr, 25 tbn
+Input #1, lavfi, from 'anullsrc=r=8000:cl=mono':
+  Duration: N/A, start: 0.000000, bitrate: 64 kb/s
+  Stream #1:0: Audio: pcm_u8, 8000 Hz, mono, u8, 64 kb/s
+Stream mapping:
+  Stream #0:0 -> #0:0 (wrapped_avframe (native) -> h264 (libx264))
+  Stream #1:0 -> #0:1 (pcm_u8 (native) -> aac (native))
+Press [q] to stop, [?] for help
+[aac @ 0x5dacfe33a380] Too many bits 8832.000000 > 6144 per frame requested, clamping to max
+[libx264 @ 0x5dacfe30f7c0] using SAR=1/1
+[libx264 @ 0x5dacfe30f7c0] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[libx264 @ 0x5dacfe30f7c0] profile High, level 1.3, 4:2:0, 8-bit
+[libx264 @ 0x5dacfe30f7c0] 264 - core 164 r3108 31e19f9 - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=7 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to '/tmp/archie-av-video-XNp5cB/clip.mp4':
+  Metadata:
+    encoder         : Lavf61.7.100
+  Stream #0:0: Video: h264 (avc1 / 0x31637661), yuv420p(tv, progressive), 320x240 [SAR 1:1 DAR 4:3], q=2-31, 25 fps, 12800 tbn
+      Metadata:
+        encoder         : Lavc61.19.101 libx264
+      Side data:
+        cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+  Stream #0:1: Audio: aac (LC) (mp4a / 0x6134706D), 8000 Hz, mono, fltp, 48 kb/s
+      Metadata:
+        encoder         : Lavc61.19.101 aac
+[out#0/mp4 @ 0x5dacfe3360c0] video:2KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 136.989498%
+frame=   50 fps=0.0 q=-1.0 Lsize=       4KiB time=00:00:01.92 bitrate=  16.9kbits/s speed= 164x    
+[libx264 @ 0x5dacfe30f7c0] frame I:1     Avg QP: 9.00  size:    63
+[libx264 @ 0x5dacfe30f7c0] frame P:13    Avg QP: 9.69  size:    22
+[libx264 @ 0x5dacfe30f7c0] frame B:36    Avg QP:12.67  size:    15
+[libx264 @ 0x5dacfe30f7c0] consecutive B-frames:  4.0%  0.0%  0.0% 96.0%
+[libx264 @ 0x5dacfe30f7c0] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x5dacfe30f7c0] mb P  I16..4:  0.0%  0.0%  0.0%  P16..4:  0.0%  0.0%  0.0%  0.0%  0.0%    skip:100.0%
+[libx264 @ 0x5dacfe30f7c0] mb B  I16..4:  0.0%  0.0%  0.0%  B16..8:  0.0%  0.0%  0.0%  direct: 0.0%  skip:100.0%
+[libx264 @ 0x5dacfe30f7c0] 8x8 transform intra:0.0%
+[libx264 @ 0x5dacfe30f7c0] coded y,uvDC,uvAC intra: 0.0% 0.0% 0.0% inter: 0.0% 0.0% 0.0%
+[libx264 @ 0x5dacfe30f7c0] i16 v,h,dc,p: 93%  0%  7%  0%
+[libx264 @ 0x5dacfe30f7c0] i8c dc,h,v,p: 100%  0%  0%  0%
+[libx264 @ 0x5dacfe30f7c0] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 0x5dacfe30f7c0] kb/s:3.52
+[aac @ 0x5dacfe33a380] Qavg: 65536.000
+  ✓  6 [chromium] › e2e/user-stories-av.spec.ts:146:1 › STU-ANN-014B video timeline exists and seeks (633ms)
+ffmpeg version 7.1.1-1ubuntu4.2 Copyright (c) 2000-2025 the FFmpeg developers
+  built with gcc 15 (Ubuntu 15.2.0-4ubuntu4)
+  configuration: --prefix=/usr --extra-version=1ubuntu4.2 --toolchain=hardened --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --arch=amd64 --enable-gpl --disable-stripping --disable-libmfx --disable-omx --enable-gnutls --enable-libaom --enable-libass --enable-libbs2b --enable-libcdio --enable-libcodec2 --enable-libdav1d --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libglslang --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libmp3lame --enable-libmysofa --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-librubberband --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libtheora --enable-libtwolame --enable-libvidstab --enable-libvorbis --enable-libvpx --enable-libwebp --enable-libx265 --enable-libxml2 --enable-libxvid --enable-libzimg --enable-openal --enable-opencl --enable-opengl --disable-sndio --enable-libvpl --enable-libdc1394 --enable-libdrm --enable-libiec61883 --enable-chromaprint --enable-frei0r --enable-ladspa --enable-libbluray --enable-libcaca --enable-libdvdnav --enable-libdvdread --enable-libjack --enable-libpulse --enable-librabbitmq --enable-librist --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libx264 --enable-libzmq --enable-libzvbi --enable-lv2 --enable-sdl2 --enable-libplacebo --enable-librav1e --enable-pocketsphinx --enable-librsvg --enable-libjxl --enable-shared
+  libavutil      59. 39.100 / 59. 39.100
+  libavcodec     61. 19.101 / 61. 19.101
+  libavformat    61.  7.100 / 61.  7.100
+  libavdevice    61.  3.100 / 61.  3.100
+  libavfilter    10.  4.100 / 10.  4.100
+  libswscale      8.  3.100 /  8.  3.100
+  libswresample   5.  3.100 /  5.  3.100
+  libpostproc    58.  3.100 / 58.  3.100
+Input #0, lavfi, from 'color=c=black:s=320x240:d=2':
+  Duration: N/A, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: wrapped_avframe, yuv420p, 320x240 [SAR 1:1 DAR 4:3], 25 fps, 25 tbr, 25 tbn
+Input #1, lavfi, from 'anullsrc=r=8000:cl=mono':
+  Duration: N/A, start: 0.000000, bitrate: 64 kb/s
+  Stream #1:0: Audio: pcm_u8, 8000 Hz, mono, u8, 64 kb/s
+Stream mapping:
+  Stream #0:0 -> #0:0 (wrapped_avframe (native) -> h264 (libx264))
+  Stream #1:0 -> #0:1 (pcm_u8 (native) -> aac (native))
+Press [q] to stop, [?] for help
+[libx264 @ 0x5d3c785e47c0] using SAR=1/1
+[aac @ 0x5d3c7860f380] Too many bits 8832.000000 > 6144 per frame requested, clamping to max
+[libx264 @ 0x5d3c785e47c0] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[libx264 @ 0x5d3c785e47c0] profile High, level 1.3, 4:2:0, 8-bit
+[libx264 @ 0x5d3c785e47c0] 264 - core 164 r3108 31e19f9 - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=7 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to '/tmp/archie-av-video-gwUs8d/clip.mp4':
+  Metadata:
+    encoder         : Lavf61.7.100
+  Stream #0:0: Video: h264 (avc1 / 0x31637661), yuv420p(tv, progressive), 320x240 [SAR 1:1 DAR 4:3], q=2-31, 25 fps, 12800 tbn
+      Metadata:
+        encoder         : Lavc61.19.101 libx264
+      Side data:
+        cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+  Stream #0:1: Audio: aac (LC) (mp4a / 0x6134706D), 8000 Hz, mono, fltp, 48 kb/s
+      Metadata:
+        encoder         : Lavc61.19.101 aac
+[out#0/mp4 @ 0x5d3c7860b0c0] video:2KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 136.989498%
+frame=   50 fps=0.0 q=-1.0 Lsize=       4KiB time=00:00:01.92 bitrate=  16.9kbits/s speed= 181x    
+[libx264 @ 0x5d3c785e47c0] frame I:1     Avg QP: 9.00  size:    63
+[libx264 @ 0x5d3c785e47c0] frame P:13    Avg QP: 9.69  size:    22
+[libx264 @ 0x5d3c785e47c0] frame B:36    Avg QP:12.67  size:    15
+[libx264 @ 0x5d3c785e47c0] consecutive B-frames:  4.0%  0.0%  0.0% 96.0%
+[libx264 @ 0x5d3c785e47c0] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x5d3c785e47c0] mb P  I16..4:  0.0%  0.0%  0.0%  P16..4:  0.0%  0.0%  0.0%  0.0%  0.0%    skip:100.0%
+[libx264 @ 0x5d3c785e47c0] mb B  I16..4:  0.0%  0.0%  0.0%  B16..8:  0.0%  0.0%  0.0%  direct: 0.0%  skip:100.0%
+[libx264 @ 0x5d3c785e47c0] 8x8 transform intra:0.0%
+[libx264 @ 0x5d3c785e47c0] coded y,uvDC,uvAC intra: 0.0% 0.0% 0.0% inter: 0.0% 0.0% 0.0%
+[libx264 @ 0x5d3c785e47c0] i16 v,h,dc,p: 93%  0%  7%  0%
+[libx264 @ 0x5d3c785e47c0] i8c dc,h,v,p: 100%  0%  0%  0%
+[libx264 @ 0x5d3c785e47c0] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 0x5d3c785e47c0] kb/s:3.52
+[aac @ 0x5d3c7860f380] Qavg: 65536.000
+  ✓  7 [chromium] › e2e/user-stories-av.spec.ts:157:1 › STU-ANN-014C video interval and frame note (3.5s)
+ffmpeg version 7.1.1-1ubuntu4.2 Copyright (c) 2000-2025 the FFmpeg developers
+  built with gcc 15 (Ubuntu 15.2.0-4ubuntu4)
+  configuration: --prefix=/usr --extra-version=1ubuntu4.2 --toolchain=hardened --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --arch=amd64 --enable-gpl --disable-stripping --disable-libmfx --disable-omx --enable-gnutls --enable-libaom --enable-libass --enable-libbs2b --enable-libcdio --enable-libcodec2 --enable-libdav1d --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libglslang --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libmp3lame --enable-libmysofa --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-librubberband --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libtheora --enable-libtwolame --enable-libvidstab --enable-libvorbis --enable-libvpx --enable-libwebp --enable-libx265 --enable-libxml2 --enable-libxvid --enable-libzimg --enable-openal --enable-opencl --enable-opengl --disable-sndio --enable-libvpl --enable-libdc1394 --enable-libdrm --enable-libiec61883 --enable-chromaprint --enable-frei0r --enable-ladspa --enable-libbluray --enable-libcaca --enable-libdvdnav --enable-libdvdread --enable-libjack --enable-libpulse --enable-librabbitmq --enable-librist --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libx264 --enable-libzmq --enable-libzvbi --enable-lv2 --enable-sdl2 --enable-libplacebo --enable-librav1e --enable-pocketsphinx --enable-librsvg --enable-libjxl --enable-shared
+  libavutil      59. 39.100 / 59. 39.100
+  libavcodec     61. 19.101 / 61. 19.101
+  libavformat    61.  7.100 / 61.  7.100
+  libavdevice    61.  3.100 / 61.  3.100
+  libavfilter    10.  4.100 / 10.  4.100
+  libswscale      8.  3.100 /  8.  3.100
+  libswresample   5.  3.100 /  5.  3.100
+  libpostproc    58.  3.100 / 58.  3.100
+Input #0, lavfi, from 'color=c=black:s=320x240:d=2':
+  Duration: N/A, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: wrapped_avframe, yuv420p, 320x240 [SAR 1:1 DAR 4:3], 25 fps, 25 tbr, 25 tbn
+Input #1, lavfi, from 'anullsrc=r=8000:cl=mono':
+  Duration: N/A, start: 0.000000, bitrate: 64 kb/s
+  Stream #1:0: Audio: pcm_u8, 8000 Hz, mono, u8, 64 kb/s
+Stream mapping:
+  Stream #0:0 -> #0:0 (wrapped_avframe (native) -> h264 (libx264))
+  Stream #1:0 -> #0:1 (pcm_u8 (native) -> aac (native))
+Press [q] to stop, [?] for help
+[aac @ 0x61f4a67ad380] Too many bits 8832.000000 > 6144 per frame requested, clamping to max
+[libx264 @ 0x61f4a67827c0] using SAR=1/1
+[libx264 @ 0x61f4a67827c0] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[libx264 @ 0x61f4a67827c0] profile High, level 1.3, 4:2:0, 8-bit
+[libx264 @ 0x61f4a67827c0] 264 - core 164 r3108 31e19f9 - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=7 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to '/tmp/archie-av-video-rQ0Ljc/clip.mp4':
+  Metadata:
+    encoder         : Lavf61.7.100
+  Stream #0:0: Video: h264 (avc1 / 0x31637661), yuv420p(tv, progressive), 320x240 [SAR 1:1 DAR 4:3], q=2-31, 25 fps, 12800 tbn
+      Metadata:
+        encoder         : Lavc61.19.101 libx264
+      Side data:
+        cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+  Stream #0:1: Audio: aac (LC) (mp4a / 0x6134706D), 8000 Hz, mono, fltp, 48 kb/s
+      Metadata:
+        encoder         : Lavc61.19.101 aac
+[out#0/mp4 @ 0x61f4a67a90c0] video:2KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 136.989498%
+frame=   50 fps=0.0 q=-1.0 Lsize=       4KiB time=00:00:01.92 bitrate=  16.9kbits/s speed= 181x    
+[libx264 @ 0x61f4a67827c0] frame I:1     Avg QP: 9.00  size:    63
+[libx264 @ 0x61f4a67827c0] frame P:13    Avg QP: 9.69  size:    22
+[libx264 @ 0x61f4a67827c0] frame B:36    Avg QP:12.67  size:    15
+[libx264 @ 0x61f4a67827c0] consecutive B-frames:  4.0%  0.0%  0.0% 96.0%
+[libx264 @ 0x61f4a67827c0] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x61f4a67827c0] mb P  I16..4:  0.0%  0.0%  0.0%  P16..4:  0.0%  0.0%  0.0%  0.0%  0.0%    skip:100.0%
+[libx264 @ 0x61f4a67827c0] mb B  I16..4:  0.0%  0.0%  0.0%  B16..8:  0.0%  0.0%  0.0%  direct: 0.0%  skip:100.0%
+[libx264 @ 0x61f4a67827c0] 8x8 transform intra:0.0%
+[libx264 @ 0x61f4a67827c0] coded y,uvDC,uvAC intra: 0.0% 0.0% 0.0% inter: 0.0% 0.0% 0.0%
+[libx264 @ 0x61f4a67827c0] i16 v,h,dc,p: 93%  0%  7%  0%
+[libx264 @ 0x61f4a67827c0] i8c dc,h,v,p: 100%  0%  0%  0%
+[libx264 @ 0x61f4a67827c0] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 0x61f4a67827c0] kb/s:3.52
+[aac @ 0x61f4a67ad380] Qavg: 65536.000
+  ✓  8 [chromium] › e2e/user-stories-av.spec.ts:190:1 › STU-ANN-014D whole video note (2.1s)
+
+  8 passed (13.3s)

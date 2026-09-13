@@ -4,6 +4,7 @@
       "objectId": "o1",
       "exhibitSlug": "screenshots",
       "title": "e1-embed",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o1-e1-embed.png",
       "width": 1440,
       "height": 900
     },
@@ -11,6 +12,7 @@
       "objectId": "o2",
       "exhibitSlug": "screenshots",
       "title": "s1-library",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o2-s1-library.png",
       "width": 1440,
       "height": 900
     },
@@ -18,6 +20,7 @@
       "objectId": "o3",
       "exhibitSlug": "screenshots",
       "title": "s2-overview",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o3-s2-overview.png",
       "width": 1440,
       "height": 900
     },
@@ -25,6 +28,7 @@
       "objectId": "o4",
       "exhibitSlug": "screenshots",
       "title": "s3-canvas",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o4-s3-canvas.png",
       "width": 1440,
       "height": 900
     },
@@ -32,6 +36,7 @@
       "objectId": "o5",
       "exhibitSlug": "screenshots",
       "title": "s4-readings",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o5-s4-readings.png",
       "width": 1440,
       "height": 900
     },
@@ -39,6 +44,7 @@
       "objectId": "o6",
       "exhibitSlug": "screenshots",
       "title": "s5-narrative",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o6-s5-narrative.png",
       "width": 1440,
       "height": 900
     },
@@ -46,6 +52,7 @@
       "objectId": "o7",
       "exhibitSlug": "screenshots",
       "title": "s6a-audio",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o7-s6a-audio.png",
       "width": 1440,
       "height": 900
     },
@@ -53,6 +60,7 @@
       "objectId": "o8",
       "exhibitSlug": "screenshots",
       "title": "s6b-video",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o8-s6b-video.png",
       "width": 1440,
       "height": 900
     },
@@ -60,6 +68,7 @@
       "objectId": "o9",
       "exhibitSlug": "screenshots",
       "title": "s7-map",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o9-s7-map.png",
       "width": 1440,
       "height": 900
     },
@@ -67,6 +76,7 @@
       "objectId": "o10",
       "exhibitSlug": "screenshots",
       "title": "s8-cite",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o10-s8-cite.png",
       "width": 1440,
       "height": 900
     },
@@ -74,6 +84,7 @@
       "objectId": "o11",
       "exhibitSlug": "screenshots",
       "title": "s9-meta",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o11-s9-meta.png",
       "width": 1440,
       "height": 900
     },
@@ -81,6 +92,7 @@
       "objectId": "o12",
       "exhibitSlug": "screenshots",
       "title": "s10-ingest",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o12-s10-ingest.png",
       "width": 1440,
       "height": 900
     },
@@ -88,6 +100,7 @@
       "objectId": "o13",
       "exhibitSlug": "screenshots",
       "title": "s11-publish",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o13-s11-publish.png",
       "width": 1440,
       "height": 900
     },
@@ -95,6 +108,7 @@
       "objectId": "o14",
       "exhibitSlug": "screenshots",
       "title": "s12-shortcuts",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o14-s12-shortcuts.png",
       "width": 1440,
       "height": 900
     },
@@ -102,6 +116,7 @@
       "objectId": "o15",
       "exhibitSlug": "screenshots",
       "title": "v1-gallery",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o15-v1-gallery.png",
       "width": 1440,
       "height": 900
     },
@@ -109,6 +124,7 @@
       "objectId": "o16",
       "exhibitSlug": "screenshots",
       "title": "v2-reader",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o16-v2-reader.png",
       "width": 1440,
       "height": 900
     },
@@ -116,6 +132,7 @@
       "objectId": "o18",
       "exhibitSlug": "screenshots",
       "title": "v4-av",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o18-v4-av.png",
       "width": 1440,
       "height": 900
     },
@@ -123,6 +140,7 @@
       "objectId": "o19",
       "exhibitSlug": "screenshots",
       "title": "v5-search",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o19-v5-search.png",
       "width": 1440,
       "height": 900
     },
@@ -130,6 +148,7 @@
       "objectId": "o20",
       "exhibitSlug": "screenshots",
       "title": "v6-lightbox",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o20-v6-lightbox.png",
       "width": 1440,
       "height": 900
     },
@@ -137,6 +156,7 @@
       "objectId": "o21",
       "exhibitSlug": "screenshots",
       "title": "v7-sheet",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o21-v7-sheet.png",
       "width": 1440,
       "height": 900
     },
@@ -144,6 +164,7 @@
       "objectId": "o17",
       "exhibitSlug": "screenshots",
       "title": "v3-narrative",
+      "thumbnail": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets-thumb/o17-v3-narrative.png",
       "width": 1440,
       "height": 900
     },

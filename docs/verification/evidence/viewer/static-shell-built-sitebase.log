@@ -1,0 +1,16 @@
+
+Running 4 tests using 1 worker
+
+[1A[2K(node:4038078) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4038078) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/4] [chromium] › e2e/static-shell.spec.ts:17:7 › the page a crawler gets › with JavaScript off › voynich has a readable body, not an empty island (V107)
+[1A[2K[2/4] [chromium] › e2e/static-shell.spec.ts:17:7 › the page a crawler gets › with JavaScript off › voynich-reading has a readable body, not an empty island (V107)
+[1A[2K[3/4] [chromium] › e2e/static-shell.spec.ts:40:3 › the page a crawler gets › the shell yields to the app once it hydrates
+[1A[2K[4/4] [chromium] › e2e/static-shell.spec.ts:49:3 › the page a crawler gets › the archival page carries the narrative, not just the notes (V110)
+[1A[2K  4 passed (1.7s)

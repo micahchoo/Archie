@@ -1,0 +1,14 @@
+
+Running 2 tests using 1 worker
+
+[1A[2K(node:4034895) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4034895) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/2] [chromium] › e2e/import-baseline.spec.ts:16:3 › integration baseline: local media import › FLOW-030 imports a local PNG and shows it in the exhibit
+[1A[2K[2/2] [chromium] › e2e/import-baseline.spec.ts:31:3 › integration baseline: local media import › FLOW-033 refuses an unsupported file and keeps the existing media
+[1A[2K  2 passed (2.3s)

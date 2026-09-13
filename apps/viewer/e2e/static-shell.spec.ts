@@ -10,8 +10,30 @@ import { goOffline } from "./offline.js";
 // caught it, which is exactly what this does.
 
 test.describe("the page a crawler gets", () => {
+  test("the gallery HTML does not preload exhibit-only styles", async ({ request }) => {
+    const res = await request.get("./");
+    expect(res.status()).toBe(200);
+    const html = await res.text();
+
+    expect(html).not.toMatch(/href="[^"]*(?:ExhibitView|Reader|NarrativeReader|MediaPlayer|note-surface)[^"]*\.css/);
+    for (const selector of ["archie-canvas-wrap", "finder-scrim", "cite-scrim", "wall-scrim"]) {
+      expect(html).not.toContain(selector);
+    }
+  });
+
   test.describe("with JavaScript off", () => {
     test.use({ javaScriptEnabled: false });
+
+    test("the gallery is useful before the client app runs", async ({ page }) => {
+      const res = await page.goto("./");
+      expect(res?.status()).toBe(200);
+
+      const shell = page.locator("#static-gallery");
+      await expect(shell).toBeVisible();
+      await expect(shell.locator("h1")).not.toBeEmpty();
+      expect(await shell.getByRole("link").count()).toBeGreaterThan(1);
+      expect((await shell.innerText()).length).toBeGreaterThan(150);
+    });
 
     for (const slug of ["voynich", "voynich-reading"]) {
       test(`${slug} has a readable body, not an empty island (V107)`, async ({ page }) => {
@@ -44,6 +66,14 @@ test.describe("the page a crawler gets", () => {
     await page.goto("./voynich/");
     await expect(page.locator("button.object").first()).toBeVisible();
     await expect(page.locator("#static-exhibit")).toHaveCount(0);
+  });
+
+  test("the gallery shell stays until the hydrated gallery is ready", async ({ page }) => {
+    await goOffline(page);
+    await page.goto("./");
+    await expect(page.getByRole("heading", { name: "Archie Library", exact: true })).toBeVisible();
+    await expect(page.locator("a.card").first()).toBeVisible();
+    await expect(page.locator("#static-gallery")).toHaveCount(0);
   });
 
   test("the archival page carries the narrative, not just the notes (V110)", async ({ page }) => {

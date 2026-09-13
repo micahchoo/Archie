@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseMediaFragment, mediaFragmentValue, fragmentSelector, MEDIA_FRAGS_CONFORMS_TO } from "./mediafragment.js";
+import { parseMediaFragment, mediaFragmentOfAnnotation, mediaFragmentValue, fragmentSelector, MEDIA_FRAGS_CONFORMS_TO } from "./mediafragment.js";
 
 describe("parseMediaFragment", () => {
   it("parses a pixel xywh (image)", () => {
@@ -54,6 +54,16 @@ describe("mediaFragmentValue", () => {
   });
   it("serializes a point-in-time (no end)", () => {
     expect(mediaFragmentValue({ time: { start: 7 } })).toBe("t=7");
+  });
+});
+
+describe("mediaFragmentOfAnnotation", () => {
+  it("finds temporal and spatial values across a selector array", () => {
+    expect(mediaFragmentOfAnnotation({ target: { selector: [
+      { type: "SvgSelector", value: "<svg/>" },
+      fragmentSelector("t=12,30"),
+      fragmentSelector("xywh=percent:1,2,3,4"),
+    ] } })).toEqual({ time: { start: 12, end: 30 }, box: { x: 1, y: 2, w: 3, h: 4 }, unit: "percent" });
   });
 });
 

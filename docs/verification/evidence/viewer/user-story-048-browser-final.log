@@ -1,0 +1,103 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:92635) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:92757) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:93248) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:93297) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 1 test using 1 worker
+
+[1A[2K(node:93375) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:93375) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/1] [chromium] › apps/viewer/e2e/user-stories.spec.ts:402:3 › focused user-story baseline › VIEW-048: offline embed blocks remote media before any remote request
+[1A[2K(node:95094) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:95094) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[2/1] (retries) [chromium] › apps/viewer/e2e/user-stories.spec.ts:402:3 › focused user-story baseline › VIEW-048: offline embed blocks remote media before any remote request (retry #1)
+[1A[2K  1) [chromium] › apps/viewer/e2e/user-stories.spec.ts:402:3 › focused user-story baseline › VIEW-048: offline embed blocks remote media before any remote request 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('archie-viewer').locator('.notice')
+    Expected pattern: [32m/hosted online|offline/i[39m
+    Timeout: 30000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 30000ms[22m
+    [2m  - waiting for locator('archie-viewer').locator('.notice')[22m
+
+
+      411 |     await viewer.evaluate((el) => el.setAttribute("offline", ""));
+      412 |     await viewer.evaluate((el) => el.setAttribute("target", "#/voynich/o/ex-voynich.o1"));
+    > 413 |     await expect(viewer.locator(".notice")).toContainText(/hosted online|offline/i, { timeout: 30_000 });
+          |                                             ^
+      414 |     expect(remote).toHaveLength(0);
+      415 |   });
+      416 |
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:413:45
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--b4bef-a-before-any-remote-request-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('archie-viewer').locator('.notice')
+    Expected pattern: [32m/hosted online|offline/i[39m
+    Timeout: 30000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 30000ms[22m
+    [2m  - waiting for locator('archie-viewer').locator('.notice')[22m
+
+
+      411 |     await viewer.evaluate((el) => el.setAttribute("offline", ""));
+      412 |     await viewer.evaluate((el) => el.setAttribute("target", "#/voynich/o/ex-voynich.o1"));
+    > 413 |     await expect(viewer.locator(".notice")).toContainText(/hosted online|offline/i, { timeout: 30_000 });
+          |                                             ^
+      414 |     expect(remote).toHaveLength(0);
+      415 |   });
+      416 |
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:413:45
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--b4bef-a-before-any-remote-request-chromium-retry1/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    apps/viewer/test-results/user-stories-focused-user--b4bef-a-before-any-remote-request-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace apps/viewer/test-results/user-stories-focused-user--b4bef-a-before-any-remote-request-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  1 failed
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:402:3 › focused user-story baseline › VIEW-048: offline embed blocks remote media before any remote request 

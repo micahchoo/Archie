@@ -55,6 +55,9 @@ export function createStructureSession(deps: StructureSessionDeps) {
   const dirs = new Map<string, FsDirectory | null>();
   const loaded = new Set<string>();
   const loading = new Map<string, Promise<void>>();
+  // The latest queued write per slug. Save/export flushes this before reading persisted structure; the
+  // generation check in the job also prevents a delete from resurrecting a removed directory.
+  const pendingWrites = new Map<string, Promise<boolean>>();
   // Slugs whose on-disk store is TORN (readStructureReport reported unreadable pages). Writes are
   // refused for them — a full writeStructure would rewrite the index without the unreadable pages,
   // orphaning them for good (corrupt ≠ empty, rule #2 / the annotation session's Issue 19 posture).
@@ -98,9 +101,17 @@ export function createStructureSession(deps: StructureSessionDeps) {
   function schedulePersist(slug: string): void {
     const dir = dirs.get(slug);
     if (!dir || corrupt.has(slug)) return; // unpersistable (no OPFS / template) or torn store (refuse)
-    void deps.enqueue(`structure:${slug}`, "Narrative structure", async () => {
+    const gen = gens.get(slug) ?? 0;
+    const write = deps.enqueue(`structure:${slug}`, "Narrative structure", async () => {
+      if ((gens.get(slug) ?? 0) !== gen) return;
       const log = s.logs[slug];
       if (log !== undefined) await writeStructure(dir, log);
+    });
+    pendingWrites.set(slug, write);
+    void write.then(() => {
+      if (pendingWrites.get(slug) === write) pendingWrites.delete(slug);
+    }, () => {
+      if (pendingWrites.get(slug) === write) pendingWrites.delete(slug);
     });
   }
 
@@ -190,6 +201,16 @@ export function createStructureSession(deps: StructureSessionDeps) {
     /** Is this slug's structure store torn (writes paused)? Read by tests + future surfacing. */
     isCorrupt(slug: string): boolean {
       return corrupt.has(slug);
+    },
+
+    /** Await the latest queued structure write for a slug before an export/save reads the tree. */
+    async flush(slug: string): Promise<void> {
+      while (true) {
+        const write = pendingWrites.get(slug);
+        if (!write) return;
+        if (!(await write)) throw new Error(`Narrative structure for "${slug}" could not be stored`);
+        if (pendingWrites.get(slug) === write) return;
+      }
     },
 
     /**

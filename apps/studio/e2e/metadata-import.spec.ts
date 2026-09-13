@@ -21,6 +21,11 @@ async function openOverview(page: Page) {
   await card.click();
   // The Overview-mode toggle group is the overview's own marker (navigation.spec.ts:33).
   await expect(page.getByRole("group", { name: "Overview mode" })).toBeVisible();
+  const keepCopy = page.getByRole("button", { name: "Keep a copy" });
+  if (await keepCopy.count()) {
+    await keepCopy.click();
+    await expect(page.getByRole("group", { name: "Overview mode" })).toBeVisible();
+  }
 }
 
 test.describe("bulk metadata import", () => {
@@ -68,5 +73,15 @@ test.describe("bulk metadata import", () => {
     await expect(dialog.locator("table.preview").getByRole("cell", { name: "A Catalogued Plate" })).toBeVisible();
     await expect(dialog.locator("table.preview").getByRole("cell", { name: "Title" })).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Import 1 media item" })).toBeEnabled();
+    await dialog.getByRole("button", { name: "Import 1 media item" }).click();
+    await expect(dialog).toBeHidden();
+    // The object patch is debounced; wait beyond the documented save window before reload.
+    await page.waitForTimeout(1_000);
+    await page.reload();
+    const reopened = page.locator("button.card").filter({ hasText: /The Rosettes \(copy\)|The Rosettes/ }).first();
+    await expect(reopened).toBeVisible({ timeout: 15_000 });
+    await reopened.click({ force: true });
+    await expect(page.getByRole("group", { name: "Overview mode" })).toBeVisible();
+    await expect(page.locator('button.plate[title="A Catalogued Plate"]')).toBeVisible({ timeout: 15_000 });
   });
 });

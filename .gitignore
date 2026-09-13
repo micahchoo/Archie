@@ -54,6 +54,7 @@ playwright_chromiumdev_profile-*/
 # Logs (keep the deliberately-tracked deps-index promotion log)
 # ─────────────────────────────────────────────────────────────
 *.log
+!docs/verification/evidence/**/*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

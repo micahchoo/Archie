@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Locator } from "@playwright/test";
 import { goOffline } from "./offline.js";
+import { withRecording } from "./media-fixtures.js";
 
 /**
  * The AV reading surface (Archie-7b86 / V53) — driven, because nothing cheaper can see this.
@@ -33,71 +34,6 @@ import { goOffline } from "./offline.js";
  * jsdom never loads. It even commits a 289 KB `__TEST__/test.mp3` that nothing in the suite decodes,
  * which is its own argument against committing a seed media binary here (see the V49 block below).
  */
-
-/** A silent 8-bit mono 8 kHz PCM WAV of `seconds` length — the smallest thing a browser will report a
- *  real `duration` for without a licensed codec. 8-bit PCM silence is 0x80, not 0x00. */
-function silentWav(seconds: number): Buffer {
-  const rate = 8000;
-  const samples = rate * seconds;
-  const header = Buffer.alloc(44);
-  header.write("RIFF", 0);
-  header.writeUInt32LE(36 + samples, 4);
-  header.write("WAVE", 8);
-  header.write("fmt ", 12);
-  header.writeUInt32LE(16, 16); // PCM chunk size
-  header.writeUInt16LE(1, 20); // format = PCM
-  header.writeUInt16LE(1, 22); // channels
-  header.writeUInt32LE(rate, 24);
-  header.writeUInt32LE(rate, 28); // byte rate
-  header.writeUInt16LE(1, 32); // block align
-  header.writeUInt16LE(8, 34); // bits per sample
-  header.write("data", 36);
-  header.writeUInt32LE(samples, 40);
-  return Buffer.concat([header, Buffer.alloc(samples, 0x80)]);
-}
-
-/**
- * Serve the seed recording locally. Registered AFTER `goOffline` so it wins (later routes take
- * precedence in Playwright), and matched on the fixture's own URL.
- *
- * ANSWERING RANGE REQUESTS IS NOT OPTIONAL HERE, and finding that out cost a wrong conclusion. A plain
- * `fulfill` of the whole body gets `loadedmetadata`, a correct `duration`, and playback from zero —
- * everything looks healthy — but Chromium will not SEEK a resource whose server ignores `Range`:
- * setting `currentTime = 120` silently left the playhead running up from 0 (measured 14.87s;
- * independently reproduced at 14.88s). A "seek" test against that server reports the APP broken when
- * the fixture is.
- *
- * The load-bearing property is answering the `Range` header AT ALL, not the `206` status specifically —
- * measured, a `200` carrying the correct slice seeks just as well. The `206` below is kept because it
- * is correct HTTP, not because the seek depends on it; don't "simplify" this by dropping the header
- * parse and keeping the status.
- */
-async function withRecording(page: Page, seconds = 296): Promise<void> {
-  const body = silentWav(seconds);
-  await page.route("https://archive.org/download/kryptogramm/**", (route) => {
-    const range = /bytes=(\d+)-(\d*)/.exec(route.request().headers()["range"] ?? "");
-    if (!range) {
-      return route.fulfill({
-        status: 200,
-        body,
-        headers: { "content-type": "audio/wav", "accept-ranges": "bytes", "content-length": String(body.length) },
-      });
-    }
-    const start = Number(range[1]);
-    const end = range[2] ? Number(range[2]) : body.length - 1;
-    const slice = body.subarray(start, end + 1);
-    return route.fulfill({
-      status: 206,
-      body: slice,
-      headers: {
-        "content-type": "audio/wav",
-        "accept-ranges": "bytes",
-        "content-range": `bytes ${start}-${end}/${body.length}`,
-        "content-length": String(slice.length),
-      },
-    });
-  });
-}
 
 /**
  * Open the seed's one audio object — the AV note that carries a markdown cite, which is the case V53's

@@ -1,0 +1,103 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:61263) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:61326) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:61857) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:61891) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 1 test using 1 worker
+
+[1A[2K(node:62024) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:62024) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/1] [chromium] › apps/viewer/e2e/user-stories.spec.ts:364:3 › focused user-story baseline › VIEW-064: an embed can reveal an unlisted exhibit without changing direct reachability
+[1A[2K(node:64008) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:64008) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[2/1] (retries) [chromium] › apps/viewer/e2e/user-stories.spec.ts:364:3 › focused user-story baseline › VIEW-064: an embed can reveal an unlisted exhibit without changing direct reachability (retry #1)
+[1A[2K  1) [chromium] › apps/viewer/e2e/user-stories.spec.ts:364:3 › focused user-story baseline › VIEW-064: an embed can reveal an unlisted exhibit without changing direct reachability 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('archie-viewer').locator('.reader, .narrative').first()
+    Expected: visible
+    Timeout: 30000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 30000ms[22m
+    [2m  - waiting for locator('archie-viewer').locator('.reader, .narrative').first()[22m
+
+
+      378 |     await expect(viewer.locator("button[data-slug='screenshots']")).toHaveCount(1, { timeout: 30_000 });
+      379 |     await viewer.evaluate((el) => el.setAttribute("target", "#/screenshots"));
+    > 380 |     await expect(viewer.locator(".reader, .narrative").first()).toBeVisible({ timeout: 30_000 });
+          |                                                                 ^
+      381 |   });
+      382 |
+      383 |   test("VIEW-057: finder text combines with multiple OR tag facets", async ({ page }) => {
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:380:65
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--c6a1a-hanging-direct-reachability-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('archie-viewer').locator('.reader, .narrative').first()
+    Expected: visible
+    Timeout: 30000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 30000ms[22m
+    [2m  - waiting for locator('archie-viewer').locator('.reader, .narrative').first()[22m
+
+
+      378 |     await expect(viewer.locator("button[data-slug='screenshots']")).toHaveCount(1, { timeout: 30_000 });
+      379 |     await viewer.evaluate((el) => el.setAttribute("target", "#/screenshots"));
+    > 380 |     await expect(viewer.locator(".reader, .narrative").first()).toBeVisible({ timeout: 30_000 });
+          |                                                                 ^
+      381 |   });
+      382 |
+      383 |   test("VIEW-057: finder text combines with multiple OR tag facets", async ({ page }) => {
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:380:65
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--c6a1a-hanging-direct-reachability-chromium-retry1/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    apps/viewer/test-results/user-stories-focused-user--c6a1a-hanging-direct-reachability-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace apps/viewer/test-results/user-stories-focused-user--c6a1a-hanging-direct-reachability-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  1 failed
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:364:3 › focused user-story baseline › VIEW-064: an embed can reveal an unlisted exhibit without changing direct reachability 

@@ -1,0 +1,89 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 3 tests using 1 worker
+
+[1A[2K(node:4054604) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4054604) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/3] [chromium] › apps/viewer/e2e/user-stories.spec.ts:5:3 › focused user-story baseline › VIEW-003: unlisted exhibits stay out of cards/wall but direct URL remains reachable
+[1A[2K  1) [chromium] › apps/viewer/e2e/user-stories.spec.ts:5:3 › focused user-story baseline › VIEW-003: unlisted exhibits stay out of cards/wall but direct URL remains reachable 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveCount[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator:  locator('a.card[href*="screenshots"]')
+    Expected: [32m0[39m
+    Received: [31m1[39m
+    Timeout:  15000ms
+
+    Call log:
+    [2m  - Expect "toHaveCount" with timeout 15000ms[22m
+    [2m  - waiting for locator('a.card[href*="screenshots"]')[22m
+    [2m    34 × locator resolved to 1 element[22m
+    [2m       - unexpected value "1"[22m
+
+
+      13 |     await page.goto("./");
+      14 |     await expect(page.locator("a.card").first()).toBeVisible();
+    > 15 |     await expect(page.locator('a.card[href*="screenshots"]')).toHaveCount(0);
+         |                                                               ^
+      16 |     await page.locator(".views button", { hasText: "All images" }).click();
+      17 |     await expect(page.locator('a.tile[href*="screenshots"]')).toHaveCount(0);
+      18 |     await page.goto("./#/screenshots");
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:15:63
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--3d1fc-irect-URL-remains-reachable-chromium/error-context.md
+
+
+[1A[2K(node:4056016) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4056016) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[2/3] [chromium] › apps/viewer/e2e/user-stories.spec.ts:22:3 › focused user-story baseline › VIEW-004: a failed local cover reaches the visible title fallback
+[1A[2K  2) [chromium] › apps/viewer/e2e/user-stories.spec.ts:22:3 › focused user-story baseline › VIEW-004: a failed local cover reaches the visible title fallback 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveJSProperty[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('a.card[href*="screenshots"] img.cover')
+    Expected: [32m0[39m
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toHaveJSProperty" with timeout 15000ms[22m
+    [2m  - waiting for locator('a.card[href*="screenshots"] img.cover')[22m
+
+
+      26 |     const cover = page.locator('a.card[href*="screenshots"] img.cover');
+      27 |     await expect(cover).toBeVisible();
+    > 28 |     await expect(cover).toHaveJSProperty("naturalWidth", 0);
+         |                         ^
+      29 |     await expect(page.locator('a.card[href*="screenshots"] .cover-fallback')).toContainText("Archie, Annotated");
+      30 |   });
+      31 |
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:28:25
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--b7d19--the-visible-title-fallback-chromium/error-context.md
+
+
+[1A[2K(node:4056919) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4056919) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[3/3] [chromium] › apps/viewer/e2e/user-stories.spec.ts:32:3 › focused user-story baseline › VIEW-005: the object reader overview control returns to the exhibit grid
+[1A[2K  2 failed
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:5:3 › focused user-story baseline › VIEW-003: unlisted exhibits stay out of cards/wall but direct URL remains reachable 
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:22:3 › focused user-story baseline › VIEW-004: a failed local cover reaches the visible title fallback 
+  1 passed (33.6s)

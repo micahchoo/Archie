@@ -30,6 +30,7 @@ import { library as sampleLibrary, getLog as sampleGetLog } from "../fixtures/sa
 // deploy origin, not a demo base (Archie-3db4). BASE was re-exported through sample-data; sourcing it
 // straight from published-base makes the provenance explicit. VIEWER_BASE: canonical Viewer base so cites resolve to in-app routes.
 import { BASE, VIEWER_BASE } from "../src/published-base.js";
+import { prepareCuratedThumbnails } from "../src/thumbnail-bake.js";
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "public", "published");
 
@@ -67,6 +68,7 @@ let getLog: (id: string) => AnnotationLog;
 // missing entirely, silently dropping every locally-sourced asset's bytes on every regen; unnoticed
 // because every bundled sample exhibit uses external URLs only, never a local import).
 let getAsset: ((slug: string, name: string) => Promise<ArrayBuffer | null>) | undefined;
+let getThumbnail: ((slug: string, name: string) => Promise<ArrayBuffer | null>) | undefined;
 if (zipPath) {
   const zipFs = ZipFilesystem.fromZip(new Uint8Array(readFileSync(zipPath)));
   // loadLibrary is the inverse of publishLibrary (publish↔load symmetry); logs are keyed by slug and
@@ -88,6 +90,14 @@ if (zipPath) {
       return await (await dir.getFile(name)).readable();
     } catch {
       return null; // not a locally-sourced asset (external URL) — publishLibrary leaves it as-is
+    }
+  };
+  getThumbnail = async (slug, name) => {
+    try {
+      const dir = await (await (await zipFs.root()).getDirectory(slug)).getDirectory("assets-thumb");
+      return await (await dir.getFile(name)).readable();
+    } catch {
+      return null;
     }
   };
   // THE SEED IS ALWAYS OWNED (2026-07-25). A dropped zip used to REPLACE the sample-data source
@@ -122,8 +132,21 @@ if (zipPath) {
   console.log("Source: bundled sample-data (no zip in apps/viewer/libraries/)");
 }
 
+if (getAsset) {
+  const prepared = await prepareCuratedThumbnails(library, getAsset);
+  library = prepared.library;
+  const fromArchive = getThumbnail;
+  getThumbnail = async (slug, name) => (await prepared.getThumbnail(slug, name)) ?? (await fromArchive?.(slug, name)) ?? null;
+  if (prepared.count > 0) console.log(`Baked ${prepared.count} gallery thumbnails (${(prepared.bytes / 1024 / 1024).toFixed(2)} MiB)`);
+}
+
 const fs = new MemoryFilesystem();
-const pubResult = await publishLibrary(fs, library, getLog, { baseUrl: BASE, viewerBase: VIEWER_BASE, ...(getAsset ? { getAsset } : {}) });
+const pubResult = await publishLibrary(fs, library, getLog, {
+  baseUrl: BASE,
+  viewerBase: VIEWER_BASE,
+  ...(getAsset ? { getAsset } : {}),
+  ...(getThumbnail ? { getThumbnail } : {}),
+});
 // No silent loss: an /assets/-sourced object whose bytes the source zip couldn't produce publishes
 // as a broken reference — say so per item instead of letting the bake pass for complete.
 for (const m of pubResult.missingAssets) console.warn(`gen-published: ${m.exhibitSlug}/${m.name} (object ${m.objectId}) has no bytes in the source — its image will be broken in the baked tree`);

@@ -1,0 +1,44 @@
+
+Running 1 test using 1 worker
+
+[1A[2K(node:78461) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:78461) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/1] [chromium] › e2e/flow029-live-source.spec.ts:3:1 › FLOW-029 shows saved Studio work in the same-origin Viewer live source
+[1A[2K[chromium] › e2e/flow029-live-source.spec.ts:3:1 › FLOW-029 shows saved Studio work in the same-origin Viewer live source
+LIVE_VIEWER 
+
+[1A[2K  1) [chromium] › e2e/flow029-live-source.spec.ts:3:1 › FLOW-029 shows saved Studio work in the same-origin Viewer live source 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText('The Rosettes (copy)', { exact: true })
+    Expected: visible
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 30000ms[22m
+    [2m  - waiting for getByText('The Rosettes (copy)', { exact: true })[22m
+
+
+      25 |   await viewer.goto("http://localhost:5173/viewer/");
+      26 |   console.log("LIVE_VIEWER", (await viewer.locator("body").innerText()).slice(0, 1000));
+    > 27 |   await expect(viewer.getByText("The Rosettes (copy)", { exact: true })).toBeVisible({ timeout: 30_000 });
+         |                                                                          ^
+      28 |   await expect(viewer).toContainText(note, { timeout: 30_000 });
+      29 | });
+      30 |
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/e2e/flow029-live-source.spec.ts:27:74
+
+    Error Context: test-results/flow029-live-source-FLOW-0-efae4-e-origin-Viewer-live-source-chromium/error-context.md
+
+
+[1A[2K  1 failed
+    [chromium] › e2e/flow029-live-source.spec.ts:3:1 › FLOW-029 shows saved Studio work in the same-origin Viewer live source 

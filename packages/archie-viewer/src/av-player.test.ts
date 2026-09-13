@@ -48,6 +48,15 @@ function host(): HTMLElement {
 }
 
 describe("cuesOf — time-region notes become cues, sorted by start", () => {
+  it("reads a temporal selector from a WADM selector array", () => {
+    const note = timeNote("array", 12, 30, "array cue");
+    note.target = { source: "obj", selector: [
+      { type: "SvgSelector", value: "<svg/>" },
+      fragmentSelector("t=12,30"),
+    ] } as never;
+    expect(cuesOf([note])).toEqual([{ id: "array", text: "array cue", range: { start: 12, end: 30 } }]);
+  });
+
   it("keeps only notes with a t= time fragment, sorted ascending by start", () => {
     const anns = [
       timeNote("a", 30, 40, "third"),
@@ -217,6 +226,24 @@ describe("mountAvPlayer — a t= landing computes a clamped PAUSED seek (no auto
     expect(ct).toBe(42); // clamped to [0,100], landed at 42
     expect(played).toBe(false); // section-142: landing seeks but must NOT auto-play
     handle.destroy();
+  });
+
+  it("a remounted section seek replaces the previous section's playhead", () => {
+    const h = host();
+    const first = mountAvPlayer(h, { object: soundObj(), annotations: [], initialSeek: "5" });
+    const firstMedia = h.querySelector("audio")!;
+    let firstTime = 0;
+    Object.defineProperty(firstMedia, "currentTime", { get: () => firstTime, set: (v: number) => (firstTime = v), configurable: true });
+    firstMedia.dispatchEvent(new Event("loadedmetadata"));
+    expect(firstTime).toBe(5);
+    first.destroy();
+
+    mountAvPlayer(h, { object: soundObj(), annotations: [], initialSeek: "42" });
+    const secondMedia = h.querySelector("audio")!;
+    let secondTime = 0;
+    Object.defineProperty(secondMedia, "currentTime", { get: () => secondTime, set: (v: number) => (secondTime = v), configurable: true });
+    secondMedia.dispatchEvent(new Event("loadedmetadata"));
+    expect(secondTime).toBe(42);
   });
 
   it("an out-of-range initialSeek clamps to the duration ceiling (still paused)", () => {

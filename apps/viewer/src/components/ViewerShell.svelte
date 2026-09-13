@@ -223,7 +223,9 @@
   }
 
   onMount(() => {
-    void boot();
+    // index.astro keeps its build-time gallery visible through the asynchronous OPFS/tree probe.
+    // Announce after boot resolves so replacing that useful shell never exposes a blank frame.
+    void boot().finally(() => window.dispatchEvent(new Event("archie:viewer-ready")));
     window.addEventListener("hashchange", sync);
     // V1: Escape dismisses the chooser — the ratified dismissal contract (Archie-389f: Esc ladder, focus
     // return, no close-confirms). Registered at window level because the hall replaces the view rather
@@ -374,7 +376,7 @@
        exhibit route, not the gallery landing. The {#key} sits inside :then so switching object/exhibit
        remounts the resolved component WITHOUT re-importing (the dynamic import resolves from cache). The
        deep-link [slug].astro keeps its own eager client:only ExhibitView. Canvas/OSD mount is browser-verify-owed. -->
-  {#await import("./ExhibitView.svelte")}
+  {#await import("../exhibit-entry.js")}
     <div class="state"><span class="dot"></span><span>Opening the exhibit…</span></div>
   {:then { default: ExhibitView }}
     <!-- Thread the URL-level sub-region/time/section precision (route.ts parses xywh + t + sectionId) so it

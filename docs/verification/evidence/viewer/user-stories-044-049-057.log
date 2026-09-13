@@ -1,0 +1,46 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 3 tests using 1 worker
+
+[1A[2K(node:4148722) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4148722) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/3] [chromium] › apps/viewer/e2e/user-stories.spec.ts:280:3 › focused user-story baseline › VIEW-044: an embed target opens an object and can return to its exhibit grid
+[1A[2K[2/3] [chromium] › apps/viewer/e2e/user-stories.spec.ts:291:3 › focused user-story baseline › VIEW-049: two embeds keep independent target state
+[1A[2K[3/3] [chromium] › apps/viewer/e2e/user-stories.spec.ts:305:3 › focused user-story baseline › VIEW-057: finder text combines with multiple OR tag facets
+[1A[2K  1) [chromium] › apps/viewer/e2e/user-stories.spec.ts:305:3 › focused user-story baseline › VIEW-057: finder text combines with multiple OR tag facets 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveCount[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator:  locator('.finder[role=\'dialog\']').locator('button.facet')
+    Expected: [32m3[39m
+    Received: [31m10[39m
+    Timeout:  15000ms
+
+    Call log:
+    [2m  - Expect "toHaveCount" with timeout 15000ms[22m
+    [2m  - waiting for locator('.finder[role=\'dialog\']').locator('button.facet')[22m
+    [2m    34 × locator resolved to 10 elements[22m
+    [2m       - unexpected value "10"[22m
+
+
+      310 |     await expect(finder).toBeVisible();
+      311 |     const facets = finder.locator("button.facet");
+    > 312 |     await expect(facets).toHaveCount(3);
+          |                          ^
+      313 |     await facets.nth(0).click();
+      314 |     await facets.nth(1).click();
+      315 |     await expect(facets.nth(0)).toHaveAttribute("aria-pressed", "true");
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:312:26
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--17e91-with-multiple-OR-tag-facets-chromium/error-context.md
+
+
+[1A[2K  1 failed
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:305:3 › focused user-story baseline › VIEW-057: finder text combines with multiple OR tag facets 
+  2 passed (17.3s)

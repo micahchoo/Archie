@@ -1,0 +1,70 @@
+
+Running 58 tests using 1 worker
+
+[1A[2K(node:3978311) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:3978311) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/58] [chromium] › e2e/arrival.spec.ts:20:3 › arrival is recoverable › the gallery arrives with its exhibits
+[1A[2K[2/58] [chromium] › e2e/arrival.spec.ts:25:3 › arrival is recoverable › opening the chooser offers a way back (V1)
+[1A[2K[3/58] [chromium] › e2e/arrival.spec.ts:41:3 › arrival is recoverable › Escape is the same door as Cancel
+[1A[2K[4/58] [chromium] › e2e/arrival.spec.ts:51:3 › arrival is recoverable › the library's chrome steps aside while choosing (V2)
+[1A[2K[5/58] [chromium] › e2e/arrival.spec.ts:61:3 › arrival is recoverable › a cold arrival has no way back, and offers none
+[1A[2K[6/58] [chromium] › e2e/av-surface.spec.ts:136:3 › V53 · the note surface the AV reader had no way to reach › a real click on a transcript line opens THE NOTE, and the line is genuinely hittable
+[1A[2K[7/58] [chromium] › e2e/av-surface.spec.ts:177:3 › V53 · the note surface the AV reader had no way to reach › the cue's cite is LIVE in the card and LITERAL nowhere
+[1A[2K[8/58] [chromium] › e2e/av-surface.spec.ts:217:3 › V53 · the note surface the AV reader had no way to reach › the card clears the temporal map instead of sitting on it
+[1A[2K[9/58] [chromium] › e2e/av-surface.spec.ts:238:3 › V53 · the note surface the AV reader had no way to reach › one click both TRAVELS the recording and opens the note
+[1A[2K[10/58] [chromium] › e2e/av-surface.spec.ts:252:3 › V53 · the note surface the AV reader had no way to reach › ⤢ expands to the reading sheet, and the note is on screen exactly once
+[1A[2K[11/58] [chromium] › e2e/av-surface.spec.ts:265:3 › V53 · the note surface the AV reader had no way to reach › the whole-track note opens too — the one note with no cue row to reach it by
+[1A[2K[12/58] [chromium] › e2e/av-surface.spec.ts:276:3 › V53 · a note's picture, on a TIME-RANGED note › the tile renders on the card and a real click opens the lightbox
+[1A[2K[13/58] [chromium] › e2e/av-surface.spec.ts:327:3 › V53 · an AV note's tags are a real door into the finder › a tag chip on a time-ranged note opens the finder ALREADY SCOPED to that tag
+[1A[2K[14/58] [chromium] › e2e/av-surface.spec.ts:426:3 › V53 · the Escape ladder this surface did not have › Escape walks out one rung at a time: sheet → card → the exhibit
+[1A[2K[15/58] [chromium] › e2e/av-surface.spec.ts:450:3 › V53 · the transcript aside resizes (and deliberately does not collapse) › dragging the divider narrows the transcript, and it survives a reload
+[1A[2K[16/58] [chromium] › e2e/av-surface.spec.ts:482:3 › V53 · the transcript aside resizes (and deliberately does not collapse) › there is no collapse toggle — collapsing this aside would take the object nav with it
+[1A[2K[17/58] [chromium] › e2e/av-surface.spec.ts:526:3 › V49 · the temporal map clears the item strip (Archie-b135) › the transcript's temporal map is not covered by the filmstrip
+[1A[2K[18/58] [chromium] › e2e/av-surface.spec.ts:564:3 › V49 · the temporal map clears the item strip (Archie-b135) › the map is on screen ON ARRIVAL, not pushed off the bottom INSTEAD of being covered
+[1A[2K[19/58] [chromium] › e2e/av-surface.spec.ts:638:3 › Archie-4524 · the reading legend the AV surface did not have › the legend lists the exhibit's readings, with per-layer counts on THIS recording
+[1A[2K[20/58] [chromium] › e2e/av-surface.spec.ts:657:3 › Archie-4524 · the reading legend the AV surface did not have › the abjad layer adds its line to the transcript, in its own colour
+[1A[2K[21/58] [chromium] › e2e/av-surface.spec.ts:689:3 › Archie-4524 · the reading legend the AV surface did not have › there is no Hide-all on this legend — the notes here ARE the transcript
+[1A[2K[22/58] [chromium] › e2e/av-surface.spec.ts:711:3 › the audio stage draws its recording (V50) › a sound object renders a waveform canvas, and keeps its native controls
+[1A[2K[23/58] [chromium] › e2e/av-surface.spec.ts:727:3 › the audio stage draws its recording (V50) › the waveform is hidden from assistive tech — the <audio> element is the control
+[1A[2K[24/58] [chromium] › e2e/canvas-keyboard.spec.ts:42:3 › nothing in the reader is an anonymous tab stop (V90) › every tab stop announces something
+[1A[2K[25/58] [chromium] › e2e/canvas-keyboard.spec.ts:56:3 › nothing in the reader is an anonymous tab stop (V90) › the whole-object frame is a named stop, and stays one (V46)
+[1A[2K[26/58] [chromium] › e2e/canvas-keyboard.spec.ts:69:3 › Escape is a ladder, not one binding (V26) › Escape with a note open closes the note and stays put
+[1A[2K[27/58] [chromium] › e2e/canvas-keyboard.spec.ts:81:3 › Escape is a ladder, not one binding (V26) › Escape with nothing open goes up a level
+[1A[2K[28/58] [chromium] › e2e/canvas-keyboard.spec.ts:95:3 › Escape is a ladder, not one binding (V26) › the reader has a landing place for focus to return to
+[1A[2K[29/58] [chromium] › e2e/canvas-keyboard.spec.ts:132:3 › the canvas is a named, reachable keyboard stop (V90/V25) › the canvas announces itself and what its keys do
+[1A[2K[30/58] [chromium] › e2e/canvas-keyboard.spec.ts:145:3 › the canvas is a named, reachable keyboard stop (V90/V25) › arrow keys actually move the image
+[1A[2K[31/58] [chromium] › e2e/canvas-keyboard.spec.ts:163:3 › the canvas is a named, reachable keyboard stop (V90/V25) › focus reaches the canvas at all
+[1A[2K[32/58] [chromium] › e2e/canvas-keyboard.spec.ts:172:3 › Escape is a ladder on a live canvas too (V26/V25) › rung two: Escape hands focus back out of the canvas, and not to nothing
+[1A[2K[33/58] [chromium] › e2e/canvas-keyboard.spec.ts:186:3 › Escape is a ladder on a live canvas too (V26/V25) › the whole ladder walks out one rung at a time
+[1A[2K[34/58] [chromium] › e2e/canvas-offline.spec.ts:21:3 › the screenshots exhibit is self-contained (the premise every canvas spec rests on) › it paints a deep-zoom canvas with the network cut
+[1A[2K[35/58] [chromium] › e2e/canvas-offline.spec.ts:36:3 › the screenshots exhibit is self-contained (the premise every canvas spec rests on) › every section's image is served locally, not just the first
+[1A[2K[36/58] [chromium] › e2e/canvas-offline.spec.ts:56:3 › the screenshots exhibit is self-contained (the premise every canvas spec rests on) › it carries both kinds of note the canvas draws differently
+[1A[2K[37/58] [chromium] › e2e/canvas-offline.spec.ts:81:3 › the screenshots exhibit is self-contained (the premise every canvas spec rests on) › OSD stays in the DOM — the failed-mount teardown does not happen here
+[1A[2K[38/58] [chromium] › e2e/note-address.spec.ts:43:3 › a cited note resolves from its address (V100) › #/<slug>/a/<ULID> opens that exact note
+[1A[2K[39/58] [chromium] › e2e/note-address.spec.ts:56:3 › a cited note resolves from its address (V100) › the address survives a reload — the same note is still open
+[1A[2K[40/58] [chromium] › e2e/note-address.spec.ts:65:3 › a cited note resolves from its address (V100) › an unknown note id degrades honestly instead of throwing (ADR-0003)
+[1A[2K[41/58] [chromium] › e2e/note-address.spec.ts:76:3 › a cited note resolves from its address (V100) › a malformed note id degrades too
+[1A[2K[42/58] [chromium] › e2e/object-nav.spec.ts:53:3 › the nav is present in BOTH sidebar states (V65's discoverability half) › grid reader — sidebar open, then collapsed
+[1A[2K[43/58] [chromium] › e2e/object-nav.spec.ts:73:3 › the nav is present in BOTH sidebar states (V65's discoverability half) › narrative — spine open, then collapsed
+[1A[2K[44/58] [chromium] › e2e/object-nav.spec.ts:89:3 › the visible label speaks the noun (V65's label half) › the button's own name and the position agree about the unit
+[1A[2K[45/58] [chromium] › e2e/object-nav.spec.ts:102:3 › the visible label speaks the noun (V65's label half) › the narrative names sections, not objects
+[1A[2K[46/58] [chromium] › e2e/object-nav.spec.ts:110:3 › the nav actually steps the thing it names › grid reader: forward then back returns to the same object
+[1A[2K[47/58] [chromium] › e2e/object-nav.spec.ts:120:3 › the nav actually steps the thing it names › narrative: stepping moves the spine's own position indicator too
+[1A[2K[48/58] [chromium] › e2e/object-nav.spec.ts:136:3 › the nav actually steps the thing it names › stepping objects does NOT carry the open note forward (flip-and-read is gone)
+[1A[2K[49/58] [chromium] › e2e/object-nav.spec.ts:158:3 › the nav actually steps the thing it names › the ends are disabled rather than silently inert
+[1A[2K[50/58] [chromium] › e2e/object-nav.spec.ts:167:5 › the note card carries no stepper, in any of the four states › grid reader, sidebar open
+[1A[2K[51/58] [chromium] › e2e/object-nav.spec.ts:167:5 › the note card carries no stepper, in any of the four states › grid reader, sidebar collapsed
+[1A[2K[52/58] [chromium] › e2e/object-nav.spec.ts:180:5 › the note card carries no stepper, in any of the four states › narrative, spine open
+[1A[2K[53/58] [chromium] › e2e/object-nav.spec.ts:180:5 › the note card carries no stepper, in any of the four states › narrative, spine collapsed
+[1A[2K[54/58] [chromium] › e2e/object-nav.spec.ts:196:3 › one object nav per reader (the half of V23 this ticket can move) › the grid reader's aside offers the way UP, not a second stepper
+[1A[2K[55/58] [chromium] › e2e/object-nav.spec.ts:215:3 › EXACTLY ONE object-nav landmark, on every surface › grid reader: one, and it is the canvas nav — in BOTH sidebar states
+[1A[2K[56/58] [chromium] › e2e/object-nav.spec.ts:236:3 › EXACTLY ONE object-nav landmark, on every surface › narrative: one, and it is the canvas nav
+[1A[2K[57/58] [chromium] › e2e/object-nav.spec.ts:242:3 › EXACTLY ONE object-nav landmark, on every surface › AV: one, and it is the SIDEBAR stepper — the surface with no canvas chrome
+[1A[2K[58/58] [chromium] › e2e/object-nav.spec.ts:263:3 › the AV path keeps its stepper — the opt-in this slice's argument rests on › an AV object in a multi-object exhibit can still reach its siblings
+[1A[2K  58 passed (39.5s)

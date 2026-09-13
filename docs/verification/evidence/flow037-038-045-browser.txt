@@ -1,0 +1,12 @@
+Import/export browser baseline — 2026-09-12
+
+Command (each focused journey):
+  PATH=/usr/local/lib/vicinae/usr/bin:$PATH STUDIO_E2E_PORT=5199 pnpm exec playwright test e2e/flow037-038-045-import-export.spec.ts -g 'FLOW-037|FLOW-038|FLOW-045' --config e2e/playwright.config.ts --reporter=line
+
+Results:
+- FLOW-037: 1 passed (3.5s). Created an isolated local exhibit, opened Import notes… > From a CSV, supplied a conforming object/x/y/w/h/comment CSV, observed “CSV baseline note” in the real Notes inspector, returned to Overview, reloaded, reopened the article card, and observed the note again. The persisted card label correctly changed from “1 article” to “1 article 1 note” after import.
+- FLOW-038: 1 passed (1.9s). Created an isolated local exhibit, opened Import notes… > From an annotation file, supplied a W3C AnnotationPage targeting the current object’s canvas with a valid pixel FragmentSelector, and observed “WADM baseline note” in the real Notes inspector.
+- FLOW-045: 1 passed (3.2s). Created an isolated local exhibit, opened Export a copy > One .html file, captured the browser download, opened the downloaded file in a fresh browser page, and verified reader/library text rendered.
+
+Verification level: browser interaction with isolated local fixture data.
+No live external destination or account was used.

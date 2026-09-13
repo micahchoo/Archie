@@ -1,0 +1,150 @@
+
+ RUN  v3.2.7 /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio
+
+stdout | src/publish-tier-wiring.test.ts > every asset path the published manifest cites RESOLVES to a file in the tree > web: no manifest reference is orphaned
+Publish: the web tier re-encoded 1 object(s) at smaller pixel dimensions; their annotation selectors and narrative regions were rescaled to match (Archie-4b0a). [
+  {
+    slug: 'ex',
+    objectId: 'o1',
+    from: { width: 6000, height: 4000 },
+    to: { width: 2400, height: 1600 },
+    scale: 0.4
+  }
+]
+
+stderr | src/publish-tier-wiring.test.ts > every asset path the published manifest cites RESOLVES to a file in the tree > web: no manifest reference is orphaned
+Publish: 1 asset(s) shipped their ARCHIVAL bytes inside a web-tier publish — the published site is larger than the tier promised
+
+stdout | src/publish-tier-wiring.test.ts > every asset path the published manifest cites RESOLVES to a file in the tree > web: the cited names are the RE-ENCODED ones, and the bytes behind them came from the encoder
+Publish: the web tier re-encoded 1 object(s) at smaller pixel dimensions; their annotation selectors and narrative regions were rescaled to match (Archie-4b0a). [
+  {
+    slug: 'ex',
+    objectId: 'o1',
+    from: { width: 6000, height: 4000 },
+    to: { width: 2400, height: 1600 },
+    scale: 0.4
+  }
+]
+
+stderr | src/publish-tier-wiring.test.ts > every asset path the published manifest cites RESOLVES to a file in the tree > web: the cited names are the RE-ENCODED ones, and the bytes behind them came from the encoder
+Publish: 1 asset(s) shipped their ARCHIVAL bytes inside a web-tier publish — the published site is larger than the tier promised
+
+stdout | src/publish-tier-wiring.test.ts > the TIER is part of the projection cache key (Archie-4b0a, the sibling of Archie-19c5's base key) > a tree projected at WEB is not reused for an ARCHIVAL publish — it re-projects
+Publish: the web tier re-encoded 1 object(s) at smaller pixel dimensions; their annotation selectors and narrative regions were rescaled to match (Archie-4b0a). [
+  {
+    slug: 'ex',
+    objectId: 'o1',
+    from: { width: 6000, height: 4000 },
+    to: { width: 2400, height: 1600 },
+    scale: 0.4
+  }
+]
+
+stderr | src/publish-tier-wiring.test.ts > the TIER is part of the projection cache key (Archie-4b0a, the sibling of Archie-19c5's base key) > a tree projected at WEB is not reused for an ARCHIVAL publish — it re-projects
+Publish: 1 asset(s) shipped their ARCHIVAL bytes inside a web-tier publish — the published site is larger than the tier promised
+
+····stdout | src/publish-tier-wiring.test.ts > the TIER is part of the projection cache key (Archie-4b0a, the sibling of Archie-19c5's base key) > an UNCHANGED tier still reuses the warm tree — the key discriminates, it does not just disable the cache
+Publish: the web tier re-encoded 1 object(s) at smaller pixel dimensions; their annotation selectors and narrative regions were rescaled to match (Archie-4b0a). [
+  {
+    slug: 'ex',
+    objectId: 'o1',
+    from: { width: 6000, height: 4000 },
+    to: { width: 2400, height: 1600 },
+    scale: 0.4
+  }
+]
+
+stderr | src/publish-tier-wiring.test.ts > the TIER is part of the projection cache key (Archie-4b0a, the sibling of Archie-19c5's base key) > an UNCHANGED tier still reuses the warm tree — the key discriminates, it does not just disable the cache
+Publish: 1 asset(s) shipped their ARCHIVAL bytes inside a web-tier publish — the published site is larger than the tier promised
+
+stdout | src/publish-tier-wiring.test.ts > a web-tier fallback is COUNTED and reaches the surface — never silent > audio has no encoder today, so a web publish reports the passthrough
+Publish: the web tier re-encoded 1 object(s) at smaller pixel dimensions; their annotation selectors and narrative regions were rescaled to match (Archie-4b0a). [
+  {
+    slug: 'ex',
+    objectId: 'o1',
+    from: { width: 6000, height: 4000 },
+    to: { width: 2400, height: 1600 },
+    scale: 0.4
+  }
+]
+
+stderr | src/publish-tier-wiring.test.ts > a web-tier fallback is COUNTED and reaches the surface — never silent > audio has no encoder today, so a web publish reports the passthrough
+Publish: 1 asset(s) shipped their ARCHIVAL bytes inside a web-tier publish — the published site is larger than the tier promised
+
+stdout | src/publish-tier-wiring.test.ts > a web-tier fallback is COUNTED and reaches the surface — never silent > an image encode that throws is counted too — the publish still succeeds
+Publish: the web tier re-encoded 1 object(s) at smaller pixel dimensions; their annotation selectors and narrative regions were rescaled to match (Archie-4b0a). [
+  {
+    slug: 'ex',
+    objectId: 'o1',
+    from: { width: 6000, height: 4000 },
+    to: { width: 2400, height: 1600 },
+    scale: 0.4
+  }
+]
+
+stderr | src/publish-tier-wiring.test.ts > a web-tier fallback is COUNTED and reaches the surface — never silent > an image encode that throws is counted too — the publish still succeeds
+Publish: 4 asset(s) shipped their ARCHIVAL bytes inside a web-tier publish — the published site is larger than the tier promised
+
+stdout | src/publish-tier-wiring.test.ts > the annotation-geometry blocker is CLOSED — the rescale report drives the fix (Archie-4b0a) > a WEB publish ships selectors in the SERVED pixel space — both shapes, on the object that moved
+Publish: the web tier re-encoded 1 object(s) at smaller pixel dimensions; their annotation selectors and narrative regions were rescaled to match (Archie-4b0a). [
+  {
+    slug: 'ex',
+    objectId: 'o1',
+    from: { width: 6000, height: 4000 },
+    to: { width: 2400, height: 1600 },
+    scale: 0.4
+  }
+]
+
+stderr | src/publish-tier-wiring.test.ts > the annotation-geometry blocker is CLOSED — the rescale report drives the fix (Archie-4b0a) > a WEB publish ships selectors in the SERVED pixel space — both shapes, on the object that moved
+Publish: 1 asset(s) shipped their ARCHIVAL bytes inside a web-tier publish — the published site is larger than the tier promised
+
+stdout | src/publish-tier-wiring.test.ts > the annotation-geometry blocker is CLOSED — the rescale report drives the fix (Archie-4b0a) > the object that did NOT move keeps its authored coordinates
+Publish: the web tier re-encoded 1 object(s) at smaller pixel dimensions; their annotation selectors and narrative regions were rescaled to match (Archie-4b0a). [
+  {
+    slug: 'ex',
+    objectId: 'o1',
+    from: { width: 6000, height: 4000 },
+    to: { width: 2400, height: 1600 },
+    scale: 0.4
+  }
+]
+
+stderr | src/publish-tier-wiring.test.ts > the annotation-geometry blocker is CLOSED — the rescale report drives the fix (Archie-4b0a) > the object that did NOT move keeps its authored coordinates
+Publish: 1 asset(s) shipped their ARCHIVAL bytes inside a web-tier publish — the published site is larger than the tier promised
+
+stdout | src/publish-tier-wiring.test.ts > the annotation-geometry blocker is CLOSED — the rescale report drives the fix (Archie-4b0a) > the HISTORY sidecar keeps master-space coordinates even at the web tier (projection-only)
+Publish: the web tier re-encoded 1 object(s) at smaller pixel dimensions; their annotation selectors and narrative regions were rescaled to match (Archie-4b0a). [
+  {
+    slug: 'ex',
+    objectId: 'o1',
+    from: { width: 6000, height: 4000 },
+    to: { width: 2400, height: 1600 },
+    scale: 0.4
+  }
+]
+
+stderr | src/publish-tier-wiring.test.ts > the annotation-geometry blocker is CLOSED — the rescale report drives the fix (Archie-4b0a) > the HISTORY sidecar keeps master-space coordinates even at the web tier (projection-only)
+Publish: 1 asset(s) shipped their ARCHIVAL bytes inside a web-tier publish — the published site is larger than the tier promised
+
+stdout | src/publish-tier-wiring.test.ts > the annotation-geometry blocker is CLOSED — the rescale report drives the fix (Archie-4b0a) > a web publish names every object whose pixel space moved
+Publish: the web tier re-encoded 1 object(s) at smaller pixel dimensions; their annotation selectors and narrative regions were rescaled to match (Archie-4b0a). [
+  {
+    slug: 'ex',
+    objectId: 'o1',
+    from: { width: 6000, height: 4000 },
+    to: { width: 2400, height: 1600 },
+    scale: 0.4
+  }
+]
+
+stderr | src/publish-tier-wiring.test.ts > the annotation-geometry blocker is CLOSED — the rescale report drives the fix (Archie-4b0a) > a web publish names every object whose pixel space moved
+Publish: 1 asset(s) shipped their ARCHIVAL bytes inside a web-tier publish — the published site is larger than the tier promised
+
+···········
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  19:38:05
+   Duration  1.32s (transform 556ms, setup 0ms, collect 917ms, tests 176ms, environment 0ms, prepare 43ms)
+

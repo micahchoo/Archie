@@ -454,6 +454,7 @@ describe("AV medium branch (ADR-0019): a sound/video object mounts the native pl
     // The reader-surface host holds the AV player, NOT an OSD error notice ("Couldn't load this media item").
     expect(sr.querySelector(".notice")).toBeNull();
   });
+
 });
 
 describe("object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Gallery parity)", () => {

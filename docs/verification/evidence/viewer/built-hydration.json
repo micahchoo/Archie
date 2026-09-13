@@ -1,0 +1,67 @@
+{
+  "status": 200,
+  "url": "http://localhost:4326/viewer/voynich/",
+  "title": "Voynich manuscript — Archie",
+  "objects": 0,
+  "body": "The Whole Manuscript\n\nA grid of all eleven folios of MS 408 across its six sections — herbal, astronomical, balneological, cosmological, pharmaceutical, and recipes — to browse side by side, each readable three ways, with a sounded page.\n\n12 items in this exhibit\nf1r — Herbal (opening page)\nf18v — Herbal (the sonified folio)\nf25v — Herbal\nf33v — Herbal\nf67r — Astronomical (foldout)\nf68r — Astronomical (foldout star-chart)\nf75r — Balneological\nf78r — Balneological\nf85v–86r — Cosmological (the Ros",
+  "failed": [
+    {
+      "url": "http://localhost:4326/fonts/fonts.css",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:4326/_astro/atmosphere.CUSJRrLZ.css",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:4326/_astro/ExhibitView.Qm1Su8Ld.css",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:4326/_astro/Reader.Dl3x8Cz-.css",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:4326/_astro/NarrativeReader.CIlpCEgs.css",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:4326/_astro/MediaPlayer.DVGNqS3z.css",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:4326/_astro/note-surface.B1GjkRfT.css",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:4326/_astro/ExhibitView.CO_435fY.js",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:4326/_astro/client.svelte.BMcsNDTg.js",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:4326/_astro/ExhibitView.CO_435fY.js",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:4326/_astro/client.svelte.BMcsNDTg.js",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "[astro-island] Error hydrating /_astro/ExhibitView.CO_435fY.js TypeError: Failed to fetch dynamically imported module: http://localhost:4326/_astro/ExhibitView.CO_435fY.js#astro-retry=1789268215258",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+}

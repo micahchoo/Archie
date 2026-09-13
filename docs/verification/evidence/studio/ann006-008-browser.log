@@ -1,0 +1,43 @@
+
+Running 2 tests using 1 worker
+
+(node:189075) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:189075) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ann006AfterDraw":{"noteCount":1,"editors":0,"url":"http://localhost:5198/studio/#/voynich-2/o/01M2CG7PJSMHFFBJAB1QR25VN9"}}
+  ✓  1 [chromium] › e2e/user-stories-authoring-batch.spec.ts:26:1 › STU-ANN-006 convert whole note to region mode (1.6s)
+{"storedTargets":[]}
+{"stackAfterCreate":{"notes":"Stack first\nStack second","editors":0}}
+{"stackAfterSelect":{"editors":1,"groups":0}}
+  ✘  2 [chromium] › e2e/user-stories-authoring-batch.spec.ts:57:1 › STU-ANN-008 stacked note navigation (11.8s)
+
+
+  1) [chromium] › e2e/user-stories-authoring-batch.spec.ts:57:1 › STU-ANN-008 stacked note navigation 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByRole('group', { name: 'Stacked notes at this spot' })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByRole('group', { name: 'Stacked notes at this spot' })[22m
+
+
+      84 |   await page.getByRole('button', { name: 'Stack first' }).click();
+      85 |   console.log(JSON.stringify({ stackAfterSelect: { editors: await page.locator('.note-editor-region').count(), groups: await page.getByRole('group', { name: 'Stacked notes at this spot' }).count() } }));
+    > 86 |   await expect(page.getByRole('group', { name: 'Stacked notes at this spot' })).toBeVisible();
+         |                                                                                 ^
+      87 |   await expect(page.getByRole('button', { name: /Next note|Previous note/ }).first()).toBeVisible();
+      88 | });
+      89 |
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/e2e/user-stories-authoring-batch.spec.ts:86:81
+
+    Error Context: test-results/user-stories-authoring-bat-b24b8-008-stacked-note-navigation-chromium/error-context.md
+
+  1 failed
+    [chromium] › e2e/user-stories-authoring-batch.spec.ts:57:1 › STU-ANN-008 stacked note navigation 
+  1 passed (14.2s)

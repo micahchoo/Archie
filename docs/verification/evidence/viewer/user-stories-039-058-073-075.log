@@ -1,0 +1,54 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 4 tests using 1 worker
+
+[1A[2K(node:4113973) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4113973) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/4] [chromium] › apps/viewer/e2e/user-stories.spec.ts:156:3 › focused user-story baseline › VIEW-039: object details expose the exhibit and object credit metadata
+[1A[2K[2/4] [chromium] › apps/viewer/e2e/user-stories.spec.ts:164:3 › focused user-story baseline › VIEW-058: keyboard arrows step the active object carousel
+[1A[2K[3/4] [chromium] › apps/viewer/e2e/user-stories.spec.ts:176:3 › focused user-story baseline › VIEW-073: an exhibit with no objects gives a readable empty state
+[1A[2K[4/4] [chromium] › apps/viewer/e2e/user-stories.spec.ts:188:3 › focused user-story baseline › VIEW-075: a long metadata value expands and collapses
+[1A[2K  1) [chromium] › apps/viewer/e2e/user-stories.spec.ts:188:3 › focused user-story baseline › VIEW-075: a long metadata value expands and collapses 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button.more').first()[22m
+    [2m    - locator resolved to <button type="button" aria-expanded="false" class="text-link more svelte-uvwa2b" aria-label="Show more of Provenance">Show more</button>[22m
+    [2m  - attempting click action[22m
+    [2m    2 × waiting for element to be visible, enabled and stable[22m
+    [2m      - element is not visible[22m
+    [2m    - retrying click action[22m
+    [2m    - waiting 20ms[22m
+    [2m    2 × waiting for element to be visible, enabled and stable[22m
+    [2m      - element is not visible[22m
+    [2m    - retrying click action[22m
+    [2m      - waiting 100ms[22m
+    [2m    116 × waiting for element to be visible, enabled and stable[22m
+    [2m        - element is not visible[22m
+    [2m      - retrying click action[22m
+    [2m        - waiting 500ms[22m
+
+
+      198 |     await expect(more).toHaveText("Show more");
+      199 |     await expect(more).toHaveAttribute("aria-expanded", "false");
+    > 200 |     await more.click();
+          |                ^
+      201 |     await expect(more).toHaveText("Show less");
+      202 |     await expect(more).toHaveAttribute("aria-expanded", "true");
+      203 |   });
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:200:16
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--41c4a-value-expands-and-collapses-chromium/error-context.md
+
+
+[1A[2K  1 failed
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:188:3 › focused user-story baseline › VIEW-075: a long metadata value expands and collapses 
+  3 passed (1.0m)

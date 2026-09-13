@@ -1,0 +1,49 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:175329) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:175488) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] npm warn Unknown env config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+[1A[2K[WebServer] (node:176116) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:176128) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 16 tests using 1 worker
+
+[1A[2K(node:176207) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:176207) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/16] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:42:3 › nothing in the reader is an anonymous tab stop (V90) › every tab stop announces something
+[1A[2K[2/16] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:56:3 › nothing in the reader is an anonymous tab stop (V90) › the whole-object frame is a named stop, and stays one (V46)
+[1A[2K[3/16] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:69:3 › Escape is a ladder, not one binding (V26) › Escape with a note open closes the note and stays put
+[1A[2K[4/16] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:81:3 › Escape is a ladder, not one binding (V26) › Escape with nothing open goes up a level
+[1A[2K[5/16] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:95:3 › Escape is a ladder, not one binding (V26) › the reader has a landing place for focus to return to
+[1A[2K[6/16] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:132:3 › the canvas is a named, reachable keyboard stop (V90/V25) › the canvas announces itself and what its keys do
+[1A[2K[7/16] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:145:3 › the canvas is a named, reachable keyboard stop (V90/V25) › arrow keys actually move the image
+[1A[2K[8/16] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:163:3 › the canvas is a named, reachable keyboard stop (V90/V25) › focus reaches the canvas at all
+[1A[2K[9/16] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:172:3 › Escape is a ladder on a live canvas too (V26/V25) › rung two: Escape hands focus back out of the canvas, and not to nothing
+[1A[2K[10/16] [chromium] › apps/viewer/e2e/canvas-keyboard.spec.ts:186:3 › Escape is a ladder on a live canvas too (V26/V25) › the whole ladder walks out one rung at a time
+[1A[2K[11/16] [chromium] › apps/viewer/e2e/cite.spec.ts:32:3 › the cite panel (V102) › the LINK grain copies exactly the current address
+[1A[2K[12/16] [chromium] › apps/viewer/e2e/cite.spec.ts:42:3 › the cite panel (V102) › the CITATION grain copies a reference carrying the credit and the licence
+[1A[2K[13/16] [chromium] › apps/viewer/e2e/cite.spec.ts:52:3 › the cite panel (V102) › the CONTENT STATE grain round-trips through decodeContentState
+[1A[2K[14/16] [chromium] › apps/viewer/e2e/cite.spec.ts:78:3 › the cite panel (V102) › the Content State grain is ABSENT at exhibit grain, not fabricated
+[1A[2K[15/16] [chromium] › apps/viewer/e2e/cite.spec.ts:90:3 › the cite panel (V102) › it is a DIALOG: focus moves in, Tab is trapped, Escape returns focus
+[1A[2K[16/16] [chromium] › apps/viewer/e2e/cite.spec.ts:115:3 › the cite panel (V102) › the panel does not cover the canvas — it replaces chrome, it does not add it
+[1A[2K  16 passed (21.2s)

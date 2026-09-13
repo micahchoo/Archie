@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch({ headless: true });
+const p = await b.newPage();
+const failed=[]; const errors=[];
+p.on('requestfailed', r => failed.push({url:r.url(),failure:r.failure()?.errorText}));
+p.on('console', m => { if (m.type()==='error') errors.push(m.text()); });
+p.on('pageerror', e => errors.push(`pageerror: ${e.message}`));
+const res=await p.goto('http://localhost:4326/viewer/voynich/',{waitUntil:'networkidle',timeout:30000});
+await p.waitForTimeout(3000);
+console.log(JSON.stringify({status:res?.status(),url:p.url(),title:await p.title(),objects:await p.locator('button.object').count(),body:(await p.locator('body').innerText()).slice(0,500),failed,errors},null,2));
+await p.screenshot({path:'/tmp/archie-built-hydration.png',fullPage:true}); await b.close();

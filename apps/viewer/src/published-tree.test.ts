@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import sharp from "sharp";
 
 // The committed published tree must AGREE WITH ITS OWN MANIFESTS (2026-07-25).
 //
@@ -98,6 +99,41 @@ describe("the committed published tree is not stale", () => {
       if (inline === 0) continue;
       const rendered = (read(slug, "index.html").match(/id="note-/g) ?? []).length;
       expect(rendered, `${slug}: ${inline} inline annotation(s), page renders ${rendered} note(s)`).toBeGreaterThanOrEqual(inline);
+    }
+  });
+
+  it("the screenshot wall uses bounded thumbnails instead of its full-size masters", async () => {
+    const manifest = JSON.parse(read("screenshots", "manifest.json")) as {
+      items: Array<{
+        id: string;
+        thumbnail?: Array<{ id: string }>;
+        items: Array<{ items: Array<{ body: { id: string } }> }>;
+      }>;
+    };
+    const imageIndex = JSON.parse(readFileSync(join(PUBLISHED, "images.json"), "utf8")) as {
+      images: Array<{ objectId: string; exhibitSlug: string; thumbnail?: string }>;
+    };
+    const indexed = new Map(imageIndex.images
+      .filter((image) => image.exhibitSlug === "screenshots")
+      .map((image) => [image.objectId, image.thumbnail]));
+
+    expect(manifest.items.length).toBeGreaterThan(1);
+    for (const canvas of manifest.items) {
+      const thumbnailUrl = canvas.thumbnail?.[0]?.id;
+      expect(thumbnailUrl, `${canvas.id} has no thumbnail`).toBeTruthy();
+      const thumbnailName = thumbnailUrl!.split("/assets-thumb/")[1];
+      const masterName = canvas.items[0]?.items[0]?.body.id.split("/assets/")[1];
+      expect(thumbnailName).toBe(masterName);
+
+      const thumbnailPath = join(PUBLISHED, "screenshots", "assets-thumb", thumbnailName!);
+      const masterPath = join(PUBLISHED, "screenshots", "assets", masterName!);
+      expect(existsSync(thumbnailPath), `${thumbnailName} is referenced but missing`).toBe(true);
+      expect(statSync(thumbnailPath).size).toBeLessThan(statSync(masterPath).size);
+
+      const metadata = await sharp(thumbnailPath).metadata();
+      expect(Math.max(metadata.width ?? 0, metadata.height ?? 0)).toBeLessThanOrEqual(640);
+      const objectId = canvas.id.split("/").pop()!;
+      expect(indexed.get(objectId)).toBe(thumbnailUrl);
     }
   });
 });

@@ -1,0 +1,3 @@
+STU-UX-001 focused retest: Playwright `user-stories-ux.spec.ts -g 'STU-UX-001'` passed (1 passed, 1.1s).
+The Help menu launch handler restores focus to the stable Help button before mounting Keyboard Shortcuts. Escape closes the scrimmed dialog and the Help button is focused.
+Studio svelte-check: 0 errors, 0 warnings.

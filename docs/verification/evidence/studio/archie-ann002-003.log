@@ -1,0 +1,35 @@
+
+Running 2 tests using 1 worker
+
+(node:4073118) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:4073118) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"polygonNotes":1}
+  ✓  1 [chromium] › e2e/user-stories-annotations.spec.ts:60:1 › STU-ANN-002 polygon note: vertices and finish gesture (1.4s)
+  ✘  2 [chromium] › e2e/user-stories-annotations.spec.ts:73:1 › STU-ANN-003/004 whole-image note: edit comment/tags and reload (30.0s)
+
+
+  1) [chromium] › e2e/user-stories-annotations.spec.ts:73:1 › STU-ANN-003/004 whole-image note: edit comment/tags and reload 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: /^1 article$/ })[22m
+
+
+      79 |   await editor.getByRole('button', { name: 'Done' }).click();
+      80 |   await page.getByRole('button', { name: 'Overview', exact: true }).click(); await page.reload();
+    > 81 |   await page.getByRole('button', { name: /^1 article$/ }).click();
+         |                                                           ^
+      82 |   await expect(page.locator('.note-editor-region')).toHaveCount(0);
+      83 |   await page.getByRole('list', { name: 'Notes on this object' }).getByText('Whole image persistence probe').click();
+      84 |   await expect(page.locator('.note-editor-region')).toContainText('Whole image persistence probe');
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/e2e/user-stories-annotations.spec.ts:81:59
+
+    Error Context: test-results/user-stories-annotations-S-0cd2f-dit-comment-tags-and-reload-chromium/error-context.md
+
+  1 failed
+    [chromium] › e2e/user-stories-annotations.spec.ts:73:1 › STU-ANN-003/004 whole-image note: edit comment/tags and reload 
+  1 passed (32.2s)

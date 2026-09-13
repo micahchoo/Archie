@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio
+
+···
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  19:38:01
+   Duration  1.06s (transform 456ms, setup 0ms, collect 885ms, tests 8ms, environment 0ms, prepare 41ms)
+

@@ -64,6 +64,26 @@ export function parseMediaFragment(value: string): MediaFragment {
   return out;
 }
 
+/** Parse all media-fragment selector values on an annotation target.
+ * WADM permits `target.selector` to be either one selector or an array. Keeping this
+ * normalization here makes AV readers agree on the same selector-array contract. */
+export function mediaFragmentOfAnnotation(annotation: { target?: unknown } | undefined): MediaFragment {
+  const target = annotation?.target as { selector?: unknown } | undefined;
+  const raw = Array.isArray(target?.selector) ? target.selector : target?.selector ? [target.selector] : [];
+  const out: MediaFragment = {};
+  for (const selector of raw) {
+    const value = (selector as { value?: unknown } | undefined)?.value;
+    if (typeof value !== "string") continue;
+    const parsed = parseMediaFragment(value);
+    if (parsed.box) {
+      out.box = parsed.box;
+      if (parsed.unit) out.unit = parsed.unit;
+    }
+    if (parsed.time) out.time = parsed.time;
+  }
+  return out;
+}
+
 /**
  * Serialize a spatiotemporal selector value: `t=start,end` then `xywh=<unit>:x,y,w,h`, joined by `&`
  * (the donor order). Either part may be omitted — a time-only (audio) or space-only (image) selector.

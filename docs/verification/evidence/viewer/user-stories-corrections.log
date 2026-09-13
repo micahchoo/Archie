@@ -1,0 +1,242 @@
+npm warn Unknown builtin config "globalignorefile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 7 tests using 1 worker
+
+[1A[2K(node:4161083) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4161083) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/7] [chromium] › apps/viewer/e2e/user-stories.spec.ts:115:3 › focused user-story baseline › VIEW-053: a long library summary expands and collapses on a small screen
+[1A[2K  1) [chromium] › apps/viewer/e2e/user-stories.spec.ts:115:3 › focused user-story baseline › VIEW-053: a long library summary expands and collapses on a small screen 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoHaveText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('button.summary-toggle')
+    Expected: [32m"Read more"[39m
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toHaveText" with timeout 15000ms[22m
+    [2m  - waiting for locator('button.summary-toggle')[22m
+
+
+      124 |     await page.goto("./");
+      125 |     const toggle = page.locator("button.summary-toggle");
+    > 126 |     await expect(toggle).toHaveText("Read more");
+          |                          ^
+      127 |     await expect(toggle).toHaveAttribute("aria-expanded", "false");
+      128 |     await toggle.click();
+      129 |     await expect(toggle).toHaveText("Show less");
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:126:26
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--dc912-collapses-on-a-small-screen-chromium/error-context.md
+
+
+[1A[2K(node:4162112) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4162112) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[2/7] [chromium] › apps/viewer/e2e/user-stories.spec.ts:136:3 › focused user-story baseline › VIEW-054: object-grid density persists after reload
+[1A[2K  2) [chromium] › apps/viewer/e2e/user-stories.spec.ts:136:3 › focused user-story baseline › VIEW-054: object-grid density persists after reload 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('.density[aria-label="Grid density"] button').filter({ hasText: 'Compact' })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 15000ms[22m
+    [2m  - waiting for locator('.density[aria-label="Grid density"] button').filter({ hasText: 'Compact' })[22m
+
+
+      140 |     await page.reload();
+      141 |     const compact = page.locator('.density[aria-label="Grid density"] button', { hasText: "Compact" });
+    > 142 |     await expect(compact).toBeVisible();
+          |                           ^
+      143 |     await compact.click();
+      144 |     await expect(compact).toHaveAttribute("aria-pressed", "true");
+      145 |     await page.reload();
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:142:27
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--cd8fc-nsity-persists-after-reload-chromium/error-context.md
+
+
+[1A[2K(node:4163215) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4163215) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[3/7] [chromium] › apps/viewer/e2e/user-stories.spec.ts:149:3 › focused user-story baseline › VIEW-069: image-wall density persists and controls disappear during search
+[1A[2K  3) [chromium] › apps/viewer/e2e/user-stories.spec.ts:149:3 › focused user-story baseline › VIEW-069: image-wall density persists and controls disappear during search 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('.views button').filter({ hasText: 'All images' })[22m
+
+
+      151 |     await goOffline(page);
+      152 |     await page.goto("./");
+    > 153 |     await page.locator('.views button', { hasText: "All images" }).click();
+          |                                                                    ^
+      154 |     const compact = page.locator('.density[aria-label="Wall density"] button', { hasText: "Compact" });
+      155 |     await compact.click();
+      156 |     await expect(compact).toHaveAttribute("aria-pressed", "true");
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:153:68
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--36943-ols-disappear-during-search-chromium/error-context.md
+
+
+[1A[2K(node:4166990) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4166990) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[4/7] [chromium] › apps/viewer/e2e/user-stories.spec.ts:197:3 › focused user-story baseline › VIEW-075: a long metadata value expands and collapses
+[1A[2K  4) [chromium] › apps/viewer/e2e/user-stories.spec.ts:197:3 › focused user-story baseline › VIEW-075: a long metadata value expands and collapses 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button[role="tab"]').filter({ hasText: 'Details' })[22m
+
+
+      204 |     });
+      205 |     await page.goto("./#/voynich-rosettes");
+    > 206 |     await page.locator('button[role="tab"]', { hasText: "Details" }).click();
+          |                                                                      ^
+      207 |     const more = page.locator("button.more").first();
+      208 |     await expect(more).toHaveText("Show more");
+      209 |     await expect(more).toHaveAttribute("aria-expanded", "false");
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:206:70
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--41c4a-value-expands-and-collapses-chromium/error-context.md
+
+
+[1A[2K(node:4171087) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4171087) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[5/7] [chromium] › apps/viewer/e2e/user-stories.spec.ts:219:3 › focused user-story baseline › VIEW-022: a broken AV source shows a readable error and keeps navigation
+[1A[2K  5) [chromium] › apps/viewer/e2e/user-stories.spec.ts:219:3 › focused user-story baseline › VIEW-022: a broken AV source shows a readable error and keeps navigation 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('.media-failed')
+    Expected pattern: [32m/couldn.t be loaded/i[39m
+    Timeout: 30000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 30000ms[22m
+    [2m  - waiting for locator('.media-failed')[22m
+
+
+      220 |     await goOffline(page);
+      221 |     await page.goto("./#/voynich/o/ex-voynich.o12");
+    > 222 |     await expect(page.locator(".media-failed")).toContainText(/couldn.t be loaded/i, { timeout: 30_000 });
+          |                                                 ^
+      223 |     await expect(page.locator(".topbar, aside").first()).toBeVisible();
+      224 |     await expect(page.locator("button.open-another")).toBeVisible();
+      225 |     await page.locator("button.open-another").click();
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:222:49
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--3064f--error-and-keeps-navigation-chromium/error-context.md
+
+
+[1A[2K(node:4172906) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4172906) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[6/7] [chromium] › apps/viewer/e2e/user-stories.spec.ts:241:3 › focused user-story baseline › VIEW-041: malformed published data shows an actionable error state
+[1A[2K  6) [chromium] › apps/viewer/e2e/user-stories.spec.ts:241:3 › focused user-story baseline › VIEW-041: malformed published data shows an actionable error state 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('.state.error')
+    Expected pattern: [32m/couldn.t|unable|failed|error|republish|library/i[39m
+    Timeout: 30000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 30000ms[22m
+    [2m  - waiting for locator('.state.error')[22m
+
+
+      243 |     await page.route(/\/published\/exhibits\.json(?:\?.*)?$/, (route) => route.fulfill({ status: 200, contentType: "application/json", body: "{malformed" }));
+      244 |     await page.goto("./");
+    > 245 |     await expect(page.locator(".state.error")).toContainText(/couldn.t|unable|failed|error|republish|library/i, { timeout: 30_000 });
+          |                                                ^
+      246 |     await expect(page.locator(".state.error")).toContainText(/library|reload|try|again|republish/i);
+      247 |   });
+      248 |
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:245:48
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--af164-s-an-actionable-error-state-chromium/error-context.md
+
+
+[1A[2K(node:4175011) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:4175011) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[7/7] [chromium] › apps/viewer/e2e/user-stories.spec.ts:319:3 › focused user-story baseline › VIEW-057: finder text combines with multiple OR tag facets
+[1A[2K  7) [chromium] › apps/viewer/e2e/user-stories.spec.ts:319:3 › focused user-story baseline › VIEW-057: finder text combines with multiple OR tag facets 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button.finder-trigger')[22m
+
+
+      320 |     await goOffline(page);
+      321 |     await page.goto("./#/voynich");
+    > 322 |     await page.locator("button.finder-trigger").click();
+          |                                                 ^
+      323 |     const finder = page.locator(".finder[role='dialog']");
+      324 |     await expect(finder).toBeVisible();
+      325 |     const facets = finder.locator("button.facet");
+        at /mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/viewer/e2e/user-stories.spec.ts:322:49
+
+    Error Context: apps/viewer/test-results/user-stories-focused-user--17e91-with-multiple-OR-tag-facets-chromium/error-context.md
+
+
+[1A[2K  7 failed
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:115:3 › focused user-story baseline › VIEW-053: a long library summary expands and collapses on a small screen 
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:136:3 › focused user-story baseline › VIEW-054: object-grid density persists after reload 
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:149:3 › focused user-story baseline › VIEW-069: image-wall density persists and controls disappear during search 
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:197:3 › focused user-story baseline › VIEW-075: a long metadata value expands and collapses 
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:219:3 › focused user-story baseline › VIEW-022: a broken AV source shows a readable error and keeps navigation 
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:241:3 › focused user-story baseline › VIEW-041: malformed published data shows an actionable error state 
+    [chromium] › apps/viewer/e2e/user-stories.spec.ts:319:3 › focused user-story baseline › VIEW-057: finder text combines with multiple OR tag facets 

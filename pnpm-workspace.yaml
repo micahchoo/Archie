@@ -1,6 +1,8 @@
 packages:
   - 'packages/*'
   - 'apps/*'
+# Preserve the project-local virtual store across pnpm default changes.
+enableGlobalVirtualStore: false
 # Security overrides (Dependabot) — force vulnerable dev/build-only transitive deps up to patched
 # versions. Patched versions already coexist in the tree, so this is a safe bump.
 overrides:
