@@ -40,6 +40,10 @@ cat > "$OUT/index.html" <<'LANDING'
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Archie — Exhibit Annotation</title>
+  <meta name="description" content="Annotate and publish your small archive. Archie is a multimedia exhibit annotation platform that publishes as a static site." />
+  <meta property="og:title" content="Archie — Exhibit Annotation" />
+  <meta property="og:description" content="Annotate and publish your small archive. Archie is a multimedia exhibit annotation platform that publishes as a static site." />
+  <meta property="og:type" content="website" />
   <style>
     :root { color-scheme: dark; }
     body {
